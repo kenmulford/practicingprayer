@@ -63,9 +63,10 @@ namespace PrayerApp.Services
             if (Settings.FirstRun)
             {
                 // Seed initial data
-                // Example: insert default prayer categories
-                // await InsertAsync(new PrayerCategory { Name = "General" });
-
+                await InsertAsync(new PrayerCategory { Name = "General", SortOrder = 0 });
+                await InsertAsync(new PrayerCategory { Name = "Where I Live", SortOrder = 1 });
+                await InsertAsync(new PrayerCategory { Name = "Where I Work", SortOrder = 2 });
+                await InsertAsync(new PrayerCategory { Name = "Where I Play", SortOrder = 3 });
             }
 
         }
