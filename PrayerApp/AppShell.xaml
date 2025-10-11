@@ -4,11 +4,23 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:PrayerApp"
+    xmlns:views="clr-namespace:PrayerApp.Views"
     Title="PrayerApp">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <TabBar>
 
+        <ShellContent
+            Title="Home"
+            Icon="house_solid_full.png"
+            ContentTemplate="{DataTemplate views:MainPage}"
+            Route="MainPage" />
+
+
+        <ShellContent
+            Title="Categories"
+            Icon="list_solid_full.png"
+            ContentTemplate="{DataTemplate views:CategoryMainView}"
+            Route="CategoryMainView" />
+
+    </TabBar>
 </Shell>

@@ -1,4 +1,4 @@
-﻿namespace PrayerApp
+﻿namespace PrayerApp.Views
 {
     public partial class MainPage : ContentPage
     {
