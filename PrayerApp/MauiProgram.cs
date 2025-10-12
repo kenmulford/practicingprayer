@@ -2,6 +2,7 @@
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
 using PrayerApp;
+using PrayerApp.Models;
 using PrayerApp.Services;
 
 
@@ -38,6 +39,9 @@ namespace PrayerApp
             // get the new DB Service
             using var scope = app.Services.CreateScope();
             var myDBService = scope.ServiceProvider.GetRequiredService<IDBService>();
+
+            // set DB service for the necessary models
+            PrayerCategory.SetDBService(myDBService);
 
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();

@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using SQLite;
+using System.Linq;
+using PrayerApp.Services;
 
 namespace PrayerApp.Models
 {
     [Table("PrayerCategory")]
-    public class PrayerCategory
+    public class PrayerCategory()
     {
+        private static IDBService? _dbService;
         private int _sortOrder;
         private string _name;
 
@@ -29,5 +32,30 @@ namespace PrayerApp.Models
 
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+        #region Constructor
+        public static void SetDBService(IDBService dbService)
+        {
+            _dbService = dbService;
+        }
+        #endregion
+        #region Actions
+
+        public async void Save()
+        {
+            if (_dbService == null)
+                throw new InvalidOperationException("DBService not set. Call PrayerCategory.SetDBService at app startup.");
+            if(Id == 0)
+            {
+                await _dbService.InsertAsync(this);
+            }
+            else
+            {
+                UpdatedAt = DateTime.Now;
+                await _dbService.UpdateAsync(this);
+            }
+        }
+
+        #endregion
     }
 }

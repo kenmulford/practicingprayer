@@ -12,6 +12,8 @@
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
             
+            <!-- TODO: add collectionview for categories here -->
+            
         </VerticalStackLayout>
     </ScrollView>
 
