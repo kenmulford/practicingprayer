@@ -15,12 +15,23 @@
             ContentTemplate="{DataTemplate views:MainPage}"
             Route="MainPage" />
 
+        <ShellContent
+            Title="Prayers"
+            Icon="hands_praying_solid_full.png"
+            ContentTemplate="{DataTemplate views:Prayer.PrayerMainView}"
+            Route="PrayerMainView" />
 
         <ShellContent
             Title="Categories"
             Icon="list_solid_full.png"
-            ContentTemplate="{DataTemplate views:CategoryMainView}"
+            ContentTemplate="{DataTemplate views:Category.CategoryMainView}"
             Route="CategoryMainView" />
+
+        <ShellContent
+            Title="Settings"
+            Icon="gear-solid-full.png"
+            ContentTemplate="{DataTemplate views:Settings}"
+            Route="Settings" />
 
     </TabBar>
 </Shell>

@@ -31,10 +31,16 @@ namespace PrayerApp.Models
         [Column("CanNotify")]
         public bool CanNotify { get; set; } = false;
 
-        [Column("NotificationFrequency"), MaxLength(50)]
-        public string NotificationFrequency { get; set; } = "Weekly";
+        [Column("PrayerFrequency"), MaxLength(50)]
+        public string PrayerFrequency { get; set; } = "Weekly";
 
         [Column("IsAnswered")]
         public bool IsAnswered { get; set; } = false;
+        
+        [Column("CreatedAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("UpdatedAt")]
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
     }
 }

@@ -23,5 +23,11 @@ namespace PrayerApp.Models
 
             set => _sortOrder = value ?? 0;
         }
+
+        [Column("CreatedAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [Column("UpdatedAt")]
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
     }
 }

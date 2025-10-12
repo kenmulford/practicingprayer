@@ -33,7 +33,16 @@ namespace PrayerApp
             // Add DB to scope as singleton; only need one connection for the life of the app.
             builder.Services.AddSingleton<IDBService>(s => new DBService(dbPath));
 
-            return builder.Build();
+            var app = builder.Build();
+
+            // get the new DB Service
+            using var scope = app.Services.CreateScope();
+            var myDBService = scope.ServiceProvider.GetRequiredService<IDBService>();
+
+            // ensure the schema is updated
+            Task.Run(async () => await myDBService.UpdateSchema()).Wait();
+
+            return app;
         }
     }
 }
