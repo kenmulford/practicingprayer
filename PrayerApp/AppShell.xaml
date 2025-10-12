@@ -29,7 +29,7 @@
 
         <ShellContent
             Title="Settings"
-            Icon="gear-solid-full.png"
+            Icon="gear_solid_full.png"
             ContentTemplate="{DataTemplate views:Settings}"
             Route="Settings" />
 
