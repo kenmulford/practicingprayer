@@ -18,14 +18,14 @@
         <ShellContent
             Title="Prayers"
             Icon="hands_praying_solid_full.png"
-            ContentTemplate="{DataTemplate views:Prayer.PrayerMainView}"
-            Route="PrayerMainView" />
+            ContentTemplate="{DataTemplate views:Prayer.PrayersPage}"
+            Route="PrayersPage" />
 
         <ShellContent
             Title="Categories"
             Icon="list_solid_full.png"
-            ContentTemplate="{DataTemplate views:Category.CategoryMainView}"
-            Route="CategoryMainView" />
+            ContentTemplate="{DataTemplate views:PrayerCategory.PrayerCategoriesPage}"
+            Route="CategoriesPage" />
 
         <ShellContent
             Title="Settings"

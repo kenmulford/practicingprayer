@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using PrayerApp;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using PrayerApp.Views;
 
 
 namespace PrayerApp
@@ -43,8 +44,17 @@ namespace PrayerApp
             // set DB service for the necessary models
             PrayerCategory.SetDBService(myDBService);
 
+            //PrayerApp.Services.Settings.ClearSettings();
+
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();
+
+            if (PrayerApp.Services.Settings.FirstRun)
+            {
+                // seed initial data if needed
+                Task.Run(async () => await myDBService.SeedDataAsync()).Wait();
+                PrayerApp.Services.Settings.FirstRun = false;
+            }
 
             return app;
         }

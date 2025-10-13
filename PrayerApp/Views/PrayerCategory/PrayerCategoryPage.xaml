@@ -5,7 +5,7 @@
              Title="Category Detail">
     <VerticalStackLayout>
         <Label 
-            Text="Prayer Category Page"
+            Text="Prayer Category Detail Page"
             VerticalOptions="Center" 
             HorizontalOptions="Center" />
     </VerticalStackLayout>

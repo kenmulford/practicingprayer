@@ -6,6 +6,8 @@
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
 
+		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
+
 		<!-- Note for MacCatalyst:
 		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
 		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
@@ -90,20 +92,28 @@
 
 	<ItemGroup>
 	  <Folder Include="Interfaces\" />
-	  <Folder Include="ViewModels\" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Views\Category\CategoryMainView.xaml.cs">
-	    <DependentUpon>CategoryMainView.xaml</DependentUpon>
+	  <Compile Update="Views\PrayerCategory\PrayerCategoriesPage.xaml.cs">
+	    <DependentUpon>PrayerCategoriesPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Views\PrayerCategory\PrayerCategoryPage.xaml.cs">
+	    <DependentUpon>PrayerCategoryPage.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Views\Prayer\PrayersPage.xaml.cs">
+	    <DependentUpon>PrayersPage.xaml</DependentUpon>
 	  </Compile>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Views\Category\CategoryMainView.xaml">
+	  <MauiXaml Update="Views\PrayerCategory\PrayerCategoriesPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Views\Prayer\PrayerMainView.xaml">
+	  <MauiXaml Update="Views\PrayerCategory\PrayerCategoryPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\Prayer\PrayersPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\Settings.xaml">
