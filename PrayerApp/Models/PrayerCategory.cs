@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using SQLite;
 using System.Linq;
 using PrayerApp.Services;
+using System.Runtime.CompilerServices;
 
 namespace PrayerApp.Models
 {
@@ -39,9 +40,10 @@ namespace PrayerApp.Models
             _dbService = dbService;
         }
         #endregion
+        
         #region Actions
 
-        public async void Save()
+        public async Task SaveAsync()
         {
             if (_dbService == null)
                 throw new InvalidOperationException("DBService not set. Call PrayerCategory.SetDBService at app startup.");
@@ -54,6 +56,22 @@ namespace PrayerApp.Models
                 UpdatedAt = DateTime.Now;
                 await _dbService.UpdateAsync(this);
             }
+        }
+
+        public static async Task<PrayerCategory> LoadAsync(int _id)
+        {
+            if (_dbService == null)
+                throw new InvalidOperationException("DBService not set. Call PrayerCategory.SetDBService at app startup.");
+            
+            return await _dbService.GetByIdAsync<PrayerCategory>(_id);
+        }
+
+        public static async Task<List<PrayerCategory>> LoadAllAsync()
+        {
+            if (_dbService == null)
+                throw new InvalidOperationException("DBService not set. Call PrayerCategory.SetDBService at app startup.");
+
+            return await _dbService.GetAllAsync<PrayerCategory>();
         }
 
         #endregion
