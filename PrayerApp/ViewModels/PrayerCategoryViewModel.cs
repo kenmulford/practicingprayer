@@ -18,7 +18,20 @@ namespace PrayerApp.ViewModels
 
         public string Identifier => _prayerCategory.Id.ToString();
 
-        public int Id => _prayerCategory.Id;
+        public int Id
+        {
+            get => _prayerCategory.Id;
+            set
+            {
+                if (_prayerCategory.Id != value)
+                {
+                    _prayerCategory.Id = value;
+                    OnPropertyChanged();
+                }
+                   
+            }
+
+        }
 
         public string Name
         {
@@ -32,6 +45,44 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
+
+        public int? SortOrder
+        {
+            get => _prayerCategory.SortOrder;
+
+            set {
+                if (_prayerCategory.SortOrder != value)
+                {
+                    _prayerCategory.SortOrder = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        //public DateTime CreatedAt
+        //{             get => _prayerCategory.CreatedAt;
+        //    set
+        //    {
+        //        if (_prayerCategory.CreatedAt != value)
+        //        {
+        //            _prayerCategory.CreatedAt = value;
+        //            OnPropertyChanged();
+        //        }
+        //    }
+        //}
+
+        //public DateTime UpdatedAt
+        //{
+        //    get => _prayerCategory.UpdatedAt;
+        //    set
+        //    {
+        //        if (_prayerCategory.UpdatedAt != value)
+        //        {
+        //            _prayerCategory.UpdatedAt = value;
+        //            OnPropertyChanged();
+        //        }
+        //    }
+        //}
         #endregion
 
         #region Constructors
@@ -115,6 +166,7 @@ namespace PrayerApp.ViewModels
         private void RefreshProperties()
         {
             OnPropertyChanged(nameof(Name));
+            OnPropertyChanged(nameof(SortOrder));
         }
 
         #endregion

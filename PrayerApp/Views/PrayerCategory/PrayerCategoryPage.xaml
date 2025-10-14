@@ -2,11 +2,33 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PrayerApp.Views.PrayerCategory.PrayerCategoryPage"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:DataType="viewModels:PrayerCategoryViewModel"
              Title="Category Detail">
+    <ContentPage.BindingContext>
+        <viewModels:PrayerCategoryViewModel />
+    </ContentPage.BindingContext>
     <VerticalStackLayout>
         <Label 
             Text="Prayer Category Detail Page"
             VerticalOptions="Center" 
             HorizontalOptions="Center" />
+
+        <Border
+            Padding="20">
+            <VerticalStackLayout
+                Padding="20"
+                Spacing="10"
+                BackgroundColor="#333333">
+                <Label 
+                    Text="{Binding Identifier}"
+                    FontSize="18"
+                    HorizontalOptions="Center" />
+                <Label 
+                    Text="{Binding Name}"
+                    FontSize="24"
+                    HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </Border>
     </VerticalStackLayout>
 </ContentPage>
