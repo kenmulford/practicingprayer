@@ -19,12 +19,14 @@ namespace PrayerApp.Services
             _db = new SQLiteAsyncConnection(dbPath);
             _db.CreateTableAsync<PrayerCategory>().Wait(); // Create Table
             _db.CreateTableAsync<Prayer>().Wait(); // Create Table
+            _db.CreateTableAsync<PrayerInteraction>().Wait(); // Create Table
         }
 
         public async Task UpdateSchema()
         {
             await _db.CreateTableAsync<PrayerCategory>(); // Ensure table is created
             await _db.CreateTableAsync<Prayer>(); // Ensure table is created
+            await _db.CreateTableAsync<PrayerInteraction>(); // Ensure table is created
         }
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()

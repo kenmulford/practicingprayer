@@ -29,6 +29,7 @@
 
                 <Entry
                     x:Name="SortOrderEntry"
+                    IsVisible="False"
                     Text="{Binding SortOrder}" />
 
                 <!-- TODO: add sort order field to avoid save borking -->

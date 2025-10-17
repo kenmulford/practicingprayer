@@ -34,7 +34,7 @@ namespace PrayerApp.Models
         [Column("UpdatedAt")]
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
-        #region Constructor
+        #region Static Methods
         public static void SetDBService(IDBService dbService)
         {
             _dbService = dbService;
