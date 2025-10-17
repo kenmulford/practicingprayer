@@ -16,18 +16,36 @@
 
         <Border
             Padding="20">
-            <VerticalStackLayout
-                Padding="20"
-                Spacing="10"
-                BackgroundColor="#333333">
-                <Label 
-                    Text="{Binding Identifier}"
-                    FontSize="18"
-                    HorizontalOptions="Center" />
-                <Label 
+            <VerticalStackLayout Spacing="10" Margin="5">
+
+                <Entry
+                    x:Name="IdEntry"
+                    Text="{Binding Id}"
+                    IsVisible="False" />
+                <Entry 
+                    x:Name="NameEntry"
                     Text="{Binding Name}"
-                    FontSize="24"
-                    HorizontalOptions="Center" />
+                    Placeholder="Category Name" />
+
+                <Entry
+                    x:Name="SortOrderEntry"
+                    Text="{Binding SortOrder}" />
+
+                <!-- TODO: add sort order field to avoid save borking -->
+
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
+                    <Button 
+                        StyleClass=""
+                        HorizontalOptions="Start"
+                        Command="{Binding DeleteCommand}"
+                        Text="Delete" />
+                    <Button 
+                        StyleClass=""
+                        Grid.Column="1"
+                        HorizontalOptions="End"
+                        Command="{Binding SaveCommand}"
+                        Text="Save" />
+                </Grid>
             </VerticalStackLayout>
         </Border>
     </VerticalStackLayout>

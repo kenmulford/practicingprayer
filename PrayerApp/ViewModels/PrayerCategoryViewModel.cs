@@ -12,7 +12,7 @@ namespace PrayerApp.ViewModels
         private PrayerCategory _prayerCategory;
 
         public ICommand SaveCommand { get; private set; }
-        // public ICommand DeleteCommand { get; private set; }
+        public ICommand DeleteCommand { get; private set; }
 
         #region Properties
 
@@ -58,31 +58,6 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
-
-        //public DateTime CreatedAt
-        //{             get => _prayerCategory.CreatedAt;
-        //    set
-        //    {
-        //        if (_prayerCategory.CreatedAt != value)
-        //        {
-        //            _prayerCategory.CreatedAt = value;
-        //            OnPropertyChanged();
-        //        }
-        //    }
-        //}
-
-        //public DateTime UpdatedAt
-        //{
-        //    get => _prayerCategory.UpdatedAt;
-        //    set
-        //    {
-        //        if (_prayerCategory.UpdatedAt != value)
-        //        {
-        //            _prayerCategory.UpdatedAt = value;
-        //            OnPropertyChanged();
-        //        }
-        //    }
-        //}
         #endregion
 
         #region Constructors
@@ -91,14 +66,14 @@ namespace PrayerApp.ViewModels
         {
             _prayerCategory = new PrayerCategory();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
-            //DeleteCommand = new AsyncRelayCommand(Delete);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
         }
 
         public PrayerCategoryViewModel(PrayerCategory _pc)
         {
             _prayerCategory = _pc;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
-            //DeleteCommand = new AsyncRelayCommand(Delete);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
         }
 
         #endregion
@@ -109,14 +84,14 @@ namespace PrayerApp.ViewModels
         {
             _prayerCategory.UpdatedAt = DateTime.Now;
             await _prayerCategory.SaveAsync();
-            await Shell.Current.GoToAsync($"..?saved={_prayerCategory.Name}");
+            await Shell.Current.GoToAsync($"..?saved={Identifier}");
         }
 
-        //private async Task Delete()
-        //{
-        //    _note.Delete();
-        //    await Shell.Current.GoToAsync($"..?deleted={_note.Filename}");
-        //}
+        private async Task DeleteAsync()
+        {
+            await _prayerCategory.DeleteAsync();
+            await Shell.Current.GoToAsync($"..?deleted={Identifier}");
+        }
 
         #endregion
 

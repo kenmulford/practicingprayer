@@ -58,6 +58,14 @@ namespace PrayerApp.Models
             }
         }
 
+        public async Task DeleteAsync()
+        {
+                       if (_dbService == null)
+                throw new InvalidOperationException("DBService not set. Call PrayerCategory.SetDBService at app startup.");
+            
+            await _dbService.DeleteAsync(this);
+        }
+
         public static async Task<PrayerCategory> LoadAsync(int _id)
         {
             if (_dbService == null)
