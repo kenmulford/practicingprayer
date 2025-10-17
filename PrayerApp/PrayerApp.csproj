@@ -46,6 +46,9 @@
 	<ItemGroup>
 		<!-- App Icon -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\folder_regular_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\gear_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
@@ -61,7 +64,16 @@
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\note_sticky_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\pen_to_square_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\person_praying_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\star_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\trash_can_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
 
@@ -77,6 +89,13 @@
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="Resources\Images\FontAwesomeIcons\folder_regular_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\pen_to_square_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\star_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\trash_can_solid_full.svg" />
 	</ItemGroup>
 
 	<ItemGroup>

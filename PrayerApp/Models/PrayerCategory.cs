@@ -21,12 +21,8 @@ namespace PrayerApp.Models
         [Column("Name"), MaxLength(100)]
         public string Name { get => _name; set => _name = value ?? "Unnamed Category"; }
 
-        [Column("SortOrder")]
-        public int? SortOrder {
-            get => _sortOrder;
-
-            set => _sortOrder = value ?? 0;
-        }
+        [Column("IsFavorite")]
+        public bool IsFavorite { get; set; } = false;
 
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;

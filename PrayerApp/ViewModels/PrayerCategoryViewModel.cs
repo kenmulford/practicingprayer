@@ -13,6 +13,7 @@ namespace PrayerApp.ViewModels
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
+        public ICommand FavoriteCommand { get; private set; }
 
         #region Properties
 
@@ -46,14 +47,14 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public int? SortOrder
+        public bool IsFavorite
         {
-            get => _prayerCategory.SortOrder;
+            get => _prayerCategory.IsFavorite;
 
             set {
-                if (_prayerCategory.SortOrder != value)
+                if (_prayerCategory.IsFavorite != value)
                 {
-                    _prayerCategory.SortOrder = value;
+                    _prayerCategory.IsFavorite = value;
                     OnPropertyChanged();
                 }
             }
@@ -67,6 +68,11 @@ namespace PrayerApp.ViewModels
             _prayerCategory = new PrayerCategory();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
+            FavoriteCommand = new AsyncRelayCommand(async () =>
+            {
+                IsFavorite = !IsFavorite;
+                await SaveAsync();
+            });
         }
 
         public PrayerCategoryViewModel(PrayerCategory _pc)
@@ -74,6 +80,11 @@ namespace PrayerApp.ViewModels
             _prayerCategory = _pc;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
+            FavoriteCommand = new AsyncRelayCommand(async () =>
+            {
+                IsFavorite = !IsFavorite;
+                await SaveAsync();
+            });
         }
 
         #endregion
@@ -141,7 +152,7 @@ namespace PrayerApp.ViewModels
         private void RefreshProperties()
         {
             OnPropertyChanged(nameof(Name));
-            OnPropertyChanged(nameof(SortOrder));
+            OnPropertyChanged(nameof(IsFavorite));
         }
 
         #endregion

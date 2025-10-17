@@ -18,21 +18,52 @@
             Padding="20">
             <VerticalStackLayout Spacing="10" Margin="5">
 
-                <Entry
-                    x:Name="IdEntry"
-                    Text="{Binding Id}"
-                    IsVisible="False" />
-                <Entry 
-                    x:Name="NameEntry"
-                    Text="{Binding Name}"
-                    Placeholder="Category Name" />
-
-                <Entry
-                    x:Name="SortOrderEntry"
-                    IsVisible="False"
-                    Text="{Binding SortOrder}" />
-
-                <!-- TODO: add sort order field to avoid save borking -->
+                <HorizontalStackLayout
+                    Spacing="10">
+                    <Label
+                        VerticalOptions="Center"
+                        WidthRequest="100"
+                        Text="Name" />
+                    <Entry 
+                        x:Name="NameEntry"
+                        Text="{Binding Name}"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Start"
+                        WidthRequest="300"
+                        Placeholder="Category Name" />
+                </HorizontalStackLayout>
+                
+                <HorizontalStackLayout
+                    Spacing="10">
+                    <Label
+                        Text="Favorite?"
+                        WidthRequest="100"
+                        VerticalOptions="Center" />
+                    <Switch
+                        x:Name="chkIsFavorite"
+                        OnColor="{StaticResource Secondary}"
+                        IsToggled="{Binding IsFavorite}"
+                        VerticalOptions="Center">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroupList>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="On">
+                                        <VisualState.Setters>
+                                            <Setter Property="ThumbColor"
+                                                Value="{StaticResource Primary}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Off">
+                                        <VisualState.Setters>
+                                            <Setter Property="ThumbColor"
+                                                Value="{StaticResource Gray600}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateGroupList>
+                        </VisualStateManager.VisualStateGroups>
+                    </Switch>
+                </HorizontalStackLayout>
 
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
                     <Button 

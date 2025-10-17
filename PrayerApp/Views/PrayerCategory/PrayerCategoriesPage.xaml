@@ -21,12 +21,12 @@
             
             <!-- TODO: add collectionview for categories here -->
             <CollectionView 
-                    x:Name="categoryCollection"
-                    ItemsSource="{Binding AllPrayerCategories}"
-                    Margin="20"
-                    SelectionMode="Single"
-                    SelectionChangedCommand="{Binding SelectCategoryCommand}"
-                    SelectionChangedCommandParameter="{Binding x:DataType='CollectionView', Source={RelativeSource Self}, Path=SelectedItem}">
+                x:Name="categoryCollection"
+                ItemsSource="{Binding AllPrayerCategories}"
+                Margin="10"
+                SelectionMode="Single"
+                SelectionChangedCommand="{Binding SelectCategoryCommand}"
+                SelectionChangedCommandParameter="{Binding x:DataType='CollectionView', Source={RelativeSource Self}, Path=SelectedItem}">
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
                 </CollectionView.ItemsLayout>
@@ -34,10 +34,24 @@
                 <!-- Define the appearance of each item in the list -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="viewModels:PrayerCategoryViewModel">
-                        <StackLayout>
-                            <Label Text="{Binding Id}" FontSize="14" TextColor="Silver"/>
+                        <SwipeView>
+                            <SwipeView.LeftItems>
+                                <SwipeItem
+                                    IconImageSource="star_solid_full.png"
+                                    BackgroundColor="LightGoldenrodYellow"
+                                    Command="{Binding FavoriteCommand}"
+                                    Text="Favorite" />
+                            </SwipeView.LeftItems>
+                            <SwipeView.RightItems>
+                                <SwipeItem
+                                    IconImageSource="trash_can_solid_full.png"
+                                    BackgroundColor="PaleVioletRed"
+                                    Command="{Binding DeleteCommand}"
+                                    Text="Delete" />
+                            </SwipeView.RightItems>
+                            
                             <Label Text="{Binding Name}" FontSize="22"/>
-                        </StackLayout>
+                        </SwipeView>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

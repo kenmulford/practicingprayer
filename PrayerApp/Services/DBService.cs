@@ -64,13 +64,21 @@ namespace PrayerApp.Services
 
             if (Settings.FirstRun)
             {
-                // Seed initial data
-                await InsertAsync(new PrayerCategory { Name = "General", SortOrder = 0 });
-                await InsertAsync(new PrayerCategory { Name = "Where I Live", SortOrder = 1 });
-                await InsertAsync(new PrayerCategory { Name = "Where I Work", SortOrder = 2 });
-                await InsertAsync(new PrayerCategory { Name = "Where I Play", SortOrder = 3 });
-            }
+                
+                await DropSyncDataAsync();
 
+                // Seed initial data
+                await InsertAsync(new PrayerCategory { Name = "General", IsFavorite = false });
+                await InsertAsync(new PrayerCategory { Name = "Where I Live", IsFavorite = true });
+                await InsertAsync(new PrayerCategory { Name = "Where I Work", IsFavorite = false });
+                await InsertAsync(new PrayerCategory { Name = "Where I Play", IsFavorite = false });
+            }
+        }
+
+        private async Task DropSyncDataAsync()
+        {
+            await DropTableAsync<PrayerCategory>();
+            await _db.CreateTableAsync<PrayerCategory>();
         }
     }
 }
