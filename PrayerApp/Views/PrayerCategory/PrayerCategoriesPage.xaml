@@ -38,14 +38,14 @@
                             <SwipeView.LeftItems>
                                 <SwipeItem
                                     IconImageSource="star_solid_full.png"
-                                    BackgroundColor="LightGoldenrodYellow"
+                                    BackgroundColor="Yellow"
                                     Command="{Binding FavoriteCommand}"
                                     Text="Favorite" />
                             </SwipeView.LeftItems>
                             <SwipeView.RightItems>
                                 <SwipeItem
                                     IconImageSource="trash_can_solid_full.png"
-                                    BackgroundColor="PaleVioletRed"
+                                    BackgroundColor="IndianRed"
                                     Command="{Binding DeleteCommand}"
                                     Text="Delete" />
                             </SwipeView.RightItems>
