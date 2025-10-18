@@ -11,7 +11,6 @@ namespace PrayerApp.Models
     public class PrayerCategory()
     {
         private static IDBService? _dbService;
-        private int _sortOrder;
         private string _name;
 
         [PrimaryKey, AutoIncrement]
