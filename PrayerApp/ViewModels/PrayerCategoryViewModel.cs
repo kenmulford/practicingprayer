@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows.Input;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using System;
+using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
@@ -28,10 +28,8 @@ namespace PrayerApp.ViewModels
                 {
                     _prayerCategory.Id = value;
                     OnPropertyChanged();
-                }
-                   
+                } 
             }
-
         }
 
         public string Name

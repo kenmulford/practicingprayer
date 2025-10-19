@@ -1,12 +1,12 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Models;
+using PrayerApp.Views.PrayerCategory;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using PrayerApp.Models;
-using PrayerApp.Views.PrayerCategory;
 
 namespace PrayerApp.ViewModels
 {
@@ -14,6 +14,8 @@ namespace PrayerApp.ViewModels
     {
         private List<PrayerCategory> _prayerCategories;
         public ObservableCollection<PrayerCategoryViewModel> AllPrayerCategories { get; }
+
+
 
         public ICommand NewCommand { get; }
         public ICommand SelectCategoryCommand { get; }
@@ -27,6 +29,16 @@ namespace PrayerApp.ViewModels
             AllPrayerCategories = new ObservableCollection<PrayerCategoryViewModel>(
                 _prayerCategories.Select(pc => new PrayerCategoryViewModel(pc))
             );
+            // Subscribe to collection changes to re-sort when items are added/removed
+            AllPrayerCategories.CollectionChanged += (s, e) => ApplySorting();
+
+            // Subscribe to property changes on each existing category
+            foreach (var category in AllPrayerCategories) {
+                SubscribeToPropertyChanges(category);
+            }
+            
+            ApplySorting();
+
             NewCommand = new AsyncRelayCommand(NewPrayerCategoryAsync);
             SelectCategoryCommand = new AsyncRelayCommand<PrayerCategoryViewModel>(SelectPrayerCategoryAsync);
         }
@@ -76,9 +88,10 @@ namespace PrayerApp.ViewModels
                 else
                 {
                     var cat = PrayerCategory.LoadAsync(int.Parse(PrayerCategoryString ?? "0")).Result;
-                    AllPrayerCategories.Add(new PrayerCategoryViewModel(cat));
+                    var newCategory = new PrayerCategoryViewModel(cat);
+                    SubscribeToPropertyChanges(newCategory);
+                    AllPrayerCategories.Add(newCategory);
                 }
-                    
             }
         }
 
@@ -100,6 +113,45 @@ namespace PrayerApp.ViewModels
             {
                 
             }
+        }
+
+        private void ApplySorting()
+        {
+            var sorted = AllPrayerCategories
+                .OrderByDescending(pc => pc.IsFavorite)
+                .ThenBy(pc => pc.Name)
+                .ToList();
+
+            // Only update if order changed (minimize UI updates)
+            bool needsUpdate = false;
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                if (i >= AllPrayerCategories.Count || AllPrayerCategories[i] != sorted[i])
+                {
+                    needsUpdate = true;
+                    break;
+                }
+            }
+
+            if (needsUpdate)
+            {
+                AllPrayerCategories.Clear();
+                foreach (var category in sorted)
+                {
+                    AllPrayerCategories.Add(category);
+                }
+            }
+        }
+
+        private void SubscribeToPropertyChanges(PrayerCategoryViewModel category)
+        {
+            category.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(PrayerCategoryViewModel.IsFavorite))
+                {
+                    ApplySorting();
+                }
+            };
         }
 
 
