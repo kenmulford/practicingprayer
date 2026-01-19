@@ -21,6 +21,9 @@ namespace PrayerApp.ViewModels
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectPrayerCommand { get; private set; }
 
+        // expose available frequency options for binding to pickers
+        public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; } = Enum.GetValues<PrayerFrequency>();
+
         #region Properties
         public string Identifier => _prayer.Id.ToString();
 
@@ -103,7 +106,8 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public string PrayerFrequency
+        // Enum-backed frequency property for binding
+        public PrayerFrequency PrayerFrequency
         {
             get => _prayer.PrayerFrequency;
             set
@@ -111,10 +115,13 @@ namespace PrayerApp.ViewModels
                 if (_prayer.PrayerFrequency != value)
                 {
                     _prayer.PrayerFrequency = value;
-                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(PrayerFrequencyDisplay));
                 }
             }
         }
+
+        // human-friendly display string
+        public string PrayerFrequencyDisplay => PrayerFrequency.ToString();
 
         public bool IsAnswered
         {
@@ -136,7 +143,7 @@ namespace PrayerApp.ViewModels
         #region Constructors
         public PrayerDetailViewModel(Prayer prayer)
         {
-            _prayer = prayer;
+            _prayer = prayer ?? throw new ArgumentNullException(nameof(prayer));
 
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
@@ -198,6 +205,7 @@ namespace PrayerApp.ViewModels
             finally
             {
                 RefreshProperties();
+                _ = LoadCategoryNameAsync();
             }
         }
 
@@ -220,7 +228,6 @@ namespace PrayerApp.ViewModels
                 CategoryName = "Uncategorized";
             }
         }
-    }
 
         public void Reload()
         {
@@ -235,12 +242,13 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Details));
             OnPropertyChanged(nameof(PrayerCategoryId));
             OnPropertyChanged(nameof(CanNotify));
-            OnPropertyChanged(nameof(PrayerFrequency));
+
             OnPropertyChanged(nameof(IsAnswered));
             OnPropertyChanged(nameof(CreatedAt));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
             OnPropertyChanged(nameof(CategoryName));
+            OnPropertyChanged(nameof(PrayerFrequencyDisplay));
         }
     }
 }

@@ -33,14 +33,21 @@
                     <DataTemplate x:DataType="viewModels:PrayerDetailViewModel">
                         <Grid
                             BackgroundColor="Transparent"
-                            Padding="10"
+                            Padding="5"
+                            RowDefinitions="*,*"
+                            ColumnDefinitions="*"
                             HorizontalOptions="Fill"
                             VerticalOptions="Fill">
                             <Grid.GestureRecognizers>
                                 <TapGestureRecognizer
                                     Command="{Binding SelectPrayerCommand}" />
                             </Grid.GestureRecognizers>
-                            <Label Text="{Binding Title}" FontSize="22" BackgroundColor="Blue" TextColor="White" />
+                            <Label
+                                FontSize="22"
+                                Grid.Row="0"
+                                Text="{Binding Title}" />
+                            
+                            
                         </Grid>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
