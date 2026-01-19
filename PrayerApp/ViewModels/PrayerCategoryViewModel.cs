@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using PrayerApp.Views.PrayerCategory;
 using System;
 using System.Collections.Generic;
 using System.Windows.Input;
@@ -14,6 +15,7 @@ namespace PrayerApp.ViewModels
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand FavoriteCommand { get; private set; }
+        public ICommand SelectCategoryCommand { get; }
 
         #region Properties
 
@@ -71,6 +73,7 @@ namespace PrayerApp.ViewModels
                 IsFavorite = !IsFavorite;
                 await SaveAsync();
             });
+            SelectCategoryCommand = new AsyncRelayCommand(SelectPrayerCategoryAsync);
         }
 
         public PrayerCategoryViewModel(PrayerCategory _pc)
@@ -83,6 +86,7 @@ namespace PrayerApp.ViewModels
                 IsFavorite = !IsFavorite;
                 await SaveAsync();
             });
+            SelectCategoryCommand = new AsyncRelayCommand(SelectPrayerCategoryAsync);
         }
 
         #endregion
@@ -100,6 +104,10 @@ namespace PrayerApp.ViewModels
         {
             await _prayerCategory.DeleteAsync();
             await Shell.Current.GoToAsync($"..?deleted={Identifier}");
+        }
+        private async Task SelectPrayerCategoryAsync()
+        {
+            await Shell.Current.GoToAsync($"{nameof(PrayerCategoryPage)}?load={Identifier}");
         }
 
         #endregion
@@ -149,6 +157,7 @@ namespace PrayerApp.ViewModels
 
         private void RefreshProperties()
         {
+            OnPropertyChanged(nameof(Id));
             OnPropertyChanged(nameof(Name));
             OnPropertyChanged(nameof(IsFavorite));
         }

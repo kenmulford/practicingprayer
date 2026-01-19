@@ -20,14 +20,11 @@
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
             
-            <!-- TODO: add collectionview for categories here -->
             <CollectionView 
                 x:Name="categoryCollection"
                 ItemsSource="{Binding AllPrayerCategories}"
                 Margin="10"
-                SelectionMode="Single"
-                SelectionChangedCommand="{Binding SelectCategoryCommand}"
-                SelectionChangedCommandParameter="{Binding x:DataType='CollectionView', Source={RelativeSource Self}, Path=SelectedItem}">
+                SelectionMode="None">
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
                 </CollectionView.ItemsLayout>
@@ -35,10 +32,10 @@
                 <!-- Define the appearance of each item in the list -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="viewModels:PrayerCategoryViewModel">
-                        <SwipeView>
+                        <SwipeView Threshold="100">
                             <SwipeView.LeftItems>
                                 <SwipeItems
-                                    Mode="Execute">
+                                    Mode="Reveal">
                                     <SwipeItem
                                         IconImageSource="star_solid_full.png"
                                         BackgroundColor="Yellow"
@@ -48,14 +45,26 @@
                                 
                             </SwipeView.LeftItems>
                             <SwipeView.RightItems>
-                                <SwipeItem
-                                    IconImageSource="trash_can_solid_full.png"
-                                    BackgroundColor="IndianRed"
-                                    Command="{Binding DeleteCommand}"
-                                    Text="Delete" />
+                                <SwipeItems
+                                    Mode="Reveal">
+                                    <SwipeItem
+                                        IconImageSource="trash_can_solid_full.png"
+                                        BackgroundColor="IndianRed"
+                                        Command="{Binding DeleteCommand}"
+                                        Text="Delete" />
+                                </SwipeItems>
                             </SwipeView.RightItems>
-                            
-                            <Label Text="{Binding Name}" FontSize="22"/>
+                            <Grid
+                                BackgroundColor="Transparent"
+                                Padding="10"
+                                HorizontalOptions="Fill"
+                                VerticalOptions="Fill">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding SelectCategoryCommand}" />
+                                </Grid.GestureRecognizers>
+                                <Label Text="{Binding Name}" FontSize="22"/>
+                            </Grid>
                         </SwipeView>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

@@ -18,17 +18,19 @@ namespace PrayerApp.ViewModels
 
 
         public ICommand NewCommand { get; }
-        public ICommand SelectCategoryCommand { get; }
 
         #region Constructors
 
         public PrayerCategoriesViewModel()
         {
+            // GET all categories
             _prayerCategories = Task.Run(async () => await PrayerCategory.LoadAllAsync()).Result;
+            
             // Convert PrayerCategory to PrayerCategoryViewModel
             AllPrayerCategories = new ObservableCollection<PrayerCategoryViewModel>(
                 _prayerCategories.Select(pc => new PrayerCategoryViewModel(pc))
             );
+
             // Subscribe to collection changes to re-sort when items are added/removed
             AllPrayerCategories.CollectionChanged += (s, e) => ApplySorting();
 
@@ -37,10 +39,11 @@ namespace PrayerApp.ViewModels
                 SubscribeToPropertyChanges(category);
             }
             
+            // sort the category list
             ApplySorting();
 
+            // register commands
             NewCommand = new AsyncRelayCommand(NewPrayerCategoryAsync);
-            SelectCategoryCommand = new AsyncRelayCommand<PrayerCategoryViewModel>(SelectPrayerCategoryAsync);
         }
 
         #endregion
@@ -50,12 +53,6 @@ namespace PrayerApp.ViewModels
         private async Task NewPrayerCategoryAsync()
         {
             await Shell.Current.GoToAsync(nameof(Views.PrayerCategory.PrayerCategoryPage));
-        }
-
-        private async Task SelectPrayerCategoryAsync(ViewModels.PrayerCategoryViewModel prayerCategory)
-        {
-            if (prayerCategory != null)
-                await Shell.Current.GoToAsync($"{nameof(PrayerCategoryPage)}?load={prayerCategory.Identifier}");
         }
 
         #endregion
