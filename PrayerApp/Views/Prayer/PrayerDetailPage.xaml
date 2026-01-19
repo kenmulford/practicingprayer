@@ -3,17 +3,111 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Prayer.PrayerDetailPage"
-             x:DataType="viewModels:PrayerListViewModel"
-             Title="Prayers">
+             x:DataType="viewModels:PrayerDetailViewModel"
+             Title="Prayer Details">
+    <ContentPage.BindingContext>
+        <viewModels:PrayerDetailViewModel />
+    </ContentPage.BindingContext>
     <ScrollView>
         <VerticalStackLayout
-        Padding="30,0"
-        Spacing="25">
-            <Label
+        Padding="20,0"
+        Spacing="10">
+            <!--<Label
             Text="Prayer Detail"
             Style="{StaticResource Headline}"
-            SemanticProperties.HeadingLevel="Level1" />
-            
+            SemanticProperties.HeadingLevel="Level1" />-->
+            <Border
+                Padding="10">
+                <VerticalStackLayout 
+                    Spacing="10" 
+                    Margin="5">
+                    <!-- Prayer Title -->
+                    <HorizontalStackLayout
+                        Spacing="10">
+                        <Label
+                            VerticalOptions="Start"
+                            WidthRequest="100"
+                            Text="Title" />
+                        <Entry 
+                            x:Name="TitleEntry"
+                            Text="{Binding Title}"
+                            VerticalOptions="Center"
+                            HorizontalOptions="Start"
+                            WidthRequest="300"
+                            Placeholder="Title" />
+                    </HorizontalStackLayout>
+                    <!-- Details -->
+                    <VerticalStackLayout
+                        Spacing="10"
+                        Margin="5">
+                        <Label
+                            VerticalOptions="Start"
+                            WidthRequest="300"
+                            VerticalOptions="Fill"
+                            Text="Details" />
+                        <Editor
+                            Text="{Binding Details}"
+                            VerticalOptions="Fill"
+                            HorizontalOptions="FillAndExpand"
+                        />
+
+                    </VerticalStackLayout>
+
+                    <!-- Category -->
+
+<!-- Allow Notifications (CanNotify) -->
+
+<!-- Frequency -->
+
+                    <!-- Is Answered -->
+                    <HorizontalStackLayout Spacing="10">
+
+                        <Label
+                            Text="Favorite?"
+                            WidthRequest="100"
+                            VerticalOptions="Center" />
+                        <Switch
+                            x:Name="chkIsAnswered"
+                            OnColor="{StaticResource Secondary}"
+                            IsToggled="{Binding IsAnswered}"
+                            VerticalOptions="Center">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroupList>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="On">
+                                            <VisualState.Setters>
+                                                <Setter Property="ThumbColor"
+                                        Value="{StaticResource Primary}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Off">
+                                            <VisualState.Setters>
+                                                <Setter Property="ThumbColor"
+                                        Value="{StaticResource Gray600}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateGroupList>
+                            </VisualStateManager.VisualStateGroups>
+                        </Switch>
+                    </HorizontalStackLayout>
+
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
+                        <Button 
+                            StyleClass=""
+                            HorizontalOptions="Start"
+                            Command="{Binding DeleteCommand}"
+                            Text="Delete" />
+                        <Button 
+                            StyleClass=""
+                            Grid.Column="1"
+                            HorizontalOptions="End"
+                            Command="{Binding SaveCommand}"
+                            Text="Save" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

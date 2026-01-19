@@ -141,6 +141,14 @@ namespace PrayerApp.ViewModels
         #endregion
 
         #region Constructors
+        public PrayerDetailViewModel()
+        {
+            _prayer = new Prayer();
+
+            SaveCommand = new AsyncRelayCommand(SaveAsync);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
+            SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
+        }
         public PrayerDetailViewModel(Prayer prayer)
         {
             _prayer = prayer ?? throw new ArgumentNullException(nameof(prayer));
