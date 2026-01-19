@@ -33,6 +33,7 @@ namespace PrayerApp.Models
         [Column("CanNotify")]
         public bool CanNotify { get; set; } = false;
 
+        // TODO: Convert to enum
         [Column("PrayerFrequency"), MaxLength(50)]
         public string PrayerFrequency { get; set; } = "Weekly";
 

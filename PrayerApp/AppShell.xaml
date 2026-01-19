@@ -18,7 +18,7 @@
         <ShellContent
             Title="Prayers"
             Icon="hands_praying_solid_full.png"
-            ContentTemplate="{DataTemplate views:Prayer.PrayersPage}"
+            ContentTemplate="{DataTemplate views:Prayer.PrayerListPage}"
             Route="PrayersPage" />
 
         <ShellContent

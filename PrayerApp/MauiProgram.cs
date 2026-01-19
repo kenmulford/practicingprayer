@@ -43,8 +43,9 @@ namespace PrayerApp
 
             // set DB service for the necessary models
             PrayerCategory.SetDBService(myDBService);
+            Prayer.SetDBService(myDBService);
 
-            //PrayerApp.Services.Settings.ClearSettings();
+            PrayerApp.Services.Settings.ClearSettings();
 
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();

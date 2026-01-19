@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="PrayerApp.Views.Prayer.PrayersPage"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.Prayer.PrayerDetailPage"
+             x:DataType="viewModels:PrayerListViewModel"
              Title="Prayers">
     <ScrollView>
         <VerticalStackLayout
         Padding="30,0"
         Spacing="25">
             <Label
-            Text="Manage Prayers"
+            Text="Prayer Detail"
             Style="{StaticResource Headline}"
             SemanticProperties.HeadingLevel="Level1" />
-
+            
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

@@ -72,6 +72,44 @@ namespace PrayerApp.Services
                 await InsertAsync(new PrayerCategory { Name = "Where I Live", IsFavorite = true });
                 await InsertAsync(new PrayerCategory { Name = "Where I Work", IsFavorite = false });
                 await InsertAsync(new PrayerCategory { Name = "Where I Play", IsFavorite = false });
+
+                await InsertAsync(new Prayer {
+                    PrayerCategoryId = 1, 
+                    Title = "Sample Prayer Entry 1",
+                    Details = "Sample details.", 
+                    CreatedAt = DateTime.UtcNow, 
+                    UpdatedAt = DateTime.UtcNow } 
+                );
+
+                await InsertAsync(new Prayer
+                {
+                    PrayerCategoryId = 2,
+                    Title = "Sample Prayer Entry 2",
+                    Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. ",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+                );
+
+                await InsertAsync(new Prayer
+                {
+                    PrayerCategoryId = 3,
+                    Title = "Sample Prayer Entry 3",
+                    Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+                );
+
+                await InsertAsync(new Prayer
+                {
+                    PrayerCategoryId = 4,
+                    Title = "Sample Prayer Entry 4",
+                    Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus. Phasellus aliquam fringilla libero et feugiat. Nam eget varius mi. Curabitur sit amet rutrum sem. Morbi ut ipsum ex. Nulla est ante, hendrerit vitae mollis quis, fringilla id ligula. Vestibulum id nisi sed nunc finibus egestas. Phasellus eleifend ante at enim ornare auctor a ac dolor. Nullam nec nisi vulputate, ultrices nisi quis, bibendum ligula. Proin fermentum mauris nec ipsum ultrices gravida. Sed faucibus scelerisque massa at porttitor.",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+                );
             }
         }
 
@@ -79,6 +117,9 @@ namespace PrayerApp.Services
         {
             await DropTableAsync<PrayerCategory>();
             await _db.CreateTableAsync<PrayerCategory>();
+
+            await DropTableAsync<Prayer>();
+            await _db.CreateTableAsync<Prayer>();
         }
     }
 }
