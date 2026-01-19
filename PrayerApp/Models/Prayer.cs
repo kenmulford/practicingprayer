@@ -12,7 +12,7 @@ namespace PrayerApp.Models
     public class Prayer
     {
         private static IDBService? _dbService;
-        private string _title;
+        private string _title = "Prayer Request";
 
         [PrimaryKey, AutoIncrement]
         [Column("Id")]

@@ -16,13 +16,14 @@ namespace PrayerApp.ViewModels
     internal class PrayerDetailViewModel : ObservableObject, IQueryAttributable
     {
         private Prayer _prayer;
+        private string? _categoryName;
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
-        public ICommand FavoriteCommand { get; private set; }
         public ICommand SelectPrayerCommand { get; private set; }
 
         #region Properties
         public string Identifier => _prayer.Id.ToString();
+
         public int Id
         {
             get => _prayer.Id;
@@ -35,6 +36,7 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
+
         public string Title
         {
             get => _prayer.Title;
@@ -47,6 +49,7 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
+
         public string? Details
         {
             get => _prayer.Details;
@@ -59,7 +62,77 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
+        public int PrayerCategoryId
+        {
+            get => _prayer.PrayerCategoryId;
+            set
+            {
+                if (_prayer.PrayerCategoryId != value)
+                {
+                    _prayer.PrayerCategoryId = value;
+                    OnPropertyChanged();
+                    _ = LoadCategoryNameAsync(); // refresh category name when id changes
+                }
+            }
+        }
+
+        // Expose category name for bindings
+        public string CategoryName
+        {
+            get => _categoryName ?? "Uncategorized";
+            private set
+            {
+                if (_categoryName != value)
+                {
+                    _categoryName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool CanNotify
+        {
+            get => _prayer.CanNotify;
+            set
+            {
+                if (_prayer.CanNotify != value)
+                {
+                    _prayer.CanNotify = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string PrayerFrequency
+        {
+            get => _prayer.PrayerFrequency;
+            set
+            {
+                if (_prayer.PrayerFrequency != value)
+                {
+                    _prayer.PrayerFrequency = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool IsAnswered
+        {
+            get => _prayer.IsAnswered;
+            set
+            {
+                if (_prayer.IsAnswered != value)
+                {
+                    _prayer.IsAnswered = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public DateTime CreatedAt => _prayer.CreatedAt;
+        public DateTime UpdatedAt => _prayer.UpdatedAt;
         #endregion
+
         #region Constructors
         public PrayerDetailViewModel(Prayer prayer)
         {
@@ -68,6 +141,9 @@ namespace PrayerApp.ViewModels
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
+
+            // start loading dependent data (category name)
+            _ = LoadCategoryNameAsync();
         }
         #endregion
 
@@ -125,6 +201,27 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private async Task LoadCategoryNameAsync()
+        {
+            try
+            {
+                if (PrayerCategoryId <= 0)
+                {
+                    CategoryName = "Uncategorized";
+                    return;
+                }
+
+                var category = await PrayerCategory.LoadAsync(PrayerCategoryId);
+                CategoryName = category?.Name ?? "Uncategorized";
+            }
+            catch
+            {
+                // If DB service hasn't been registered yet or load failed
+                CategoryName = "Uncategorized";
+            }
+        }
+    }
+
         public void Reload()
         {
             _ = LoadPrayerAsync(_prayer.Id);
@@ -136,6 +233,14 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Id));
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(Details));
+            OnPropertyChanged(nameof(PrayerCategoryId));
+            OnPropertyChanged(nameof(CanNotify));
+            OnPropertyChanged(nameof(PrayerFrequency));
+            OnPropertyChanged(nameof(IsAnswered));
+            OnPropertyChanged(nameof(CreatedAt));
+            OnPropertyChanged(nameof(UpdatedAt));
+            OnPropertyChanged(nameof(Identifier));
+            OnPropertyChanged(nameof(CategoryName));
         }
     }
 }
