@@ -30,11 +30,11 @@
                             Text="Title" />
                         <Entry 
                             x:Name="TitleEntry"
-                            Text="{Binding Title}"
                             VerticalOptions="Center"
                             HorizontalOptions="Start"
                             WidthRequest="300"
-                            Placeholder="Title" />
+                            Placeholder="Title"
+                            Text="{Binding Title}" />
                     </HorizontalStackLayout>
                     <!-- Details -->
                     <VerticalStackLayout
@@ -43,13 +43,13 @@
                         <Label
                             VerticalOptions="Start"
                             WidthRequest="300"
-                            VerticalOptions="Fill"
                             Text="Details" />
                         <Editor
-                            Text="{Binding Details}"
-                            VerticalOptions="Fill"
-                            HorizontalOptions="FillAndExpand"
-                        />
+                            x:Name="DetailsEditor"
+                            VerticalOptions="Center"
+                            HorizontalOptions="Start"
+                            Placeholder="Type your prayer details here.."
+                            Text="{Binding Details}" />
 
                     </VerticalStackLayout>
 
@@ -63,7 +63,7 @@
                     <HorizontalStackLayout Spacing="10">
 
                         <Label
-                            Text="Favorite?"
+                            Text="Answered?"
                             WidthRequest="100"
                             VerticalOptions="Center" />
                         <Switch
