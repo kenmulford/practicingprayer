@@ -1,11 +1,10 @@
 ﻿using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
-using PrayerApp;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using PrayerApp.ViewModels;
 using PrayerApp.Views;
-
 
 namespace PrayerApp
 {
@@ -34,6 +33,11 @@ namespace PrayerApp
 
             // Add DB to scope as singleton; only need one connection for the life of the app.
             builder.Services.AddSingleton<IDBService>(s => new DBService(dbPath));
+            // Register category service as singleton
+            builder.Services.AddSingleton<ICategoryService, CategoryService>();
+
+            // add transient viewmodel so each instance of PrayerDetail is new (avoid data bleed/leak)
+            builder.Services.AddTransient<PrayerDetailViewModel>();
 
             var app = builder.Build();
 

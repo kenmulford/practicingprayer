@@ -10,12 +10,8 @@
     </ContentPage.BindingContext>
     <ScrollView>
         <VerticalStackLayout
-        Padding="20,0"
+        Padding="10,0"
         Spacing="10">
-            <!--<Label
-            Text="Prayer Detail"
-            Style="{StaticResource Headline}"
-            SemanticProperties.HeadingLevel="Level1" />-->
             <Border
                 Padding="10">
                 <VerticalStackLayout 
@@ -24,10 +20,6 @@
                     <!-- Prayer Title -->
                     <HorizontalStackLayout
                         Spacing="10">
-                        <Label
-                            VerticalOptions="Start"
-                            WidthRequest="100"
-                            Text="Title" />
                         <Entry 
                             x:Name="TitleEntry"
                             VerticalOptions="Center"
@@ -40,10 +32,6 @@
                     <VerticalStackLayout
                         Spacing="10"
                         Margin="5">
-                        <Label
-                            VerticalOptions="Start"
-                            WidthRequest="300"
-                            Text="Details" />
                         <Editor
                             x:Name="DetailsEditor"
                             VerticalOptions="Center"
@@ -54,10 +42,21 @@
                     </VerticalStackLayout>
 
                     <!-- Category -->
+                    <VerticalStackLayout
+                        Spacing="10"
+                        Margin="5">
+                        <Picker
+                            x:Name="CategoryPicker"
+                            Title="Select Category"
+                            ItemsSource="{Binding Categories}"
+                            ItemDisplayBinding="{Binding Name}"
+                            SelectedItem="{Binding SelectedCategory}"
+                            HorizontalOptions="Start"
+                            WidthRequest="300" />
+                    </VerticalStackLayout>
+                    <!-- Allow Notifications (CanNotify) -->
 
-<!-- Allow Notifications (CanNotify) -->
-
-<!-- Frequency -->
+                    <!-- Frequency -->
 
                     <!-- Is Answered -->
                     <HorizontalStackLayout Spacing="10">

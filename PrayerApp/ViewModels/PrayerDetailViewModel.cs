@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
 using PrayerApp.Views.Prayer;
+using PrayerApp.Services;
 
 using System;
 using System.Collections.Generic;
@@ -10,19 +11,26 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Linq;
+using System.Collections.ObjectModel;
 
 namespace PrayerApp.ViewModels
 {
     internal class PrayerDetailViewModel : ObservableObject, IQueryAttributable
     {
+        private readonly ICategoryService _categoryService;
         private Prayer _prayer;
         private string? _categoryName;
+        private PrayerCategory? _category;
+
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectPrayerCommand { get; private set; }
 
         // expose available frequency options for binding to pickers
         public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; } = Enum.GetValues<PrayerFrequency>();
+
+        // categories for picker
+        public ObservableCollection<PrayerCategory> Categories { get; } = new();
 
         #region Properties
         public string Identifier => _prayer.Id.ToString();
@@ -74,7 +82,7 @@ namespace PrayerApp.ViewModels
                 {
                     _prayer.PrayerCategoryId = value;
                     OnPropertyChanged();
-                    _ = LoadCategoryNameAsync(); // refresh category name when id changes
+                    _ = LoadCategoryAsync(); // refresh category name when id changes
                 }
             }
         }
@@ -88,6 +96,29 @@ namespace PrayerApp.ViewModels
                 if (_categoryName != value)
                 {
                     _categoryName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        public PrayerCategory? SelectedCategory
+        {
+            get { return _category; }
+            set
+            {
+                if (_category != value)
+                {
+                    _category = value;
+                    // update the underlying id and name
+                    if (_category != null)
+                    {
+                        PrayerCategoryId = _category.Id;
+                        CategoryName = _category.Name ?? "Uncategorized";
+                    }
+                    else
+                    {
+                        PrayerCategoryId = 0;
+                        CategoryName = "Uncategorized";
+                    }
                     OnPropertyChanged();
                 }
             }
@@ -141,15 +172,27 @@ namespace PrayerApp.ViewModels
         #endregion
 
         #region Constructors
-        public PrayerDetailViewModel()
+        public PrayerDetailViewModel(ICategoryService categoryService)
         {
+            _categoryService = categoryService ?? throw new ArgumentNullException(nameof(categoryService));
+
             _prayer = new Prayer();
 
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
+
+            // start loading categories
+            _ = LoadCategoriesAsync();
         }
-        public PrayerDetailViewModel(Prayer prayer)
+
+        // kept for tests or other activations if needed
+        public PrayerDetailViewModel() : this(new CategoryService()) { }
+
+        // New overload to preserve existing call sites that pass a Prayer
+        public PrayerDetailViewModel(Prayer prayer) : this(prayer, new CategoryService()) { }
+
+        public PrayerDetailViewModel(Prayer prayer, ICategoryService categoryService) : this(categoryService)
         {
             _prayer = prayer ?? throw new ArgumentNullException(nameof(prayer));
 
@@ -158,7 +201,7 @@ namespace PrayerApp.ViewModels
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
 
             // start loading dependent data (category name)
-            _ = LoadCategoryNameAsync();
+            _ = LoadCategoryAsync();
         }
         #endregion
 
@@ -182,7 +225,6 @@ namespace PrayerApp.ViewModels
         }
 
         #endregion
-
 
         #region IQueryAttributable Implementation
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
@@ -213,11 +255,11 @@ namespace PrayerApp.ViewModels
             finally
             {
                 RefreshProperties();
-                _ = LoadCategoryNameAsync();
+                _ = LoadCategoryAsync();
             }
         }
 
-        private async Task LoadCategoryNameAsync()
+        private async Task LoadCategoryAsync()
         {
             try
             {
@@ -228,12 +270,47 @@ namespace PrayerApp.ViewModels
                 }
 
                 var category = await PrayerCategory.LoadAsync(PrayerCategoryId);
+                _category = category;
                 CategoryName = category?.Name ?? "Uncategorized";
+
+                // ensure SelectedCategory reflects the loaded category
+                if (category != null)
+                {
+                    // if Categories already loaded, set selected to matching instance
+                    var match = Categories.FirstOrDefault(c => c.Id == category.Id);
+                    if (match != null)
+                        _category = match;
+                }
             }
             catch
             {
                 // If DB service hasn't been registered yet or load failed
                 CategoryName = "Uncategorized";
+            }
+        }
+
+        public async Task LoadCategoriesAsync()
+        {
+            try
+            {
+                var categories = await _categoryService.GetCategoriesAsync();
+
+                // Sort: favorites first, then by name
+                var sorted = categories.OrderByDescending(c => c.IsFavorite).ThenBy(c => c.Name).ToList();
+
+                Categories.Clear();
+                foreach (var c in sorted)
+                    Categories.Add(c);
+
+                // if we have a selected id, set SelectedCategory to matching item
+                if (PrayerCategoryId > 0)
+                {
+                    SelectedCategory = Categories.FirstOrDefault(c => c.Id == PrayerCategoryId);
+                }
+            }
+            catch
+            {
+                // ignore - UI will show uncategorized
             }
         }
 
