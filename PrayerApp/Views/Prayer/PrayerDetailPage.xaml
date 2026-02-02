@@ -54,9 +54,52 @@
                             HorizontalOptions="Start"
                             WidthRequest="300" />
                     </VerticalStackLayout>
-                    <!-- Allow Notifications (CanNotify) -->
 
                     <!-- Frequency -->
+                    <VerticalStackLayout
+                        Spacing="10"
+                        Margin="5">
+                        <Picker
+                            x:Name="FrequencyPicker"
+                            Title="Select Frequency"
+                            ItemsSource="{Binding FrequencyOptions}"
+                            ItemDisplayBinding="{Binding .}"
+                            SelectedItem="{Binding PrayerFrequency}"
+                            HorizontalOptions="Start"
+                            WidthRequest="300" />
+                    </VerticalStackLayout>
+
+                    <!-- Allow Notifications (CanNotify) -->
+                    <HorizontalStackLayout Spacing="10">
+                        <Label
+                            Text="Allow Notifications?"
+                            WidthRequest="100"
+                            VerticalOptions="Center" />
+                        <Switch
+                            x:Name="chkCanNotify"
+                            OnColor="{StaticResource Secondary}"
+                            IsToggled="{Binding CanNotify}"
+                            VerticalOptions="Center">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroupList>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="On">
+                                            <VisualState.Setters>
+                                                <Setter Property="ThumbColor"
+                                    Value="{StaticResource Primary}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Off">
+                                            <VisualState.Setters>
+                                                <Setter Property="ThumbColor"
+                                    Value="{StaticResource Gray600}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateGroupList>
+                            </VisualStateManager.VisualStateGroups>
+                        </Switch>
+                    </HorizontalStackLayout>
 
                     <!-- Is Answered -->
                     <HorizontalStackLayout Spacing="10">

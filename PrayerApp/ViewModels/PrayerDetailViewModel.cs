@@ -27,7 +27,7 @@ namespace PrayerApp.ViewModels
         public ICommand SelectPrayerCommand { get; private set; }
 
         // expose available frequency options for binding to pickers
-        public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; } = Enum.GetValues<PrayerFrequency>();
+        public ObservableCollection<PrayerFrequency> FrequencyOptions { get; private set; } = new();
 
         // categories for picker
         public ObservableCollection<PrayerCategory> Categories { get; } = new();
@@ -175,15 +175,15 @@ namespace PrayerApp.ViewModels
         public PrayerDetailViewModel(ICategoryService categoryService)
         {
             _categoryService = categoryService ?? throw new ArgumentNullException(nameof(categoryService));
-
             _prayer = new Prayer();
 
-            SaveCommand = new AsyncRelayCommand(SaveAsync);
-            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
-            SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
+            LoadCommonConstructorObjects();
+        }
+        public PrayerDetailViewModel(Prayer prayer, ICategoryService categoryService) : this(categoryService)
+        {
+            _prayer = prayer ?? throw new ArgumentNullException(nameof(prayer));
 
-            // start loading categories
-            _ = LoadCategoriesAsync();
+            LoadCommonConstructorObjects();
         }
 
         // kept for tests or other activations if needed
@@ -191,17 +191,16 @@ namespace PrayerApp.ViewModels
 
         // New overload to preserve existing call sites that pass a Prayer
         public PrayerDetailViewModel(Prayer prayer) : this(prayer, new CategoryService()) { }
-
-        public PrayerDetailViewModel(Prayer prayer, ICategoryService categoryService) : this(categoryService)
+        
+        private void LoadCommonConstructorObjects()
         {
-            _prayer = prayer ?? throw new ArgumentNullException(nameof(prayer));
-
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
 
-            // start loading dependent data (category name)
-            _ = LoadCategoryAsync();
+            // start loading categories
+            _ = LoadCategoriesAsync();
+            _ = LoadPrayerFrequenciesList();
         }
         #endregion
 
@@ -242,6 +241,13 @@ namespace PrayerApp.ViewModels
         }
         #endregion
 
+        private async Task LoadPrayerFrequenciesList()
+        {
+            var FrequencyOptions = new ObservableCollection<PrayerFrequency>(
+                (PrayerFrequency[])Enum.GetValues<PrayerFrequency>()
+            );
+
+        }
         private async Task LoadPrayerAsync(int id)
         {
             try

@@ -129,6 +129,7 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        // Only name properties used for sorting/filtering; not all of them
         private void SubscribeToPropertyChanges(PrayerDetailViewModel prayer)
         {
             prayer.PropertyChanged += (s, e) =>
