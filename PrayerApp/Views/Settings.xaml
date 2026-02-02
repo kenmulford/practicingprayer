@@ -11,6 +11,10 @@
                 Text="Settings"
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
+            <Button
+                x:Name="btnClearSettings"
+                Clicked="btnClearSettings_Clicked"
+                Text="Clear Settings" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
