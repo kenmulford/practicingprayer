@@ -62,7 +62,7 @@ namespace PrayerApp.ViewModels
         {
             if (query.ContainsKey("deleted"))
             {
-                string? PrayerCardString = query["deleted"].ToString();
+                string PrayerCardString = query["deleted"].ToString();
                 PrayerCardViewModel matched = AllPrayerCards.FirstOrDefault(pc => pc.Identifier == PrayerCardString);
 
                 if (matched != null)

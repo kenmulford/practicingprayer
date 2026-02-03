@@ -28,7 +28,6 @@
                         x:Name="TitleEntry"
                         Text="{Binding Title}"
                         VerticalOptions="Center"
-                        HorizontalOptions="FillAndExpand"
                         Placeholder="Card Title" />
                 </HorizontalStackLayout>
 

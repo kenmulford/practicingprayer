@@ -16,16 +16,16 @@
             Route="MainPage" />
 
         <ShellContent
-            Title="Prayers"
-            Icon="hands_praying_solid_full.png"
-            ContentTemplate="{DataTemplate views:Prayer.PrayerListPage}"
-            Route="PrayersPage" />
-
-        <ShellContent
             Title="Cards"
             Icon="list_solid_full.png"
             ContentTemplate="{DataTemplate views:PrayerCard.PrayerCardsPage}"
             Route="CardsPage" />
+
+        <ShellContent
+            Title="Prayers"
+            Icon="hands_praying_solid_full.png"
+            ContentTemplate="{DataTemplate views:Prayer.PrayerListPage}"
+            Route="PrayersPage" />
 
         <ShellContent
             Title="Settings"

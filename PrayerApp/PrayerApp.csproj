@@ -156,11 +156,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Views\PrayerCategory\PrayerCategoriesPage.xaml.cs">
-	    <DependentUpon>PrayerCategoriesPage.xaml</DependentUpon>
-	  </Compile>
-	  <Compile Update="Views\PrayerCategory\PrayerCategoryPage.xaml.cs">
-	    <DependentUpon>PrayerCategoryPage.xaml</DependentUpon>
+	  <Compile Update="Views\PrayerCard\PrayerCardsPage.xaml.cs">
+	    <DependentUpon>PrayerCardsPage.xaml</DependentUpon>
 	  </Compile>
 	  <Compile Update="Views\Prayer\PrayerDetailPage.xaml.cs">
 	    <DependentUpon>PrayerDetailPage.xaml</DependentUpon>
@@ -175,12 +172,6 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\PrayerCard\PrayerCardsPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\PrayerCategory\PrayerCategoriesPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\PrayerCategory\PrayerCategoryPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\Prayer\PrayerDetailPage.xaml">
