@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PrayerApp.Views.PrayerCard.PrayerCardPage"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:DataType="viewModels:PrayerCardViewModel"
+             Title="Prayer Card">
+    <ContentPage.BindingContext>
+        <viewModels:PrayerCardViewModel />
+    </ContentPage.BindingContext>
+    <VerticalStackLayout>
+        <Label 
+            Text="Prayer Card"
+            VerticalOptions="Center" 
+            HorizontalOptions="Center"
+            FontSize="24"
+            FontAttributes="Bold" />
+
+        <Border Padding="20">
+            <VerticalStackLayout Spacing="15" Margin="5">
+
+                <HorizontalStackLayout Spacing="10">
+                    <Label
+                        VerticalOptions="Center"
+                        WidthRequest="100"
+                        Text="Title" />
+                    <Entry 
+                        x:Name="TitleEntry"
+                        Text="{Binding Title}"
+                        VerticalOptions="Center"
+                        HorizontalOptions="FillAndExpand"
+                        Placeholder="Card Title" />
+                </HorizontalStackLayout>
+
+                <Label
+                    Text="Details"
+                    VerticalOptions="Start"/>
+                <Editor
+                    x:Name="DetailsEditor"
+                    Text="{Binding Details}"
+                    HeightRequest="100"
+                    Placeholder="Add details..." />
+
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
+                    <Button 
+                        StyleClass=""
+                        HorizontalOptions="Start"
+                        Command="{Binding DeleteCommand}"
+                        Text="Delete" />
+                    <Button 
+                        StyleClass=""
+                        Grid.Column="1"
+                        HorizontalOptions="End"
+                        Command="{Binding SaveCommand}"
+                        Text="Save" />
+                </Grid>
+            </VerticalStackLayout>
+        </Border>
+    </VerticalStackLayout>
+</ContentPage>

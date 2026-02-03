@@ -1,5 +1,5 @@
 ﻿using PrayerApp.Views.Prayer;
-using PrayerApp.Views.PrayerCategory;
+using PrayerApp.Views.PrayerCard;
 
 namespace PrayerApp
 
@@ -11,7 +11,7 @@ namespace PrayerApp
             InitializeComponent();
 
             // register explicit routes for child pages
-            Routing.RegisterRoute(nameof(PrayerCategoryPage), typeof(PrayerCategoryPage));
+            Routing.RegisterRoute(nameof(PrayerCardPage), typeof(PrayerCardPage));
             Routing.RegisterRoute(nameof(PrayerDetailPage), typeof(PrayerDetailPage));
         }
     }

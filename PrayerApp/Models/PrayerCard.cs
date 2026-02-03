@@ -1,15 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SQLite;
+using System.Linq;
 using PrayerApp.Services;
 
 namespace PrayerApp.Models
 {
-    [Table("PrayerRequest")]
-    public class Prayer
+    [Table("PrayerCard")]
+    public class PrayerCard
     {
         private static IDBService? _dbService;
         private string _title = "Prayer Request";
@@ -18,17 +16,15 @@ namespace PrayerApp.Models
         [Column("Id")]
         public int Id { get; set; }
 
-        [Column("PrayerCardId"), Indexed]
-        public int PrayerCardId { get; set; }
-
         [Column("Title"), MaxLength(100)]
-        public string Title {
+        public string Title
+        {
             get => _title;
             set => _title = value ?? "Prayer Request";
         }
 
         [Column("Details"), MaxLength(1000)]
-        public string? Details { get; set;}
+        public string? Details { get; set; }
 
         [Column("CanNotify")]
         public bool CanNotify { get; set; } = false;
@@ -38,7 +34,7 @@ namespace PrayerApp.Models
 
         [Column("IsAnswered")]
         public bool IsAnswered { get; set; } = false;
-        
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
@@ -57,7 +53,7 @@ namespace PrayerApp.Models
         public async Task SaveAsync()
         {
             if (_dbService == null)
-                throw new InvalidOperationException("DBService not set. Call Prayer.SetDBService at app startup.");
+                throw new InvalidOperationException("DBService not set. Call PrayerCard.SetDBService at app startup.");
             if (Id == 0)
             {
                 await _dbService.InsertAsync(this);
@@ -72,25 +68,25 @@ namespace PrayerApp.Models
         public async Task DeleteAsync()
         {
             if (_dbService == null)
-                throw new InvalidOperationException("DBService not set. Call Prayer.SetDBService at app startup.");
+                throw new InvalidOperationException("DBService not set. Call PrayerCard.SetDBService at app startup.");
 
             await _dbService.DeleteAsync(this);
         }
 
-        public static async Task<Prayer> LoadAsync(int _id)
+        public static async Task<PrayerCard> LoadAsync(int _id)
         {
             if (_dbService == null)
-                throw new InvalidOperationException("DBService not set. Call Prayer.SetDBService at app startup.");
+                throw new InvalidOperationException("DBService not set. Call PrayerCard.SetDBService at app startup.");
 
-            return await _dbService.GetByIdAsync<Prayer>(_id);
+            return await _dbService.GetByIdAsync<PrayerCard>(_id);
         }
 
-        public static async Task<List<Prayer>> LoadAllAsync()
+        public static async Task<List<PrayerCard>> LoadAllAsync()
         {
             if (_dbService == null)
-                throw new InvalidOperationException("DBService not set. Call Prayer.SetDBService at app startup.");
+                throw new InvalidOperationException("DBService not set. Call PrayerCard.SetDBService at app startup.");
 
-            return await _dbService.GetAllAsync<Prayer>();
+            return await _dbService.GetAllAsync<PrayerCard>();
         }
 
         #endregion

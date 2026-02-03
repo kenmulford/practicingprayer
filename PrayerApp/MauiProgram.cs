@@ -10,6 +10,9 @@ namespace PrayerApp
 {
     public static class MauiProgram
     {
+        // Set to true to reset database and re-seed on next run (DEBUG ONLY)
+        private const bool FORCE_RESET_DATABASE = true;
+
         public static MauiApp CreateMauiApp()
         {
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");
@@ -33,11 +36,13 @@ namespace PrayerApp
 
             // Add DB to scope as singleton; only need one connection for the life of the app.
             builder.Services.AddSingleton<IDBService>(s => new DBService(dbPath));
-            // Register category service as singleton
-            builder.Services.AddSingleton<ICategoryService, CategoryService>();
+            // Register card service as singleton
+            builder.Services.AddSingleton<ICardService, CardService>();
+            // Register tag service as singleton
+            builder.Services.AddSingleton<ITagService, TagService>();
 
-            // add transient viewmodel so each instance of PrayerDetail is new (avoid data bleed/leak)
-            builder.Services.AddTransient<PrayerDetailViewModel>();
+            // add transient viewmodel so each instance of PrayerCardDetail is new (avoid data bleed/leak)
+            builder.Services.AddTransient<PrayerCardDetailViewModel>();
 
             var app = builder.Build();
 
@@ -46,10 +51,16 @@ namespace PrayerApp
             var myDBService = scope.ServiceProvider.GetRequiredService<IDBService>();
 
             // set DB service for the necessary models
-            PrayerCategory.SetDBService(myDBService);
+            PrayerCard.SetDBService(myDBService);
+            PrayerTag.SetDBService(myDBService);
+            PrayerRequestTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
 
-            //PrayerApp.Services.Settings.ClearSettings();
+            // DEBUG: Force reset database and re-seed
+            if (FORCE_RESET_DATABASE)
+            {
+                PrayerApp.Services.Settings.ClearSettings();
+            }
 
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();

@@ -6,4 +6,9 @@ public partial class PrayerListPage : ContentPage
 	{
 		InitializeComponent();
 	}
+
+	private void ContentPage_NavigatedTo(object sender, NavigatedToEventArgs e)
+	{
+		prayerCollection.SelectedItem = null;
+	}
 }

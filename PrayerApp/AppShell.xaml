@@ -22,10 +22,10 @@
             Route="PrayersPage" />
 
         <ShellContent
-            Title="Categories"
+            Title="Cards"
             Icon="list_solid_full.png"
-            ContentTemplate="{DataTemplate views:PrayerCategory.PrayerCategoriesPage}"
-            Route="CategoriesPage" />
+            ContentTemplate="{DataTemplate views:PrayerCard.PrayerCardsPage}"
+            Route="CardsPage" />
 
         <ShellContent
             Title="Settings"

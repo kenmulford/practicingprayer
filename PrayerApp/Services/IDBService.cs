@@ -16,6 +16,12 @@ namespace PrayerApp.Services
         Task<int> DeleteAsync<T>(T item);
         Task<int> DropTableAsync<T>() where T : new();
 
+        // PrayerRequestTag specific queries
+        Task<List<PrayerApp.Models.PrayerRequestTag>> GetByRequestIdAsync(int prayerRequestId);
+        Task<List<PrayerApp.Models.PrayerRequestTag>> GetByTagIdAsync(int prayerTagId);
+        Task<int> DeleteByRequestIdAsync(int prayerRequestId);
+        Task<int> DeleteByTagIdAsync(int prayerTagId);
+
         Task SeedDataAsync();
 
         Task UpdateSchema();

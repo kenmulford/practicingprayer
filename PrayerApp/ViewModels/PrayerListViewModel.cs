@@ -12,36 +12,35 @@ namespace PrayerApp.ViewModels
 {
     internal class PrayerListViewModel : IQueryAttributable
     {
-
         private List<Prayer> _prayerList;
-        public ObservableCollection<PrayerDetailViewModel> AllPrayers { get; }
+        public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; }
 
         public ICommand NewCommand { get; }
 
         public PrayerListViewModel()
         {
-            // GET all categories
+            // GET all prayer requests
             _prayerList = Task.Run(async () => await Prayer.LoadAllAsync()).Result;
 
-            // Convert PrayerCategory to PrayerCategoryViewModel
-            AllPrayers = new ObservableCollection<PrayerDetailViewModel>(
-                _prayerList.Select(p => new PrayerDetailViewModel(p))
+            // Convert Prayer to PrayerRequestDetailViewModel
+            AllPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(
+                _prayerList.Select(p => new PrayerRequestDetailViewModel(p))
             );
 
-            // Subscribe to collection changes to re-sort when items are added/removed
+            // subscribe to collection changes to re-sort when items are added/removed
             AllPrayers.CollectionChanged += (s, e) => ApplySorting();
 
-            // Subscribe to property changes on each existing category
-            foreach (var p in AllPrayers)
+            // subscribe to property changes on each existing prayer
+            foreach (var prayer in AllPrayers)
             {
-                SubscribeToPropertyChanges(p);
+                SubscribeToPropertyChanges(prayer);
             }
 
-            // sort the category list
+            // sort the prayer list
             ApplySorting();
 
             // register commands
-            NewCommand = new AsyncRelayCommand(NewPrayerDetailAsync);
+            NewCommand = new AsyncRelayCommand(NewPrayerAsync);
         }
 
         #region IQueryAttributable Implementation
@@ -50,7 +49,7 @@ namespace PrayerApp.ViewModels
             if (query.ContainsKey("deleted"))
             {
                 string? PrayerString = query["deleted"].ToString();
-                PrayerDetailViewModel matched = AllPrayers.FirstOrDefault(p => p.Identifier == PrayerString);
+                PrayerRequestDetailViewModel matched = AllPrayers.FirstOrDefault(p => p.Identifier == PrayerString);
 
                 if (matched != null)
                 {
@@ -60,18 +59,18 @@ namespace PrayerApp.ViewModels
             else if (query.ContainsKey("saved"))
             {
                 string? PrayerString = query["saved"].ToString();
-                PrayerDetailViewModel matched = AllPrayers.Where((p) => p.Identifier == PrayerString).FirstOrDefault();
+                PrayerRequestDetailViewModel matched = AllPrayers.Where((p) => p.Identifier == PrayerString).FirstOrDefault();
 
-                // If note is found, update it
+                // If prayer is found, update it
                 if (matched != null)
                 {
                     matched.Reload();
                 }
-                // If note isn't found, it's new; add it.
+                // If prayer isn't found, it's new; add it.
                 else
                 {
                     var p = Prayer.LoadAsync(int.Parse(PrayerString ?? "0")).Result;
-                    var newPrayer = new PrayerDetailViewModel(p);
+                    var newPrayer = new PrayerRequestDetailViewModel(p);
                     SubscribeToPropertyChanges(newPrayer);
                     AllPrayers.Add(newPrayer);
                 }
@@ -82,10 +81,11 @@ namespace PrayerApp.ViewModels
 
         #region private methods
 
-        private async Task NewPrayerDetailAsync()
+        private async Task NewPrayerAsync()
         {
             await Shell.Current.GoToAsync(nameof(Views.Prayer.PrayerDetailPage));
         }
+
         private async Task LoadPrayersAsync()
         {
             try
@@ -95,10 +95,6 @@ namespace PrayerApp.ViewModels
             catch (Exception e)
             {
                 await Shell.Current.DisplayAlert("Error", $"Failed to load prayer: {e.Message}", "OK");
-            }
-            finally
-            {
-
             }
         }
 
@@ -130,11 +126,11 @@ namespace PrayerApp.ViewModels
         }
 
         // Only name properties used for sorting/filtering; not all of them
-        private void SubscribeToPropertyChanges(PrayerDetailViewModel prayer)
+        private void SubscribeToPropertyChanges(PrayerRequestDetailViewModel prayer)
         {
             prayer.PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(PrayerDetailViewModel.Title))
+                if (e.PropertyName == nameof(PrayerRequestDetailViewModel.Title))
                 {
                     ApplySorting();
                 }
