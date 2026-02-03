@@ -140,7 +140,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to load category: {e.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load category: {e.Message}", "OK");
             }
             finally
             {

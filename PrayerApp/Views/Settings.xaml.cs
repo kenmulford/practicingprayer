@@ -10,6 +10,6 @@ public partial class Settings : ContentPage
     private void btnClearSettings_Clicked(object sender, EventArgs e)
     {
         PrayerApp.Services.Settings.ClearSettings();
-        DisplayAlert("Settings Cleared", "The next time the app runs all DB info will be reset.", "OK");
+        DisplayAlertAsync("Settings Cleared", "The next time the app runs all DB info will be reset.", "OK");
     }
 }

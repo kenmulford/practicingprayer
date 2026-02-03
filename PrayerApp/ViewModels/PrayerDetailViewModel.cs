@@ -204,7 +204,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to load prayer: {e.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayer: {e.Message}", "OK");
             }
             finally
             {

@@ -67,7 +67,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to load tags: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load tags: {ex.Message}", "OK");
             }
         }
 
@@ -88,7 +88,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to load request tags: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load request tags: {ex.Message}", "OK");
             }
         }
 
@@ -114,7 +114,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to update tag: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to update tag: {ex.Message}", "OK");
             }
         }
 
