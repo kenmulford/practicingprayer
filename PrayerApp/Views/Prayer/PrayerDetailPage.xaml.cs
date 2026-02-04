@@ -17,7 +17,5 @@ public partial class PrayerDetailPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        // Tag selection only applies to card editing, not request editing
-        // PrayerRequestDetailViewModel handles requests without tag selection UI
     }
 }

@@ -63,7 +63,7 @@ namespace PrayerApp.ViewModels
             if (query.ContainsKey("deleted"))
             {
                 string PrayerCardString = query["deleted"].ToString();
-                PrayerCardViewModel matched = AllPrayerCards.FirstOrDefault(pc => pc.Identifier == PrayerCardString);
+                PrayerCardViewModel matched = AllPrayerCards.FirstOrDefault<PrayerCardViewModel>(pc => pc.Identifier == PrayerCardString);
 
                 if (matched != null)
                 {
@@ -83,10 +83,7 @@ namespace PrayerApp.ViewModels
                 // If card isn't found, it's new; add it.
                 else
                 {
-                    var card = PrayerCard.LoadAsync(int.Parse(PrayerCardString ?? "0")).Result;
-                    var newCard = new PrayerCardViewModel(card);
-                    SubscribeToPropertyChanges(newCard);
-                    AllPrayerCards.Add(newCard);
+                    _ = AddNewCardAsync(PrayerCardString);
                 }
             }
         }
@@ -94,6 +91,21 @@ namespace PrayerApp.ViewModels
         #endregion
 
         #region Helper Methods
+
+        private async Task AddNewCardAsync(string? cardIdString)
+        {
+            try
+            {
+                var card = await PrayerCard.LoadAsync(int.Parse(cardIdString ?? "0"));
+                var newCard = new PrayerCardViewModel(card);
+                SubscribeToPropertyChanges(newCard);
+                AllPrayerCards.Add(newCard);
+            }
+            catch (Exception e)
+            {
+                await Shell.Current.DisplayAlert("Error", $"Failed to add new card: {e.Message}", "OK");
+            }
+        }
 
         private async Task LoadPrayerCardsAsync()
         {

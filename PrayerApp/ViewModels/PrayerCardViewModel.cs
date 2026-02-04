@@ -85,7 +85,6 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
-            _prayerCard.UpdatedAt = DateTime.Now;
             await _prayerCard.SaveAsync();
             await Shell.Current.GoToAsync($"..?saved={Identifier}");
         }

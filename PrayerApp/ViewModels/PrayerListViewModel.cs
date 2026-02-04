@@ -69,10 +69,7 @@ namespace PrayerApp.ViewModels
                 // If prayer isn't found, it's new; add it.
                 else
                 {
-                    var p = Prayer.LoadAsync(int.Parse(PrayerString ?? "0")).Result;
-                    var newPrayer = new PrayerRequestDetailViewModel(p);
-                    SubscribeToPropertyChanges(newPrayer);
-                    AllPrayers.Add(newPrayer);
+                    _ = AddNewPrayerAsync(PrayerString);
                 }
             }
         }
@@ -80,6 +77,21 @@ namespace PrayerApp.ViewModels
         #endregion
 
         #region private methods
+
+        private async Task AddNewPrayerAsync(string? prayerIdString)
+        {
+            try
+            {
+                var p = await Prayer.LoadAsync(int.Parse(prayerIdString ?? "0"));
+                var newPrayer = new PrayerRequestDetailViewModel(p);
+                SubscribeToPropertyChanges(newPrayer);
+                AllPrayers.Add(newPrayer);
+            }
+            catch (Exception e)
+            {
+                await Shell.Current.DisplayAlert("Error", $"Failed to add new prayer: {e.Message}", "OK");
+            }
+        }
 
         private async Task NewPrayerAsync()
         {
