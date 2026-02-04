@@ -16,7 +16,7 @@
             Route="MainPage" />
 
         <ShellContent
-            Title="Cards"
+            Title="Prayer Cards"
             Icon="list_solid_full.png"
             ContentTemplate="{DataTemplate views:PrayerCard.PrayerCardsPage}"
             Route="CardsPage" />

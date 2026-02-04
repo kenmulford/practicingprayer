@@ -15,11 +15,7 @@
         <VerticalStackLayout
             Padding="30,0"
             Spacing="25">
-            <Label
-                Text="Prayer Cards"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
-            
+
             <CollectionView 
                 x:Name="cardCollection"
                 ItemsSource="{Binding AllPrayerCards}"
