@@ -40,11 +40,16 @@ namespace PrayerApp
             builder.Services.AddSingleton<ICardService, CardService>();
             // Register tag service as singleton
             builder.Services.AddSingleton<ITagService, TagService>();
+            // Register notification service as singleton
+            builder.Services.AddSingleton<INotificationService, NotificationService>();
 
             // add transient viewmodel so each instance of PrayerCardDetail is new (avoid data bleed/leak)
             builder.Services.AddTransient<PrayerCardDetailViewModel>();
 
             var app = builder.Build();
+
+            PrayerApp.Services.Settings.ConfigureNotificationService(
+                app.Services.GetRequiredService<INotificationService>());
 
             // get the new DB Service
             using var scope = app.Services.CreateScope();
