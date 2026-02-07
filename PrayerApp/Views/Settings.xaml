@@ -2,19 +2,57 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PrayerApp.Views.Settings"
-             Title="Settings">
+             Title="App Settings">
     <ScrollView>
         <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Label
-                Text="Settings"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
-            <Button
-                x:Name="btnClearSettings"
-                Clicked="btnClearSettings_Clicked"
-                Text="Clear Settings" />
+            Padding="20,5"
+            Spacing="5">
+            <Grid
+                ColumnDefinitions="300, *"
+                ColumnSpacing="5"
+                RowDefinitions="*,*"
+                HorizontalOptions="Start"
+                VerticalOptions="Center"
+                RowSpacing="5">
+                <Label
+                    Text="Clear Settings" />
+                <Button
+                    x:Name="btnClearSettings"
+                    Grid.Column="1"
+                    HorizontalOptions="End"
+                    Clicked="btnClearSettings_Clicked"
+                    Text="Go" />
+
+                <Label
+                    Grid.Row="1"
+                    Text="Allow Notifications?" />
+                <Switch
+                    x:Name="chkSettingsAllowNotifications"
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    OnColor="{StaticResource Secondary}"
+                    IsToggled="True">
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroupList>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="On">
+                                    <VisualState.Setters>
+                                        <Setter Property="ThumbColor"
+                                            Value="{StaticResource Primary}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Off">
+                                    <VisualState.Setters>
+                                        <Setter Property="ThumbColor"
+                                            Value="{StaticResource Gray600}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateGroupList>
+                    </VisualStateManager.VisualStateGroups>
+                </Switch>
+            </Grid>
         </VerticalStackLayout>
+        
     </ScrollView>
 </ContentPage>

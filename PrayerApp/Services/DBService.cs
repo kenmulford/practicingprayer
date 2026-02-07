@@ -107,11 +107,10 @@ namespace PrayerApp.Services
                 };
                 await InsertAsync(generalCard);
 
-                // TODO: Seed initial tags here when tag taxonomy is decided
-                // Example:
-                // await InsertAsync(new PrayerTag { Name = "Urgent", Color = "#FF0000" });
-                // await InsertAsync(new PrayerTag { Name = "Family", Color = "#0000FF" });
-                // await InsertAsync(new PrayerTag { Name = "Work", Color = "#00FF00" });
+                //TODO: Seed initial tags here when tag taxonomy is decided
+                await InsertAsync(new PrayerTag { Name = "Urgent", Color = "#FF0000" });
+                await InsertAsync(new PrayerTag { Name = "Family", Color = "#0000FF" });
+                await InsertAsync(new PrayerTag { Name = "Work", Color = "#00FF00" });
 
                 // Seed original prayer request items - all attached to General card
                 await InsertAsync(new Prayer
@@ -172,20 +171,20 @@ namespace PrayerApp.Services
             {
                 await DropTableAsync<PrayerInteraction>();
             }
-            catch { /* ignore if not present */ }
+            catch {  }
 
             try
             {
                 await DropTableAsync<PrayerCategory>();
             }
-            catch { /* ignore if not present */ }
+            catch {  }
 
             try
             {
                 // Also drop old PrayerCardTag if it exists
                 await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCardTag");
             }
-            catch { /* ignore if not present */ }
+            catch {  }
         }
     }
 }

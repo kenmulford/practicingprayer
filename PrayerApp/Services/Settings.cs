@@ -14,6 +14,12 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(FirstRun), value);
         }
 
+        public static bool AllowNotifications
+        {
+            get => Preferences.Get(nameof(AllowNotifications), true);
+            set => Preferences.Set(nameof(AllowNotifications), value);
+        }
+
         public static void ClearSettings()
         {
             // reset "first run" flag
