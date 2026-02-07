@@ -29,6 +29,8 @@ namespace PrayerApp.Services
             await _db.CreateTableAsync<Prayer>(); // Ensure prayer/request table is created
             await _db.CreateTableAsync<PrayerTag>(); // Ensure table is created
             await _db.CreateTableAsync<PrayerRequestTag>(); // Ensure table is created
+
+            await EnsurePrayerCardColumnsAsync();
         }
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()
@@ -101,7 +103,7 @@ namespace PrayerApp.Services
                 var generalCard = new PrayerCard
                 {
                     Title = "General",
-                    Details = "Prayer requests",
+                    IsFavorite = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -151,6 +153,13 @@ namespace PrayerApp.Services
             }
         }
 
+        public async Task<List<Prayer>> GetPrayersByCardIdAsync(int prayerCardId)
+        {
+            return await _db.Table<Prayer>()
+                .Where(prayer => prayer.PrayerCardId == prayerCardId)
+                .ToListAsync();
+        }
+
         private async Task DropSyncDataAsync()
         {
             // Drop new schema tables first
@@ -185,6 +194,17 @@ namespace PrayerApp.Services
                 await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCardTag");
             }
             catch {  }
+        }
+
+        private async Task EnsurePrayerCardColumnsAsync()
+        {
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsFavorite INTEGER DEFAULT 0");
+            }
+            catch
+            {
+            }
         }
     }
 }

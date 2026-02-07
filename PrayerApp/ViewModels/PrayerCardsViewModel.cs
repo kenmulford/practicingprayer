@@ -86,6 +86,27 @@ namespace PrayerApp.ViewModels
                     _ = AddNewCardAsync(PrayerCardString);
                 }
             }
+            else if (query.ContainsKey("prayerSaved") && query.ContainsKey("parentCardId"))
+            {
+                if (int.TryParse(query["prayerSaved"].ToString(), out int prayerId)
+                    && int.TryParse(query["parentCardId"].ToString(), out int parentCardId))
+                {
+                    var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
+                    if (matched != null)
+                    {
+                        _ = matched.AddOrUpdatePrayerAsync(prayerId);
+                    }
+                }
+            }
+            else if (query.ContainsKey("prayerDeleted") && query.ContainsKey("parentCardId"))
+            {
+                if (int.TryParse(query["prayerDeleted"].ToString(), out int prayerId)
+                    && int.TryParse(query["parentCardId"].ToString(), out int parentCardId))
+                {
+                    var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
+                    matched?.RemovePrayer(prayerId);
+                }
+            }
         }
 
         #endregion
@@ -122,7 +143,8 @@ namespace PrayerApp.ViewModels
         private void ApplySorting()
         {
             var sorted = AllPrayerCards
-                .OrderBy(pc => pc.Title)
+                .OrderByDescending(pc => pc.IsFavorite)
+                .ThenBy(pc => pc.Title)
                 .ToList();
 
             // Only update if order changed (minimize UI updates)
@@ -150,7 +172,8 @@ namespace PrayerApp.ViewModels
         {
             card.PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(PrayerCardViewModel.Title))
+                if (e.PropertyName == nameof(PrayerCardViewModel.Title)
+                    || e.PropertyName == nameof(PrayerCardViewModel.IsFavorite))
                 {
                     ApplySorting();
                 }

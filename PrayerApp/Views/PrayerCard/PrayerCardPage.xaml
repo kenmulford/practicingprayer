@@ -31,15 +31,6 @@
                         Placeholder="Card Title" />
                 </HorizontalStackLayout>
 
-                <Label
-                    Text="Details"
-                    VerticalOptions="Start"/>
-                <Editor
-                    x:Name="DetailsEditor"
-                    Text="{Binding Details}"
-                    HeightRequest="100"
-                    Placeholder="Add details..." />
-
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
                     <Button 
                         StyleClass=""

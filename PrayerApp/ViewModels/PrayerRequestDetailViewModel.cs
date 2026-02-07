@@ -19,6 +19,28 @@ namespace PrayerApp.ViewModels
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectPrayerCommand { get; private set; }
+        public ICommand EditPrayerCommand { get; private set; }
+
+        private string _savedQueryKey = "saved";
+        private string _deletedQueryKey = "deleted";
+        public bool ReturnToCards { get; set; }
+
+        private bool _isReadOnly;
+        public bool IsReadOnly
+        {
+            get => _isReadOnly;
+            set
+            {
+                if (_isReadOnly != value)
+                {
+                    _isReadOnly = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsEditable));
+                }
+            }
+        }
+
+        public bool IsEditable => !IsReadOnly;
 
         public string Identifier => _prayer.Id.ToString();
 
@@ -135,12 +157,14 @@ namespace PrayerApp.ViewModels
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
+            EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
             _ = LoadPrayerFrequenciesList();
         }
 
         public PrayerRequestDetailViewModel(Prayer prayer) : this()
         {
             _prayer = prayer ?? new Prayer();
+            IsReadOnly = false;
         }
 
         private async Task LoadPrayerFrequenciesList()
@@ -154,24 +178,73 @@ namespace PrayerApp.ViewModels
         {
             _prayer.UpdatedAt = DateTime.Now;
             await _prayer.SaveAsync();
-            await Shell.Current.GoToAsync($"..?saved={Identifier}");
+            if (ReturnToCards)
+            {
+                await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+            }
+            else
+            {
+                await Shell.Current.GoToAsync($"..?{_savedQueryKey}={Identifier}");
+            }
         }
 
         private async Task DeleteAsync()
         {
             await _prayer.DeleteAsync();
-            await Shell.Current.GoToAsync($"..?deleted={Identifier}");
+            if (ReturnToCards)
+            {
+                await Shell.Current.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");
+            }
+            else
+            {
+                await Shell.Current.GoToAsync($"..?{_deletedQueryKey}={Identifier}");
+            }
         }
 
         private async Task SelectPrayerAsync()
         {
-            await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}");
+            if (ReturnToCards)
+            {
+                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true&returnToCards=true&parentCardId={PrayerCardId}");
+            }
+            else
+            {
+                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true");
+            }
+        }
+
+        private async Task EditPrayerAsync()
+        {
+            if (ReturnToCards)
+            {
+                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true&returnToCards=true&parentCardId={PrayerCardId}");
+            }
+            else
+            {
+                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true");
+            }
         }
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
             if (query.ContainsKey("load"))
             {
+                if (query.ContainsKey("returnToCards"))
+                {
+                    ReturnToCards = true;
+                    _savedQueryKey = "prayerSaved";
+                    _deletedQueryKey = "prayerDeleted";
+                }
+
+                if (query.ContainsKey("viewOnly"))
+                {
+                    IsReadOnly = true;
+                }
+                else if (query.ContainsKey("edit"))
+                {
+                    IsReadOnly = false;
+                }
+
                 if (int.TryParse(query["load"].ToString(), out int _id))
                 {
                     _ = LoadPrayerAsync(_id);
@@ -214,6 +287,8 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
             OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            OnPropertyChanged(nameof(IsReadOnly));
+            OnPropertyChanged(nameof(IsEditable));
         }
     }
 }

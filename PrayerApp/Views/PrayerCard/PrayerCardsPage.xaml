@@ -28,32 +28,86 @@
                 <!-- Define the appearance of each item in the list -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
-                        <SwipeView Threshold="100">
-                            <SwipeView.RightItems>
-                                <SwipeItems
-                                    Mode="Reveal">
-                                    <SwipeItem
-                                        IconImageSource="trash_can_solid_full.png"
-                                        BackgroundColor="IndianRed"
-                                        Command="{Binding DeleteCommand}"
-                                        Text="Delete" />
-                                </SwipeItems>
-                            </SwipeView.RightItems>
-                            <Grid
-                                BackgroundColor="Transparent"
-                                Padding="10"
-                                HorizontalOptions="Fill"
-                                VerticalOptions="Fill">
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding SelectCardCommand}" />
-                                </Grid.GestureRecognizers>
-                                <VerticalStackLayout>
+                        <VerticalStackLayout
+                            BackgroundColor="Transparent"
+                            Padding="10"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill"
+                            Spacing="8">
+                            <SwipeView Threshold="100">
+                                <SwipeView.LeftItems>
+                                    <SwipeItems Mode="Reveal">
+                                        <SwipeItem
+                                            BackgroundColor="Gold"
+                                            Command="{Binding ToggleFavoriteCommand}"
+                                            Text="Favorite" />
+                                        <SwipeItem
+                                            BackgroundColor="LightSteelBlue"
+                                            Command="{Binding SelectCardCommand}"
+                                            Text="Edit" />
+                                    </SwipeItems>
+                                </SwipeView.LeftItems>
+                                <SwipeView.RightItems>
+                                    <SwipeItems
+                                        Mode="Reveal">
+                                        <SwipeItem
+                                            IconImageSource="trash_can_solid_full.png"
+                                            BackgroundColor="IndianRed"
+                                            Command="{Binding DeleteCommand}"
+                                            Text="Delete" />
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                <Grid>
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding ToggleExpandedCommand}" />
+                                    </Grid.GestureRecognizers>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
                                     <Label Text="{Binding Title}" FontSize="18" FontAttributes="Bold"/>
-                                    <Label Text="{Binding Details}" FontSize="14" LineBreakMode="TailTruncation" MaxLines="2" Opacity="0.6"/>
-                                </VerticalStackLayout>
-                            </Grid>
-                        </SwipeView>
+                                    <Label Grid.Column="1" Text="★" FontSize="16" TextColor="Gold" IsVisible="{Binding IsFavorite}" />
+                                </Grid>
+                            </SwipeView>
+                            <CollectionView
+                                ItemsSource="{Binding Prayers}"
+                                IsVisible="{Binding IsExpanded}"
+                                SelectionMode="None">
+                                <CollectionView.ItemsLayout>
+                                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="6" />
+                                </CollectionView.ItemsLayout>
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
+                                        <SwipeView Threshold="100">
+                                            <SwipeView.LeftItems>
+                                                <SwipeItems Mode="Reveal">
+                                                    <SwipeItem
+                                                        BackgroundColor="LightSteelBlue"
+                                                        Command="{Binding EditPrayerCommand}"
+                                                        Text="Edit" />
+                                                </SwipeItems>
+                                            </SwipeView.LeftItems>
+                                            <SwipeView.RightItems>
+                                                <SwipeItems Mode="Reveal">
+                                                    <SwipeItem
+                                                        BackgroundColor="IndianRed"
+                                                        Command="{Binding DeleteCommand}"
+                                                        Text="Delete" />
+                                                </SwipeItems>
+                                            </SwipeView.RightItems>
+                                            <Grid Padding="6">
+                                                <Grid.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding SelectPrayerCommand}" />
+                                                </Grid.GestureRecognizers>
+                                                <Label Text="{Binding Title}" FontSize="16" />
+                                            </Grid>
+                                        </SwipeView>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

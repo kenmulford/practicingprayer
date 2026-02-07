@@ -93,6 +93,14 @@ namespace PrayerApp.Models
             return await _dbService.GetAllAsync<Prayer>();
         }
 
+        public static async Task<List<Prayer>> LoadByCardIdAsync(int prayerCardId)
+        {
+            if (_dbService == null)
+                throw new InvalidOperationException("DBService not set. Call Prayer.SetDBService at app startup.");
+
+            return await _dbService.GetPrayersByCardIdAsync(prayerCardId);
+        }
+
         #endregion
     }
 }

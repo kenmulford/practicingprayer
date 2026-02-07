@@ -59,19 +59,6 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public string? Details
-        {
-            get => _prayerCard.Details;
-            set
-            {
-                if (_prayerCard.Details != value)
-                {
-                    _prayerCard.Details = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
         public bool CanNotify
         {
             get => _prayerCard.CanNotify;
@@ -222,7 +209,6 @@ namespace PrayerApp.ViewModels
         {
             OnPropertyChanged(nameof(Id));
             OnPropertyChanged(nameof(Title));
-            OnPropertyChanged(nameof(Details));
             OnPropertyChanged(nameof(CanNotify));
             OnPropertyChanged(nameof(IsAnswered));
             OnPropertyChanged(nameof(CreatedAt));

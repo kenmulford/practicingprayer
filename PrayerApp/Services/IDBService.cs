@@ -22,6 +22,8 @@ namespace PrayerApp.Services
         Task<int> DeleteByRequestIdAsync(int prayerRequestId);
         Task<int> DeleteByTagIdAsync(int prayerTagId);
 
+        Task<List<PrayerApp.Models.Prayer>> GetPrayersByCardIdAsync(int prayerCardId);
+
         Task SeedDataAsync();
 
         Task UpdateSchema();

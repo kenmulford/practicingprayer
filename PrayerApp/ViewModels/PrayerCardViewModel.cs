@@ -4,6 +4,8 @@ using PrayerApp.Models;
 using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
@@ -11,10 +13,14 @@ namespace PrayerApp.ViewModels
     internal class PrayerCardViewModel : ObservableObject, IQueryAttributable
     {
         private PrayerCard _prayerCard;
+        private bool _isExpanded;
+        private bool _prayersLoaded;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectCardCommand { get; }
+        public ICommand ToggleExpandedCommand { get; }
+        public ICommand ToggleFavoriteCommand { get; }
 
         #region Properties
 
@@ -46,18 +52,35 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public string? Details
+        public bool IsFavorite
         {
-            get => _prayerCard.Details;
+            get => _prayerCard.IsFavorite;
             set
             {
-                if (_prayerCard.Details != value)
+                if (_prayerCard.IsFavorite != value)
                 {
-                    _prayerCard.Details = value;
+                    _prayerCard.IsFavorite = value;
                     OnPropertyChanged();
                 }
             }
         }
+
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (_isExpanded != value)
+                {
+                    _isExpanded = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public ObservableCollection<PrayerRequestDetailViewModel> Prayers { get; }
+
+        public bool HasPrayers => Prayers.Count > 0;
 
         #endregion
 
@@ -69,6 +92,10 @@ namespace PrayerApp.ViewModels
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
+            ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
+            ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
+            Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
+            Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
 
         public PrayerCardViewModel(PrayerCard _pc)
@@ -77,6 +104,10 @@ namespace PrayerApp.ViewModels
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
+            ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
+            ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
+            Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
+            Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
 
         #endregion
@@ -98,6 +129,22 @@ namespace PrayerApp.ViewModels
         private async Task SelectPrayerCardAsync()
         {
             await Shell.Current.GoToAsync($"{nameof(PrayerCardPage)}?load={Identifier}");
+        }
+
+        private async Task ToggleExpandedAsync()
+        {
+            IsExpanded = !IsExpanded;
+
+            if (IsExpanded && !_prayersLoaded)
+            {
+                await LoadPrayersAsync();
+            }
+        }
+
+        private async Task ToggleFavoriteAsync()
+        {
+            IsFavorite = !IsFavorite;
+            await _prayerCard.SaveAsync();
         }
 
         #endregion
@@ -148,7 +195,75 @@ namespace PrayerApp.ViewModels
         {
             OnPropertyChanged(nameof(Id));
             OnPropertyChanged(nameof(Title));
-            OnPropertyChanged(nameof(Details));
+            OnPropertyChanged(nameof(IsFavorite));
+            OnPropertyChanged(nameof(HasPrayers));
+        }
+
+        private async Task LoadPrayersAsync()
+        {
+            try
+            {
+                var prayers = await Prayer.LoadByCardIdAsync(_prayerCard.Id);
+                Prayers.Clear();
+                foreach (var prayer in prayers.OrderBy(p => p.Title))
+                {
+                    var viewModel = new PrayerRequestDetailViewModel(prayer)
+                    {
+                        ReturnToCards = true
+                    };
+                    Prayers.Add(viewModel);
+                }
+
+                _prayersLoaded = true;
+                OnPropertyChanged(nameof(HasPrayers));
+            }
+            catch (Exception e)
+            {
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
+            }
+        }
+
+        public async Task AddOrUpdatePrayerAsync(int prayerId)
+        {
+            if (!_prayersLoaded)
+            {
+                return;
+            }
+
+            var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
+            if (existing != null)
+            {
+                existing.Reload();
+                return;
+            }
+
+            var prayer = await Prayer.LoadAsync(prayerId);
+            if (prayer.PrayerCardId != _prayerCard.Id)
+            {
+                return;
+            }
+
+            var viewModel = new PrayerRequestDetailViewModel(prayer)
+            {
+                ReturnToCards = true
+            };
+            Prayers.Add(viewModel);
+            OnPropertyChanged(nameof(HasPrayers));
+        }
+
+        public void RemovePrayer(int prayerId)
+        {
+            if (!_prayersLoaded)
+            {
+                return;
+            }
+
+            var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
+            if (existing != null)
+            {
+                Prayers.Remove(existing);
+                OnPropertyChanged(nameof(HasPrayers));
+            }
         }
 
         #endregion
