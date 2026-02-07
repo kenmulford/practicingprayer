@@ -115,12 +115,23 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private ObservableCollection<PrayerFrequency> _frequencies { get; set; }
+        public ObservableCollection<PrayerFrequency>  FrequencyOptions
+        {
+            get => _frequencies;
+            set
+            {
+                _ = LoadPrayerFrequenciesList();
+            }
+        }
+
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
         public PrayerRequestDetailViewModel()
         {
             _prayer = new Prayer();
+            _frequencies = new ObservableCollection<PrayerFrequency>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
@@ -134,7 +145,7 @@ namespace PrayerApp.ViewModels
 
         private async Task LoadPrayerFrequenciesList()
         {
-            var FrequencyOptions = new ObservableCollection<PrayerFrequency>(
+            _frequencies = new ObservableCollection<PrayerFrequency>(
                 (PrayerFrequency[])Enum.GetValues<PrayerFrequency>()
             );
         }
