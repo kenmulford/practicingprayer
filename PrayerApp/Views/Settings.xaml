@@ -31,7 +31,7 @@
                     Grid.Row="1"
                     Grid.Column="1"
                     OnColor="{StaticResource Secondary}"
-                    IsToggled="True">
+                    Toggled="chkSettingsAllowNotifications_Toggled">
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroupList>
                             <VisualStateGroup x:Name="CommonStates">
