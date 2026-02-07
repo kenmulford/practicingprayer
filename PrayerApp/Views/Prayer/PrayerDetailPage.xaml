@@ -13,7 +13,11 @@
         Padding="10,0"
         Spacing="10">
             <Border
+                
                 Padding="10">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="4"/>
+                </Border.StrokeShape>
                 <VerticalStackLayout 
                     Spacing="10" 
                     Margin="5">
