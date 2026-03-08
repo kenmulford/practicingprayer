@@ -184,7 +184,7 @@ namespace PrayerApp.Services
 
             try
             {
-                await DropTableAsync<PrayerCategory>();
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCategory");
             }
             catch {  }
 
