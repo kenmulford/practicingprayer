@@ -46,28 +46,6 @@
                             Text="{Binding Details}" />
                     </VerticalStackLayout>
 
-                    <!-- Tags Section -->
-                    <VerticalStackLayout Spacing="10" Margin="5">
-                        <Label Text="Tags" FontSize="16" FontAttributes="Bold"/>
-                        <CollectionView 
-                            ItemsSource="{Binding TagSelectionViewModel.AllTags}"
-                            SelectionMode="Multiple">
-                            <CollectionView.ItemsLayout>
-                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="5" />
-                            </CollectionView.ItemsLayout>
-                            <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:PrayerTagItemViewModel">
-                                    <HorizontalStackLayout Spacing="10" Padding="5">
-                                        <CheckBox
-                                            IsChecked="{Binding IsSelected}"
-                                            IsEnabled="{Binding BindingContext.IsEditable, Source={RelativeSource AncestorType={x:Type ContentPage}}}" />
-                                        <Label Text="{Binding Name}" VerticalOptions="Center"/>
-                                    </HorizontalStackLayout>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </VerticalStackLayout>
-
                     <!-- Frequency -->
                     <VerticalStackLayout
                         Spacing="10"
