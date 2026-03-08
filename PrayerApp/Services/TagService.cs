@@ -28,33 +28,33 @@ public class TagService : ITagService
         return _cache;
     }
 
-    public async Task<IReadOnlyList<PrayerTag>> GetTagsByCardIdAsync(int prayerCardId)
+    public async Task<IReadOnlyList<PrayerTag>> GetTagsByRequestIdAsync(int prayerRequestId)
     {
-        var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
-        var tagIds = cardTags.Select(ct => ct.PrayerTagId).ToHashSet();
+        var requestTags = await PrayerRequestTag.LoadByRequestIdAsync(prayerRequestId);
+        var tagIds = requestTags.Select(rt => rt.PrayerTagId).ToHashSet();
         var allTags = await GetTagsAsync();
 
         var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
         return new ReadOnlyCollection<PrayerTag>(tags);
     }
 
-    public async Task<int> AddTagToCardAsync(int prayerCardId, int prayerTagId)
+    public async Task<int> AddTagToRequestAsync(int prayerRequestId, int prayerTagId)
     {
-        var cardTag = new PrayerCardTag
+        var requestTag = new PrayerRequestTag
         {
-            PrayerCardId = prayerCardId,
+            PrayerRequestId = prayerRequestId,
             PrayerTagId = prayerTagId
         };
 
-        var result = await _dbService.InsertAsync(cardTag);
+        var result = await _dbService.InsertAsync(requestTag);
         InvalidateCache();
         return result;
     }
 
-    public async Task<int> RemoveTagFromCardAsync(int prayerCardId, int prayerTagId)
+    public async Task<int> RemoveTagFromRequestAsync(int prayerRequestId, int prayerTagId)
     {
-        var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
-        var toDelete = cardTags.FirstOrDefault(ct => ct.PrayerTagId == prayerTagId);
+        var requestTags = await PrayerRequestTag.LoadByRequestIdAsync(prayerRequestId);
+        var toDelete = requestTags.FirstOrDefault(rt => rt.PrayerTagId == prayerTagId);
 
         if (toDelete is null)
             return 0;
