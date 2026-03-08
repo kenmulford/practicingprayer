@@ -20,7 +20,7 @@ namespace PrayerApp.Services
             _db.CreateTableAsync<PrayerCard>().Wait(); // Create Table
             _db.CreateTableAsync<Prayer>().Wait(); // Create Prayer/Request Table
             _db.CreateTableAsync<PrayerTag>().Wait(); // Create Table
-            _db.CreateTableAsync<PrayerRequestTag>().Wait(); // Create Table
+            _db.CreateTableAsync<PrayerCardTag>().Wait(); // Create Table
             _db.CreateTableAsync<PrayerInteraction>().Wait(); // Create Table
         }
 
@@ -29,10 +29,30 @@ namespace PrayerApp.Services
             await _db.CreateTableAsync<PrayerCard>(); // Ensure table is created
             await _db.CreateTableAsync<Prayer>(); // Ensure prayer/request table is created
             await _db.CreateTableAsync<PrayerTag>(); // Ensure table is created
-            await _db.CreateTableAsync<PrayerRequestTag>(); // Ensure table is created
+            await _db.CreateTableAsync<PrayerCardTag>(); // Ensure table is created
             await _db.CreateTableAsync<PrayerInteraction>(); // Ensure table is created
 
             await EnsurePrayerCardColumnsAsync();
+
+            // Migrate PrayerRequestTag → PrayerCardTag
+            try
+            {
+                // Create new table with correct schema
+                await _db.ExecuteAsync(@"
+                    CREATE TABLE IF NOT EXISTS PrayerCardTag (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        PrayerCardId INTEGER NOT NULL,
+                        PrayerTagId INTEGER NOT NULL,
+                        CreatedAt TEXT NOT NULL
+                    )");
+                // Copy data from old table if it exists
+                await _db.ExecuteAsync(@"
+                    INSERT OR IGNORE INTO PrayerCardTag (Id, PrayerCardId, PrayerTagId, CreatedAt)
+                    SELECT Id, PrayerRequestId, PrayerTagId, CreatedAt FROM PrayerRequestTag");
+                // Drop old table
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
+            }
+            catch { /* table may not exist on fresh install */ }
         }
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()
@@ -65,32 +85,32 @@ namespace PrayerApp.Services
             return await _db.DropTableAsync<T>();
         }
 
-        public async Task<List<PrayerRequestTag>> GetByRequestIdAsync(int prayerRequestId)
+        public async Task<List<PrayerCardTag>> GetByCardIdAsync(int prayerCardId)
         {
-            return await _db.Table<PrayerRequestTag>()
-                .Where(prt => prt.PrayerRequestId == prayerRequestId)
+            return await _db.Table<PrayerCardTag>()
+                .Where(pct => pct.PrayerCardId == prayerCardId)
                 .ToListAsync();
         }
 
-        public async Task<List<PrayerRequestTag>> GetByTagIdAsync(int prayerTagId)
+        public async Task<List<PrayerCardTag>> GetByTagIdAsync(int prayerTagId)
         {
-            return await _db.Table<PrayerRequestTag>()
-                .Where(prt => prt.PrayerTagId == prayerTagId)
+            return await _db.Table<PrayerCardTag>()
+                .Where(pct => pct.PrayerTagId == prayerTagId)
                 .ToListAsync();
         }
 
-        public async Task<int> DeleteByRequestIdAsync(int prayerRequestId)
+        public async Task<int> DeleteByCardIdAsync(int prayerCardId)
         {
             return await _db.ExecuteAsync(
-                "DELETE FROM PrayerRequestTag WHERE PrayerRequestId = ?",
-                prayerRequestId
+                "DELETE FROM PrayerCardTag WHERE PrayerCardId = ?",
+                prayerCardId
             );
         }
 
         public async Task<int> DeleteByTagIdAsync(int prayerTagId)
         {
             return await _db.ExecuteAsync(
-                "DELETE FROM PrayerRequestTag WHERE PrayerTagId = ?",
+                "DELETE FROM PrayerCardTag WHERE PrayerTagId = ?",
                 prayerTagId
             );
         }
@@ -172,8 +192,8 @@ namespace PrayerApp.Services
         private async Task DropSyncDataAsync()
         {
             // Drop new schema tables first
-            await DropTableAsync<PrayerRequestTag>();
-            await _db.CreateTableAsync<PrayerRequestTag>();
+            await DropTableAsync<PrayerCardTag>();
+            await _db.CreateTableAsync<PrayerCardTag>();
 
             await DropTableAsync<PrayerTag>();
             await _db.CreateTableAsync<PrayerTag>();
