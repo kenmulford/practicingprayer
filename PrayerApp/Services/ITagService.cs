@@ -1,0 +1,12 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+using PrayerApp.Models;
+
+public interface ITagService
+{
+    Task<IReadOnlyList<PrayerTag>> GetTagsAsync();
+    Task<IReadOnlyList<PrayerTag>> GetTagsByRequestIdAsync(int prayerRequestId);
+    Task<int> AddTagToRequestAsync(int prayerRequestId, int prayerTagId);
+    Task<int> RemoveTagFromRequestAsync(int prayerRequestId, int prayerTagId);
+}

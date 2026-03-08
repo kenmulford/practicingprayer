@@ -16,7 +16,7 @@
         Padding="30,0"
         Spacing="25">
             <Label
-            Text="Manage Prayers"
+            Text="Prayer Requests"
             Style="{StaticResource Headline}"
             SemanticProperties.HeadingLevel="Level1" />
             <CollectionView 
@@ -30,7 +30,7 @@
 
                 <!-- Define the appearance of each item in the list -->
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="viewModels:PrayerDetailViewModel">
+                    <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
                         <Grid
                             BackgroundColor="Transparent"
                             Padding="5"
@@ -46,8 +46,6 @@
                                 FontSize="22"
                                 Grid.Row="0"
                                 Text="{Binding Title}" />
-                            
-                            
                         </Grid>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

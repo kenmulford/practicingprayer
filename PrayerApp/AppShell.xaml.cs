@@ -1,8 +1,12 @@
-﻿using PrayerApp.Views.Prayer;
-using PrayerApp.Views.PrayerCategory;
+﻿#if ANDROID
+using Android.Content.Res;
+using Android.Graphics;
+using AndroidX.AppCompat.Widget;
+#endif
+using PrayerApp.Views.Prayer;
+using PrayerApp.Views.PrayerCard;
 
 namespace PrayerApp
-
 {
     public partial class AppShell : Shell
     {
@@ -10,8 +14,26 @@ namespace PrayerApp
         {
             InitializeComponent();
 
+#if ANDROID
+            Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("NoUnderline", static (handler, view) =>
+            {
+                if (handler.PlatformView is AppCompatEditText editText)
+                {
+                    editText.SupportBackgroundTintList = ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+                }
+            });
+
+            Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoUnderline", static (handler, view) =>
+            {
+                if (handler.PlatformView is AppCompatEditText editText)
+                {
+                    editText.SupportBackgroundTintList = ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+                }
+            });
+#endif
+
             // register explicit routes for child pages
-            Routing.RegisterRoute(nameof(PrayerCategoryPage), typeof(PrayerCategoryPage));
+            Routing.RegisterRoute(nameof(PrayerCardPage), typeof(PrayerCardPage));
             Routing.RegisterRoute(nameof(PrayerDetailPage), typeof(PrayerDetailPage));
         }
     }

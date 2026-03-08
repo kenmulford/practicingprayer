@@ -3,17 +3,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Prayer.PrayerDetailPage"
-             x:DataType="viewModels:PrayerDetailViewModel"
-             Title="Prayer Details">
+             x:DataType="viewModels:PrayerRequestDetailViewModel"
+             Title="Prayer Request">
     <ContentPage.BindingContext>
-        <viewModels:PrayerDetailViewModel />
+        <viewModels:PrayerRequestDetailViewModel />
     </ContentPage.BindingContext>
     <ScrollView>
         <VerticalStackLayout
         Padding="10,0"
         Spacing="10">
             <Border
+                
                 Padding="10">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="4"/>
+                </Border.StrokeShape>
                 <VerticalStackLayout 
                     Spacing="10" 
                     Margin="5">
@@ -26,6 +30,7 @@
                             HorizontalOptions="Start"
                             WidthRequest="300"
                             Placeholder="Title"
+                            IsReadOnly="{Binding IsReadOnly}"
                             Text="{Binding Title}" />
                     </HorizontalStackLayout>
                     <!-- Details -->
@@ -37,22 +42,30 @@
                             VerticalOptions="Center"
                             HorizontalOptions="Start"
                             Placeholder="Type your prayer details here.."
+                            IsReadOnly="{Binding IsReadOnly}"
                             Text="{Binding Details}" />
-
                     </VerticalStackLayout>
 
-                    <!-- Category -->
-                    <VerticalStackLayout
-                        Spacing="10"
-                        Margin="5">
-                        <Picker
-                            x:Name="CategoryPicker"
-                            Title="Select Category"
-                            ItemsSource="{Binding Categories}"
-                            ItemDisplayBinding="{Binding Name}"
-                            SelectedItem="{Binding SelectedCategory}"
-                            HorizontalOptions="Start"
-                            WidthRequest="300" />
+                    <!-- Tags Section -->
+                    <VerticalStackLayout Spacing="10" Margin="5">
+                        <Label Text="Tags" FontSize="16" FontAttributes="Bold"/>
+                        <CollectionView 
+                            ItemsSource="{Binding TagSelectionViewModel.AllTags}"
+                            SelectionMode="Multiple">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="5" />
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:PrayerTagItemViewModel">
+                                    <HorizontalStackLayout Spacing="10" Padding="5">
+                                        <CheckBox
+                                            IsChecked="{Binding IsSelected}"
+                                            IsEnabled="{Binding BindingContext.IsEditable, Source={RelativeSource AncestorType={x:Type ContentPage}}}" />
+                                        <Label Text="{Binding Name}" VerticalOptions="Center"/>
+                                    </HorizontalStackLayout>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
                     </VerticalStackLayout>
 
                     <!-- Frequency -->
@@ -65,6 +78,7 @@
                             ItemsSource="{Binding FrequencyOptions}"
                             ItemDisplayBinding="{Binding .}"
                             SelectedItem="{Binding PrayerFrequency}"
+                            IsEnabled="{Binding IsEditable}"
                             HorizontalOptions="Start"
                             WidthRequest="300" />
                     </VerticalStackLayout>
@@ -79,6 +93,7 @@
                             x:Name="chkCanNotify"
                             OnColor="{StaticResource Secondary}"
                             IsToggled="{Binding CanNotify}"
+                            IsEnabled="{Binding IsEditable}"
                             VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -112,6 +127,7 @@
                             x:Name="chkIsAnswered"
                             OnColor="{StaticResource Secondary}"
                             IsToggled="{Binding IsAnswered}"
+                            IsEnabled="{Binding IsEditable}"
                             VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -139,13 +155,22 @@
                             StyleClass=""
                             HorizontalOptions="Start"
                             Command="{Binding DeleteCommand}"
-                            Text="Delete" />
+                            Text="Delete"
+                            IsVisible="{Binding IsEditable}" />
                         <Button 
                             StyleClass=""
                             Grid.Column="1"
                             HorizontalOptions="End"
                             Command="{Binding SaveCommand}"
-                            Text="Save" />
+                            Text="Save"
+                            IsVisible="{Binding IsEditable}" />
+                        <Button
+                            StyleClass=""
+                            Grid.ColumnSpan="2"
+                            HorizontalOptions="End"
+                            Command="{Binding EditPrayerCommand}"
+                            Text="Edit"
+                            IsVisible="{Binding IsReadOnly}" />
                     </Grid>
                 </VerticalStackLayout>
             </Border>
