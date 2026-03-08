@@ -134,10 +134,14 @@ namespace PrayerApp.ViewModels
                 if (_prayer.IsAnswered != value)
                 {
                     _prayer.IsAnswered = value;
+                    _prayer.AnsweredAt = value ? DateTime.Now : null;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(AnsweredAt));
                 }
             }
         }
+
+        public DateTime? AnsweredAt => _prayer.AnsweredAt;
 
         private ObservableCollection<PrayerFrequency> _frequencies { get; set; }
         public ObservableCollection<PrayerFrequency>  FrequencyOptions
@@ -286,6 +290,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(PrayerCardId));
             OnPropertyChanged(nameof(CanNotify));
             OnPropertyChanged(nameof(IsAnswered));
+            OnPropertyChanged(nameof(AnsweredAt));
             OnPropertyChanged(nameof(CreatedAt));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
