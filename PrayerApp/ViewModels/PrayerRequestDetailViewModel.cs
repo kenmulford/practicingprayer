@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using PrayerApp.Services;
 using PrayerApp.Views.Prayer;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ namespace PrayerApp.ViewModels
     public class PrayerRequestDetailViewModel : ObservableObject, IQueryAttributable
     {
         private Prayer _prayer;
+        private readonly IPrayerService _prayerService;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
@@ -132,10 +134,14 @@ namespace PrayerApp.ViewModels
                 if (_prayer.IsAnswered != value)
                 {
                     _prayer.IsAnswered = value;
+                    _prayer.AnsweredAt = value ? DateTime.Now : null;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(AnsweredAt));
                 }
             }
         }
+
+        public DateTime? AnsweredAt => _prayer.AnsweredAt;
 
         private ObservableCollection<PrayerFrequency> _frequencies { get; set; }
         public ObservableCollection<PrayerFrequency>  FrequencyOptions
@@ -153,6 +159,7 @@ namespace PrayerApp.ViewModels
         public PrayerRequestDetailViewModel()
         {
             _prayer = new Prayer();
+            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
             _frequencies = new ObservableCollection<PrayerFrequency>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
@@ -177,7 +184,7 @@ namespace PrayerApp.ViewModels
         private async Task SaveAsync()
         {
             _prayer.UpdatedAt = DateTime.Now;
-            await _prayer.SaveAsync();
+            await _prayerService.SavePrayerAsync(_prayer);
             if (ReturnToCards)
             {
                 await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
@@ -190,7 +197,7 @@ namespace PrayerApp.ViewModels
 
         private async Task DeleteAsync()
         {
-            await _prayer.DeleteAsync();
+            await _prayerService.DeletePrayerAsync(_prayer);
             if (ReturnToCards)
             {
                 await Shell.Current.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");
@@ -283,6 +290,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(PrayerCardId));
             OnPropertyChanged(nameof(CanNotify));
             OnPropertyChanged(nameof(IsAnswered));
+            OnPropertyChanged(nameof(AnsweredAt));
             OnPropertyChanged(nameof(CreatedAt));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));

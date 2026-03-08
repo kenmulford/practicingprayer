@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using PrayerApp.Services;
 using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,8 @@ namespace PrayerApp.ViewModels
         private PrayerCard _prayerCard;
         private bool _isExpanded;
         private bool _prayersLoaded;
+        private readonly ICardService _cardService;
+        private readonly IPrayerService _prayerService;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
@@ -89,6 +92,8 @@ namespace PrayerApp.ViewModels
         public PrayerCardViewModel()
         {
             _prayerCard = new PrayerCard();
+            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
@@ -101,6 +106,8 @@ namespace PrayerApp.ViewModels
         public PrayerCardViewModel(PrayerCard _pc)
         {
             _prayerCard = _pc;
+            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
@@ -116,13 +123,13 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
-            await _prayerCard.SaveAsync();
+            await _cardService.SaveCardAsync(_prayerCard);
             await Shell.Current.GoToAsync($"..?saved={Identifier}");
         }
 
         private async Task DeleteAsync()
         {
-            await _prayerCard.DeleteAsync();
+            await _cardService.DeleteCardAsync(_prayerCard);
             await Shell.Current.GoToAsync($"..?deleted={Identifier}");
         }
 
@@ -144,7 +151,7 @@ namespace PrayerApp.ViewModels
         private async Task ToggleFavoriteAsync()
         {
             IsFavorite = !IsFavorite;
-            await _prayerCard.SaveAsync();
+            await _cardService.SaveCardAsync(_prayerCard);
         }
 
         #endregion
@@ -203,7 +210,7 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                var prayers = await Prayer.LoadByCardIdAsync(_prayerCard.Id);
+                var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
                 Prayers.Clear();
                 foreach (var prayer in prayers.OrderBy(p => p.Title))
                 {

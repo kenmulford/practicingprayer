@@ -40,6 +40,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<ICardService, CardService>();
             // Register tag service as singleton
             builder.Services.AddSingleton<ITagService, TagService>();
+            // Register prayer service as singleton
+            builder.Services.AddSingleton<IPrayerService, PrayerService>();
             // Register notification service as singleton
             builder.Services.AddSingleton<INotificationService, NotificationService>();
 

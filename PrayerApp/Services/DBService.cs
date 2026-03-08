@@ -21,6 +21,7 @@ namespace PrayerApp.Services
             _db.CreateTableAsync<Prayer>().Wait(); // Create Prayer/Request Table
             _db.CreateTableAsync<PrayerTag>().Wait(); // Create Table
             _db.CreateTableAsync<PrayerRequestTag>().Wait(); // Create Table
+            _db.CreateTableAsync<PrayerInteraction>().Wait(); // Create Table
         }
 
         public async Task UpdateSchema()
@@ -29,6 +30,7 @@ namespace PrayerApp.Services
             await _db.CreateTableAsync<Prayer>(); // Ensure prayer/request table is created
             await _db.CreateTableAsync<PrayerTag>(); // Ensure table is created
             await _db.CreateTableAsync<PrayerRequestTag>(); // Ensure table is created
+            await _db.CreateTableAsync<PrayerInteraction>(); // Ensure table is created
 
             await EnsurePrayerCardColumnsAsync();
         }
@@ -160,6 +162,13 @@ namespace PrayerApp.Services
                 .ToListAsync();
         }
 
+        public async Task<List<PrayerInteraction>> GetInteractionsByPrayerIdAsync(int prayerId)
+        {
+            return await _db.Table<PrayerInteraction>()
+                .Where(i => i.PrayerId == prayerId)
+                .ToListAsync();
+        }
+
         private async Task DropSyncDataAsync()
         {
             // Drop new schema tables first
@@ -184,7 +193,7 @@ namespace PrayerApp.Services
 
             try
             {
-                await DropTableAsync<PrayerCategory>();
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCategory");
             }
             catch {  }
 
@@ -201,6 +210,14 @@ namespace PrayerApp.Services
             try
             {
                 await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsFavorite INTEGER DEFAULT 0");
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN AnsweredAt TEXT");
             }
             catch
             {
