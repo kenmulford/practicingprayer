@@ -137,11 +137,17 @@ namespace PrayerApp.ViewModels
                     _prayer.AnsweredAt = value ? DateTime.Now : null;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(AnsweredAt));
+                    OnPropertyChanged(nameof(AnsweredAtDisplay));
                 }
             }
         }
 
         public DateTime? AnsweredAt => _prayer.AnsweredAt;
+
+        public string AnsweredAtDisplay =>
+            IsAnswered && AnsweredAt.HasValue
+                ? $"✓ {AnsweredAt.Value:MMM d}"
+                : string.Empty;
 
         private ObservableCollection<PrayerFrequency> _frequencies { get; set; }
         public ObservableCollection<PrayerFrequency>  FrequencyOptions
@@ -234,7 +240,19 @@ namespace PrayerApp.ViewModels
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.ContainsKey("load"))
+            if (query.ContainsKey("newForCard"))
+            {
+                if (int.TryParse(query["newForCard"].ToString(), out int cardId))
+                {
+                    _prayer = new Prayer { PrayerCardId = cardId };
+                    ReturnToCards = true;
+                    _savedQueryKey = "prayerSaved";
+                    _deletedQueryKey = "prayerDeleted";
+                    IsReadOnly = false;
+                }
+                RefreshProperties();
+            }
+            else if (query.ContainsKey("load"))
             {
                 if (query.ContainsKey("returnToCards"))
                 {
@@ -291,6 +309,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(CanNotify));
             OnPropertyChanged(nameof(IsAnswered));
             OnPropertyChanged(nameof(AnsweredAt));
+            OnPropertyChanged(nameof(AnsweredAtDisplay));
             OnPropertyChanged(nameof(CreatedAt));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
