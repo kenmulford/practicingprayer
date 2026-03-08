@@ -32,7 +32,7 @@ public class TagService : ITagService
     {
         var requestTags = await PrayerRequestTag.LoadByRequestIdAsync(prayerRequestId);
         var tagIds = requestTags.Select(rt => rt.PrayerTagId).ToHashSet();
-        var allTags = await PrayerTag.LoadAllAsync();
+        var allTags = await GetTagsAsync();
 
         var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
         return new ReadOnlyCollection<PrayerTag>(tags);

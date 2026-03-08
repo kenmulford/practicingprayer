@@ -139,6 +139,20 @@ namespace PrayerApp.ViewModels
                 _cardService.InvalidateCache();
                 var cards = await _cardService.GetCardsAsync();
                 _prayerCards = cards.ToList();
+
+                var viewModels = _prayerCards.Select(pc => new PrayerCardViewModel(pc)).ToList();
+                foreach (var vm in viewModels)
+                {
+                    SubscribeToPropertyChanges(vm);
+                }
+
+                AllPrayerCards.Clear();
+                foreach (var vm in viewModels)
+                {
+                    AllPrayerCards.Add(vm);
+                }
+
+                ApplySorting();
             }
             catch (Exception e)
             {

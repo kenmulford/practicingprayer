@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 
 using PrayerApp.Models;
 
+namespace PrayerApp.Services;
+
 public interface ITagService
 {
     Task<IReadOnlyList<PrayerTag>> GetTagsAsync();

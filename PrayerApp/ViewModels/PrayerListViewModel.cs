@@ -109,6 +109,20 @@ namespace PrayerApp.ViewModels
                 _prayerService.InvalidateCache();
                 var prayers = await _prayerService.GetAllPrayersAsync();
                 _prayerList = prayers.ToList();
+
+                var viewModels = _prayerList.Select(p => new PrayerRequestDetailViewModel(p)).ToList();
+                foreach (var vm in viewModels)
+                {
+                    SubscribeToPropertyChanges(vm);
+                }
+
+                AllPrayers.Clear();
+                foreach (var vm in viewModels)
+                {
+                    AllPrayers.Add(vm);
+                }
+
+                ApplySorting();
             }
             catch (Exception e)
             {
