@@ -14,7 +14,7 @@ public partial class PrayerDetailPage : ContentPage
         InitializeComponent();
     }
 
-    protected override async void OnAppearing()
+    protected override void OnAppearing()
     {
         base.OnAppearing();
     }

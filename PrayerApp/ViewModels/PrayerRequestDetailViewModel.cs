@@ -22,6 +22,7 @@ namespace PrayerApp.ViewModels
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectPrayerCommand { get; private set; }
         public ICommand EditPrayerCommand { get; private set; }
+        public ICommand MarkAnsweredCommand { get; private set; }
 
         private string _savedQueryKey = "saved";
         private string _deletedQueryKey = "deleted";
@@ -43,6 +44,8 @@ namespace PrayerApp.ViewModels
         }
 
         public bool IsEditable => !IsReadOnly;
+
+        public bool IsNotAnswered => !IsAnswered;
 
         public string Identifier => _prayer.Id.ToString();
 
@@ -138,6 +141,7 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(AnsweredAt));
                     OnPropertyChanged(nameof(AnsweredAtDisplay));
+                    OnPropertyChanged(nameof(IsNotAnswered));
                 }
             }
         }
@@ -163,6 +167,7 @@ namespace PrayerApp.ViewModels
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
             EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
+            MarkAnsweredCommand = new AsyncRelayCommand(MarkAnsweredAsync);
         }
 
         public PrayerRequestDetailViewModel(Prayer prayer) : this()
@@ -220,6 +225,14 @@ namespace PrayerApp.ViewModels
             {
                 await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true");
             }
+        }
+
+        private async Task MarkAnsweredAsync()
+        {
+            IsAnswered = true;
+            _prayer.UpdatedAt = DateTime.Now;
+            await _prayerService.SavePrayerAsync(_prayer);
+            RefreshProperties();
         }
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
@@ -300,6 +313,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(PrayerFrequencyDisplay));
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(IsEditable));
+            OnPropertyChanged(nameof(IsNotAnswered));
         }
     }
 }
