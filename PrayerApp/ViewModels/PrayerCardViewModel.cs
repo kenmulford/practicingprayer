@@ -81,6 +81,50 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        public bool CanNotify
+        {
+            get => _prayerCard.CanNotify;
+            set
+            {
+                if (_prayerCard.CanNotify != value)
+                {
+                    _prayerCard.CanNotify = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public PrayerFrequency PrayerFrequency
+        {
+            get => _prayerCard.PrayerFrequency;
+            set
+            {
+                if (_prayerCard.PrayerFrequency != value)
+                {
+                    _prayerCard.PrayerFrequency = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+                }
+            }
+        }
+
+        public string PrayerFrequencyDisplay => PrayerFrequency.ToString();
+
+        public bool IsAnswered
+        {
+            get => _prayerCard.IsAnswered;
+            set
+            {
+                if (_prayerCard.IsAnswered != value)
+                {
+                    _prayerCard.IsAnswered = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public ObservableCollection<PrayerFrequency> FrequencyOptions { get; private set; }
+
         public ObservableCollection<PrayerRequestDetailViewModel> Prayers { get; }
 
         public bool HasPrayers => Prayers.Count > 0;
@@ -101,6 +145,7 @@ namespace PrayerApp.ViewModels
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
+            FrequencyOptions = new ObservableCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>());
         }
 
         public PrayerCardViewModel(PrayerCard _pc)
@@ -115,6 +160,7 @@ namespace PrayerApp.ViewModels
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
+            FrequencyOptions = new ObservableCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>());
         }
 
         #endregion
@@ -204,6 +250,10 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
             OnPropertyChanged(nameof(HasPrayers));
+            OnPropertyChanged(nameof(CanNotify));
+            OnPropertyChanged(nameof(IsAnswered));
+            OnPropertyChanged(nameof(PrayerFrequency));
+            OnPropertyChanged(nameof(PrayerFrequencyDisplay));
         }
 
         private async Task LoadPrayersAsync()

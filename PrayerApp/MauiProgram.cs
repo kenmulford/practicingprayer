@@ -45,9 +45,6 @@ namespace PrayerApp
             // Register notification service as singleton
             builder.Services.AddSingleton<INotificationService, NotificationService>();
 
-            // add transient viewmodel so each instance of PrayerCardDetail is new (avoid data bleed/leak)
-            builder.Services.AddTransient<PrayerCardDetailViewModel>();
-
             var app = builder.Build();
 
             PrayerApp.Services.Settings.ConfigureNotificationService(

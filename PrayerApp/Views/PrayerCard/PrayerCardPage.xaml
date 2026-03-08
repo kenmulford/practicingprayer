@@ -24,11 +24,31 @@
                         VerticalOptions="Center"
                         WidthRequest="100"
                         Text="Title" />
-                    <Entry 
+                    <Entry
                         x:Name="TitleEntry"
                         Text="{Binding Title}"
                         VerticalOptions="Center"
                         Placeholder="Card Title" />
+                </HorizontalStackLayout>
+
+                <!-- Frequency Picker -->
+                <HorizontalStackLayout Spacing="10">
+                    <Label VerticalOptions="Center" WidthRequest="100" Text="Frequency" />
+                    <Picker ItemsSource="{Binding FrequencyOptions}"
+                            SelectedItem="{Binding PrayerFrequency}"
+                            VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Allow Notifications -->
+                <HorizontalStackLayout Spacing="10">
+                    <Label VerticalOptions="Center" WidthRequest="100" Text="Reminders" />
+                    <Switch IsToggled="{Binding CanNotify}" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Is Answered -->
+                <HorizontalStackLayout Spacing="10">
+                    <Label VerticalOptions="Center" WidthRequest="100" Text="Answered" />
+                    <Switch IsToggled="{Binding IsAnswered}" VerticalOptions="Center" />
                 </HorizontalStackLayout>
 
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
