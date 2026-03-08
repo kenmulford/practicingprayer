@@ -37,22 +37,17 @@ namespace PrayerApp.Services
             // Migrate PrayerRequestTag → PrayerCardTag
             try
             {
-                // Create new table with correct schema
-                await _db.ExecuteAsync(@"
-                    CREATE TABLE IF NOT EXISTS PrayerCardTag (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        PrayerCardId INTEGER NOT NULL,
-                        PrayerTagId INTEGER NOT NULL,
-                        CreatedAt TEXT NOT NULL
-                    )");
-                // Copy data from old table if it exists
+                // Copy data from old table if it exists (fresh installs won't have PrayerRequestTag)
                 await _db.ExecuteAsync(@"
                     INSERT OR IGNORE INTO PrayerCardTag (Id, PrayerCardId, PrayerTagId, CreatedAt)
                     SELECT Id, PrayerRequestId, PrayerTagId, CreatedAt FROM PrayerRequestTag");
-                // Drop old table
                 await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
             }
-            catch { /* table may not exist on fresh install */ }
+            catch (Exception ex)
+            {
+                // PrayerRequestTag may not exist on fresh install — this is expected.
+                System.Diagnostics.Debug.WriteLine($"[UpdateSchema] PrayerRequestTag migration: {ex.Message}");
+            }
         }
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()

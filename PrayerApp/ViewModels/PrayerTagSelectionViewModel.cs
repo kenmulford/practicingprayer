@@ -89,7 +89,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load request tags: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card tags: {ex.Message}", "OK");
             }
         }
 
