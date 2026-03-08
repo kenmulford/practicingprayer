@@ -149,15 +149,8 @@ namespace PrayerApp.ViewModels
                 ? $"✓ {AnsweredAt.Value:MMM d}"
                 : string.Empty;
 
-        private ObservableCollection<PrayerFrequency> _frequencies { get; set; }
-        public ObservableCollection<PrayerFrequency>  FrequencyOptions
-        {
-            get => _frequencies;
-            set
-            {
-                _ = LoadPrayerFrequenciesList();
-            }
-        }
+        public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; } =
+            new ReadOnlyCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>().ToList());
 
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
@@ -166,25 +159,16 @@ namespace PrayerApp.ViewModels
         {
             _prayer = new Prayer();
             _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-            _frequencies = new ObservableCollection<PrayerFrequency>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
             EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
-            _ = LoadPrayerFrequenciesList();
         }
 
         public PrayerRequestDetailViewModel(Prayer prayer) : this()
         {
             _prayer = prayer ?? new Prayer();
             IsReadOnly = false;
-        }
-
-        private async Task LoadPrayerFrequenciesList()
-        {
-            _frequencies = new ObservableCollection<PrayerFrequency>(
-                (PrayerFrequency[])Enum.GetValues<PrayerFrequency>()
-            );
         }
 
         private async Task SaveAsync()
@@ -249,8 +233,8 @@ namespace PrayerApp.ViewModels
                     _savedQueryKey = "prayerSaved";
                     _deletedQueryKey = "prayerDeleted";
                     IsReadOnly = false;
+                    RefreshProperties();
                 }
-                RefreshProperties();
             }
             else if (query.ContainsKey("load"))
             {

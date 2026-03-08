@@ -179,11 +179,15 @@ namespace PrayerApp.ViewModels
 
         private async Task ToggleExpandedAsync()
         {
-            IsExpanded = !IsExpanded;
-
-            if (IsExpanded && !_prayersLoaded)
+            if (!IsExpanded && !_prayersLoaded)
             {
+                // Load first, then reveal — avoids empty flash
                 await LoadPrayersAsync();
+                IsExpanded = true;
+            }
+            else
+            {
+                IsExpanded = !IsExpanded;
             }
         }
 
@@ -302,7 +306,10 @@ namespace PrayerApp.ViewModels
             {
                 ReturnToCards = true
             };
-            Prayers.Add(viewModel);
+            var insertIndex = Prayers
+                .TakeWhile(p => string.Compare(p.Title, prayer.Title, StringComparison.OrdinalIgnoreCase) < 0)
+                .Count();
+            Prayers.Insert(insertIndex, viewModel);
             OnPropertyChanged(nameof(HasPrayers));
         }
 
