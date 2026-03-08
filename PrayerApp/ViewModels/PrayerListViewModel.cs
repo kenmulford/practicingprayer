@@ -133,7 +133,7 @@ namespace PrayerApp.ViewModels
         private void ApplySorting()
         {
             var sorted = AllPrayers
-                .OrderByDescending(p => p.Title)
+                .OrderBy(p => p.Title)
                 .ToList();
 
             // Only update if order changed (minimize UI updates)
