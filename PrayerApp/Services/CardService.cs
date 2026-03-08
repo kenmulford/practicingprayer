@@ -21,4 +21,22 @@ public class CardService : ICardService
         _cache = readOnly;
         return _cache;
     }
+
+    public async Task<PrayerCard> SaveCardAsync(PrayerCard card)
+    {
+        await card.SaveAsync();
+        _cache = null;
+        return card;
+    }
+
+    public async Task DeleteCardAsync(PrayerCard card)
+    {
+        await card.DeleteAsync();
+        _cache = null;
+    }
+
+    public void InvalidateCache()
+    {
+        _cache = null;
+    }
 }

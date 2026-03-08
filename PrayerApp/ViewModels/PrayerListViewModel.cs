@@ -1,4 +1,5 @@
-﻿using PrayerApp.Models;
+using PrayerApp.Models;
+using PrayerApp.Services;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
@@ -13,14 +14,17 @@ namespace PrayerApp.ViewModels
     internal class PrayerListViewModel : IQueryAttributable
     {
         private List<Prayer> _prayerList;
+        private readonly IPrayerService _prayerService;
         public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; }
 
         public ICommand NewCommand { get; }
 
         public PrayerListViewModel()
         {
+            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
+
             // GET all prayer requests
-            _prayerList = Task.Run(async () => await Prayer.LoadAllAsync()).Result;
+            _prayerList = Task.Run(async () => await _prayerService.GetAllPrayersAsync()).Result.ToList();
 
             // Convert Prayer to PrayerRequestDetailViewModel
             AllPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(
@@ -102,7 +106,9 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                _prayerList = await Prayer.LoadAllAsync();
+                _prayerService.InvalidateCache();
+                var prayers = await _prayerService.GetAllPrayersAsync();
+                _prayerList = prayers.ToList();
             }
             catch (Exception e)
             {

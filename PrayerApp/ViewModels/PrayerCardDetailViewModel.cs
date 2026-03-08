@@ -18,6 +18,7 @@ namespace PrayerApp.ViewModels
     internal class PrayerCardDetailViewModel : ObservableObject, IQueryAttributable
     {
         private readonly ITagService _tagService;
+        private readonly ICardService _cardService;
         private PrayerCard _prayerCard;
 
         public ICommand SaveCommand { get; private set; }
@@ -107,15 +108,16 @@ namespace PrayerApp.ViewModels
         #endregion
 
         #region Constructors
-        public PrayerCardDetailViewModel(ITagService tagService)
+        public PrayerCardDetailViewModel(ITagService tagService, ICardService cardService)
         {
             _tagService = tagService ?? throw new ArgumentNullException(nameof(tagService));
+            _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
             _prayerCard = new PrayerCard();
             TagSelectionViewModel = new PrayerTagSelectionViewModel(tagService);
 
             LoadCommonConstructorObjects();
         }
-        public PrayerCardDetailViewModel(PrayerCard prayerCard, ITagService tagService) : this(tagService)
+        public PrayerCardDetailViewModel(PrayerCard prayerCard, ITagService tagService, ICardService cardService) : this(tagService, cardService)
         {
             _prayerCard = prayerCard ?? throw new ArgumentNullException(nameof(prayerCard));
 
@@ -123,10 +125,10 @@ namespace PrayerApp.ViewModels
         }
 
         // kept for tests or other activations if needed
-        public PrayerCardDetailViewModel() : this(new TagService(new DBService(Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db")))) { }
+        public PrayerCardDetailViewModel() : this(new TagService(new DBService(Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db"))), new CardService()) { }
 
         // New overload to preserve existing call sites that pass a PrayerCard
-        public PrayerCardDetailViewModel(PrayerCard prayerCard) : this(prayerCard, new TagService(new DBService(Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db")))) { }
+        public PrayerCardDetailViewModel(PrayerCard prayerCard) : this(prayerCard, new TagService(new DBService(Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db"))), new CardService()) { }
 
         private void LoadCommonConstructorObjects()
         {
@@ -143,13 +145,13 @@ namespace PrayerApp.ViewModels
         private async Task SaveAsync()
         {
             _prayerCard.UpdatedAt = DateTime.Now;
-            await _prayerCard.SaveAsync();
+            await _cardService.SaveCardAsync(_prayerCard);
             await Shell.Current.GoToAsync($"..?saved={Identifier}");
         }
 
         private async Task DeleteAsync()
         {
-            await _prayerCard.DeleteAsync();
+            await _cardService.DeleteCardAsync(_prayerCard);
             await Shell.Current.GoToAsync($"..?deleted={Identifier}");
         }
         private async Task SelectPrayerAsync()
