@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,6 +33,20 @@ namespace PrayerApp.Services
             await _db.CreateTableAsync<PrayerInteraction>(); // Ensure table is created
 
             await EnsurePrayerCardColumnsAsync();
+
+            // Fix tag junction table: ensure PrayerRequestTag exists with FK to Prayer.Id
+            // Drop PrayerCardTag if it was created by a previous migration
+            try
+            {
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCardTag");
+                // Recreate PrayerRequestTag fresh with correct schema (old data had wrong FK values, discard it)
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateSchema] Tag table cleanup: {ex.Message}");
+            }
+            // PrayerRequestTag is created by CreateTableAsync<PrayerRequestTag>() above — no further action needed
         }
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()
