@@ -34,21 +34,28 @@
                 <!-- Frequency Picker -->
                 <HorizontalStackLayout Spacing="10">
                     <Label VerticalOptions="Center" WidthRequest="100" Text="Frequency" />
-                    <Picker ItemsSource="{Binding FrequencyOptions}"
+                    <Picker Title="Select Frequency"
+                            ItemsSource="{Binding FrequencyOptions}"
                             SelectedItem="{Binding PrayerFrequency}"
+                            HorizontalOptions="Start"
+                            WidthRequest="200"
                             VerticalOptions="Center" />
                 </HorizontalStackLayout>
 
                 <!-- Allow Notifications -->
                 <HorizontalStackLayout Spacing="10">
                     <Label VerticalOptions="Center" WidthRequest="100" Text="Reminders" />
-                    <Switch IsToggled="{Binding CanNotify}" VerticalOptions="Center" />
+                    <Switch IsToggled="{Binding CanNotify}"
+                            OnColor="{StaticResource Secondary}"
+                            VerticalOptions="Center" />
                 </HorizontalStackLayout>
 
                 <!-- Is Answered -->
                 <HorizontalStackLayout Spacing="10">
                     <Label VerticalOptions="Center" WidthRequest="100" Text="Answered" />
-                    <Switch IsToggled="{Binding IsAnswered}" VerticalOptions="Center" />
+                    <Switch IsToggled="{Binding IsAnswered}"
+                            OnColor="{StaticResource Secondary}"
+                            VerticalOptions="Center" />
                 </HorizontalStackLayout>
 
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="4">

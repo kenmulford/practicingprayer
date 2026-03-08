@@ -123,7 +123,7 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public ObservableCollection<PrayerFrequency> FrequencyOptions { get; private set; }
+        public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; }
 
         public ObservableCollection<PrayerRequestDetailViewModel> Prayers { get; }
 
@@ -145,22 +145,12 @@ namespace PrayerApp.ViewModels
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
-            FrequencyOptions = new ObservableCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>());
+            FrequencyOptions = new ReadOnlyCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>().ToList());
         }
 
-        public PrayerCardViewModel(PrayerCard _pc)
+        public PrayerCardViewModel(PrayerCard pc) : this()
         {
-            _prayerCard = _pc;
-            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-            SaveCommand = new AsyncRelayCommand(SaveAsync);
-            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
-            SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
-            ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
-            ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
-            Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
-            Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
-            FrequencyOptions = new ObservableCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>());
+            _prayerCard = pc;
         }
 
         #endregion
