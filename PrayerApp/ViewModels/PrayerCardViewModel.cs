@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace PrayerApp.ViewModels
         public ICommand SelectCardCommand { get; }
         public ICommand ToggleExpandedCommand { get; }
         public ICommand ToggleFavoriteCommand { get; }
+        public ICommand AddPrayerCommand { get; }
 
         #region Properties
 
@@ -143,6 +145,7 @@ namespace PrayerApp.ViewModels
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
+            AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
             FrequencyOptions = new ReadOnlyCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>().ToList());
@@ -176,11 +179,15 @@ namespace PrayerApp.ViewModels
 
         private async Task ToggleExpandedAsync()
         {
-            IsExpanded = !IsExpanded;
-
-            if (IsExpanded && !_prayersLoaded)
+            if (!IsExpanded && !_prayersLoaded)
             {
+                // Load first, then reveal — avoids empty flash
                 await LoadPrayersAsync();
+                IsExpanded = true;
+            }
+            else
+            {
+                IsExpanded = !IsExpanded;
             }
         }
 
@@ -188,6 +195,11 @@ namespace PrayerApp.ViewModels
         {
             IsFavorite = !IsFavorite;
             await _cardService.SaveCardAsync(_prayerCard);
+        }
+
+        private async Task AddPrayerAsync()
+        {
+            await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?newForCard={_prayerCard.Id}");
         }
 
         #endregion
@@ -294,7 +306,10 @@ namespace PrayerApp.ViewModels
             {
                 ReturnToCards = true
             };
-            Prayers.Add(viewModel);
+            var insertIndex = Prayers
+                .TakeWhile(p => string.Compare(p.Title, prayer.Title, StringComparison.OrdinalIgnoreCase) < 0)
+                .Count();
+            Prayers.Insert(insertIndex, viewModel);
             OnPropertyChanged(nameof(HasPrayers));
         }
 
