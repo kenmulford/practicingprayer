@@ -47,6 +47,12 @@ namespace PrayerApp
             // Register notification service as singleton
             builder.Services.AddSingleton<INotificationService, NotificationService>();
 
+#if ANDROID
+            builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
+#elif IOS
+            builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.iOS.OrientationService>();
+#endif
+
             var app = builder.Build();
 
             PrayerApp.Services.Settings.ConfigureNotificationService(
