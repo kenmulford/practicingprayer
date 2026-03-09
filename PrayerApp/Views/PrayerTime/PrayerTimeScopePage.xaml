@@ -20,13 +20,8 @@
                    FontSize="14"
                    TextColor="{StaticResource Gray400}" />
 
-            <Border BackgroundColor="{StaticResource Secondary}"
-                    Stroke="{StaticResource Primary}"
-                    StrokeThickness="1.5"
+            <Border Style="{StaticResource PrayerCardBorder}"
                     Padding="8">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
-                </Border.StrokeShape>
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Tags}" Spacing="0">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:SelectableTag">

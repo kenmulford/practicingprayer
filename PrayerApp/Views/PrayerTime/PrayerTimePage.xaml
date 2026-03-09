@@ -52,14 +52,9 @@
         <Grid Grid.Row="1" VerticalOptions="Center">
 
             <!-- The prayer card — hidden when loading or completed -->
-            <Border BackgroundColor="{StaticResource Secondary}"
-                    Stroke="{StaticResource Primary}"
-                    StrokeThickness="1.5"
+            <Border Style="{StaticResource PrayerCardBorder}"
                     Padding="20"
                     IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
-                </Border.StrokeShape>
                 <Border.GestureRecognizers>
                     <SwipeGestureRecognizer Direction="Left" Command="{Binding NextCommand}" />
                     <SwipeGestureRecognizer Direction="Right" Command="{Binding PreviousCommand}" />

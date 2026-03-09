@@ -5,12 +5,16 @@ namespace PrayerApp.Converters;
 
 public class BoolToMutedColorConverter : IValueConverter
 {
-    // Normal text color when not answered; muted gray when answered
-    private static readonly Color _normalColor = Color.FromArgb("#1f1f1f");  // OffBlack
-    private static readonly Color _mutedColor  = Color.FromArgb("#919191");  // Gray400
-
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? _mutedColor : _normalColor;
+    {
+        // Resolve from resource dictionary so changes to Colors.xaml propagate here automatically
+        var key = value is true ? "Gray400" : "OffBlack";
+        if (Application.Current?.Resources.TryGetValue(key, out var res) == true && res is Color color)
+            return color;
+
+        // Fallback — mirrors Colors.xaml definitions in case resources aren't loaded yet
+        return value is true ? Color.FromArgb("#919191") : Color.FromArgb("#1f1f1f");
+    }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotImplementedException();
