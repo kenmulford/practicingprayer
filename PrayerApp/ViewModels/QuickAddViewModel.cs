@@ -42,18 +42,34 @@ public class QuickAddViewModel : ObservableObject
 
     private async Task LoadCardsAsync()
     {
-        var cards = await _cardService.GetCardsAsync();
-        Cards.Clear();
-        foreach (var card in cards)
-            Cards.Add(card);
-        if (Cards.Count > 0)
-            SelectedCard = Cards[0];
+        try
+        {
+            var cards = await _cardService.GetCardsAsync();
+            Cards.Clear();
+            foreach (var card in cards)
+                Cards.Add(card);
+            if (Cards.Count > 0)
+                SelectedCard = Cards[0];
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load cards: {ex.Message}");
+            await Shell.Current.DisplayAlert("Error", "Unable to load prayer cards.", "OK");
+        }
     }
 
     private async Task SaveAsync()
     {
-        if (string.IsNullOrWhiteSpace(Title) || SelectedCard == null)
+        if (string.IsNullOrWhiteSpace(Title))
+        {
+            await Shell.Current.DisplayAlert("Required", "Please enter a prayer title.", "OK");
             return;
+        }
+        if (SelectedCard == null)
+        {
+            await Shell.Current.DisplayAlert("Required", "Please select a card.", "OK");
+            return;
+        }
 
         var prayer = new Prayer
         {
@@ -61,6 +77,7 @@ public class QuickAddViewModel : ObservableObject
             PrayerCardId = SelectedCard.Id
         };
         await _prayerService.SavePrayerAsync(prayer);
+        _prayerService.InvalidateCache();
         await Shell.Current.Navigation.PopModalAsync();
     }
 
