@@ -65,7 +65,7 @@ namespace PrayerApp
             // set DB service for the necessary models
             PrayerCard.SetDBService(myDBService);
             PrayerTag.SetDBService(myDBService);
-            PrayerRequestTag.SetDBService(myDBService);
+            PrayerCardTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
             PrayerInteraction.SetDBService(myDBService);
 

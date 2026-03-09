@@ -29,33 +29,33 @@ public class TagService : ITagService
         return _cache;
     }
 
-    public async Task<IReadOnlyList<PrayerTag>> GetTagsByRequestIdAsync(int prayerRequestId)
+    public async Task<IReadOnlyList<PrayerTag>> GetTagsByCardIdAsync(int prayerCardId)
     {
-        var requestTags = await PrayerRequestTag.LoadByRequestIdAsync(prayerRequestId);
-        var tagIds = requestTags.Select(rt => rt.PrayerTagId).ToHashSet();
+        var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
+        var tagIds = cardTags.Select(ct => ct.PrayerTagId).ToHashSet();
         var allTags = await GetTagsAsync();
 
         var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
         return new ReadOnlyCollection<PrayerTag>(tags);
     }
 
-    public async Task<int> AddTagToRequestAsync(int prayerRequestId, int prayerTagId)
+    public async Task<int> AddTagToCardAsync(int prayerCardId, int prayerTagId)
     {
-        var requestTag = new PrayerRequestTag
+        var cardTag = new PrayerCardTag
         {
-            PrayerRequestId = prayerRequestId,
+            PrayerCardId = prayerCardId,
             PrayerTagId = prayerTagId
         };
 
-        var result = await _dbService.InsertAsync(requestTag);
+        var result = await _dbService.InsertAsync(cardTag);
         InvalidateCache();
         return result;
     }
 
-    public async Task<int> RemoveTagFromRequestAsync(int prayerRequestId, int prayerTagId)
+    public async Task<int> RemoveTagFromCardAsync(int prayerCardId, int prayerTagId)
     {
-        var requestTags = await PrayerRequestTag.LoadByRequestIdAsync(prayerRequestId);
-        var toDelete = requestTags.FirstOrDefault(rt => rt.PrayerTagId == prayerTagId);
+        var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
+        var toDelete = cardTags.FirstOrDefault(ct => ct.PrayerTagId == prayerTagId);
 
         if (toDelete is null)
             return 0;
@@ -83,9 +83,9 @@ public class TagService : ITagService
         var prayerIds = new HashSet<int>();
         foreach (var tagId in tagIds)
         {
-            var requestTags = await _dbService.GetByTagIdAsync(tagId);
-            foreach (var rt in requestTags)
-                prayerIds.Add(rt.PrayerRequestId);
+            var cardTags = await _dbService.GetByTagIdAsync(tagId);
+            foreach (var ct in cardTags)
+                prayerIds.Add(ct.PrayerCardId);
         }
         return prayerIds.ToList().AsReadOnly();
     }
