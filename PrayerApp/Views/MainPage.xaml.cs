@@ -6,6 +6,6 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
         BtnQuickAdd.Clicked += async (s, e) =>
-            await Shell.Current.PushModalAsync(new QuickAddPage());
+            await Shell.Current.Navigation.PushModalAsync(new QuickAddPage());
     }
 }
