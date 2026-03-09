@@ -20,24 +20,10 @@
 
 ## 🔴 Immediate / Tech Debt
 
-### TD-1 Fix broken tag binding on `PrayerDetailPage`
-`PrayerDetailPage.xaml` has a "Tags" section whose `CollectionView` is bound to
-`TagSelectionViewModel.AllTags`, but the page's `BindingContext` is
-`PrayerRequestDetailViewModel` — which has no `TagSelectionViewModel`. This is a
-silent binding failure at runtime.
-
-**Decision**: Tags on individual Prayer requests are not yet the designed behavior
-(tags belong to Prayer Cards). Remove the tags section from `PrayerDetailPage.xaml`
-until the feature is properly scoped.
-
-**File**: `Views/Prayer/PrayerDetailPage.xaml`
-
----
-
 ### TD-2 `PrayerRequestTag` → `PrayerCardTag` rename
 
-The junction table and model are named `PrayerRequestTag` / `PrayerRequestId`, but tags
-belong to **Prayer Cards**, not individual requests. The naming misleads future readers.
+Tags belong to **Prayer Cards**, not individual prayer requests. The junction table,
+model, and service method names all still say `Request`, which misleads future readers.
 
 **Changes required:**
 
@@ -58,60 +44,19 @@ belong to **Prayer Cards**, not individual requests. The naming misleads future 
 **DB migration** (add to `DBService.UpdateSchema()`):
 ```sql
 ALTER TABLE PrayerRequestTag RENAME TO PrayerCardTag;
--- If column rename is needed on older SQLite: recreate table + migrate data
 ```
 
 ---
 
-### TD-3 `PrayerCardDetailViewModel` is orphaned
+### TD-5 Prayer Time — interval selection UI
 
-`PrayerCardDetailViewModel` is registered as `Transient` in `MauiProgram.cs` but no
-page's `BindingContext` is set to it. `PrayerCardPage.xaml` uses `PrayerCardViewModel`.
+Auto mode is hardcoded to 30 seconds (`const int AutoIntervalSeconds = 30`).
+The original plan specified user-selectable intervals: 30s / 1 min / 2 min.
 
-**Options (discuss before implementing):**
-- Consolidate `CanNotify`, `PrayerFrequency`, `IsAnswered`, `FrequencyOptions` from
-  `PrayerCardDetailViewModel` into `PrayerCardViewModel`, then delete the orphan.
-- Or: wire `PrayerCardDetailViewModel` to the edit card page if those fields are needed.
-
-**Files**: `ViewModels/PrayerCardDetailViewModel.cs`, `MauiProgram.cs`
-
----
-
-### TD-4 `PrayerInteraction` not in DB schema
-
-`PrayerInteraction.cs` and `PrayerInteractionService.cs` exist but the table is not
-created in `DBService`. This means interaction records (used by Prayer Time to log
-sessions) are never persisted.
-
-**Changes** (`Services/DBService.cs`):
-- Add `await _db.CreateTableAsync<PrayerInteraction>()` in the schema creation block
-- Add `await _db.CreateTableAsync<PrayerInteraction>()` in `UpdateSchema()` (guarded)
-- Wire `PrayerInteractionService` save/query methods to `DBService`
-
-**Files**: `Services/DBService.cs`, `Services/IDBService.cs`, `Services/PrayerInteractionService.cs`
-
----
-
-### TD-5 Prayer Time — hardcoded 30-second auto interval
-
-Auto mode is currently hardcoded to 30 seconds (`const int AutoIntervalSeconds = 30`).
-The plan specified 30s / 1min / 2min selectable via toolbar.
-
-**Changes** (`ViewModels/PrayerTimeViewModel.cs`, `Views/PrayerTime/PrayerTimePage.xaml`):
-- Add `SelectIntervalCommand` with options [30, 60, 120]
-- Show selected interval in toolbar / Auto button text
-- Persist last-used interval to `Settings`
-
----
-
-### TD-6 Legacy `Prayer.cs` model file
-
-`Models/Prayer.cs` still exists alongside `PrayerCard.cs`. Verify whether `Prayer.cs`
-is still the "prayer request" model (individual items within a card) or is truly dead.
-If alive and intentional, rename to `PrayerRequest.cs` for clarity. If dead, delete it.
-
-> ⚠️ **Confirm before deleting** — the `PrayerListPage` and `PrayerListViewModel` may
-> still reference `Prayer` directly.
+**Changes:**
+- `ViewModels/PrayerTimeViewModel.cs`: Add `SelectIntervalCommand` with options [30, 60, 120];
+  replace `const` with a settable property; persist last-used interval to `Settings`
+- `Views/PrayerTime/PrayerTimePage.xaml`: Add interval selector to toolbar or auto-mode button area
 
 ---
 
@@ -120,94 +65,70 @@ If alive and intentional, rename to `PrayerRequest.cs` for clarity. If dead, del
 ### F-1 Tag creation and management UI
 
 No UI exists to create, edit, or delete `PrayerTag` records. `ITagService.SaveTagAsync`
-and `DeleteTagAsync` are implemented but unreachable from the app.
+and `DeleteTagAsync` are implemented but unreachable from the app. No tag assignment UI
+on `PrayerCardPage` either.
 
 **Needs:**
-- A "Tags" settings/management screen (list, add, edit, delete tags with optional color)
-- Wire tag creation into `PrayerCardPage` (assign tags to a card while editing it)
-- Replace the broken tag binding in `PrayerDetailPage` (TD-1) once scoped correctly
+- A "Tags" management screen (list, add, edit, delete tags with optional color picker)
+- Wire tag assignment into `PrayerCardPage` (assign/remove tags from a card while editing)
+- Navigate to it from Settings or the Cards tab toolbar
 
 **Files**: New `Views/Tags/TagsPage.xaml`, `ViewModels/TagsViewModel.cs`; update `AppShell.xaml`
 
 ---
 
-### F-2 Tag filtering on Prayer Cards / Prayer Time
+### F-2 Tag filtering on Prayer Cards page
 
-Once tag management UI is in place:
-- Add filter bar to `PrayerCardsPage` to show only cards with selected tags
-- `PrayerTimeScopePage` already has the UI; verify `PrayerTimeViewModel` correctly
-  filters by tag IDs when launched with `scope=tags`
+`PrayerTimeViewModel` already filters by tag IDs when launched with `scope=tags`.
+What's missing is the equivalent filter UI on `PrayerCardsPage`.
 
----
-
-### F-3 `PrayerDetailPage` — view/edit mode overhaul
-
-Current page is a basic form. Target design:
-- **View mode**: large title, details body, answered badge (if answered), frequency badge,
-  action buttons: "Set Reminder" | "Edit" | "Mark Answered"
-- **Edit mode**: title entry, details editor, frequency picker, CanNotify switch,
-  IsAnswered toggle (auto-sets `AnsweredAt`), Save / Delete buttons
-- `MarkAnsweredCommand`: single-tap sets `IsAnswered = true`, `AnsweredAt = DateTime.Now`, saves
-
-**Files**: `Views/Prayer/PrayerDetailPage.xaml`, `ViewModels/PrayerRequestDetailViewModel.cs`
-
----
-
-### F-4 `PrayerCardPage` — expose full card fields
-
-Currently shows only title. After TD-3 is resolved (consolidate `PrayerCardDetailViewModel`),
-expose: title, frequency picker, CanNotify switch, IsAnswered toggle, list of this
-card's prayer requests inline.
-
-**Files**: `Views/PrayerCard/PrayerCardPage.xaml`, `ViewModels/PrayerCardViewModel.cs`
+**Needs:**
+- Filter bar / chip row at the top of `PrayerCardsPage` to show only cards with selected tags
+- Bind to a filter state in `PrayerCardsViewModel`
 
 ---
 
 ### F-5 Notification scheduling
 
-`PrayerFrequency` is the reminder cadence; `CanNotify` is the per-request toggle;
-`Settings.AllowNotifications` is the global toggle. The infrastructure is in place
-but no scheduling is wired up.
+`PrayerFrequency` is the reminder cadence; `CanNotify` is the per-prayer toggle;
+`Settings.AllowNotifications` is the global toggle. Infrastructure exists but no
+scheduling is implemented — `NotificationService` only has `RequestPermissionAsync`,
+`AreNotificationsEnabledAsync`, and `ClearAllAsync`.
 
 **Needs** (`Services/NotificationService.cs`):
 - `ScheduleForPrayer(Prayer prayer)` — creates a local notification using `PrayerFrequency`
   as the repeat cadence
-- Tapping the notification deep-links to the specific prayer request's card
-  (requires `OnNewIntent` override on Android; `UNUserNotificationCenterDelegate` on iOS)
+- Deep-link on tap: `OnNewIntent` override (Android `MainActivity.cs`),
+  `UNUserNotificationCenterDelegate` (iOS `AppDelegate.cs`)
 
 ---
 
 ### F-6 Unit test project
 
-No automated test project exists. The app targets mobile only (`net10.0-android`,
-`net10.0-ios`), so a separate class library is required for testable logic.
+No automated test project exists. Mobile-only targets (`net10.0-android`, `net10.0-ios`)
+mean tests must live in a separate project.
 
-**Plan (discuss before implementing):**
-- Add a `PrayerApp.Tests` project (xUnit, `net10.0` or `net9.0`; no MAUI target needed)
-- Extract pure-logic ViewModels / Services into a `PrayerApp.Core` class library that
-  both the app and tests reference — OR — just mock platform dependencies in the test project
-- Start with the most complex / risky ViewModels: `PrayerTimeViewModel` (timer logic),
-  `PrayerCardViewModel` (save/delete flow), `PrayerListViewModel` (sorting/filtering)
-- CI: GitHub Actions workflow running `dotnet test` on push
-
-**Key architectural decision**: Core library extraction vs. direct mocking.
-Both are valid; core library is cleaner long-term but requires refactoring the project structure.
+**Plan (discuss approach before implementing):**
+- Add `PrayerApp.Tests` (xUnit, `net10.0` target — no MAUI needed)
+- **Option A**: Extract `PrayerApp.Core` class library for pure-logic ViewModels/Services;
+  both the app and test project reference Core. Cleaner long-term, requires refactoring.
+- **Option B**: Keep single app project; mock platform dependencies via interfaces.
+  Less refactoring, slightly messier test setup.
+- Start with highest-value test targets: `PrayerTimeViewModel` (timer state machine),
+  `PrayerCardViewModel` (save/delete/cache), `PrayerListViewModel` (sort/filter)
+- CI: GitHub Actions `dotnet test` on push
 
 ---
 
 ### F-7 Home page personalization
 
-User would like the home page to show the device owner's name (e.g. "Good morning, Ken").
+`MainPage.xaml` already has a greeting label showing the literal text `"Hello, {User}!"`
+(the `{User}` is hardcoded, not a binding). `Settings` has no `UserName` property.
 
-**Research needed:**
-- **Android**: `AccountManager` can query Google accounts but requires permissions and
-  may be restricted on modern Android (API 26+ deprecations). `Settings.Secure.getString`
-  for `BLUETOOTH_NAME` or `device_name` are unreliable. Best practical option: a
-  one-time "What's your name?" prompt on first launch stored in `Settings`.
-- **iOS**: No API to get the device owner's name without privacy permission prompts.
-  Same practical recommendation: ask on first launch.
-- **Decision**: Prompt for name on first run → store in `Settings.UserName` → display
-  on Home page. This is the only cross-platform option that doesn't require intrusive permissions.
+**Plan**: One-time first-launch prompt ("What's your name?") → store in `Settings.UserName`
+→ bind greeting on `MainPage`. This is the only cross-platform approach that avoids
+privacy permission friction (neither Android nor iOS exposes the device owner's name
+via a clean public API in 2026).
 
 **Files**: `Views/MainPage.xaml`, `Services/Settings.cs`, possibly a new `FirstRunPage`
 
@@ -217,39 +138,23 @@ User would like the home page to show the device owner's name (e.g. "Good mornin
 
 ### M-1 Prayer Time — last-prayed notifications
 
-Driven by `PrayerInteraction` records. After TD-4 (DB schema) is done:
-- Calculate "days since last prayed" per request from `PrayerInteraction` table
-- Schedule a push notification: "You haven't prayed for [name] in X days"
-- Configurable threshold (default: 7 days) in Settings
+`PrayerInteraction` records are now logged. Next step: use them to drive
+"you haven't prayed for [name] in X days" push notifications.
 
-**Do NOT implement until TD-4 is complete and notification scheduling (F-5) is working.**
-
----
-
-### M-2 Prayer Time — swipe-past-last-card completion
-
-When the user swipes past the last card in Prayer Time, show a completion screen:
-"You've prayed through all your requests!" with a "Finish" button. Currently the
-session just stops at the last card.
-
-**File**: `Views/PrayerTime/PrayerTimePage.xaml`, `ViewModels/PrayerTimeViewModel.cs`
-(`HasCompleted` property already exists — needs UI wired to it)
+**Needs** (after F-5 notification scheduling is done):
+- `PrayerInteractionService` method: calculate days since last interaction per prayer
+- Schedule a notification per prayer when threshold is exceeded (default: 7 days)
+- Configurable threshold in Settings
 
 ---
 
-### M-3 Seed initial tags in DBService
+### M-4 Prayer statistics
 
-`DBService` has a commented-out stub for seeding tags. Once the tag taxonomy is
-decided (what default tags make sense for a prayer app), uncomment and populate.
-
----
-
-### M-4 Prayer statistics / analytics
-
-- Count of prayers prayed (from `PrayerInteraction`)
+No stats surface exists. `PrayerInteraction` data is now being written, enabling:
+- Count of prayers prayed (total interactions)
 - Streak tracking (consecutive days of Prayer Time)
 - Answered prayer count / percentage
-- Display on Home page or a dedicated Stats tab
+- Display on Home page or dedicated Stats tab
 
 ---
 
@@ -275,11 +180,13 @@ decided (what default tags make sense for a prayer app), uncomment and populate.
 
 **Key decisions needed:**
 - Which API / approach?
-- Store verse text locally on `Prayer` record after first fetch (recommended, works offline after) or fetch on-demand?
+- Store verse text locally on `Prayer` record after first fetch (recommended — works offline after)?
 - UI: single verse reference field? Passage range? Just a hyperlink?
 - What happens when offline at time of verse lookup?
 
 **Model change if storing locally**: Add `VerseReference` (string) + `VerseText` (string) to `Prayer.cs`.
+
+**`Microsoft.Extensions.Http`** is already in the csproj — HTTP infrastructure ready.
 
 ---
 
@@ -293,15 +200,13 @@ No crash risk from connectivity at this time.
 **Trigger point**: Becomes relevant the moment BL-1 or any cloud feature ships.
 
 **Options to discuss:**
-- Add `IConnectivity` guard (MAUI built-in via `Microsoft.Maui.Networking`) before any
-  HTTP call — lightweight, show user-friendly message instead of crashing
+- `IConnectivity` guard (MAUI built-in via `Microsoft.Maui.Networking`) before any
+  HTTP call — lightweight, user-friendly message instead of crashing
 - `HttpClient` + `Polly` retry policy for resilient network calls
 - Offline-first: always cache fetched content locally (verse text → `Prayer` record)
 
 **Recommendation**: `IConnectivity` guard + local caching is sufficient for a personal
-devotional app. Full retry logic (Polly) is overkill unless the API is unreliable.
-
-**`Microsoft.Extensions.Http`** is already in the csproj — HTTP client infrastructure ready.
+devotional app. `Polly` is overkill unless the API is unreliable.
 
 ---
 
@@ -318,7 +223,7 @@ devotional app. Full retry logic (Polly) is overkill unless the API is unreliabl
   you can never update the app**. Google Play App Signing recommended (upload key ≠ final key)
 - **Target API**: Must target Android 14 (API 34) or higher for new apps
 - **Content rating**: IARC questionnaire — prayer app likely "Everyone"
-- **Privacy policy**: Required if any user data is collected; local-only data = minimal requirements but still recommended
+- **Privacy policy**: Required; local-only data = minimal requirements but still needed
 - **Store listing**: Screenshots (phone + 7" tablet), feature graphic (1024×500),
   short description (80 chars), full description (4000 chars), category (Lifestyle or Reference)
 - **Review time**: Typically 1–3 days for new apps
@@ -338,15 +243,15 @@ devotional app. Full retry logic (Polly) is overkill unless the API is unreliabl
 - [ ] Android: release keystore + signing config in `.csproj`
 - [ ] iOS: Apple Developer enrollment + provisioning
 - [ ] `PrivacyInfo.xcprivacy` (iOS — blocks App Store submission without it)
-- [ ] App icon: all required sizes (MAUI generates from single SVG if configured ✓ — verify adaptive icon for Android)
+- [ ] App icon: verify adaptive icon for Android (MAUI generates from SVG ✓ — confirm adaptive layers)
 - [ ] Privacy policy page/URL (required by both stores)
 - [ ] App ID / bundle ID finalized (`com.multithreadedllc.prayerapp` — already set ✓)
 - [ ] Version + build number management strategy
-- [ ] TestFlight / internal testing track
+- [ ] TestFlight / internal testing track setup
 
 **Key decisions needed:**
 1. Target both stores simultaneously or Android first?
-2. Privacy policy — who hosts it? Simple GitHub Pages URL is acceptable.
+2. Privacy policy — who hosts it? (Simple GitHub Pages URL is acceptable)
 3. Where to store the Android release keystore safely?
 4. Do you have an Apple Developer account already?
 
@@ -356,25 +261,31 @@ devotional app. Full retry logic (Polly) is overkill unless the API is unreliabl
 
 | Item | Notes |
 |------|-------|
-| Phase 2: 3×5 card visual (`PrayerCardsPage`) | SwipeView + header/rule/requests layout |
+| TD-1 Broken tag binding on PrayerDetailPage | Tags section removed from PrayerDetailPage — issue is gone |
+| TD-3 PrayerCardDetailViewModel orphaned | ViewModel was never created; no orphan exists |
+| TD-4 PrayerInteraction not in DB schema | `CreateTableAsync<PrayerInteraction>()` is in DBService constructor and UpdateSchema |
+| TD-6 Legacy Prayer.cs cleanup | Prayer.cs is the active prayer-request model — not dead code; no action needed |
+| F-3 PrayerDetailPage view/edit overhaul | Separate VIEW/EDIT mode sections; MarkAnsweredCommand; AnsweredAtDisplay; Set Reminder placeholder |
+| F-4 PrayerCardPage full card fields | Frequency picker, CanNotify switch, IsAnswered toggle all present |
+| M-2 Prayer Time completion screen | "You've prayed through all your requests!" overlay wired to HasCompleted |
+| M-3 Seed initial tags | Urgent / Family / Work tags seeded in DBService.SeedDataAsync |
+| Phase 2: 3×5 card visual (PrayerCardsPage) | SwipeView + header/rule/requests layout |
 | Phase 2: Answered prayer rendering | Strikethrough + muted color + answered date |
 | Phase 3: Prayer Time page + orientation lock | Landscape forced, swipe/arrow navigation |
 | Phase 3: Auto-mode countdown timer | 30s timer, pause on background, resume on foreground |
-| Phase 3: Tag-scoped Prayer Time | `PrayerTimeScopePage` + `PrayerTimeViewModel` filter |
-| `BoolToMutedColorConverter` — resource-aware colors | Resolves from `Application.Current.Resources`; no hardcoded hex |
-| `PrayerCardBorder` named style | Secondary bg, Primary 1.5px stroke, 8px radius — applied to all card borders |
-| `Microsoft.Maui.Controls` → `10.0.41` | Required by `CommunityToolkit.Maui 14.0.1` |
-| `Shell.Current.Navigation.PushModalAsync` fix | `PushModalAsync` removed in MAUI 10.0.41 |
-| `ICardService` write methods + cache invalidation | `SaveCardAsync`, `DeleteCardAsync`, `InvalidateCache` |
-| `IPrayerService` / `PrayerService` | Singleton; caches per-card + all-prayers queries |
-| `ITagService` write methods | `SaveTagAsync`, `DeleteTagAsync` |
-| `Prayer.AnsweredAt` | `DateTime?` column; set on `IsAnswered = true` |
-| `PrayerListViewModel` sort | Fixed Z→A → A→Z |
-| Platforms cleanup | Removed `Windows/`, `MacCatalyst/`, `Tizen/` folders; csproj clean |
-| Dead package target cleanup | Removed net9 + Windows conditional PropertyGroups |
-| `PrayerInteractionService` | Created; DB schema hookup still pending (TD-4) |
-| Quick Add modal | `BtnQuickAdd` wired → `QuickAddPage` modal |
-| `QuickAddPage` | Card picker + prayer title form |
+| Phase 3: Tag-scoped Prayer Time | PrayerTimeScopePage + PrayerTimeViewModel filter by tagIds |
+| BoolToMutedColorConverter resource-aware | Resolves from Application.Current.Resources; fallback hex |
+| PrayerCardBorder named style | Secondary bg, Primary 1.5px stroke, 8px radius — applied to all card borders |
+| Microsoft.Maui.Controls → 10.0.41 | Required by CommunityToolkit.Maui 14.0.1 |
+| Shell.Current.Navigation.PushModalAsync fix | PushModalAsync removed in MAUI 10.0.41 |
+| ICardService write methods + cache invalidation | SaveCardAsync, DeleteCardAsync, InvalidateCache |
+| IPrayerService / PrayerService | Singleton; caches per-card + all-prayers queries |
+| ITagService write methods | SaveTagAsync, DeleteTagAsync |
+| Prayer.AnsweredAt | DateTime? column; set on IsAnswered = true |
+| PrayerListViewModel sort | Fixed Z→A → A→Z |
+| Platforms cleanup | Removed Windows/, MacCatalyst/, Tizen/ folders; csproj clean |
+| PrayerInteractionService | LogInteractionAsync implemented |
+| Quick Add modal | BtnQuickAdd wired → QuickAddPage modal with card picker |
 
 ---
 
