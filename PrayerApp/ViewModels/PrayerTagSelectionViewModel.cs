@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using PrayerApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,7 +19,7 @@ namespace PrayerApp.ViewModels
     public class PrayerTagSelectionViewModel : ObservableObject
     {
         private readonly ITagService _tagService;
-        private int _prayerCardId;
+        private int _prayerRequestId;
         private ObservableCollection<PrayerTagItemViewModel> _allTags;
         private ObservableCollection<PrayerTagItemViewModel> _selectedTags;
 
@@ -45,9 +46,9 @@ namespace PrayerApp.ViewModels
             ClearSelectionCommand = new RelayCommand(ClearSelection);
         }
 
-        public async Task InitializeForCardAsync(int prayerRequestId)
+        public async Task InitializeForRequestAsync(int prayerRequestId)
         {
-            _prayerCardId = prayerRequestId;
+            _prayerRequestId = prayerRequestId;
             await LoadTagsAsync();
             await LoadSelectedTagsAsync();
         }
@@ -75,7 +76,7 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                var selectedTags = await _tagService.GetTagsByRequestIdAsync(_prayerCardId);
+                var selectedTags = await _tagService.GetTagsByRequestIdAsync(_prayerRequestId);
                 var selectedIds = selectedTags.Select(t => t.Id).ToHashSet();
 
                 // Update AllTags to mark selected ones
@@ -105,11 +106,11 @@ namespace PrayerApp.ViewModels
             {
                 if (isSelected)
                 {
-                    await _tagService.AddTagToRequestAsync(_prayerCardId, tagId);
+                    await _tagService.AddTagToRequestAsync(_prayerRequestId, tagId);
                 }
                 else
                 {
-                    await _tagService.RemoveTagFromRequestAsync(_prayerCardId, tagId);
+                    await _tagService.RemoveTagFromRequestAsync(_prayerRequestId, tagId);
                 }
             }
             catch (Exception ex)

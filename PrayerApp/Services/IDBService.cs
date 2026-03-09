@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +23,7 @@ namespace PrayerApp.Services
         Task<int> DeleteByTagIdAsync(int prayerTagId);
 
         Task<List<PrayerApp.Models.Prayer>> GetPrayersByCardIdAsync(int prayerCardId);
+        Task<List<PrayerApp.Models.PrayerInteraction>> GetInteractionsByPrayerIdAsync(int prayerId);
 
         Task SeedDataAsync();
 

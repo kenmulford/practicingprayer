@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using PrayerApp.Services;
 using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace PrayerApp.ViewModels
     internal class PrayerCardsViewModel : IQueryAttributable
     {
         private List<PrayerCard> _prayerCards;
+        private readonly ICardService _cardService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
 
         public ICommand NewCommand { get; }
@@ -21,8 +23,10 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardsViewModel()
         {
+            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+
             // GET all cards
-            _prayerCards = Task.Run(async () => await PrayerCard.LoadAllAsync()).Result;
+            _prayerCards = Task.Run(async () => await _cardService.GetCardsAsync()).Result.ToList();
 
             // Convert PrayerCard to PrayerCardViewModel
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>(
@@ -132,7 +136,23 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                _prayerCards = await PrayerCard.LoadAllAsync();
+                _cardService.InvalidateCache();
+                var cards = await _cardService.GetCardsAsync();
+                _prayerCards = cards.ToList();
+
+                var viewModels = _prayerCards.Select(pc => new PrayerCardViewModel(pc)).ToList();
+                foreach (var vm in viewModels)
+                {
+                    SubscribeToPropertyChanges(vm);
+                }
+
+                AllPrayerCards.Clear();
+                foreach (var vm in viewModels)
+                {
+                    AllPrayerCards.Add(vm);
+                }
+
+                ApplySorting();
             }
             catch (Exception e)
             {

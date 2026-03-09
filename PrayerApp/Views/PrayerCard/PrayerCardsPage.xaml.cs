@@ -11,6 +11,5 @@ public partial class PrayerCardsPage : ContentPage
 
     private void ContentPage_NavigatedTo(object sender, NavigatedToEventArgs e)
     {
-        cardCollection.SelectedItem = null;
     }
 }

@@ -1,10 +1,11 @@
-﻿namespace PrayerApp.Views
+﻿namespace PrayerApp.Views;
+
+public partial class MainPage : ContentPage
 {
-    public partial class MainPage : ContentPage
+    public MainPage()
     {
-        public MainPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+        BtnQuickAdd.Clicked += async (s, e) =>
+            await Shell.Current.Navigation.PushModalAsync(new QuickAddPage());
     }
 }

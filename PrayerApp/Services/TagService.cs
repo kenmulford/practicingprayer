@@ -32,8 +32,8 @@ public class TagService : ITagService
     {
         var requestTags = await PrayerRequestTag.LoadByRequestIdAsync(prayerRequestId);
         var tagIds = requestTags.Select(rt => rt.PrayerTagId).ToHashSet();
-        var allTags = await PrayerTag.LoadAllAsync();
-        
+        var allTags = await GetTagsAsync();
+
         var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
         return new ReadOnlyCollection<PrayerTag>(tags);
     }
@@ -45,7 +45,7 @@ public class TagService : ITagService
             PrayerRequestId = prayerRequestId,
             PrayerTagId = prayerTagId
         };
-        
+
         var result = await _dbService.InsertAsync(requestTag);
         InvalidateCache();
         return result;
@@ -55,13 +55,26 @@ public class TagService : ITagService
     {
         var requestTags = await PrayerRequestTag.LoadByRequestIdAsync(prayerRequestId);
         var toDelete = requestTags.FirstOrDefault(rt => rt.PrayerTagId == prayerTagId);
-        
+
         if (toDelete is null)
             return 0;
 
         var result = await _dbService.DeleteAsync(toDelete);
         InvalidateCache();
         return result;
+    }
+
+    public async Task<PrayerTag> SaveTagAsync(PrayerTag tag)
+    {
+        await tag.SaveAsync();
+        _cache = null;
+        return tag;
+    }
+
+    public async Task DeleteTagAsync(PrayerTag tag)
+    {
+        await tag.DeleteAsync();
+        _cache = null;
     }
 
     private void InvalidateCache()
