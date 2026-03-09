@@ -48,14 +48,8 @@
                     </SwipeView.RightItems>
 
                     <!-- 3×5 card body -->
-                    <Border
-                        BackgroundColor="{StaticResource Secondary}"
-                        Stroke="{StaticResource Primary}"
-                        StrokeThickness="1.5"
-                        Padding="0">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="8" />
-                        </Border.StrokeShape>
+                    <Border Style="{StaticResource PrayerCardBorder}"
+                            Padding="0">
 
                         <VerticalStackLayout Spacing="0">
 

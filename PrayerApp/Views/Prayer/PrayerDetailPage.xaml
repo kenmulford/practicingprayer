@@ -12,14 +12,9 @@
         <VerticalStackLayout Padding="12,8" Spacing="16">
 
             <!-- VIEW MODE -->
-            <Border BackgroundColor="{StaticResource Secondary}"
-                    Stroke="{StaticResource Primary}"
-                    StrokeThickness="1.5"
+            <Border Style="{StaticResource PrayerCardBorder}"
                     Padding="16"
                     IsVisible="{Binding IsReadOnly}">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
-                </Border.StrokeShape>
                 <VerticalStackLayout Spacing="12">
 
                     <!-- Title -->
@@ -88,14 +83,9 @@
             </Border>
 
             <!-- EDIT MODE -->
-            <Border BackgroundColor="{StaticResource Secondary}"
-                    Stroke="{StaticResource Primary}"
-                    StrokeThickness="1.5"
+            <Border Style="{StaticResource PrayerCardBorder}"
                     Padding="16"
                     IsVisible="{Binding IsEditable}">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
-                </Border.StrokeShape>
                 <VerticalStackLayout Spacing="12">
 
                     <!-- Title -->

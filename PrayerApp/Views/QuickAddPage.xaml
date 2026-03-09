@@ -11,13 +11,8 @@
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
 
-            <Border BackgroundColor="{StaticResource Secondary}"
-                    Stroke="{StaticResource Primary}"
-                    StrokeThickness="1.5"
+            <Border Style="{StaticResource PrayerCardBorder}"
                     Padding="16">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="8" />
-                </Border.StrokeShape>
                 <VerticalStackLayout Spacing="12">
 
                     <Label Text="Prayer Title"
