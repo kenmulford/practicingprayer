@@ -29,13 +29,23 @@
                    VerticalOptions="Center"
                    FontSize="14"
                    TextColor="{StaticResource Gray400}" />
-            <!-- Auto toggle placeholder — hidden until Task 3.5 wires it -->
+            <!-- Countdown: visible only while auto-mode is running -->
+            <Label Grid.Column="2"
+                   Text="{Binding CountdownDisplay}"
+                   IsVisible="{Binding IsAutoMode}"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   FontSize="13"
+                   TextColor="{StaticResource Gray400}" />
+            <!-- Auto mode toggle -->
             <Button Grid.Column="3"
-                    Text="Auto ▷"
-                    IsVisible="False"
+                    Text="{Binding AutoModeButtonText}"
+                    Command="{Binding ToggleAutoModeCommand}"
+                    IsEnabled="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
                     FontSize="13"
                     BackgroundColor="Transparent"
-                    TextColor="{StaticResource Primary}" />
+                    TextColor="{StaticResource Primary}"
+                    Padding="4,0" />
         </Grid>
 
         <!-- Row 1: Card area (swipeable) -->

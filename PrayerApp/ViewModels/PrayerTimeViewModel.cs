@@ -16,6 +16,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly IPrayerInteractionService _interactionService;
     private CancellationTokenSource _loadCts = new();
 
+    // Auto-mode
+    private const int AutoIntervalSeconds = 30;
+    private IDispatcherTimer? _autoTimer;
+
     public IReadOnlyList<PrayerTimeEntry> Entries { get; private set; } = Array.Empty<PrayerTimeEntry>();
 
     private int _currentIndex;
@@ -53,9 +57,41 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         private set => SetProperty(ref _isLoading, value);
     }
 
+    private bool _isAutoMode;
+    public bool IsAutoMode
+    {
+        get => _isAutoMode;
+        private set
+        {
+            if (SetProperty(ref _isAutoMode, value))
+            {
+                OnPropertyChanged(nameof(AutoModeButtonText));
+                OnPropertyChanged(nameof(CountdownDisplay));
+            }
+        }
+    }
+
+    private int _countdownSeconds;
+    public int CountdownSeconds
+    {
+        get => _countdownSeconds;
+        private set
+        {
+            if (SetProperty(ref _countdownSeconds, value))
+                OnPropertyChanged(nameof(CountdownDisplay));
+        }
+    }
+
+    /// <summary>Label text for the Auto toggle button.</summary>
+    public string AutoModeButtonText => IsAutoMode ? "⏸ Auto" : "Auto ▷";
+
+    /// <summary>Countdown shown while auto-mode is running; empty otherwise.</summary>
+    public string CountdownDisplay => IsAutoMode ? $"{CountdownSeconds}s" : string.Empty;
+
     public ICommand NextCommand { get; }
     public ICommand PreviousCommand { get; }
     public ICommand EndSessionCommand { get; }
+    public ICommand ToggleAutoModeCommand { get; }
 
     public PrayerTimeViewModel()
     {
@@ -67,6 +103,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         NextCommand = new AsyncRelayCommand(NextAsync);
         PreviousCommand = new RelayCommand(Previous);
         EndSessionCommand = new AsyncRelayCommand(EndSessionAsync);
+        ToggleAutoModeCommand = new RelayCommand(ToggleAutoMode);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -157,9 +194,17 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         }
 
         if (HasNext)
+        {
             CurrentIndex++;
+            // Reset countdown so user gets full interval on the new card
+            if (IsAutoMode)
+                CountdownSeconds = AutoIntervalSeconds;
+        }
         else
+        {
             HasCompleted = true;
+            StopAutoMode();
+        }
     }
 
     private void Previous()
@@ -170,6 +215,72 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
 
     private async Task EndSessionAsync()
     {
+        StopAutoMode();
         await Shell.Current.GoToAsync("..");
+    }
+
+    // ── Auto-mode ────────────────────────────────────────────────────────────
+
+    private void ToggleAutoMode()
+    {
+        if (HasCompleted) return;
+
+        if (IsAutoMode)
+            StopAutoMode();
+        else
+            StartAutoMode();
+    }
+
+    private void StartAutoMode()
+    {
+        IsAutoMode = true;
+        CountdownSeconds = AutoIntervalSeconds;
+
+        _autoTimer = Application.Current!.Dispatcher.CreateTimer();
+        _autoTimer.Interval = TimeSpan.FromSeconds(1);
+        _autoTimer.Tick += OnAutoTimerTick;
+        _autoTimer.Start();
+    }
+
+    /// <summary>
+    /// Permanently stops auto-mode and disposes the timer.
+    /// Called when the session ends, the user taps Stop, or all cards have been prayed.
+    /// </summary>
+    public void StopAutoMode()
+    {
+        if (_autoTimer is not null)
+        {
+            _autoTimer.Stop();
+            _autoTimer.Tick -= OnAutoTimerTick;
+            _autoTimer = null;
+        }
+        IsAutoMode = false;
+        CountdownSeconds = 0;
+    }
+
+    /// <summary>
+    /// Pauses the countdown without disabling auto-mode.
+    /// Called when the app goes to background.
+    /// </summary>
+    public void PauseAutoMode()
+    {
+        _autoTimer?.Stop();
+    }
+
+    /// <summary>
+    /// Resumes the countdown if auto-mode is still active.
+    /// Called when the app returns to foreground.
+    /// </summary>
+    public void ResumeAutoMode()
+    {
+        if (IsAutoMode)
+            _autoTimer?.Start();
+    }
+
+    private void OnAutoTimerTick(object? sender, EventArgs e)
+    {
+        CountdownSeconds--;
+        if (CountdownSeconds <= 0)
+            _ = NextAsync();
     }
 }
