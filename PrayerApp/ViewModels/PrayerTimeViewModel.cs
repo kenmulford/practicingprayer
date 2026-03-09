@@ -14,6 +14,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly ICardService _cardService;
     private readonly ITagService _tagService;
     private readonly IPrayerInteractionService _interactionService;
+    private CancellationTokenSource _loadCts = new();
 
     public IReadOnlyList<PrayerTimeEntry> Entries { get; private set; } = Array.Empty<PrayerTimeEntry>();
 
@@ -29,7 +30,6 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                 OnPropertyChanged(nameof(ProgressDisplay));
                 OnPropertyChanged(nameof(HasPrevious));
                 OnPropertyChanged(nameof(HasNext));
-                OnPropertyChanged(nameof(HasCompleted));
             }
         }
     }
@@ -85,15 +85,21 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
 
     private async Task LoadEntriesAsync(IEnumerable<int>? tagIds)
     {
+        _loadCts.Cancel();
+        _loadCts = new CancellationTokenSource();
+        var token = _loadCts.Token;
+
         IsLoading = true;
         try
         {
             var allActive = await _prayerService.GetAllActivePrayersAsync();
+            token.ThrowIfCancellationRequested();
 
             IEnumerable<Prayer> filtered;
             if (tagIds is not null)
             {
                 var prayerIdSet = (await _tagService.GetPrayerIdsByTagIdsAsync(tagIds)).ToHashSet();
+                token.ThrowIfCancellationRequested();
                 filtered = allActive.Where(p => prayerIdSet.Contains(p.Id));
             }
             else
@@ -102,6 +108,8 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             }
 
             var cards = await _cardService.GetCardsAsync();
+            token.ThrowIfCancellationRequested();
+
             var cardLookup = cards.ToDictionary(c => c.Id, c => c.Title);
 
             var entries = filtered
@@ -116,10 +124,15 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             CurrentIndex = 0;
             HasCompleted = entries.Count == 0;
         }
+        catch (OperationCanceledException)
+        {
+            // Load was superseded by a newer call — ignore
+        }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load prayer time entries: {ex.Message}");
-            await Shell.Current.DisplayAlert("Error", "Unable to load prayers for this session.", "OK");
+            if (Shell.Current is not null)
+                await Shell.Current.DisplayAlert("Error", "Unable to load prayers for this session.", "OK");
         }
         finally
         {
