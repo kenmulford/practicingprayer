@@ -5,6 +5,7 @@ using AndroidX.AppCompat.Widget;
 #endif
 using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
+using PrayerApp.Views.PrayerTime;
 
 namespace PrayerApp
 {
@@ -35,6 +36,7 @@ namespace PrayerApp
             // register explicit routes for child pages
             Routing.RegisterRoute(nameof(PrayerCardPage), typeof(PrayerCardPage));
             Routing.RegisterRoute(nameof(PrayerDetailPage), typeof(PrayerDetailPage));
+            Routing.RegisterRoute(nameof(PrayerTimePage), typeof(PrayerTimePage));
         }
     }
 }

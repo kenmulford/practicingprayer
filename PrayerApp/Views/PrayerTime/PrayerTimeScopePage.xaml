@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.PrayerTime.PrayerTimeScopePage"
+             x:DataType="viewModels:PrayerTimeScopeViewModel"
+             Title="Select Tags">
+    <ContentPage.BindingContext>
+        <viewModels:PrayerTimeScopeViewModel />
+    </ContentPage.BindingContext>
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+
+            <Label Text="Filter by Tags"
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource Tertiary}" />
+
+            <Label Text="Select the tags to include in your Prayer Time session."
+                   FontSize="14"
+                   TextColor="{StaticResource Gray400}" />
+
+            <Border BackgroundColor="{StaticResource Secondary}"
+                    Stroke="{StaticResource Primary}"
+                    StrokeThickness="1.5"
+                    Padding="8">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="8" />
+                </Border.StrokeShape>
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Tags}" Spacing="0">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:SelectableTag">
+                            <Grid Padding="8,10" ColumnDefinitions="*, Auto">
+                                <Label Grid.Column="0"
+                                       Text="{Binding Tag.Name}"
+                                       VerticalOptions="Center"
+                                       TextColor="{StaticResource Tertiary}" />
+                                <CheckBox Grid.Column="1"
+                                          IsChecked="{Binding IsSelected}"
+                                          Color="{StaticResource Primary}"
+                                          VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        Command="{Binding CancelCommand}"
+                        HorizontalOptions="Fill" />
+                <Button Grid.Column="1"
+                        Text="Start"
+                        Command="{Binding StartCommand}"
+                        BackgroundColor="{StaticResource Primary}"
+                        TextColor="White"
+                        HorizontalOptions="Fill" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

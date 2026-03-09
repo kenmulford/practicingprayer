@@ -17,9 +17,16 @@
             
             <Button
                 x:Name="BtnQuickAdd"
-                Text="Quick Add" 
+                Text="Quick Add"
                 SemanticProperties.Hint="Add a prayer request"
                 HorizontalOptions="Fill" />
+
+            <Button x:Name="BtnPrayerTime"
+                    Text="Prayer Time"
+                    BackgroundColor="{StaticResource Primary}"
+                    TextColor="White"
+                    SemanticProperties.Hint="Start a prayer session"
+                    HorizontalOptions="Fill" />
         </VerticalStackLayout>
     </ScrollView>
 
