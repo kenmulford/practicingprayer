@@ -9,8 +9,7 @@ public class PrayerInteractionService : IPrayerInteractionService
         var interaction = new PrayerInteraction
         {
             PrayerId = prayerId,
-            InteractionType = "Prayed",
-            InteractionAt = DateTime.Now
+            InteractionType = "Prayed"
         };
         await interaction.SaveAsync();
     }

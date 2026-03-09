@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PrayerApp.Models;
-using PrayerApp.Services;
+
+namespace PrayerApp.Services;
 
 public class TagService : ITagService
 {

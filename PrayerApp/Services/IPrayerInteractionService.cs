@@ -1,5 +1,3 @@
-using PrayerApp.Models;
-
 namespace PrayerApp.Services;
 
 public interface IPrayerInteractionService
