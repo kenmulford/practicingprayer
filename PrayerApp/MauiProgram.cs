@@ -42,6 +42,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<ITagService, TagService>();
             // Register prayer service as singleton
             builder.Services.AddSingleton<IPrayerService, PrayerService>();
+            // Register prayer interaction service as singleton
+            builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
             // Register notification service as singleton
             builder.Services.AddSingleton<INotificationService, NotificationService>();
 
@@ -59,6 +61,7 @@ namespace PrayerApp
             PrayerTag.SetDBService(myDBService);
             PrayerRequestTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
+            PrayerInteraction.SetDBService(myDBService);
 
             // DEBUG: Force reset database and re-seed
             if (FORCE_RESET_DATABASE)

@@ -77,6 +77,18 @@ public class TagService : ITagService
         _cache = null;
     }
 
+    public async Task<IReadOnlyList<int>> GetPrayerIdsByTagIdsAsync(IEnumerable<int> tagIds)
+    {
+        var prayerIds = new HashSet<int>();
+        foreach (var tagId in tagIds)
+        {
+            var requestTags = await _dbService.GetByTagIdAsync(tagId);
+            foreach (var rt in requestTags)
+                prayerIds.Add(rt.PrayerRequestId);
+        }
+        return prayerIds.ToList().AsReadOnly();
+    }
+
     private void InvalidateCache()
     {
         _cache = null;

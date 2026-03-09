@@ -6,6 +6,7 @@ public interface IPrayerService
 {
     Task<IReadOnlyList<Prayer>> GetPrayersByCardAsync(int prayerCardId);
     Task<IReadOnlyList<Prayer>> GetAllPrayersAsync();
+    Task<IReadOnlyList<Prayer>> GetAllActivePrayersAsync();
     Task<Prayer> SavePrayerAsync(Prayer prayer);
     Task DeletePrayerAsync(Prayer prayer);
     void InvalidateCache();
