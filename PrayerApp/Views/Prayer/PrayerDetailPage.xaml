@@ -60,6 +60,7 @@
 
                     <!-- Action Buttons -->
                     <Grid ColumnDefinitions="*, *, *" ColumnSpacing="6">
+                        <!-- Set Reminder: placeholder for Phase 3 notification scheduling -->
                         <Button Grid.Column="0"
                                 Text="Set Reminder"
                                 FontSize="13"
@@ -128,12 +129,11 @@
                     <HorizontalStackLayout Spacing="10">
                         <Label Text="Notifications"
                                VerticalOptions="Center" />
-                        <Switch OnColor="{StaticResource Secondary}"
-                                IsToggled="{Binding CanNotify}"
+                        <Switch IsToggled="{Binding CanNotify}"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
-                                    <VisualStateGroup x:Name="CommonStates">
+                                    <VisualStateGroup>
                                         <VisualState x:Name="On">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"
@@ -156,12 +156,11 @@
                     <HorizontalStackLayout Spacing="10">
                         <Label Text="Answered"
                                VerticalOptions="Center" />
-                        <Switch OnColor="{StaticResource Secondary}"
-                                IsToggled="{Binding IsAnswered}"
+                        <Switch IsToggled="{Binding IsAnswered}"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
-                                    <VisualStateGroup x:Name="CommonStates">
+                                    <VisualStateGroup>
                                         <VisualState x:Name="On">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"

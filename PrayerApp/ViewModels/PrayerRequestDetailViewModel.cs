@@ -178,7 +178,6 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
-            _prayer.UpdatedAt = DateTime.Now;
             await _prayerService.SavePrayerAsync(_prayer);
             if (ReturnToCards)
             {
@@ -230,7 +229,6 @@ namespace PrayerApp.ViewModels
         private async Task MarkAnsweredAsync()
         {
             IsAnswered = true;
-            _prayer.UpdatedAt = DateTime.Now;
             await _prayerService.SavePrayerAsync(_prayer);
             RefreshProperties();
         }
@@ -271,7 +269,6 @@ namespace PrayerApp.ViewModels
                 {
                     _ = LoadPrayerAsync(_id);
                 }
-                RefreshProperties();
             }
         }
 
@@ -294,7 +291,6 @@ namespace PrayerApp.ViewModels
         public void Reload()
         {
             _ = LoadPrayerAsync(_prayer.Id);
-            RefreshProperties();
         }
 
         private void RefreshProperties()
