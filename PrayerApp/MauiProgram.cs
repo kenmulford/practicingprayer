@@ -42,8 +42,16 @@ namespace PrayerApp
             builder.Services.AddSingleton<ITagService, TagService>();
             // Register prayer service as singleton
             builder.Services.AddSingleton<IPrayerService, PrayerService>();
+            // Register prayer interaction service as singleton
+            builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
             // Register notification service as singleton
             builder.Services.AddSingleton<INotificationService, NotificationService>();
+
+#if ANDROID
+            builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
+#elif IOS
+            builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.iOS.OrientationService>();
+#endif
 
             var app = builder.Build();
 
@@ -59,6 +67,7 @@ namespace PrayerApp
             PrayerTag.SetDBService(myDBService);
             PrayerRequestTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
+            PrayerInteraction.SetDBService(myDBService);
 
             // DEBUG: Force reset database and re-seed
             if (FORCE_RESET_DATABASE)

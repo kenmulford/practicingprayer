@@ -33,6 +33,12 @@ public class PrayerService : IPrayerService
         return _allCache;
     }
 
+    public async Task<IReadOnlyList<Prayer>> GetAllActivePrayersAsync()
+    {
+        var all = await GetAllPrayersAsync();
+        return all.Where(p => !p.IsAnswered).ToList().AsReadOnly();
+    }
+
     public async Task<Prayer> SavePrayerAsync(Prayer prayer)
     {
         await prayer.SaveAsync();

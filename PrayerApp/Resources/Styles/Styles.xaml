@@ -411,6 +411,19 @@
     </Style>
     -->
 
+    <!-- Named style for all prayer card Borders — Secondary bg, Primary stroke, 8px corners.
+         Set Padding inline on each usage site; all other appearance props come from here. -->
+    <Style x:Key="PrayerCardBorder" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Secondary}" />
+        <Setter Property="Stroke" Value="{StaticResource Primary}" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="8" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="Page" ApplyToDerivedTypes="True">
         <Setter Property="Padding" Value="0"/>
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />

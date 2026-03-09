@@ -12,6 +12,8 @@
             </ResourceDictionary.MergedDictionaries>
             <converters:BoolToTextDecorationConverter x:Key="BoolToTextDecoration" />
             <converters:BoolToMutedColorConverter x:Key="BoolToMutedColor" />
+            <converters:InverseBoolConverter x:Key="InverseBool" />
+            <converters:StringToBoolConverter x:Key="StringToBool" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
