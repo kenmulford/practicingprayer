@@ -20,7 +20,7 @@
                     Text="← End"
                     Command="{Binding EndSessionCommand}"
                     Style="{StaticResource GhostButton}"
-                    Padding="0" />Padding="0" />
+                    Padding="0" />
             <Label Grid.Column="1"
                    Text="{Binding ProgressDisplay}"
                    HorizontalOptions="Center"
@@ -42,7 +42,7 @@
                     IsEnabled="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
                     Style="{StaticResource GhostButton}"
                     FontSize="13"
-                    Padding="4,0" />Padding="4,0" />
+                    Padding="4,0" />
         </Grid>
 
         <!-- Row 1: Card area (swipeable) -->
@@ -72,7 +72,7 @@
                     <!-- Details (hidden if empty) -->
                     <Label Text="{Binding CurrentEntry.Details, FallbackValue=''}"
                            Style="{StaticResource MutedText}"
-                           IsVisibleIsVisible="{Binding CurrentEntry.Details, Converter={StaticResource StringToBool}}" />
+                           IsVisible="{Binding CurrentEntry.Details, Converter={StaticResource StringToBool}}" />
                 </VerticalStackLayout>
             </Border>
 
@@ -96,7 +96,7 @@
                        HorizontalTextAlignment="Center" />
                 <Button Text="Finish"
                         Command="{Binding EndSessionCommand}"
-                                                HorizontalOptions="Center" />HorizontalOptions="Center" />
+                        HorizontalOptions="Center" />
             </VerticalStackLayout>
 
         </Grid>

@@ -41,7 +41,7 @@
                 <Button Grid.Column="1"
                         Text="Add"
                         Command="{Binding SaveCommand}"
-                                                HorizontalOptions="Fill" />HorizontalOptions="Fill" />
+                        HorizontalOptions="Fill" />
             </Grid>
 
         </VerticalStackLayout>

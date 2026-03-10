@@ -451,8 +451,8 @@
 
     <!-- DangerButton: delete / destructive actions -->
     <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
-        <Setter Property="BackgroundColor" Value="IndianRed" />
-        <Setter Property="TextColor" Value="White" />
+        <Setter Property="BackgroundColor" Value="{StaticResource DangerRed}" />
+        <Setter Property="TextColor" Value="{StaticResource White}" />
     </Style>
 
     <!-- GhostButton: toolbar-style, transparent background -->
@@ -496,7 +496,7 @@
 
     <!-- SuccessBadge: answered-date display (small, green) -->
     <Style x:Key="SuccessBadge" TargetType="Label" BasedOn="{StaticResource LabelBase}">
-        <Setter Property="TextColor" Value="#4CAF50" />
+        <Setter Property="TextColor" Value="{StaticResource SuccessGreen}" />
         <Setter Property="FontSize" Value="10" />
     </Style>
 

@@ -33,7 +33,7 @@
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
                            FontSize="13"
-                           TextColor="#4CAF50"
+                           TextColor="{StaticResource SuccessGreen}"
                            FontAttributes="Bold"
                            IsVisible="{Binding IsAnswered}" />
 
@@ -55,18 +55,18 @@
                         <Button Grid.Column="0"
                                 Text="Set Reminder"
                                 Style="{StaticResource SmallActionButton}"
-                                IsEnabledIsEnabled="False"
+                                IsEnabled="False"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Edit"
                                 Style="{StaticResource SmallActionButton}"
-                                CommandCommand="{Binding EditPrayerCommand}"
+                                Command="{Binding EditPrayerCommand}"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="2"
                                 Text="Mark Answered"
                                 Style="{StaticResource AnsweredButton}"
                                 Command="{Binding MarkAnsweredCommand}"
-                                                                IsVisibleIsVisible="{Binding IsNotAnswered}"
+                                IsVisible="{Binding IsNotAnswered}"
                                 HorizontalOptions="Fill" />
                     </Grid>
 
@@ -168,11 +168,11 @@
                                 Text="Delete"
                                 Command="{Binding DeleteCommand}"
                                 Style="{StaticResource DangerButton}"
-                                HorizontalOptionsHorizontalOptions="Fill" />
+                                HorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Save"
                                 Command="{Binding SaveCommand}"
-                                                                HorizontalOptionsHorizontalOptions="Fill" />
+                                HorizontalOptions="Fill" />
                     </Grid>
 
                 </VerticalStackLayout>

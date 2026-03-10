@@ -40,7 +40,7 @@
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="IndianRed"
+                                BackgroundColor="{StaticResource DangerRed}"
                                 IconImageSource="trash_can_solid_full.png"
                                 Command="{Binding DeleteCommand}"
                                 Text="Delete" />
@@ -99,7 +99,7 @@
                                             <SwipeView.RightItems>
                                                 <SwipeItems Mode="Reveal">
                                                     <SwipeItem
-                                                        BackgroundColor="IndianRed"
+                                                        BackgroundColor="{StaticResource DangerRed}"
                                                         Command="{Binding DeleteCommand}"
                                                         Text="Delete" />
                                                 </SwipeItems>
