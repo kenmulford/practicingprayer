@@ -27,6 +27,7 @@
                             SelectedItem="{Binding SelectedCard}"
                             ItemDisplayBinding="{Binding Title}"
                             Title="Select a card"
+                            SemanticProperties.Hint="Select which prayer card to add this request to"
                             HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>

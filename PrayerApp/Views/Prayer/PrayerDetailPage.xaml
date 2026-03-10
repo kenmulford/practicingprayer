@@ -84,6 +84,7 @@
                            Style="{StaticResource FormLabel}" />
                     <Entry Text="{Binding Title}"
                            Placeholder="Prayer title"
+                           SemanticProperties.Hint="Prayer request title"
                            HorizontalOptions="Fill" />
 
                     <!-- Details -->
@@ -91,6 +92,7 @@
                            Style="{StaticResource FormLabel}" />
                     <Editor Text="{Binding Details}"
                             Placeholder="Add details..."
+                            SemanticProperties.Hint="Prayer request details or Scripture reference"
                             HeightRequest="100"
                             HorizontalOptions="Fill" />
 
@@ -101,6 +103,7 @@
                             ItemsSource="{Binding FrequencyOptions}"
                             ItemDisplayBinding="{Binding .}"
                             SelectedItem="{Binding PrayerFrequency}"
+                            SemanticProperties.Hint="How often to be reminded"
                             HorizontalOptions="Fill" />
 
                     <!-- Notifications Switch -->
@@ -108,6 +111,7 @@
                         <Label Text="Notifications"
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding CanNotify}"
+                                SemanticProperties.Description="Enable reminders for this request"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -135,6 +139,7 @@
                         <Label Text="Answered"
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding IsAnswered}"
+                                SemanticProperties.Description="Mark this request as answered"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
