@@ -7,6 +7,15 @@
 
 ---
 
+## 0. Git Workflow
+
+- **Feature branches**: `feature/<short-name>` off `dev`
+- **PRs always target `dev`** — never open a PR directly to `master`
+- `master` is only updated by merging `dev` at release milestones
+- Branch naming examples: `feature/f7-home-personalization`, `feature/f9-ui-review`
+
+---
+
 ## 1. Project Overview
 
 **Prayer App** — a personal devotional mobile app for managing prayer requests,

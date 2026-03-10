@@ -13,9 +13,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Idle — no item in progress.
+**Status**: 🔨 In progress — F-7 Home page personalization (`feature/f7-home-personalization`)
 **Last completed**: F-6 (unit test project) + TD-2 (PrayerCardTag rename). Both merged via PR #7.
-**Next up**: F-7 — Home page personalization.
+**Next up after this**: F-8 — Onboarding.
 
 ---
 
