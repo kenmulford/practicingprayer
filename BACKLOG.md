@@ -13,9 +13,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 🔨 In progress — F-7 Home page personalization (`feature/f7-home-personalization`)
-**Last completed**: F-6 (unit test project) + TD-2 (PrayerCardTag rename). Both merged via PR #7.
-**Next up after this**: F-8 — Onboarding.
+**Status**: 🔨 Starting F-10 — Share feature (`feature/f10-share`)
+**Last completed**: F-9 (comprehensive UI review — 10 named styles, accessibility, bug fixes). Merged via PR #9.
+**Next up after this**: TD-5 — Prayer Time interval selection UI.
 
 ---
 
@@ -25,19 +25,18 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | F-7 | Home page personalization | One-time name prompt → `Settings.UserName` → greeting on MainPage |
-| 2 | F-8 | Onboarding — splash, welcome, tutorial | Industry-standard first-run experience |
-| 3 | F-9 | Comprehensive UI review | Fonts, controls, animations consistency |
-| 4 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
-| 5 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
-| 6 | F-1 | Tag management UI | Create / edit / delete tags; assign to cards |
-| 7 | F-2 | Tag filtering on Prayer Cards page | Filter chips on PrayerCardsPage |
-| 8 | F-5 | Notification scheduling | `ScheduleForPrayer()` + deep-link on tap |
-| 9 | M-1 | Last-prayed notifications | Days-since calculation + push notification |
-| 10 | M-4 | Prayer statistics | Streak, totals, answered %, on Home or Stats tab |
-| 11 | BL-1 | Bible verse integration | Research done — needs planning conversation |
-| 12 | BL-2 | Offline architecture | Needs planning conversation |
-| 13 | BL-3 | App Store publishing | Needs planning conversation |
+| 1 | F-9 | Comprehensive UI review | Fonts, controls, animations consistency |
+| 2 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
+| 3 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
+| 4 | F-1 | Tag management UI | Create / edit / delete tags; assign to cards |
+| 5 | F-2 | Tag filtering on Prayer Cards page | Filter chips on PrayerCardsPage |
+| 6 | F-5 | Notification scheduling | `ScheduleForPrayer()` + deep-link on tap |
+| 7 | M-1 | Last-prayed notifications | Days-since calculation + push notification |
+| 8 | M-4 | Prayer statistics | Streak, totals, answered %, on Home or Stats tab |
+| 9 | BL-1 | Bible verse integration | Research done — needs planning conversation |
+| 10 | BL-2 | Offline architecture | Needs planning conversation |
+| 11 | BL-3 | App Store publishing | Needs planning conversation |
+| 12 | F-8 | Onboarding — splash, welcome, tutorial | Design separately; no blocking dependencies |
 
 ---
 
@@ -257,6 +256,8 @@ Currently 100% offline. No risk until BL-1 or other network feature ships.
 | — | Shell.Current.Navigation.PushModalAsync fix | #5/6 | PushModalAsync removed in MAUI 10.0.41 |
 | — | Microsoft.Maui.Controls → 10.0.41 | #5/6 | Required by CommunityToolkit.Maui 14.0.1 |
 | — | Platforms cleanup (Windows/Mac/Tizen removed) | — | csproj clean, Android + iOS only |
+| F-7 | Home page personalization | #8 | One-time name prompt, time-of-day greeting |
+| F-9 | Comprehensive UI review | #9 | 10 named styles (ButtonBase, LabelBase + 8 variants), inline duplication eliminated, SemanticProperties on all form inputs, Settings bugs fixed |
 
 ---
 
