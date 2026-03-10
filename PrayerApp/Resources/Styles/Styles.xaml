@@ -424,6 +424,106 @@
         </Setter>
     </Style>
 
+    <!-- ── Base styles for BasedOn (compiled XAML does not support {x:Type} as a resource key) ── -->
+
+    <!-- ButtonBase mirrors the implicit Button style so named variants can BasedOn it. -->
+    <Style x:Key="ButtonBase" TargetType="Button">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="FontFamily" Value="OpenSansRegular"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="BorderWidth" Value="0"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="14,10"/>
+        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="MinimumWidthRequest" Value="44"/>
+    </Style>
+
+    <!-- LabelBase mirrors the implicit Label style so named variants can BasedOn it. -->
+    <Style x:Key="LabelBase" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <!-- ── Button variants ─────────────────────────────────────────────── -->
+
+    <!-- DangerButton: delete / destructive actions -->
+    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="BackgroundColor" Value="IndianRed" />
+        <Setter Property="TextColor" Value="White" />
+    </Style>
+
+    <!-- GhostButton: toolbar-style, transparent background -->
+    <Style x:Key="GhostButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+    </Style>
+
+    <!-- SmallActionButton: compact in-card actions (Set Reminder, Edit) -->
+    <Style x:Key="SmallActionButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="8,6" />
+    </Style>
+
+    <!-- AnsweredButton: Mark Answered CTA — WarmGold + small.
+         MUST follow SmallActionButton in this file (BasedOn dependency). -->
+    <Style x:Key="AnsweredButton" TargetType="Button" BasedOn="{StaticResource SmallActionButton}">
+        <Setter Property="BackgroundColor" Value="{StaticResource WarmGold}" />
+        <Setter Property="TextColor" Value="White" />
+    </Style>
+
+    <!-- CircleNavButton: Prayer Time previous/next arrows.
+         Padding="0" overrides the default 14,10 — circle buttons need no internal padding.
+         BackgroundColor and TextColor are left inline at each usage site (Prev vs. Next differ). -->
+    <Style x:Key="CircleNavButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="WidthRequest" Value="60" />
+        <Setter Property="HeightRequest" Value="60" />
+        <Setter Property="CornerRadius" Value="30" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontSize" Value="20" />
+    </Style>
+
+    <!-- ── Label variants ────────────────────────────────────────────────── -->
+
+    <!-- MutedText: secondary / de-emphasised text.
+         Dark value uses Gray300 (#ACACAC) — lighter than Gray400 so it reads as
+         "muted" on the dark OffBlack (#1f1f1f) background. -->
+    <Style x:Key="MutedText" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray300}}" />
+    </Style>
+
+    <!-- SuccessBadge: answered-date display (small, green) -->
+    <Style x:Key="SuccessBadge" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="TextColor" Value="#4CAF50" />
+        <Setter Property="FontSize" Value="10" />
+    </Style>
+
+    <!-- FormLabel: field label above Entry/Editor/Picker -->
+    <Style x:Key="FormLabel" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource PrimaryDark}}" />
+    </Style>
+
+    <!-- CardTitle: bold header inside a prayer card -->
+    <Style x:Key="CardTitle" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontAttributes" Value="Bold" />
+    </Style>
+
+    <!-- ── BoxView variant ───────────────────────────────────────────────── -->
+
+    <!-- DividerLine: 1px horizontal rule using the BoxView-specific Color property.
+         When applying this style, remove Color= OR BackgroundColor= (whichever is present),
+         plus HeightRequest=, Opacity=, and HorizontalOptions= from the element. -->
+    <Style x:Key="DividerLine" TargetType="BoxView">
+        <Setter Property="Color" Value="{StaticResource Primary}" />
+        <Setter Property="Opacity" Value="0.4" />
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+    </Style>
+
     <Style TargetType="Page" ApplyToDerivedTypes="True">
         <Setter Property="Padding" Value="0"/>
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource OffBlack}}" />
