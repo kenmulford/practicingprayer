@@ -8,13 +8,13 @@
     <ContentPage.BindingContext>
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
-    <VerticalStackLayout>
+    <VerticalStackLayout Padding="24">
         <Label 
             Text="Prayer Card"
             VerticalOptions="Center" 
             HorizontalOptions="Center"
-            FontSize="24"
-            FontAttributes="Bold" />
+            Style="{StaticResource CardTitle}"
+            FontSize="24" />
 
         <Border Padding="20">
             <VerticalStackLayout Spacing="15" Margin="5">

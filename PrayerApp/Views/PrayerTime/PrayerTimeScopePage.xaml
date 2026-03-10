@@ -17,8 +17,7 @@
                    TextColor="{StaticResource Tertiary}" />
 
             <Label Text="Select the tags to include in your Prayer Time session."
-                   FontSize="14"
-                   TextColor="{StaticResource Gray400}" />
+                   Style="{StaticResource MutedText}" />
 
             <Border Style="{StaticResource PrayerCardBorder}"
                     Padding="8">
@@ -48,9 +47,7 @@
                 <Button Grid.Column="1"
                         Text="Start"
                         Command="{Binding StartCommand}"
-                        BackgroundColor="{StaticResource Primary}"
-                        TextColor="White"
-                        HorizontalOptions="Fill" />
+                                                HorizontalOptions="Fill" />HorizontalOptions="Fill" />
             </Grid>
 
         </VerticalStackLayout>

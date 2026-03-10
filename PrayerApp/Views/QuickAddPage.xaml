@@ -16,15 +16,13 @@
                 <VerticalStackLayout Spacing="12">
 
                     <Label Text="Prayer Title"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Entry Text="{Binding Title}"
                            Placeholder="Enter prayer title"
                            HorizontalOptions="Fill" />
 
                     <Label Text="Add to Card"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Picker ItemsSource="{Binding Cards}"
                             SelectedItem="{Binding SelectedCard}"
                             ItemDisplayBinding="{Binding Title}"
@@ -42,9 +40,7 @@
                 <Button Grid.Column="1"
                         Text="Add"
                         Command="{Binding SaveCommand}"
-                        BackgroundColor="{StaticResource Primary}"
-                        TextColor="White"
-                        HorizontalOptions="Fill" />
+                                                HorizontalOptions="Fill" />HorizontalOptions="Fill" />
             </Grid>
 
         </VerticalStackLayout>

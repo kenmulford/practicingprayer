@@ -19,33 +19,30 @@
             <Button Grid.Column="0"
                     Text="← End"
                     Command="{Binding EndSessionCommand}"
-                    BackgroundColor="Transparent"
-                    TextColor="{StaticResource Primary}"
-                    FontSize="14"
-                    Padding="0" />
+                    Style="{StaticResource GhostButton}"
+                    Padding="0" />Padding="0" />
             <Label Grid.Column="1"
                    Text="{Binding ProgressDisplay}"
                    HorizontalOptions="Center"
                    VerticalOptions="Center"
-                   FontSize="14"
-                   TextColor="{StaticResource Gray400}" />
+                   Style="{StaticResource MutedText}"
+                   FontSize="14" />
             <!-- Countdown: visible only while auto-mode is running -->
             <Label Grid.Column="2"
                    Text="{Binding CountdownDisplay}"
                    IsVisible="{Binding IsAutoMode}"
                    HorizontalOptions="Center"
                    VerticalOptions="Center"
-                   FontSize="13"
-                   TextColor="{StaticResource Gray400}" />
+                   Style="{StaticResource MutedText}"
+                   FontSize="13" />
             <!-- Auto mode toggle -->
             <Button Grid.Column="3"
                     Text="{Binding AutoModeButtonText}"
                     Command="{Binding ToggleAutoModeCommand}"
                     IsEnabled="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
+                    Style="{StaticResource GhostButton}"
                     FontSize="13"
-                    BackgroundColor="Transparent"
-                    TextColor="{StaticResource Primary}"
-                    Padding="4,0" />
+                    Padding="4,0" />Padding="4,0" />
         </Grid>
 
         <!-- Row 1: Card area (swipeable) -->
@@ -66,19 +63,16 @@
                            FontAttributes="Bold"
                            TextColor="{StaticResource Tertiary}" />
                     <!-- Divider -->
-                    <BoxView HeightRequest="1"
-                             HorizontalOptions="Fill"
-                             Color="{StaticResource Primary}"
-                             Opacity="0.4" />
+
+                    <BoxView Style="{StaticResource DividerLine}" />
                     <!-- Prayer request title -->
                     <Label Text="{Binding CurrentEntry.PrayerTitle, FallbackValue=''}"
                            FontSize="16"
                            TextColor="{StaticResource OffBlack}" />
                     <!-- Details (hidden if empty) -->
                     <Label Text="{Binding CurrentEntry.Details, FallbackValue=''}"
-                           FontSize="14"
-                           TextColor="{StaticResource Gray400}"
-                           IsVisible="{Binding CurrentEntry.Details, Converter={StaticResource StringToBool}}" />
+                           Style="{StaticResource MutedText}"
+                           IsVisibleIsVisible="{Binding CurrentEntry.Details, Converter={StaticResource StringToBool}}" />
                 </VerticalStackLayout>
             </Border>
 
@@ -102,9 +96,7 @@
                        HorizontalTextAlignment="Center" />
                 <Button Text="Finish"
                         Command="{Binding EndSessionCommand}"
-                        BackgroundColor="{StaticResource Primary}"
-                        TextColor="White"
-                        HorizontalOptions="Center" />
+                                                HorizontalOptions="Center" />HorizontalOptions="Center" />
             </VerticalStackLayout>
 
         </Grid>
@@ -118,20 +110,14 @@
                     IsEnabled="{Binding HasPrevious}"
                     BackgroundColor="{StaticResource Secondary}"
                     TextColor="{StaticResource Primary}"
-                    FontSize="20"
-                    WidthRequest="60"
-                    HeightRequest="60"
-                    CornerRadius="30" />
+                    Style="{StaticResource CircleNavButton}" />
             <Button Grid.Column="2"
                     Text="→"
                     Command="{Binding NextCommand}"
                     IsEnabled="{Binding HasNext}"
                     BackgroundColor="{StaticResource Primary}"
                     TextColor="White"
-                    FontSize="20"
-                    WidthRequest="60"
-                    HeightRequest="60"
-                    CornerRadius="30" />
+                    Style="{StaticResource CircleNavButton}" />
         </Grid>
 
     </Grid>
