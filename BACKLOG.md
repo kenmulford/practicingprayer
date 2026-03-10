@@ -26,9 +26,9 @@ Items are listed in work order. Start at the top, work down.
 | # | ID | Item | Notes |
 |---|-----|------|-------|
 | 1 | BUG-1 | Post-save view not refreshing | After saving a prayer, the detail view shows stale data |
-| 2 | UX-1 | Home greeting time-awareness | "Good night, Ken" is awkward; needs design decision |
-| 3 | UX-2 | Settings — edit user name | Name entered at first-run prompt has no edit path; Settings page needs a name field |
-| 4 | BUG-2 | Prayer Time — blank card content | Prayer title/details not showing; showed "General" once then blank |
+| 2 | UX-1 | Home — remove greeting, add metrics dashboard | Replace name/greeting with overdue-prayer nudge cards; needs planning |
+| 3 | BUG-2 | Prayer Time — blank card content | Prayer title/details not showing; showed "General" once then blank |
+| 4 | UX-3 | Card list — dividers between prayer request rows | Thin separator between each request; minimal vertical space |
 | 5 | F-11 | Prayer request list page — purpose review | Ugly + unclear purpose; design decision needed before any code |
 | 6 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
 | 7 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
@@ -66,51 +66,46 @@ the updated title, details, or answered state are not reflected.
 
 ---
 
-### UX-1 Home greeting time-awareness ("Good night, Ken")
+### UX-1 Home — remove greeting, add metrics dashboard
 
-The `MainPage` greeting prefixes time-of-day ("Good morning / afternoon / evening / night").
-UAT confirmed: being greeted "Good night" mid-prayer session feels dismissive and jarring.
+**Decision (UAT):** Remove the personalised name/time-of-day greeting entirely.
+Replace with a content-first dashboard of one or two metric cards that nudge the user
+toward prayers that need attention.
 
-**Options — discuss before implementing:**
+**Before starting implementation, have a planning conversation to confirm:**
+- Exact layout (one card? two? stacked vertically? side-by-side on landscape?)
+- Edge cases (first-time user with no prayers yet; all prayers prayed; no interactions at all)
+- Whether to persist the "suggested" set across sessions or randomise on every open
 
-1. **Cap at "Good evening" (least change)** — Drop "Good night" as a tier.
-   Three buckets: morning (before noon), afternoon (noon–5 pm), evening (5 pm+).
-   Eliminates the awkward case with a one-line change.
+**Initial metric design (starting point for planning conversation):**
 
-2. **Remove time-awareness entirely** — Plain "Hello, Ken" or "Welcome back, Ken"
-   at all times. Simple, never awkward, no edge cases.
+*Card 1 — Overdue count:*
+> "**12 prayer requests** haven't been prayed for in the past month."
+> (or warm variant if count = 0: "You're up to date! Every request has been prayed for in the past month. 🙏")
 
-3. **Replace greeting with context text** — Show "Sunday evening · March 9" as a
-   subdued header. Sets time-and-place without implying the user should stop praying.
+*Card 2 — Suggested requests (only shown when count > 0):*
+> Picks 2–3 random prayer requests with no `PrayerInteraction` in > 30 days.
+> Displays the **card title** (who/what the card is for) and the **request title** only — no details.
+> Tapping a row navigates to that request's detail page.
 
-4. **Remove greeting entirely; lead with content** — Use the header area for a daily
-   Scripture prompt, a streak display, or "X unanswered requests across Y cards."
-   Content-first, which is what users opened the app to see.
+**Data sources already available:**
+- `PrayerInteraction` records (logged each time a request is prayed during Prayer Time)
+- `IPrayerService.GetAllPrayersAsync()` + `IDBService.GetInteractionsByPrayerIdAsync()`
 
-**Claude's take:** Most modern devotional apps (YouVersion, Glorify, Hallow) skip
-personalized greetings in favour of content-first home screens. A greeting can add
-warmth, but the benefit is modest and the "Good night" failure mode is real. If the
-goal is warmth, **Option 1** (cap at "Good evening") is the safest and lowest-effort
-fix. If reconsidering the pattern altogether, **Option 4** aligns with the genre's UX
-conventions and gives the home screen more utility. This is ultimately a personal
-preference call — it's your app.
+**Files that will change:**
+`Views/MainPage.xaml`, `Views/MainPage.xaml.cs` (or a new `HomeViewModel`),
+`Services/PrayerService.cs` (new method: `GetOverduePrayersAsync(int dayThreshold)`),
+`Services/DBService.cs` / `IDBService.cs` (query interactions by prayer + date)
+
+**Also remove:** the `Settings.UserName` first-run prompt from `MainPage.xaml.cs`
+and the `UserName` / `UserNameSet` properties from `Services/Settings.cs` — no longer needed.
 
 ---
 
-### UX-2 Settings — edit user name
+### UX-2 Settings — edit user name *(dropped)*
 
-The name collected at first-run prompt (`Settings.UserName`) has no edit path. Once
-entered, the user cannot correct a typo or change their name without clearing all
-settings.
-
-**Contingency:** This item is only relevant if UX-1 resolves in favour of keeping the
-personalized greeting. If the greeting is removed, this item should be dropped.
-
-**Change:** Add a "Your Name" row to `Settings.xaml` — a plain `Entry` pre-populated
-with `Settings.UserName`, with a "Save" button (or on-blur auto-save) that writes
-back to `Settings.UserName`.
-
-**Files:** `Views/Settings.xaml`, `Views/Settings.xaml.cs`
+Superseded by UX-1 resolution: the personalised greeting (and the name it depended on)
+is being removed entirely. No action needed.
 
 ---
 
@@ -136,6 +131,29 @@ through), then subsequent cards were blank.
 **Files to investigate:**
 `ViewModels/PrayerTimeViewModel.cs`, `Models/PrayerTimeEntry.cs` (if it exists),
 `Services/PrayerService.cs` (how prayers + cards are joined)
+
+---
+
+### UX-3 Card list — dividers between prayer request rows
+
+Each prayer card on `PrayerCardsPage` lists its requests via `BindableLayout`. Currently
+the rows run together with no visual separation.
+
+**Change:** Add a thin `BoxView` divider between each request row using the existing
+`DividerLine` style. Should add no meaningful vertical space — 1 px rule only, no
+extra margin above or below the row content. The last row should not have a trailing
+divider.
+
+**Approach:** In the `BindableLayout.ItemTemplate`, wrap the row content in a
+`VerticalStackLayout` that includes a `BoxView Style="{StaticResource DividerLine}"`
+*above* each row (effectively a top border), then suppress the divider on the first
+item using a `FirstItem` converter — or alternatively, add the divider *below* each
+item and bind `IsVisible` to "not last item" if a converter for that already exists.
+Simplest approach: just add the divider above every row including the first; at the
+card's internal `Padding="8"` it will appear as a natural rule after the card's
+horizontal rule separator.
+
+**Files:** `Views/PrayerCard/PrayerCardsPage.xaml`
 
 ---
 
