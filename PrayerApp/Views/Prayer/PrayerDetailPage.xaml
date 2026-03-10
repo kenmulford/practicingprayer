@@ -22,12 +22,8 @@
                            FontSize="22"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Tertiary}" />
-
                     <!-- Divider -->
-                    <BoxView Color="{StaticResource Primary}"
-                             Opacity="0.4"
-                             HeightRequest="1"
-                             HorizontalOptions="Fill" />
+                    <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Details -->
                     <Label Text="{Binding Details, FallbackValue='No details added.'}"
@@ -58,24 +54,19 @@
                         <!-- Set Reminder: placeholder for Phase 3 notification scheduling -->
                         <Button Grid.Column="0"
                                 Text="Set Reminder"
-                                FontSize="13"
-                                Padding="8,6"
-                                IsEnabled="False"
+                                Style="{StaticResource SmallActionButton}"
+                                IsEnabledIsEnabled="False"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Edit"
-                                FontSize="13"
-                                Padding="8,6"
-                                Command="{Binding EditPrayerCommand}"
+                                Style="{StaticResource SmallActionButton}"
+                                CommandCommand="{Binding EditPrayerCommand}"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="2"
                                 Text="Mark Answered"
-                                FontSize="13"
-                                Padding="8,6"
+                                Style="{StaticResource AnsweredButton}"
                                 Command="{Binding MarkAnsweredCommand}"
-                                BackgroundColor="{StaticResource WarmGold}"
-                                TextColor="White"
-                                IsVisible="{Binding IsNotAnswered}"
+                                                                IsVisibleIsVisible="{Binding IsNotAnswered}"
                                 HorizontalOptions="Fill" />
                     </Grid>
 
@@ -90,29 +81,29 @@
 
                     <!-- Title -->
                     <Label Text="Title"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Entry Text="{Binding Title}"
                            Placeholder="Prayer title"
+                           SemanticProperties.Hint="Prayer request title"
                            HorizontalOptions="Fill" />
 
                     <!-- Details -->
                     <Label Text="Details"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Editor Text="{Binding Details}"
                             Placeholder="Add details..."
+                            SemanticProperties.Hint="Prayer request details or Scripture reference"
                             HeightRequest="100"
                             HorizontalOptions="Fill" />
 
                     <!-- Frequency -->
                     <Label Text="Frequency"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Picker Title="Select Frequency"
                             ItemsSource="{Binding FrequencyOptions}"
                             ItemDisplayBinding="{Binding .}"
                             SelectedItem="{Binding PrayerFrequency}"
+                            SemanticProperties.Hint="How often to be reminded"
                             HorizontalOptions="Fill" />
 
                     <!-- Notifications Switch -->
@@ -120,6 +111,7 @@
                         <Label Text="Notifications"
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding CanNotify}"
+                                SemanticProperties.Description="Enable reminders for this request"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -147,6 +139,7 @@
                         <Label Text="Answered"
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding IsAnswered}"
+                                SemanticProperties.Description="Mark this request as answered"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -174,15 +167,12 @@
                         <Button Grid.Column="0"
                                 Text="Delete"
                                 Command="{Binding DeleteCommand}"
-                                BackgroundColor="IndianRed"
-                                TextColor="White"
-                                HorizontalOptions="Fill" />
+                                Style="{StaticResource DangerButton}"
+                                HorizontalOptionsHorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Save"
                                 Command="{Binding SaveCommand}"
-                                BackgroundColor="{StaticResource Primary}"
-                                TextColor="White"
-                                HorizontalOptions="Fill" />
+                                                                HorizontalOptionsHorizontalOptions="Fill" />
                     </Grid>
 
                 </VerticalStackLayout>

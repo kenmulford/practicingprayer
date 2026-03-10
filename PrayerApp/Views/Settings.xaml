@@ -30,6 +30,7 @@
                     x:Name="chkSettingsAllowNotifications"
                     Grid.Row="1"
                     Grid.Column="1"
+                    SemanticProperties.Description="Allow the app to send prayer reminder notifications"
                     OnColor="{StaticResource Secondary}"
                     Toggled="chkSettingsAllowNotifications_Toggled">
                     <VisualStateManager.VisualStateGroups>
