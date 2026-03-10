@@ -25,22 +25,138 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | F-9 | Comprehensive UI review | Fonts, controls, animations consistency |
-| 2 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
-| 3 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
-| 4 | F-1 | Tag management UI | Create / edit / delete tags; assign to cards |
-| 5 | F-2 | Tag filtering on Prayer Cards page | Filter chips on PrayerCardsPage |
-| 6 | F-5 | Notification scheduling | `ScheduleForPrayer()` + deep-link on tap |
-| 7 | M-1 | Last-prayed notifications | Days-since calculation + push notification |
-| 8 | M-4 | Prayer statistics | Streak, totals, answered %, on Home or Stats tab |
-| 9 | BL-1 | Bible verse integration | Research done — needs planning conversation |
-| 10 | BL-2 | Offline architecture | Needs planning conversation |
-| 11 | BL-3 | App Store publishing | Needs planning conversation |
-| 12 | F-8 | Onboarding — splash, welcome, tutorial | Design separately; no blocking dependencies |
+| 1 | BUG-1 | Post-save view not refreshing | After saving a prayer, the detail view shows stale data |
+| 2 | UX-1 | Home greeting time-awareness | "Good night, Ken" is awkward; needs design decision |
+| 3 | UX-2 | Settings — edit user name | Name entered at first-run prompt has no edit path; Settings page needs a name field |
+| 4 | BUG-2 | Prayer Time — blank card content | Prayer title/details not showing; showed "General" once then blank |
+| 5 | F-11 | Prayer request list page — purpose review | Ugly + unclear purpose; design decision needed before any code |
+| 6 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
+| 7 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
+| 8 | F-1 | Tag management UI | Create / edit / delete tags; assign to cards |
+| 9 | F-2 | Tag filtering on Prayer Cards page | Filter chips on PrayerCardsPage |
+| 10 | F-5 | Notification scheduling | `ScheduleForPrayer()` + deep-link on tap |
+| 11 | M-1 | Last-prayed notifications | Days-since calculation + push notification |
+| 12 | M-4 | Prayer statistics | Streak, totals, answered %, on Home or Stats tab |
+| 13 | BL-1 | Bible verse integration | Research done — needs planning conversation |
+| 14 | BL-2 | Offline architecture | Needs planning conversation |
+| 15 | BL-3 | App Store publishing | Needs planning conversation |
+| 16 | F-8 | Onboarding — splash, welcome, tutorial | Design separately; no blocking dependencies |
 
 ---
 
 ## Detailed Descriptions
+
+### BUG-1 Post-save view not refreshing
+
+After editing and saving a prayer request via `PrayerRequestDetailViewModel`, navigating
+back to the card's prayer list (or the detail view in read-only mode) shows stale data —
+the updated title, details, or answered state are not reflected.
+
+**Likely root causes (investigate before fixing):**
+- `IPrayerService` cache is not invalidated on `SavePrayerAsync`, so the parent
+  `PrayerCardViewModel` / `PrayerListViewModel` re-loads from the old cached list
+- The parent page's `OnAppearing()` override may not be calling `LoadAsync` after
+  navigation back
+- Possible: `PrayerRequestDetailViewModel` saves directly to the DB via the old
+  Active Record path, bypassing `IPrayerService` entirely — cache never knows
+
+**Files to investigate:**
+`Services/PrayerService.cs`, `ViewModels/PrayerRequestDetailViewModel.cs`,
+`ViewModels/PrayerCardViewModel.cs`, `ViewModels/PrayerListViewModel.cs`
+
+---
+
+### UX-1 Home greeting time-awareness ("Good night, Ken")
+
+The `MainPage` greeting prefixes time-of-day ("Good morning / afternoon / evening / night").
+UAT confirmed: being greeted "Good night" mid-prayer session feels dismissive and jarring.
+
+**Options — discuss before implementing:**
+
+1. **Cap at "Good evening" (least change)** — Drop "Good night" as a tier.
+   Three buckets: morning (before noon), afternoon (noon–5 pm), evening (5 pm+).
+   Eliminates the awkward case with a one-line change.
+
+2. **Remove time-awareness entirely** — Plain "Hello, Ken" or "Welcome back, Ken"
+   at all times. Simple, never awkward, no edge cases.
+
+3. **Replace greeting with context text** — Show "Sunday evening · March 9" as a
+   subdued header. Sets time-and-place without implying the user should stop praying.
+
+4. **Remove greeting entirely; lead with content** — Use the header area for a daily
+   Scripture prompt, a streak display, or "X unanswered requests across Y cards."
+   Content-first, which is what users opened the app to see.
+
+**Claude's take:** Most modern devotional apps (YouVersion, Glorify, Hallow) skip
+personalized greetings in favour of content-first home screens. A greeting can add
+warmth, but the benefit is modest and the "Good night" failure mode is real. If the
+goal is warmth, **Option 1** (cap at "Good evening") is the safest and lowest-effort
+fix. If reconsidering the pattern altogether, **Option 4** aligns with the genre's UX
+conventions and gives the home screen more utility. This is ultimately a personal
+preference call — it's your app.
+
+---
+
+### UX-2 Settings — edit user name
+
+The name collected at first-run prompt (`Settings.UserName`) has no edit path. Once
+entered, the user cannot correct a typo or change their name without clearing all
+settings.
+
+**Contingency:** This item is only relevant if UX-1 resolves in favour of keeping the
+personalized greeting. If the greeting is removed, this item should be dropped.
+
+**Change:** Add a "Your Name" row to `Settings.xaml` — a plain `Entry` pre-populated
+with `Settings.UserName`, with a "Save" button (or on-blur auto-save) that writes
+back to `Settings.UserName`.
+
+**Files:** `Views/Settings.xaml`, `Views/Settings.xaml.cs`
+
+---
+
+### BUG-2 Prayer Time — blank card content
+
+During Prayer Time, the card body shows empty / blank space instead of the prayer
+request title and details. "General" appeared once (likely the card title seeping
+through), then subsequent cards were blank.
+
+**Likely root causes (investigate before fixing):**
+- `PrayerTimeViewModel.LoadEntriesAsync()` builds `PrayerTimeEntry` objects from
+  `Prayer` + `PrayerCard` records, but the `PrayerTitle` / `Details` properties may
+  not be mapped correctly — check the `PrayerTimeEntry` constructor / factory method
+- `CurrentEntry` may be set before `IsLoading` is false, causing the card border to
+  be hidden via `IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}"`
+  when it should be visible
+- The `StringToBool` converter on the Details label hides it when `Details` is null
+  or empty — verify that `Details` is actually being populated, not just the label
+  being hidden
+- Possible: entries are loaded but `CurrentIndex` starts at a position with null data;
+  check the initial index and the `CurrentEntry` derived property
+
+**Files to investigate:**
+`ViewModels/PrayerTimeViewModel.cs`, `Models/PrayerTimeEntry.cs` (if it exists),
+`Services/PrayerService.cs` (how prayers + cards are joined)
+
+---
+
+### F-11 Prayer request list page — purpose review
+
+The "Prayers" tab (`PrayerListPage`) shows a flat, unstyled list of every prayer request
+across all cards. UAT feedback: it looks ugly and its purpose is unclear relative to the
+card-based view on the "Cards" tab.
+
+**Questions to resolve before any code:**
+- Is this page needed at all? The card view already lets you drill into a card's
+  requests. Does a flat all-requests list add value, or is it redundant noise?
+- If kept: should it adopt the answered/unanswered visual treatment (strikethrough,
+  muted colour, answered date) from `PrayerCardsPage`?
+- If kept: should it be sortable / filterable by card, tag, or answered state?
+- Alternative purpose: could this tab become a "Recently Answered" view or an
+  "All Requests" search surface instead of a raw list?
+
+**Do not implement anything until the purpose is decided.**
+
+---
 
 ### F-7 Home page personalization
 `Views/MainPage.xaml` shows literal text `"Hello, {User}!"` — not a binding.
@@ -261,4 +377,4 @@ Currently 100% offline. No risk until BL-1 or other network feature ships.
 
 ---
 
-*Last updated: 2026-03-09*
+*Last updated: 2026-03-10*
