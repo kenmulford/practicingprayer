@@ -158,7 +158,14 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                 .ToList();
 
             Entries = entries.AsReadOnly();
-            CurrentIndex = 0;
+            // SetProperty(ref _currentIndex, 0) is a no-op when _currentIndex is already 0
+            // (int default value). Bypass it and fire dependent notifications manually so
+            // the XAML bindings on CurrentEntry update correctly after the first load.
+            _currentIndex = 0;
+            OnPropertyChanged(nameof(CurrentEntry));
+            OnPropertyChanged(nameof(ProgressDisplay));
+            OnPropertyChanged(nameof(HasPrevious));
+            OnPropertyChanged(nameof(HasNext));
             HasCompleted = entries.Count == 0;
         }
         catch (OperationCanceledException)
