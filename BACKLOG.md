@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: 🔨 Starting F-10 — Share feature (`feature/f10-share`)
-**Last completed**: F-9 (comprehensive UI review — 10 named styles, accessibility, bug fixes). Merged via PR #9.
-**Next up after this**: TD-5 — Prayer Time interval selection UI.
+**Last completed**: BUG-1, BUG-2, UX-3 (post-save stale view, blank Prayer Time cards, card row dividers). Merged via PR #10.
+**Next up after this**: UX-1 — Home metrics dashboard.
 
 ---
 
@@ -25,13 +25,10 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | BUG-1 | Post-save view not refreshing | After saving a prayer, the detail view shows stale data |
-| 2 | UX-1 | Home — remove greeting, add metrics dashboard | Replace name/greeting with overdue-prayer nudge cards; needs planning |
-| 3 | BUG-2 | Prayer Time — blank card content | Prayer title/details not showing; showed "General" once then blank |
-| 4 | UX-3 | Card list — dividers between prayer request rows | Thin separator between each request; minimal vertical space |
-| 5 | F-11 | Prayer request list page — purpose review | Ugly + unclear purpose; design decision needed before any code |
-| 6 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
-| 7 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
+| 1 | UX-1 | Home — remove greeting, add metrics dashboard | Replace name/greeting with overdue-prayer nudge cards; needs planning |
+| 2 | F-11 | Prayer request list page — purpose review | Ugly + unclear purpose; design decision needed before any code |
+| 3 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
+| 4 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
 | 8 | F-1 | Tag management UI | Create / edit / delete tags; assign to cards |
 | 9 | F-2 | Tag filtering on Prayer Cards page | Filter chips on PrayerCardsPage |
 | 10 | F-5 | Notification scheduling | `ScheduleForPrayer()` + deep-link on tap |
@@ -392,7 +389,10 @@ Currently 100% offline. No risk until BL-1 or other network feature ships.
 | — | Platforms cleanup (Windows/Mac/Tizen removed) | — | csproj clean, Android + iOS only |
 | F-7 | Home page personalization | #8 | One-time name prompt, time-of-day greeting |
 | F-9 | Comprehensive UI review | #9 | 10 named styles (ButtonBase, LabelBase + 8 variants), inline duplication eliminated, SemanticProperties on all form inputs, Settings bugs fixed |
+| BUG-1 | Post-save view not refreshing | #10 | Added prayerSaved/saved handlers to ApplyQueryAttributes; view-only page now reloads after save |
+| BUG-2 | Prayer Time — blank card content | #10 | Bypassed SetProperty no-op on first load; CurrentEntry + dependents now fire PropertyChanged correctly |
+| UX-3 | Card list — dividers between prayer request rows | #10 | VerticalStackLayout wrap + BoxView DividerLine in BindableLayout DataTemplate |
 
 ---
 
-*Last updated: 2026-03-10*
+*Last updated: 2026-03-12*
