@@ -270,6 +270,19 @@ namespace PrayerApp.ViewModels
                     _ = LoadPrayerAsync(_id);
                 }
             }
+            else if (query.ContainsKey("prayerSaved"))
+            {
+                // Navigated back to the view-only page after saving from the edit page.
+                // Reload unconditionally — this page can only receive prayerSaved for
+                // the prayer it was already displaying (no ID guard needed, and an ID
+                // guard would be unreliable if LoadPrayerAsync hasn't completed yet).
+                Reload();
+            }
+            else if (query.ContainsKey("saved"))
+            {
+                // Same scenario via the PrayerListPage (ReturnToCards = false) code path.
+                Reload();
+            }
         }
 
         private async Task LoadPrayerAsync(int id)
