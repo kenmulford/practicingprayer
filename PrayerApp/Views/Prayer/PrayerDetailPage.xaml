@@ -51,11 +51,10 @@
 
                     <!-- Action Buttons -->
                     <Grid ColumnDefinitions="*, *, *" ColumnSpacing="6">
-                        <!-- Set Reminder: placeholder for Phase 3 notification scheduling -->
                         <Button Grid.Column="0"
-                                Text="Set Reminder"
+                                Text="Share"
                                 Style="{StaticResource SmallActionButton}"
-                                IsEnabled="False"
+                                Command="{Binding ShareCommand}"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Edit"

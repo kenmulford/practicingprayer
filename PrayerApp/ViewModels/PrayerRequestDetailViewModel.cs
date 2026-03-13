@@ -23,6 +23,7 @@ namespace PrayerApp.ViewModels
         public ICommand SelectPrayerCommand { get; private set; }
         public ICommand EditPrayerCommand { get; private set; }
         public ICommand MarkAnsweredCommand { get; private set; }
+        public ICommand ShareCommand { get; private set; }
 
         private string _savedQueryKey = "saved";
         private string _deletedQueryKey = "deleted";
@@ -175,6 +176,7 @@ namespace PrayerApp.ViewModels
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
             EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
             MarkAnsweredCommand = new AsyncRelayCommand(MarkAnsweredAsync);
+            ShareCommand = new AsyncRelayCommand(ShareAsync);
         }
 
         public PrayerRequestDetailViewModel(Prayer prayer) : this()
@@ -238,6 +240,14 @@ namespace PrayerApp.ViewModels
             IsAnswered = true;
             await _prayerService.SavePrayerAsync(_prayer);
             RefreshProperties();
+        }
+
+        private async Task ShareAsync()
+        {
+            var text = string.IsNullOrWhiteSpace(Details)
+                ? Title
+                : $"{Title}\n\n{Details}";
+            await Share.RequestAsync(new ShareTextRequest { Title = Title, Text = text });
         }
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
