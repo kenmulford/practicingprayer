@@ -3,12 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardPage"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:DataType="viewModels:PrayerCardViewModel"
              Title="Prayer Card">
     <ContentPage.BindingContext>
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
-    <VerticalStackLayout Padding="24">
+    <Grid RowDefinitions="*,Auto">
+        <VerticalStackLayout Grid.Row="0" Padding="24">
         <Label 
             Text="Prayer Card"
             VerticalOptions="Center" 
@@ -77,5 +79,14 @@
                 </Grid>
             </VerticalStackLayout>
         </Border>
-    </VerticalStackLayout>
+        </VerticalStackLayout>
+
+        <!-- Onboarding coaching banner — NameCard step -->
+        <onboarding:OnboardingBanner
+            Grid.Row="1"
+            ExpectedStep="NameCard"
+            HeadlineText="Give it a name — a person, a topic, your church"
+            SubText="Then tap Save." />
+
+    </Grid>
 </ContentPage>

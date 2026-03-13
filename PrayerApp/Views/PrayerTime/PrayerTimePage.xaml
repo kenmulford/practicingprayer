@@ -5,12 +5,13 @@
              x:Class="PrayerApp.Views.PrayerTime.PrayerTimePage"
              x:DataType="viewModels:PrayerTimeViewModel"
              Shell.NavBarIsVisible="False"
+             xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              Shell.TabBarIsVisible="False">
     <ContentPage.BindingContext>
         <viewModels:PrayerTimeViewModel />
     </ContentPage.BindingContext>
 
-    <Grid RowDefinitions="Auto, *, Auto" Padding="20,12,20,8">
+    <Grid RowDefinitions="Auto, *, Auto, Auto" Padding="20,12,20,8">
 
         <!-- Row 0: Progress | [⏸/▶] [interval/countdown] -->
         <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
@@ -144,6 +145,13 @@
                     FontSize="11" />
 
         </Grid>
+
+        <!-- Onboarding coaching banner — PrayerTimeActive step -->
+        <onboarding:OnboardingBanner
+            Grid.Row="3"
+            ExpectedStep="PrayerTimeActive"
+            HeadlineText="Swipe through your cards. Tap ✓ when you're done."
+            SubText="You can use the auto-advance timer too." />
 
     </Grid>
 </ContentPage>

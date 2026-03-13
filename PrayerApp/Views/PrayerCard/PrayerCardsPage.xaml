@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
              NavigatedTo="ContentPage_NavigatedTo"
              x:DataType="viewModels:PrayerCardsViewModel">
@@ -12,11 +13,14 @@
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <CollectionView
-        x:Name="cardCollection"
-        ItemsSource="{Binding AllPrayerCards}"
-        Margin="12,8"
-        SelectionMode="None">
+    <Grid RowDefinitions="*,Auto,Auto">
+
+        <CollectionView
+            Grid.Row="0"
+            x:Name="cardCollection"
+            ItemsSource="{Binding AllPrayerCards}"
+            Margin="12,8"
+            SelectionMode="None">
         <CollectionView.ItemsLayout>
             <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
         </CollectionView.ItemsLayout>
@@ -154,6 +158,22 @@
 
             </DataTemplate>
         </CollectionView.ItemTemplate>
-    </CollectionView>
+        </CollectionView>
+
+        <!-- CreateCard step banner -->
+        <onboarding:OnboardingBanner
+            Grid.Row="1"
+            ExpectedStep="CreateCard"
+            HeadlineText="Tap 'Add Card' to create your first prayer card"
+            SubText="Give it a name — a person, a topic, or a place." />
+
+        <!-- AddRequest step banner -->
+        <onboarding:OnboardingBanner
+            Grid.Row="2"
+            ExpectedStep="AddRequest"
+            HeadlineText="Great! Now expand your card and tap '+ Add prayer'"
+            SubText="Add your first prayer request to this card." />
+
+    </Grid>
 </ContentPage>
 
