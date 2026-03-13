@@ -13,6 +13,8 @@ namespace PrayerApp
     {
         public static MauiApp CreateMauiApp()
         {
+            SQLitePCL.Batteries_V2.Init();
+
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");
 
             var builder = MauiApp.CreateBuilder();
