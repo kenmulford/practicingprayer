@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using PrayerApp.Services;
 using PrayerApp.Views.Prayer;
 using System;
 using System.Collections.Generic;
@@ -15,11 +16,14 @@ namespace PrayerApp.ViewModels
     public class PrayerRequestDetailViewModel : ObservableObject, IQueryAttributable
     {
         private Prayer _prayer;
+        private readonly IPrayerService _prayerService;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectPrayerCommand { get; private set; }
         public ICommand EditPrayerCommand { get; private set; }
+        public ICommand MarkAnsweredCommand { get; private set; }
+        public ICommand ShareCommand { get; private set; }
 
         private string _savedQueryKey = "saved";
         private string _deletedQueryKey = "deleted";
@@ -41,6 +45,8 @@ namespace PrayerApp.ViewModels
         }
 
         public bool IsEditable => !IsReadOnly;
+
+        public bool IsNotAnswered => !IsAnswered;
 
         public string Identifier => _prayer.Id.ToString();
 
@@ -132,19 +138,30 @@ namespace PrayerApp.ViewModels
                 if (_prayer.IsAnswered != value)
                 {
                     _prayer.IsAnswered = value;
+                    _prayer.AnsweredAt = value ? DateTime.Now : null;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(AnsweredAt));
+                    OnPropertyChanged(nameof(AnsweredAtDisplay));
+                    OnPropertyChanged(nameof(IsNotAnswered));
                 }
             }
         }
 
-        private ObservableCollection<PrayerFrequency> _frequencies { get; set; }
-        public ObservableCollection<PrayerFrequency>  FrequencyOptions
+        public DateTime? AnsweredAt => _prayer.AnsweredAt;
+
+        public string AnsweredAtDisplay =>
+            IsAnswered && AnsweredAt.HasValue
+                ? $"✓ {AnsweredAt.Value:MMM d}"
+                : string.Empty;
+
+        public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; } =
+            new ReadOnlyCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>().ToList());
+
+        private string _cardTitle = string.Empty;
+        public string CardTitle
         {
-            get => _frequencies;
-            set
-            {
-                _ = LoadPrayerFrequenciesList();
-            }
+            get => _cardTitle;
+            set => SetProperty(ref _cardTitle, value);
         }
 
         public DateTime CreatedAt => _prayer.CreatedAt;
@@ -153,12 +170,13 @@ namespace PrayerApp.ViewModels
         public PrayerRequestDetailViewModel()
         {
             _prayer = new Prayer();
-            _frequencies = new ObservableCollection<PrayerFrequency>();
+            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
             EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
-            _ = LoadPrayerFrequenciesList();
+            MarkAnsweredCommand = new AsyncRelayCommand(MarkAnsweredAsync);
+            ShareCommand = new AsyncRelayCommand(ShareAsync);
         }
 
         public PrayerRequestDetailViewModel(Prayer prayer) : this()
@@ -167,17 +185,9 @@ namespace PrayerApp.ViewModels
             IsReadOnly = false;
         }
 
-        private async Task LoadPrayerFrequenciesList()
-        {
-            _frequencies = new ObservableCollection<PrayerFrequency>(
-                (PrayerFrequency[])Enum.GetValues<PrayerFrequency>()
-            );
-        }
-
         private async Task SaveAsync()
         {
-            _prayer.UpdatedAt = DateTime.Now;
-            await _prayer.SaveAsync();
+            await _prayerService.SavePrayerAsync(_prayer);
             if (ReturnToCards)
             {
                 await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
@@ -190,7 +200,7 @@ namespace PrayerApp.ViewModels
 
         private async Task DeleteAsync()
         {
-            await _prayer.DeleteAsync();
+            await _prayerService.DeletePrayerAsync(_prayer);
             if (ReturnToCards)
             {
                 await Shell.Current.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");
@@ -225,9 +235,36 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private async Task MarkAnsweredAsync()
+        {
+            IsAnswered = true;
+            await _prayerService.SavePrayerAsync(_prayer);
+            RefreshProperties();
+        }
+
+        private async Task ShareAsync()
+        {
+            var text = string.IsNullOrWhiteSpace(Details)
+                ? Title
+                : $"{Title}\n\n{Details}";
+            await Share.RequestAsync(new ShareTextRequest { Title = Title, Text = text });
+        }
+
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.ContainsKey("load"))
+            if (query.ContainsKey("newForCard"))
+            {
+                if (int.TryParse(query["newForCard"].ToString(), out int cardId))
+                {
+                    _prayer = new Prayer { PrayerCardId = cardId };
+                    ReturnToCards = true;
+                    _savedQueryKey = "prayerSaved";
+                    _deletedQueryKey = "prayerDeleted";
+                    IsReadOnly = false;
+                    RefreshProperties();
+                }
+            }
+            else if (query.ContainsKey("load"))
             {
                 if (query.ContainsKey("returnToCards"))
                 {
@@ -249,7 +286,19 @@ namespace PrayerApp.ViewModels
                 {
                     _ = LoadPrayerAsync(_id);
                 }
-                RefreshProperties();
+            }
+            else if (query.ContainsKey("prayerSaved"))
+            {
+                // Navigated back to the view-only page after saving from the edit page.
+                // Reload unconditionally — this page can only receive prayerSaved for
+                // the prayer it was already displaying (no ID guard needed, and an ID
+                // guard would be unreliable if LoadPrayerAsync hasn't completed yet).
+                Reload();
+            }
+            else if (query.ContainsKey("saved"))
+            {
+                // Same scenario via the PrayerListPage (ReturnToCards = false) code path.
+                Reload();
             }
         }
 
@@ -272,7 +321,6 @@ namespace PrayerApp.ViewModels
         public void Reload()
         {
             _ = LoadPrayerAsync(_prayer.Id);
-            RefreshProperties();
         }
 
         private void RefreshProperties()
@@ -283,12 +331,16 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(PrayerCardId));
             OnPropertyChanged(nameof(CanNotify));
             OnPropertyChanged(nameof(IsAnswered));
+            OnPropertyChanged(nameof(AnsweredAt));
+            OnPropertyChanged(nameof(AnsweredAtDisplay));
             OnPropertyChanged(nameof(CreatedAt));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
             OnPropertyChanged(nameof(PrayerFrequencyDisplay));
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(IsEditable));
+            OnPropertyChanged(nameof(IsNotAnswered));
+            OnPropertyChanged(nameof(CardTitle));
         }
     }
 }

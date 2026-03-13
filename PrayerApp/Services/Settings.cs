@@ -23,6 +23,13 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(FirstRun), value);
         }
 
+        /// <summary>Seconds per card in auto-mode. Persisted across sessions.</summary>
+        public static int AutoModeIntervalSeconds
+        {
+            get => Preferences.Get(nameof(AutoModeIntervalSeconds), 30);
+            set => Preferences.Set(nameof(AutoModeIntervalSeconds), value);
+        }
+
         public static bool AllowNotifications
         {
             get => Preferences.Get(nameof(AllowNotifications), true);

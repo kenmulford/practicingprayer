@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="NSubstitute" Version="5.3.0" />
+    <!-- Required for SQLite attribute types used in model files ([Table], [Column], etc.) -->
+    <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.9" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <!--
+    Link non-MAUI source files from the main project.
+    Excluded: DBService.cs (needs native SQLite at runtime), Settings.cs
+    (MAUI Preferences), NotificationService.cs (Plugin.LocalNotification),
+    OrientationService (platform-specific), and all ViewModels/Views (Shell/Application).
+  -->
+  <ItemGroup>
+    <!-- Models -->
+    <Compile Include="../PrayerApp/Models/Prayer.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerCard.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerCardTag.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerTag.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerFrequency.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerInteraction.cs" />
+
+    <!-- Service interfaces -->
+    <Compile Include="../PrayerApp/Services/IDBService.cs" />
+    <Compile Include="../PrayerApp/Services/ICardService.cs" />
+    <Compile Include="../PrayerApp/Services/IPrayerService.cs" />
+    <Compile Include="../PrayerApp/Services/ITagService.cs" />
+    <Compile Include="../PrayerApp/Services/IPrayerInteractionService.cs" />
+
+    <!-- Service implementations (no MAUI dependencies) -->
+    <Compile Include="../PrayerApp/Services/CardService.cs" />
+    <Compile Include="../PrayerApp/Services/PrayerService.cs" />
+    <Compile Include="../PrayerApp/Services/TagService.cs" />
+    <Compile Include="../PrayerApp/Services/PrayerInteractionService.cs" />
+  </ItemGroup>
+
+</Project>

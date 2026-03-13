@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
+using PrayerApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -45,9 +46,9 @@ namespace PrayerApp.ViewModels
             ClearSelectionCommand = new RelayCommand(ClearSelection);
         }
 
-        public async Task InitializeForCardAsync(int prayerRequestId)
+        public async Task InitializeForCardAsync(int prayerCardId)
         {
-            _prayerCardId = prayerRequestId;
+            _prayerCardId = prayerCardId;
             await LoadTagsAsync();
             await LoadSelectedTagsAsync();
         }
@@ -75,7 +76,7 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                var selectedTags = await _tagService.GetTagsByRequestIdAsync(_prayerCardId);
+                var selectedTags = await _tagService.GetTagsByCardIdAsync(_prayerCardId);
                 var selectedIds = selectedTags.Select(t => t.Id).ToHashSet();
 
                 // Update AllTags to mark selected ones
@@ -88,7 +89,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load request tags: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card tags: {ex.Message}", "OK");
             }
         }
 
@@ -105,11 +106,11 @@ namespace PrayerApp.ViewModels
             {
                 if (isSelected)
                 {
-                    await _tagService.AddTagToRequestAsync(_prayerCardId, tagId);
+                    await _tagService.AddTagToCardAsync(_prayerCardId, tagId);
                 }
                 else
                 {
-                    await _tagService.RemoveTagFromRequestAsync(_prayerCardId, tagId);
+                    await _tagService.RemoveTagFromCardAsync(_prayerCardId, tagId);
                 }
             }
             catch (Exception ex)

@@ -8,13 +8,13 @@
     <ContentPage.BindingContext>
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
-    <VerticalStackLayout>
+    <VerticalStackLayout Padding="24">
         <Label 
             Text="Prayer Card"
             VerticalOptions="Center" 
             HorizontalOptions="Center"
-            FontSize="24"
-            FontAttributes="Bold" />
+            Style="{StaticResource CardTitle}"
+            FontSize="24" />
 
         <Border Padding="20">
             <VerticalStackLayout Spacing="15" Margin="5">
@@ -24,11 +24,42 @@
                         VerticalOptions="Center"
                         WidthRequest="100"
                         Text="Title" />
-                    <Entry 
+                    <Entry
                         x:Name="TitleEntry"
                         Text="{Binding Title}"
                         VerticalOptions="Center"
-                        Placeholder="Card Title" />
+                        Placeholder="Card Title"
+                        SemanticProperties.Hint="Name or topic for this prayer card" />
+                </HorizontalStackLayout>
+
+                <!-- Frequency Picker -->
+                <HorizontalStackLayout Spacing="10">
+                    <Label VerticalOptions="Center" WidthRequest="100" Text="Frequency" />
+                    <Picker Title="Select Frequency"
+                            ItemsSource="{Binding FrequencyOptions}"
+                            SelectedItem="{Binding PrayerFrequency}"
+                            SemanticProperties.Hint="Default reminder frequency for this card"
+                            HorizontalOptions="Start"
+                            WidthRequest="200"
+                            VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Allow Notifications -->
+                <HorizontalStackLayout Spacing="10">
+                    <Label VerticalOptions="Center" WidthRequest="100" Text="Reminders" />
+                    <Switch IsToggled="{Binding CanNotify}"
+                            SemanticProperties.Description="Enable reminders for this card"
+                            OnColor="{StaticResource Secondary}"
+                            VerticalOptions="Center" />
+                </HorizontalStackLayout>
+
+                <!-- Is Answered -->
+                <HorizontalStackLayout Spacing="10">
+                    <Label VerticalOptions="Center" WidthRequest="100" Text="Answered" />
+                    <Switch IsToggled="{Binding IsAnswered}"
+                            SemanticProperties.Description="Mark this card as fully answered"
+                            OnColor="{StaticResource Secondary}"
+                            VerticalOptions="Center" />
                 </HorizontalStackLayout>
 
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="4">

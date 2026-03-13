@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,7 +20,8 @@ namespace PrayerApp.Services
             _db.CreateTableAsync<PrayerCard>().Wait(); // Create Table
             _db.CreateTableAsync<Prayer>().Wait(); // Create Prayer/Request Table
             _db.CreateTableAsync<PrayerTag>().Wait(); // Create Table
-            _db.CreateTableAsync<PrayerRequestTag>().Wait(); // Create Table
+            _db.CreateTableAsync<PrayerCardTag>().Wait(); // Create Table
+            _db.CreateTableAsync<PrayerInteraction>().Wait(); // Create Table
         }
 
         public async Task UpdateSchema()
@@ -28,9 +29,20 @@ namespace PrayerApp.Services
             await _db.CreateTableAsync<PrayerCard>(); // Ensure table is created
             await _db.CreateTableAsync<Prayer>(); // Ensure prayer/request table is created
             await _db.CreateTableAsync<PrayerTag>(); // Ensure table is created
-            await _db.CreateTableAsync<PrayerRequestTag>(); // Ensure table is created
+            await _db.CreateTableAsync<PrayerCardTag>(); // Ensure table is created
+            await _db.CreateTableAsync<PrayerInteraction>(); // Ensure table is created
 
             await EnsurePrayerCardColumnsAsync();
+
+            // Migration: drop old PrayerRequestTag table name if present from a pre-rename install
+            try
+            {
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateSchema] PrayerRequestTag migration: {ex.Message}");
+            }
         }
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()
@@ -63,32 +75,32 @@ namespace PrayerApp.Services
             return await _db.DropTableAsync<T>();
         }
 
-        public async Task<List<PrayerRequestTag>> GetByRequestIdAsync(int prayerRequestId)
+        public async Task<List<PrayerCardTag>> GetByCardIdAsync(int prayerCardId)
         {
-            return await _db.Table<PrayerRequestTag>()
-                .Where(prt => prt.PrayerRequestId == prayerRequestId)
+            return await _db.Table<PrayerCardTag>()
+                .Where(pct => pct.PrayerCardId == prayerCardId)
                 .ToListAsync();
         }
 
-        public async Task<List<PrayerRequestTag>> GetByTagIdAsync(int prayerTagId)
+        public async Task<List<PrayerCardTag>> GetByTagIdAsync(int prayerTagId)
         {
-            return await _db.Table<PrayerRequestTag>()
-                .Where(prt => prt.PrayerTagId == prayerTagId)
+            return await _db.Table<PrayerCardTag>()
+                .Where(pct => pct.PrayerTagId == prayerTagId)
                 .ToListAsync();
         }
 
-        public async Task<int> DeleteByRequestIdAsync(int prayerRequestId)
+        public async Task<int> DeleteByCardIdAsync(int prayerCardId)
         {
             return await _db.ExecuteAsync(
-                "DELETE FROM PrayerRequestTag WHERE PrayerRequestId = ?",
-                prayerRequestId
+                "DELETE FROM PrayerCardTag WHERE PrayerCardId = ?",
+                prayerCardId
             );
         }
 
         public async Task<int> DeleteByTagIdAsync(int prayerTagId)
         {
             return await _db.ExecuteAsync(
-                "DELETE FROM PrayerRequestTag WHERE PrayerTagId = ?",
+                "DELETE FROM PrayerCardTag WHERE PrayerTagId = ?",
                 prayerTagId
             );
         }
@@ -160,11 +172,17 @@ namespace PrayerApp.Services
                 .ToListAsync();
         }
 
+        public async Task<List<PrayerInteraction>> GetInteractionsByPrayerIdAsync(int prayerId)
+        {
+            return await _db.Table<PrayerInteraction>()
+                .Where(i => i.PrayerId == prayerId)
+                .ToListAsync();
+        }
+
         private async Task DropSyncDataAsync()
         {
-            // Drop new schema tables first
-            await DropTableAsync<PrayerRequestTag>();
-            await _db.CreateTableAsync<PrayerRequestTag>();
+            await DropTableAsync<PrayerCardTag>();
+            await _db.CreateTableAsync<PrayerCardTag>();
 
             await DropTableAsync<PrayerTag>();
             await _db.CreateTableAsync<PrayerTag>();
@@ -175,25 +193,24 @@ namespace PrayerApp.Services
             await DropTableAsync<PrayerCard>();
             await _db.CreateTableAsync<PrayerCard>();
 
-            // Also drop legacy tables to avoid duplicate data when migrating
             try
             {
                 await DropTableAsync<PrayerInteraction>();
             }
-            catch {  }
+            catch { }
 
             try
             {
-                await DropTableAsync<PrayerCategory>();
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCategory");
             }
-            catch {  }
+            catch { }
 
             try
             {
-                // Also drop old PrayerCardTag if it exists
-                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCardTag");
+                // Also drop old PrayerRequestTag if it exists from a pre-rename install
+                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
             }
-            catch {  }
+            catch { }
         }
 
         private async Task EnsurePrayerCardColumnsAsync()
@@ -201,6 +218,14 @@ namespace PrayerApp.Services
             try
             {
                 await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsFavorite INTEGER DEFAULT 0");
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN AnsweredAt TEXT");
             }
             catch
             {

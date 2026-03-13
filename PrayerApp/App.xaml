@@ -2,6 +2,7 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:PrayerApp"
+             xmlns:converters="clr-namespace:PrayerApp.Converters"
              x:Class="PrayerApp.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -9,6 +10,10 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <converters:BoolToTextDecorationConverter x:Key="BoolToTextDecoration" />
+            <converters:BoolToMutedColorConverter x:Key="BoolToMutedColor" />
+            <converters:InverseBoolConverter x:Key="InverseBool" />
+            <converters:StringToBoolConverter x:Key="StringToBool" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

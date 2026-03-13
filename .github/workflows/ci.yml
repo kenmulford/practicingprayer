@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master", "dev", "feature/**" ]
+  pull_request:
+    branches: [ "master", "dev" ]
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore PrayerApp.Tests/PrayerApp.Tests.csproj
+
+      - name: Build test project
+        run: dotnet build PrayerApp.Tests/PrayerApp.Tests.csproj --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test PrayerApp.Tests/PrayerApp.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: PrayerApp.Tests/TestResults/

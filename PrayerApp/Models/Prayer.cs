@@ -38,7 +38,10 @@ namespace PrayerApp.Models
 
         [Column("IsAnswered")]
         public bool IsAnswered { get; set; } = false;
-        
+
+        [Column("AnsweredAt")]
+        public DateTime? AnsweredAt { get; set; }
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

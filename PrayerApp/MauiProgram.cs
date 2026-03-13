@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Maui;
+using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
 using PrayerApp.Models;
@@ -38,8 +38,18 @@ namespace PrayerApp
             builder.Services.AddSingleton<ICardService, CardService>();
             // Register tag service as singleton
             builder.Services.AddSingleton<ITagService, TagService>();
+            // Register prayer service as singleton
+            builder.Services.AddSingleton<IPrayerService, PrayerService>();
+            // Register prayer interaction service as singleton
+            builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
             // Register notification service as singleton
             builder.Services.AddSingleton<INotificationService, NotificationService>();
+
+#if ANDROID
+            builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
+#elif IOS
+            builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.iOS.OrientationService>();
+#endif
 
             // add transient viewmodel so each instance of PrayerCardDetail is new (avoid data bleed/leak)
             builder.Services.AddTransient<PrayerCardDetailViewModel>();
@@ -59,8 +69,9 @@ namespace PrayerApp
             // set DB service for the necessary models
             PrayerCard.SetDBService(myDBService);
             PrayerTag.SetDBService(myDBService);
-            PrayerRequestTag.SetDBService(myDBService);
+            PrayerCardTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
+            PrayerInteraction.SetDBService(myDBService);
 
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();

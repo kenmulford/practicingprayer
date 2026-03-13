@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.QuickAddPage"
+             x:DataType="viewModels:QuickAddViewModel"
+             Title="Quick Add">
+    <ContentPage.BindingContext>
+        <viewModels:QuickAddViewModel />
+    </ContentPage.BindingContext>
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+
+            <Border Style="{StaticResource PrayerCardBorder}"
+                    Padding="16">
+                <VerticalStackLayout Spacing="12">
+
+                    <Label Text="Prayer Title"
+                           Style="{StaticResource FormLabel}" />
+                    <Entry Text="{Binding Title}"
+                           Placeholder="Enter prayer title"
+                           HorizontalOptions="Fill" />
+
+                    <Label Text="Add to Card"
+                           Style="{StaticResource FormLabel}" />
+                    <Picker ItemsSource="{Binding Cards}"
+                            SelectedItem="{Binding SelectedCard}"
+                            ItemDisplayBinding="{Binding Title}"
+                            Title="Select a card"
+                            SemanticProperties.Hint="Select which prayer card to add this request to"
+                            HorizontalOptions="Fill" />
+
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        Command="{Binding CancelCommand}"
+                        HorizontalOptions="Fill" />
+                <Button Grid.Column="1"
+                        Text="Add"
+                        Command="{Binding SaveCommand}"
+                        HorizontalOptions="Fill" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

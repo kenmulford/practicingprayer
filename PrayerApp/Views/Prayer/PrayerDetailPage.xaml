@@ -9,105 +9,122 @@
         <viewModels:PrayerRequestDetailViewModel />
     </ContentPage.BindingContext>
     <ScrollView>
-        <VerticalStackLayout
-        Padding="10,0"
-        Spacing="10">
-            <Border
-                
-                Padding="10">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="4"/>
-                </Border.StrokeShape>
-                <VerticalStackLayout 
-                    Spacing="10" 
-                    Margin="5">
-                    <!-- Prayer Title -->
-                    <HorizontalStackLayout
-                        Spacing="10">
-                        <Entry 
-                            x:Name="TitleEntry"
-                            VerticalOptions="Center"
-                            HorizontalOptions="Start"
-                            WidthRequest="300"
-                            Placeholder="Title"
-                            IsReadOnly="{Binding IsReadOnly}"
-                            Text="{Binding Title}" />
-                    </HorizontalStackLayout>
-                    <!-- Details -->
-                    <VerticalStackLayout
-                        Spacing="10"
-                        Margin="5">
-                        <Editor
-                            x:Name="DetailsEditor"
-                            VerticalOptions="Center"
-                            HorizontalOptions="Start"
-                            Placeholder="Type your prayer details here.."
-                            IsReadOnly="{Binding IsReadOnly}"
-                            Text="{Binding Details}" />
-                    </VerticalStackLayout>
+        <VerticalStackLayout Padding="12,8" Spacing="16">
 
-                    <!-- Tags Section -->
-                    <VerticalStackLayout Spacing="10" Margin="5">
-                        <Label Text="Tags" FontSize="16" FontAttributes="Bold"/>
-                        <CollectionView 
-                            ItemsSource="{Binding TagSelectionViewModel.AllTags}"
-                            SelectionMode="Multiple">
-                            <CollectionView.ItemsLayout>
-                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="5" />
-                            </CollectionView.ItemsLayout>
-                            <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:PrayerTagItemViewModel">
-                                    <HorizontalStackLayout Spacing="10" Padding="5">
-                                        <CheckBox
-                                            IsChecked="{Binding IsSelected}"
-                                            IsEnabled="{Binding BindingContext.IsEditable, Source={RelativeSource AncestorType={x:Type ContentPage}}}" />
-                                        <Label Text="{Binding Name}" VerticalOptions="Center"/>
-                                    </HorizontalStackLayout>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </VerticalStackLayout>
+            <!-- VIEW MODE -->
+            <Border Style="{StaticResource PrayerCardBorder}"
+                    Padding="16"
+                    IsVisible="{Binding IsReadOnly}">
+                <VerticalStackLayout Spacing="12">
+
+                    <!-- Title -->
+                    <Label Text="{Binding Title}"
+                           FontSize="22"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Tertiary}" />
+                    <!-- Divider -->
+                    <BoxView Style="{StaticResource DividerLine}" />
+
+                    <!-- Details -->
+                    <Label Text="{Binding Details, FallbackValue='No details added.'}"
+                           FontSize="15"
+                           TextColor="{StaticResource OffBlack}" />
+
+                    <!-- Answered Badge -->
+                    <Label Text="{Binding AnsweredAtDisplay}"
+                           FontSize="13"
+                           TextColor="{StaticResource SuccessGreen}"
+                           FontAttributes="Bold"
+                           IsVisible="{Binding IsAnswered}" />
 
                     <!-- Frequency -->
-                    <VerticalStackLayout
-                        Spacing="10"
-                        Margin="5">
-                        <Picker
-                            x:Name="FrequencyPicker"
-                            Title="Select Frequency"
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Frequency:"
+                               FontSize="13"
+                               TextColor="{StaticResource Gray400}"
+                               VerticalOptions="Center" />
+                        <Label Text="{Binding PrayerFrequencyDisplay}"
+                               FontSize="13"
+                               TextColor="{StaticResource Primary}"
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <!-- Action Buttons -->
+                    <Grid ColumnDefinitions="*, *, *" ColumnSpacing="6">
+                        <Button Grid.Column="0"
+                                Text="Share"
+                                Style="{StaticResource SmallActionButton}"
+                                Command="{Binding ShareCommand}"
+                                HorizontalOptions="Fill" />
+                        <Button Grid.Column="1"
+                                Text="Edit"
+                                Style="{StaticResource SmallActionButton}"
+                                Command="{Binding EditPrayerCommand}"
+                                HorizontalOptions="Fill" />
+                        <Button Grid.Column="2"
+                                Text="Mark Answered"
+                                Style="{StaticResource AnsweredButton}"
+                                Command="{Binding MarkAnsweredCommand}"
+                                IsVisible="{Binding IsNotAnswered}"
+                                HorizontalOptions="Fill" />
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- EDIT MODE -->
+            <Border Style="{StaticResource PrayerCardBorder}"
+                    Padding="16"
+                    IsVisible="{Binding IsEditable}">
+                <VerticalStackLayout Spacing="12">
+
+                    <!-- Title -->
+                    <Label Text="Title"
+                           Style="{StaticResource FormLabel}" />
+                    <Entry Text="{Binding Title}"
+                           Placeholder="Prayer title"
+                           SemanticProperties.Hint="Prayer request title"
+                           HorizontalOptions="Fill" />
+
+                    <!-- Details -->
+                    <Label Text="Details"
+                           Style="{StaticResource FormLabel}" />
+                    <Editor Text="{Binding Details}"
+                            Placeholder="Add details..."
+                            SemanticProperties.Hint="Prayer request details or Scripture reference"
+                            HeightRequest="100"
+                            HorizontalOptions="Fill" />
+
+                    <!-- Frequency -->
+                    <Label Text="Frequency"
+                           Style="{StaticResource FormLabel}" />
+                    <Picker Title="Select Frequency"
                             ItemsSource="{Binding FrequencyOptions}"
                             ItemDisplayBinding="{Binding .}"
                             SelectedItem="{Binding PrayerFrequency}"
-                            IsEnabled="{Binding IsEditable}"
-                            HorizontalOptions="Start"
-                            WidthRequest="300" />
-                    </VerticalStackLayout>
+                            SemanticProperties.Hint="How often to be reminded"
+                            HorizontalOptions="Fill" />
 
-                    <!-- Allow Notifications (CanNotify) -->
+                    <!-- Notifications Switch -->
                     <HorizontalStackLayout Spacing="10">
-                        <Label
-                            Text="Allow Notifications?"
-                            WidthRequest="100"
-                            VerticalOptions="Center" />
-                        <Switch
-                            x:Name="chkCanNotify"
-                            OnColor="{StaticResource Secondary}"
-                            IsToggled="{Binding CanNotify}"
-                            IsEnabled="{Binding IsEditable}"
-                            VerticalOptions="Center">
+                        <Label Text="Notifications"
+                               VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding CanNotify}"
+                                SemanticProperties.Description="Enable reminders for this request"
+                                VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
-                                    <VisualStateGroup x:Name="CommonStates">
+                                    <VisualStateGroup>
                                         <VisualState x:Name="On">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"
-                                    Value="{StaticResource Primary}" />
+                                                        Value="{StaticResource Primary}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="Off">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"
-                                    Value="{StaticResource Gray600}" />
+                                                        Value="{StaticResource Gray600}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
@@ -116,32 +133,26 @@
                         </Switch>
                     </HorizontalStackLayout>
 
-                    <!-- Is Answered -->
+                    <!-- Answered Switch -->
                     <HorizontalStackLayout Spacing="10">
-
-                        <Label
-                            Text="Answered?"
-                            WidthRequest="100"
-                            VerticalOptions="Center" />
-                        <Switch
-                            x:Name="chkIsAnswered"
-                            OnColor="{StaticResource Secondary}"
-                            IsToggled="{Binding IsAnswered}"
-                            IsEnabled="{Binding IsEditable}"
-                            VerticalOptions="Center">
+                        <Label Text="Answered"
+                               VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding IsAnswered}"
+                                SemanticProperties.Description="Mark this request as answered"
+                                VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
-                                    <VisualStateGroup x:Name="CommonStates">
+                                    <VisualStateGroup>
                                         <VisualState x:Name="On">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"
-                                        Value="{StaticResource Primary}" />
+                                                        Value="{StaticResource Primary}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="Off">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"
-                                        Value="{StaticResource Gray600}" />
+                                                        Value="{StaticResource Gray600}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
@@ -150,28 +161,19 @@
                         </Switch>
                     </HorizontalStackLayout>
 
-                    <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
-                        <Button 
-                            StyleClass=""
-                            HorizontalOptions="Start"
-                            Command="{Binding DeleteCommand}"
-                            Text="Delete"
-                            IsVisible="{Binding IsEditable}" />
-                        <Button 
-                            StyleClass=""
-                            Grid.Column="1"
-                            HorizontalOptions="End"
-                            Command="{Binding SaveCommand}"
-                            Text="Save"
-                            IsVisible="{Binding IsEditable}" />
-                        <Button
-                            StyleClass=""
-                            Grid.ColumnSpan="2"
-                            HorizontalOptions="End"
-                            Command="{Binding EditPrayerCommand}"
-                            Text="Edit"
-                            IsVisible="{Binding IsReadOnly}" />
+                    <!-- Save / Delete Buttons -->
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                        <Button Grid.Column="0"
+                                Text="Delete"
+                                Command="{Binding DeleteCommand}"
+                                Style="{StaticResource DangerButton}"
+                                HorizontalOptions="Fill" />
+                        <Button Grid.Column="1"
+                                Text="Save"
+                                Command="{Binding SaveCommand}"
+                                HorizontalOptions="Fill" />
                     </Grid>
+
                 </VerticalStackLayout>
             </Border>
 
