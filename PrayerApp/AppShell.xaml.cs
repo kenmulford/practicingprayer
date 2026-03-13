@@ -4,6 +4,12 @@ using Android.Graphics;
 using AndroidX.AppCompat.Widget;
 using AndroidX.Core.View;
 #endif
+using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Extensions;
+using CommunityToolkit.Maui.Views;
+using PrayerApp.Models;
+using PrayerApp.Services;
+using PrayerApp.Views.Onboarding;
 using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
 using PrayerApp.Views.PrayerTime;
@@ -40,6 +46,24 @@ namespace PrayerApp
             Routing.RegisterRoute(nameof(PrayerDetailPage), typeof(PrayerDetailPage));
             Routing.RegisterRoute(nameof(PrayerTimePage), typeof(PrayerTimePage));
             Routing.RegisterRoute(nameof(TagDetailPage), typeof(TagDetailPage));
+
+            // Subscribe to onboarding step changes to show the closing popup
+            var onboardingService = IPlatformApplication.Current!.Services
+                .GetRequiredService<IOnboardingService>();
+
+            onboardingService.StepChanged += (_, _) =>
+            {
+                if (onboardingService.CurrentStep != OnboardingStep.Complete) return;
+
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    var page = Shell.Current?.CurrentPage;
+                    if (page is not null)
+                        await page.ShowPopupAsync(new OnboardingCompletePopup(),
+                            new PopupOptions { CanBeDismissedByTappingOutsideOfPopup = false },
+                            CancellationToken.None);
+                });
+            };
         }
     }
 }

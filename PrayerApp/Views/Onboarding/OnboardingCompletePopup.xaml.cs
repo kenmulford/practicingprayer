@@ -12,7 +12,7 @@ public partial class OnboardingCompletePopup : Popup
         BtnDone.Clicked += async (_, _) =>
         {
             PrayerApp.Services.Settings.OnboardingComplete = true;
-            await CloseAsync();
+            await CloseAsync(CancellationToken.None);
         };
     }
 }

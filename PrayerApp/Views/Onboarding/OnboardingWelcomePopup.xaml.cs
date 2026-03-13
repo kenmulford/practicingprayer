@@ -16,14 +16,14 @@ public partial class OnboardingWelcomePopup : Popup
         BtnGetStarted.Clicked += async (_, _) =>
         {
             _onboardingService.Advance(); // Welcome → CreateCard
-            await CloseAsync();
+            await CloseAsync(CancellationToken.None);
             await Shell.Current.GoToAsync("//CardsPage");
         };
 
         SkipTap.Tapped += async (_, _) =>
         {
             _onboardingService.Skip();
-            await CloseAsync();
+            await CloseAsync(CancellationToken.None);
         };
     }
 }
