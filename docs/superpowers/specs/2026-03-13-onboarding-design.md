@@ -70,7 +70,7 @@ public interface IOnboardingService
 
 **Persistence:** `CurrentStep` is written to `Preferences` on every `Advance()` / `Skip()` / `Reset()` call using `nameof(OnboardingStep)` as the key (consistent with the `Settings` class convention).
 
-**`Reset()`:** Clears the persisted step key, sets `Settings.OnboardingComplete = false`, and sets in-memory `CurrentStep = Welcome`. This is called if the user wants to re-run onboarding without a full app restart. `AppShell` calls `Reset()` and then shows the Welcome popup after detecting the step is back at `Welcome`.
+**`Reset()`:** Clears the persisted step key, sets `Settings.OnboardingComplete = false`, sets `WelcomeShownThisSession = false`, and sets in-memory `CurrentStep = Welcome`. The Welcome popup is **not** shown by the caller of `Reset()` — it appears naturally the next time `MainPage.OnAppearing` fires and finds `CurrentStep == Welcome && !WelcomeShownThisSession`.
 
 ### `Settings` additions (`Services/Settings.cs`)
 
