@@ -15,6 +15,8 @@ namespace PrayerApp.ViewModels
     {
         private List<Prayer> _prayerList;
         private readonly IPrayerService _prayerService;
+        private readonly ICardService _cardService;
+        private Dictionary<int, string> _cardTitleLookup = new();
         public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; }
 
         public ICommand NewCommand { get; }
@@ -22,13 +24,23 @@ namespace PrayerApp.ViewModels
         public PrayerListViewModel()
         {
             _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
+            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+
+            // Build card title lookup
+            var cards = Task.Run(async () => await _cardService.GetCardsAsync()).Result;
+            _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
 
             // GET all prayer requests
             _prayerList = Task.Run(async () => await _prayerService.GetAllPrayersAsync()).Result.ToList();
 
             // Convert Prayer to PrayerRequestDetailViewModel
             AllPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(
-                _prayerList.Select(p => new PrayerRequestDetailViewModel(p))
+                _prayerList.Select(p =>
+                {
+                    var vm = new PrayerRequestDetailViewModel(p);
+                    vm.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
+                    return vm;
+                })
             );
 
             // subscribe to collection changes to re-sort when items are added/removed
@@ -88,6 +100,7 @@ namespace PrayerApp.ViewModels
             {
                 var p = await Prayer.LoadAsync(int.Parse(prayerIdString ?? "0"));
                 var newPrayer = new PrayerRequestDetailViewModel(p);
+                newPrayer.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
                 SubscribeToPropertyChanges(newPrayer);
                 AllPrayers.Add(newPrayer);
             }
@@ -110,7 +123,15 @@ namespace PrayerApp.ViewModels
                 var prayers = await _prayerService.GetAllPrayersAsync();
                 _prayerList = prayers.ToList();
 
-                var viewModels = _prayerList.Select(p => new PrayerRequestDetailViewModel(p)).ToList();
+                var cards = await _cardService.GetCardsAsync();
+                _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
+
+                var viewModels = _prayerList.Select(p =>
+                {
+                    var vm = new PrayerRequestDetailViewModel(p);
+                    vm.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
+                    return vm;
+                }).ToList();
                 foreach (var vm in viewModels)
                 {
                     SubscribeToPropertyChanges(vm);
@@ -133,7 +154,8 @@ namespace PrayerApp.ViewModels
         private void ApplySorting()
         {
             var sorted = AllPrayers
-                .OrderBy(p => p.Title)
+                .OrderBy(p => p.CardTitle, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(p => p.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             // Only update if order changed (minimize UI updates)
