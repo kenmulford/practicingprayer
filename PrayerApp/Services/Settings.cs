@@ -23,23 +23,6 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(FirstRun), value);
         }
 
-        /// <summary>
-        /// The user's preferred display name, collected on first launch.
-        /// Empty string means the user skipped or has not been asked yet.
-        /// </summary>
-        public static string UserName
-        {
-            get => Preferences.Get(nameof(UserName), string.Empty);
-            set => Preferences.Set(nameof(UserName), value);
-        }
-
-        /// <summary>True once the user has provided or explicitly skipped the name prompt.</summary>
-        public static bool UserNameSet
-        {
-            get => Preferences.Get(nameof(UserNameSet), false);
-            set => Preferences.Set(nameof(UserNameSet), value);
-        }
-
         /// <summary>Seconds per card in auto-mode. Persisted across sessions.</summary>
         public static int AutoModeIntervalSeconds
         {

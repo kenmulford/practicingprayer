@@ -1,12 +1,17 @@
-using AppSettings = PrayerApp.Services.Settings;
+using PrayerApp.ViewModels;
 
 namespace PrayerApp.Views;
 
 public partial class MainPage : ContentPage
 {
+    private readonly HomeViewModel _homeViewModel;
+
     public MainPage()
     {
         InitializeComponent();
+
+        _homeViewModel = new HomeViewModel();
+        BindingContext = _homeViewModel;
 
         BtnQuickAdd.Clicked += async (s, e) =>
             await Shell.Current.Navigation.PushModalAsync(new QuickAddPage());
@@ -24,47 +29,6 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
-        // First launch: ask for the user's name
-        if (!AppSettings.UserNameSet)
-        {
-            await PromptForNameAsync();
-        }
-
-        UpdateGreeting();
-    }
-
-    private async Task PromptForNameAsync()
-    {
-        var name = await DisplayPromptAsync(
-            title: "Welcome!",
-            message: "What's your name?",
-            accept: "Let's go",
-            cancel: "Skip",
-            placeholder: "Enter your name",
-            maxLength: 50,
-            keyboard: Keyboard.Text);
-
-        // Mark as set regardless of whether they provided a name or skipped
-        AppSettings.UserNameSet = true;
-        AppSettings.UserName = name?.Trim() ?? string.Empty;
-    }
-
-    private void UpdateGreeting()
-    {
-        var name = AppSettings.UserName;
-        var hour = DateTime.Now.Hour;
-
-        var timeGreeting = hour switch
-        {
-            >= 5 and < 12  => "Good morning",
-            >= 12 and < 17 => "Good afternoon",
-            >= 17 and < 21 => "Good evening",
-            _              => "Good night"
-        };
-
-        LblGreeting.Text = string.IsNullOrWhiteSpace(name)
-            ? $"{timeGreeting}!"
-            : $"{timeGreeting}, {name}!";
+        await _homeViewModel.LoadAsync();
     }
 }
