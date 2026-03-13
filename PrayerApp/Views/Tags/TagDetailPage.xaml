@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.Tags.TagDetailPage"
+             x:DataType="viewModels:TagDetailViewModel"
+             Title="Tag">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24,20" Spacing="24">
+
+            <!-- Name field -->
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Name" FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                <Entry
+                    Text="{Binding Name}"
+                    Placeholder="Tag name"
+                    ReturnType="Done" />
+            </VerticalStackLayout>
+
+            <!-- Color picker -->
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Color" FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+
+                <HorizontalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Swatches}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
+                            <Grid WidthRequest="40" HeightRequest="40">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectCommand}" />
+                                </Grid.GestureRecognizers>
+                                <!-- Color circle -->
+                                <Ellipse
+                                    Fill="{Binding SwatchColor}"
+                                    WidthRequest="36"
+                                    HeightRequest="36"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                                <!-- Selected ring -->
+                                <Ellipse
+                                    Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
+                                    StrokeThickness="2"
+                                    Fill="Transparent"
+                                    WidthRequest="40"
+                                    HeightRequest="40"
+                                    IsVisible="{Binding IsSelected}"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+            <!-- Save button -->
+            <Button
+                Text="Save"
+                Command="{Binding SaveCommand}"
+                HorizontalOptions="Fill"
+                Margin="0,8,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

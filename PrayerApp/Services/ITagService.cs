@@ -12,6 +12,6 @@ public interface ITagService
     Task<int> AddTagToCardAsync(int prayerCardId, int prayerTagId);
     Task<int> RemoveTagFromCardAsync(int prayerCardId, int prayerTagId);
     Task<PrayerTag> SaveTagAsync(PrayerTag tag);
-    Task DeleteTagAsync(PrayerTag tag);
+    Task DeleteTagAsync(int tagId);
     Task<IReadOnlyList<int>> GetPrayerIdsByTagIdsAsync(IEnumerable<int> tagIds);
 }

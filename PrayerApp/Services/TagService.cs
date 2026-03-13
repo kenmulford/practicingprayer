@@ -68,26 +68,32 @@ public class TagService : ITagService
     public async Task<PrayerTag> SaveTagAsync(PrayerTag tag)
     {
         await tag.SaveAsync();
-        _cache = null;
+        InvalidateCache();
         return tag;
     }
 
-    public async Task DeleteTagAsync(PrayerTag tag)
+    public async Task DeleteTagAsync(int tagId)
     {
+        // Remove all junction rows first so no orphans remain
+        var junctionRows = await PrayerCardTag.LoadByTagIdAsync(tagId);
+        foreach (var row in junctionRows)
+            await row.DeleteAsync();
+
+        var tag = await PrayerTag.LoadAsync(tagId);
         await tag.DeleteAsync();
-        _cache = null;
+        InvalidateCache();
     }
 
     public async Task<IReadOnlyList<int>> GetPrayerIdsByTagIdsAsync(IEnumerable<int> tagIds)
     {
-        var prayerIds = new HashSet<int>();
+        var cardIds = new HashSet<int>();
         foreach (var tagId in tagIds)
         {
             var cardTags = await _dbService.GetByTagIdAsync(tagId);
             foreach (var ct in cardTags)
-                prayerIds.Add(ct.PrayerCardId);
+                cardIds.Add(ct.PrayerCardId);
         }
-        return prayerIds.ToList().AsReadOnly();
+        return cardIds.ToList().AsReadOnly();
     }
 
     private void InvalidateCache()

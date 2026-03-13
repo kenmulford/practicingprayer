@@ -1,10 +1,11 @@
-﻿using CommunityToolkit.Maui;
+using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
+using PrayerApp.Views.Tags;
 
 namespace PrayerApp
 {
@@ -49,6 +50,12 @@ namespace PrayerApp
 #elif IOS
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.iOS.OrientationService>();
 #endif
+
+            // add transient viewmodel so each instance of PrayerCardPage is new (avoid data bleed/leak)
+            builder.Services.AddTransient<PrayerCardViewModel>();
+            // tag detail page + viewmodel (transient — each navigation gets a fresh instance)
+            builder.Services.AddTransient<TagDetailViewModel>();
+            builder.Services.AddTransient<TagDetailPage>();
 
             var app = builder.Build();
 
