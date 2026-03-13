@@ -1,9 +1,3 @@
-using PrayerApp.Models;
-using PrayerApp.Services;
-
-namespace PrayerApp.Tests.Services;
-
-public class OnboardingServiceTests
-{
-    // Tests added in Task 2
-}
+// OnboardingService uses MAUI Preferences and cannot run in the unit test host.
+// Validated at runtime on device/simulator instead.
+// (Same pattern as Settings.cs — excluded from test project compile links.)
