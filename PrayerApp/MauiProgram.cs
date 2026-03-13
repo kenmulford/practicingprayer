@@ -51,8 +51,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.iOS.OrientationService>();
 #endif
 
-            // add transient viewmodel so each instance of PrayerCardDetail is new (avoid data bleed/leak)
-            builder.Services.AddTransient<PrayerCardDetailViewModel>();
+            // add transient viewmodel so each instance of PrayerCardPage is new (avoid data bleed/leak)
+            builder.Services.AddTransient<PrayerCardViewModel>();
             // tag detail page + viewmodel (transient — each navigation gets a fresh instance)
             builder.Services.AddTransient<TagDetailViewModel>();
             builder.Services.AddTransient<TagDetailPage>();
