@@ -172,8 +172,10 @@ public class TagServiceTests
     {
         var tag = new PrayerTag { Id = 4, Name = "Old" };
         _db.DeleteAsync(Arg.Any<PrayerTag>()).Returns(Task.FromResult(1));
+        _db.GetByTagIdAsync(4).Returns(Task.FromResult(new List<PrayerCardTag>()));
+        _db.GetByIdAsync<PrayerTag>(4).Returns(Task.FromResult(tag));
 
-        await _service.DeleteTagAsync(tag);
+        await _service.DeleteTagAsync(tag.Id);
 
         await _db.Received(1).DeleteAsync(Arg.Is<PrayerTag>(t => t.Id == 4));
     }
@@ -186,7 +188,9 @@ public class TagServiceTests
 
         var tag = new PrayerTag { Id = 1 };
         _db.DeleteAsync(Arg.Any<PrayerTag>()).Returns(Task.FromResult(1));
-        await _service.DeleteTagAsync(tag);
+        _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>()));
+        _db.GetByIdAsync<PrayerTag>(1).Returns(Task.FromResult(tag));
+        await _service.DeleteTagAsync(tag.Id);
 
         await _service.GetTagsAsync();
         await _db.Received(2).GetAllAsync<PrayerTag>();

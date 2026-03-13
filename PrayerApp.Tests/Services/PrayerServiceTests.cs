@@ -13,7 +13,7 @@ public class PrayerServiceTests
     {
         _db = Substitute.For<IDBService>();
         Prayer.SetDBService(_db);
-        _service = new PrayerService();
+        _service = new PrayerService(_db);
     }
 
     // ── GetAllPrayersAsync ────────────────────────────────────────────────────
