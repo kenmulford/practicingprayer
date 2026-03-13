@@ -21,10 +21,13 @@
                    FontSize="13" />
             <Label Grid.Column="1"
                    Text="{Binding CountdownDisplay}"
-                   IsVisible="{Binding IsAutoMode}"
                    VerticalOptions="Center"
                    Style="{StaticResource MutedText}"
-                   FontSize="13" />
+                   FontSize="13">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding CycleIntervalCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
         </Grid>
 
         <!-- Row 1: Prayer content — fills remaining screen estate -->
