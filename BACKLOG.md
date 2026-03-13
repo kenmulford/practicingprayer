@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: 🔨 Starting F-10 — Share feature (`feature/f10-share`)
-**Last completed**: F-9 (comprehensive UI review — 10 named styles, accessibility, bug fixes). Merged via PR #9.
-**Next up after this**: TD-5 — Prayer Time interval selection UI.
+**Last completed**: BUG-1, BUG-2, UX-3 (post-save stale view, blank Prayer Time cards, card row dividers). Merged via PR #10.
+**Next up after this**: UX-1 — Home metrics dashboard.
 
 ---
 
@@ -25,17 +25,17 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | BUG-1 | Post-save view not refreshing | After saving a prayer, the detail view shows stale data |
-| 2 | UX-1 | Home — remove greeting, add metrics dashboard | Replace name/greeting with overdue-prayer nudge cards; needs planning |
-| 3 | BUG-2 | Prayer Time — blank card content | Prayer title/details not showing; showed "General" once then blank |
-| 4 | UX-3 | Card list — dividers between prayer request rows | Thin separator between each request; minimal vertical space |
-| 5 | F-11 | Prayer request list page — purpose review | Ugly + unclear purpose; design decision needed before any code |
-| 6 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
-| 7 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
+| 1 | UX-1 | Home — remove greeting, add metrics dashboard | Replace name/greeting with overdue-prayer nudge cards; needs planning |
+| 2 | F-11 | Prayer request list page — purpose review | Ugly + unclear purpose; design decision needed before any code |
+| 3 | F-10 | Share feature | Share prayer request in-app or via SMS/email |
+| 4 | TD-5 | Prayer Time — interval selection UI | 30s / 1min / 2min picker |
 | 8 | F-1 | Tag management UI | Create / edit / delete tags; assign to cards |
 | 9 | F-2 | Tag filtering on Prayer Cards page | Filter chips on PrayerCardsPage |
 | 10 | F-5 | Notification scheduling | `ScheduleForPrayer()` + deep-link on tap |
 | 11 | M-1 | Last-prayed notifications | Days-since calculation + push notification |
+| 16 | TD-7 | Replace obsolete `DisplayAlert` calls with `DisplayAlertAsync` | CS0618 in QuickAddViewModel (×3), PrayerTimeScopeViewModel (×2), PrayerTimeViewModel (×1) |
+| 17 | TD-8 | Remove unreachable code in `MauiProgram.cs` line 75 | CS0162 warning — likely a stale debug/conditional block |
+| 18 | TD-9 | Resolve XAOBS001 — `SupportBackgroundTintList` in AppShell | Google internal API; two warnings on the Entry/Editor no-underline mapper |
 | 12 | M-4 | Prayer statistics | Streak, totals, answered %, on Home or Stats tab |
 | 13 | BL-1 | Bible verse integration | Research done — needs planning conversation |
 | 14 | BL-2 | Offline architecture | Needs planning conversation |
@@ -392,7 +392,46 @@ Currently 100% offline. No risk until BL-1 or other network feature ships.
 | — | Platforms cleanup (Windows/Mac/Tizen removed) | — | csproj clean, Android + iOS only |
 | F-7 | Home page personalization | #8 | One-time name prompt, time-of-day greeting |
 | F-9 | Comprehensive UI review | #9 | 10 named styles (ButtonBase, LabelBase + 8 variants), inline duplication eliminated, SemanticProperties on all form inputs, Settings bugs fixed |
+| BUG-1 | Post-save view not refreshing | #10 | Added prayerSaved/saved handlers to ApplyQueryAttributes; view-only page now reloads after save |
+| BUG-2 | Prayer Time — blank card content | #10 | Bypassed SetProperty no-op on first load; CurrentEntry + dependents now fire PropertyChanged correctly |
+| UX-3 | Card list — dividers between prayer request rows | #10 | VerticalStackLayout wrap + BoxView DividerLine in BindableLayout DataTemplate |
 
 ---
 
-*Last updated: 2026-03-10*
+### TD-7 Replace obsolete `DisplayAlert` calls with `DisplayAlertAsync`
+
+CS0618 warnings on every `Shell.Current.DisplayAlert(...)` call (non-async overload
+was deprecated in MAUI 10). Affects:
+
+- `ViewModels/QuickAddViewModel.cs` lines 57, 65, 70
+- `ViewModels/PrayerTimeScopeViewModel.cs` lines 51, 64
+- `ViewModels/PrayerTimeViewModel.cs` line 179
+
+**Fix**: Replace each `DisplayAlert(title, msg, cancel)` call with
+`await DisplayAlertAsync(title, msg, cancel)` and ensure the calling method is `async`.
+
+---
+
+### TD-8 Remove unreachable code in `MauiProgram.cs` line 75
+
+CS0162 warning — a code path after an unconditional `return` or `throw`, likely a
+leftover debug block or stale conditional.
+
+**Fix**: Inspect line 75 in `MauiProgram.cs`, delete the dead code.
+
+---
+
+### TD-9 Resolve XAOBS001 — `SupportBackgroundTintList` in `AppShell.xaml.cs`
+
+The Android Entry/Editor no-underline mapper uses `AppCompatEditText.SupportBackgroundTintList`,
+which Google marks as internal API (two XAOBS001 warnings). Will break silently on a
+future Android SDK version.
+
+**Fix**: Replace with `editText.Background = null` or wrap in a try/catch with a
+version guard (`Build.VERSION.SdkInt >= BuildVersionCodes.Q` path). Research current
+MAUI community recommendation first — this is a common pain point and a better pattern
+may exist.
+
+---
+
+*Last updated: 2026-03-12*
