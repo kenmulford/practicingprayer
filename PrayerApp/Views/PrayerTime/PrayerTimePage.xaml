@@ -12,14 +12,26 @@
 
     <Grid RowDefinitions="Auto, *, Auto" Padding="20,12,20,8">
 
-        <!-- Row 0: Progress + countdown only -->
-        <Grid ColumnDefinitions="*, Auto">
+        <!-- Row 0: Progress | [⏸/▶] [interval/countdown] -->
+        <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
             <Label Text="{Binding ProgressDisplay}"
                    HorizontalOptions="Center"
                    VerticalOptions="Center"
                    Style="{StaticResource MutedText}"
                    FontSize="13" />
+            <!-- Pause/resume button — only visible while auto-mode is active -->
             <Label Grid.Column="1"
+                   Text="{Binding PauseButtonText}"
+                   IsVisible="{Binding IsAutoMode}"
+                   VerticalOptions="Center"
+                   Style="{StaticResource MutedText}"
+                   FontSize="16">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding TogglePauseCommand}" />
+                </Label.GestureRecognizers>
+            </Label>
+            <!-- Countdown (auto-mode) or configured interval (manual mode); tap to cycle -->
+            <Label Grid.Column="2"
                    Text="{Binding CountdownDisplay}"
                    VerticalOptions="Center"
                    Style="{StaticResource MutedText}"

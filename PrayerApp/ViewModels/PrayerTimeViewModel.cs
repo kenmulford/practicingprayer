@@ -81,9 +81,23 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             {
                 OnPropertyChanged(nameof(AutoModeButtonText));
                 OnPropertyChanged(nameof(CountdownDisplay));
+                if (!value) IsPaused = false;
             }
         }
     }
+
+    private bool _isPaused;
+    public bool IsPaused
+    {
+        get => _isPaused;
+        private set
+        {
+            if (SetProperty(ref _isPaused, value))
+                OnPropertyChanged(nameof(PauseButtonText));
+        }
+    }
+
+    public string PauseButtonText => IsPaused ? "▶" : "⏸";
 
     private int _countdownSeconds;
     public int CountdownSeconds
@@ -118,6 +132,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     public ICommand EndSessionCommand { get; }
     public ICommand ToggleAutoModeCommand { get; }
     public ICommand CycleIntervalCommand { get; }
+    public ICommand TogglePauseCommand { get; }
 
     public PrayerTimeViewModel()
     {
@@ -133,6 +148,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         EndSessionCommand = new AsyncRelayCommand(EndSessionAsync);
         ToggleAutoModeCommand = new RelayCommand(ToggleAutoMode);
         CycleIntervalCommand = new RelayCommand(CycleInterval);
+        TogglePauseCommand = new RelayCommand(TogglePause);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -279,6 +295,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private void StartAutoMode()
     {
         IsAutoMode = true;
+        IsPaused = false;
         CountdownSeconds = SelectedIntervalSeconds;
 
         _autoTimer = Application.Current!.Dispatcher.CreateTimer();
@@ -303,12 +320,28 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         CountdownSeconds = 0;
     }
 
+    private void TogglePause()
+    {
+        if (!IsAutoMode) return;
+        if (IsPaused)
+        {
+            IsPaused = false;
+            _autoTimer?.Start();
+        }
+        else
+        {
+            IsPaused = true;
+            _autoTimer?.Stop();
+        }
+    }
+
     /// <summary>
     /// Pauses the countdown without disabling auto-mode.
     /// Called when the app goes to background.
     /// </summary>
     public void PauseAutoMode()
     {
+        IsPaused = true;
         _autoTimer?.Stop();
     }
 
@@ -318,8 +351,11 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     /// </summary>
     public void ResumeAutoMode()
     {
-        if (IsAutoMode)
+        if (IsAutoMode && IsPaused)
+        {
+            IsPaused = false;
             _autoTimer?.Start();
+        }
     }
 
     private void OnAutoTimerTick(object? sender, EventArgs e)
