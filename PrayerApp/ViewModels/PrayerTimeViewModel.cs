@@ -14,6 +14,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly ICardService _cardService;
     private readonly ITagService _tagService;
     private readonly IPrayerInteractionService _interactionService;
+    private readonly IOnboardingService _onboardingService;
     private CancellationTokenSource _loadCts = new();
 
     // Auto-mode
@@ -140,6 +141,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
         _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
         _interactionService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerInteractionService>();
+        _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
 
         _selectedIntervalSeconds = Services.Settings.AutoModeIntervalSeconds;
 
@@ -268,6 +270,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private async Task EndSessionAsync()
     {
         StopAutoMode();
+        _onboardingService.Advance(); // PrayerTimeActive → Complete
         await Shell.Current.GoToAsync("..");
     }
 

@@ -15,6 +15,7 @@ namespace PrayerApp.ViewModels
     {
         private List<PrayerCard> _prayerCards;
         private readonly ICardService _cardService;
+        private readonly IOnboardingService _onboardingService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
 
         public ICommand NewCommand { get; }
@@ -24,6 +25,7 @@ namespace PrayerApp.ViewModels
         public PrayerCardsViewModel()
         {
             _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+            _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
 
             // GET all cards
             _prayerCards = Task.Run(async () => await _cardService.GetCardsAsync()).Result.ToList();
@@ -55,6 +57,7 @@ namespace PrayerApp.ViewModels
 
         private async Task NewPrayerCardAsync()
         {
+            _onboardingService.Advance(); // CreateCard → NameCard (no-op if not at CreateCard)
             await Shell.Current.GoToAsync(nameof(Views.PrayerCard.PrayerCardPage));
         }
 
