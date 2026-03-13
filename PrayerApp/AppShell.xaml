@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:PrayerApp"
     xmlns:views="clr-namespace:PrayerApp.Views"
+    xmlns:tagViews="clr-namespace:PrayerApp.Views.Tags"
     Title="PrayerApp">
 
     <TabBar>
@@ -26,6 +27,12 @@
             Icon="hands_praying_solid_full.png"
             ContentTemplate="{DataTemplate views:Prayer.PrayerListPage}"
             Route="PrayersPage" />
+
+        <ShellContent
+            Title="Tags"
+            Icon="tag_solid_full.png"
+            ContentTemplate="{DataTemplate tagViews:TagsPage}"
+            Route="TagsPage" />
 
         <ShellContent
             Title="Settings"

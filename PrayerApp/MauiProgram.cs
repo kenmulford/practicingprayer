@@ -5,6 +5,7 @@ using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
+using PrayerApp.Views.Tags;
 
 namespace PrayerApp
 {
@@ -42,6 +43,9 @@ namespace PrayerApp
 
             // add transient viewmodel so each instance of PrayerCardDetail is new (avoid data bleed/leak)
             builder.Services.AddTransient<PrayerCardDetailViewModel>();
+            // tag detail page + viewmodel (transient — each navigation gets a fresh instance)
+            builder.Services.AddTransient<TagDetailViewModel>();
+            builder.Services.AddTransient<TagDetailPage>();
 
             var app = builder.Build();
 

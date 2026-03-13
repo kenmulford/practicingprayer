@@ -64,6 +64,24 @@ public class TagService : ITagService
         return result;
     }
 
+    public async Task<PrayerTag> SaveTagAsync(PrayerTag tag)
+    {
+        await tag.SaveAsync();
+        InvalidateCache();
+        return tag;
+    }
+
+    public async Task DeleteTagAsync(int tagId)
+    {
+        var junctionRows = await PrayerRequestTag.LoadByTagIdAsync(tagId);
+        foreach (var row in junctionRows)
+            await row.DeleteAsync();
+
+        var tag = await PrayerTag.LoadAsync(tagId);
+        await tag.DeleteAsync();
+        InvalidateCache();
+    }
+
     private void InvalidateCache()
     {
         _cache = null;

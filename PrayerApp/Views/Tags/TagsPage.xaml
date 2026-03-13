@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.Tags.TagsPage"
+             x:DataType="viewModels:TagsViewModel"
+             Title="Tags">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <CollectionView
+        ItemsSource="{Binding Tags}"
+        SelectionMode="None"
+        Margin="10">
+
+        <CollectionView.Header>
+            <Label
+                Text="Tags"
+                Style="{StaticResource Headline}"
+                Margin="20,20,20,10"
+                SemanticProperties.HeadingLevel="Level1" />
+        </CollectionView.Header>
+
+        <CollectionView.ItemsLayout>
+            <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
+        </CollectionView.ItemsLayout>
+
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="viewModels:TagItemViewModel">
+                <SwipeView Threshold="80">
+                    <SwipeView.LeftItems>
+                        <SwipeItems Mode="Reveal">
+                            <SwipeItem
+                                BackgroundColor="LightSteelBlue"
+                                Command="{Binding EditCommand}"
+                                Text="Edit" />
+                        </SwipeItems>
+                    </SwipeView.LeftItems>
+                    <SwipeView.RightItems>
+                        <SwipeItems Mode="Reveal">
+                            <SwipeItem
+                                BackgroundColor="IndianRed"
+                                Command="{Binding DeleteCommand}"
+                                Text="Delete" />
+                        </SwipeItems>
+                    </SwipeView.RightItems>
+
+                    <Grid
+                        Padding="20,14"
+                        ColumnDefinitions="14, *, Auto"
+                        ColumnSpacing="12">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding EditCommand}" />
+                        </Grid.GestureRecognizers>
+
+                        <!-- Color dot -->
+                        <BoxView
+                            Grid.Column="0"
+                            WidthRequest="14"
+                            HeightRequest="14"
+                            CornerRadius="7"
+                            BackgroundColor="{Binding DotColor}"
+                            VerticalOptions="Center" />
+
+                        <!-- Tag name -->
+                        <Label
+                            Grid.Column="1"
+                            Text="{Binding Name}"
+                            FontSize="16"
+                            VerticalOptions="Center" />
+
+                        <!-- Chevron hint -->
+                        <Label
+                            Grid.Column="2"
+                            Text="›"
+                            FontSize="18"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray500}}"
+                            VerticalOptions="Center" />
+                    </Grid>
+                </SwipeView>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+
+        <CollectionView.EmptyView>
+            <Label
+                Text="No tags yet. Tap Add to create your first tag."
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center"
+                Margin="40,40"
+                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+        </CollectionView.EmptyView>
+    </CollectionView>
+</ContentPage>

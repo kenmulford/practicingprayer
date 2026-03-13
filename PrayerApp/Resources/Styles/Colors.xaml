@@ -28,6 +28,28 @@
     <Color x:Key="Gray900">#212121</Color>
     <Color x:Key="Gray950">#141414</Color>
 
+    <!-- Tag color palette — 8 hues, light + dark mode variants, all use White text -->
+    <!-- Light: dark-enough for white text on chip backgrounds -->
+    <!-- Dark: brighter for visibility on dark page backgrounds -->
+    <Color x:Key="TagRed">#B84040</Color>
+    <Color x:Key="TagRedDark">#D46060</Color>
+    <Color x:Key="TagOrange">#B35A20</Color>
+    <Color x:Key="TagOrangeDark">#CC7040</Color>
+    <Color x:Key="TagBrown">#7A4020</Color>
+    <Color x:Key="TagBrownDark">#A65C34</Color>
+    <Color x:Key="TagTeal">#1E7870</Color>
+    <Color x:Key="TagTealDark">#3AA898</Color>
+    <Color x:Key="TagBlue">#2E5A9A</Color>
+    <Color x:Key="TagBlueDark">#507ACC</Color>
+    <Color x:Key="TagPurple">#663C8C</Color>
+    <Color x:Key="TagPurpleDark">#9460C0</Color>
+    <Color x:Key="TagPink">#8C3860</Color>
+    <Color x:Key="TagPinkDark">#B85A8C</Color>
+    <Color x:Key="TagGray">#505050</Color>
+    <Color x:Key="TagGrayDark">#848484</Color>
+    <!-- All tag chip foreground text uses White regardless of mode -->
+    <Color x:Key="TagText">White</Color>
+
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
     <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
