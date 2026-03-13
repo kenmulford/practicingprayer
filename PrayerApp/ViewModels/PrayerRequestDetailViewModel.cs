@@ -156,6 +156,13 @@ namespace PrayerApp.ViewModels
         public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; } =
             new ReadOnlyCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>().ToList());
 
+        private string _cardTitle = string.Empty;
+        public string CardTitle
+        {
+            get => _cardTitle;
+            set => SetProperty(ref _cardTitle, value);
+        }
+
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
@@ -323,6 +330,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(IsEditable));
             OnPropertyChanged(nameof(IsNotAnswered));
+            OnPropertyChanged(nameof(CardTitle));
         }
     }
 }

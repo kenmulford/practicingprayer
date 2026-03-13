@@ -54,7 +54,7 @@ public class QuickAddViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load cards: {ex.Message}");
-            await Shell.Current.DisplayAlert("Error", "Unable to load prayer cards.", "OK");
+            await Shell.Current.DisplayAlertAsync("Error", "Unable to load prayer cards.", "OK");
         }
     }
 
@@ -62,12 +62,12 @@ public class QuickAddViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(Title))
         {
-            await Shell.Current.DisplayAlert("Required", "Please enter a prayer title.", "OK");
+            await Shell.Current.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
             return;
         }
         if (SelectedCard == null)
         {
-            await Shell.Current.DisplayAlert("Required", "Please select a card.", "OK");
+            await Shell.Current.DisplayAlertAsync("Required", "Please select a card.", "OK");
             return;
         }
 

@@ -48,7 +48,7 @@ public class PrayerTimeScopeViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load tags: {ex.Message}");
-            await Shell.Current.DisplayAlert("Error", "Unable to load tags.", "OK");
+            await Shell.Current.DisplayAlertAsync("Error", "Unable to load tags.", "OK");
         }
     }
 
@@ -61,7 +61,7 @@ public class PrayerTimeScopeViewModel : ObservableObject
 
         if (!selectedIds.Any())
         {
-            await Shell.Current.DisplayAlert("No Tags Selected", "Please select at least one tag.", "OK");
+            await Shell.Current.DisplayAlertAsync("No Tags Selected", "Please select at least one tag.", "OK");
             return;
         }
 

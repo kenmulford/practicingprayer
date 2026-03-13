@@ -176,7 +176,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load prayer time entries: {ex.Message}");
             if (Shell.Current is not null)
-                await Shell.Current.DisplayAlert("Error", "Unable to load prayers for this session.", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", "Unable to load prayers for this session.", "OK");
         }
         finally
         {

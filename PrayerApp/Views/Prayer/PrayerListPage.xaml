@@ -11,45 +11,64 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
-    <ScrollView>
-        <VerticalStackLayout
-        Padding="30,0"
-        Spacing="25">
-            <Label
-            Text="Prayer Requests"
-            Style="{StaticResource Headline}"
-            SemanticProperties.HeadingLevel="Level1" />
-            <CollectionView 
-                x:Name="prayerCollection"
-                ItemsSource="{Binding AllPrayers}"
-                Margin="10"
-                SelectionMode="None">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
-                </CollectionView.ItemsLayout>
 
-                <!-- Define the appearance of each item in the list -->
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
-                        <Grid
-                            BackgroundColor="Transparent"
-                            Padding="5"
-                            RowDefinitions="*,*"
-                            ColumnDefinitions="*"
-                            HorizontalOptions="Fill"
-                            VerticalOptions="Fill">
-                            <Grid.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Command="{Binding SelectPrayerCommand}" />
-                            </Grid.GestureRecognizers>
-                            <Label
-                                FontSize="22"
-                                Grid.Row="0"
-                                Text="{Binding Title}" />
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </VerticalStackLayout>
-    </ScrollView>
+    <CollectionView
+        x:Name="prayerCollection"
+        ItemsSource="{Binding AllPrayers}"
+        Margin="20,0"
+        SelectionMode="None">
+
+        <CollectionView.Header>
+            <Label Text="Prayer Requests"
+                   Style="{StaticResource Headline}"
+                   SemanticProperties.HeadingLevel="Level1"
+                   Margin="0,16,0,8" />
+        </CollectionView.Header>
+
+        <CollectionView.ItemsLayout>
+            <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
+        </CollectionView.ItemsLayout>
+
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
+                <Grid RowDefinitions="Auto, Auto"
+                      Padding="4,10"
+                      HorizontalOptions="Fill">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
+                    </Grid.GestureRecognizers>
+
+                    <!-- Card title (small muted) -->
+                    <Label Grid.Row="0"
+                           Text="{Binding CardTitle}"
+                           FontSize="11"
+                           Style="{StaticResource MutedText}" />
+
+                    <!-- Prayer title + answered badge -->
+                    <Grid Grid.Row="1"
+                          ColumnDefinitions="*, Auto">
+                        <Label Grid.Column="0"
+                               Text="{Binding Title}"
+                               FontSize="17"
+                               TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                               TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                               VerticalOptions="Center" />
+                        <Label Grid.Column="1"
+                               Text="{Binding AnsweredAtDisplay}"
+                               Style="{StaticResource SuccessBadge}"
+                               IsVisible="{Binding IsAnswered}"
+                               VerticalOptions="Center"
+                               Margin="6,0,0,0" />
+                    </Grid>
+
+                    <!-- Divider -->
+                    <BoxView Grid.Row="1"
+                             Style="{StaticResource DividerLine}"
+                             VerticalOptions="End" />
+                </Grid>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+
+    </CollectionView>
+
 </ContentPage>
