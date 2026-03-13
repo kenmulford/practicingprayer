@@ -33,6 +33,9 @@ Items are listed in work order. Start at the top, work down.
 | 9 | F-2 | Tag filtering on Prayer Cards page | Filter chips on PrayerCardsPage |
 | 10 | F-5 | Notification scheduling | `ScheduleForPrayer()` + deep-link on tap |
 | 11 | M-1 | Last-prayed notifications | Days-since calculation + push notification |
+| 16 | TD-7 | Replace obsolete `DisplayAlert` calls with `DisplayAlertAsync` | CS0618 in QuickAddViewModel (×3), PrayerTimeScopeViewModel (×2), PrayerTimeViewModel (×1) |
+| 17 | TD-8 | Remove unreachable code in `MauiProgram.cs` line 75 | CS0162 warning — likely a stale debug/conditional block |
+| 18 | TD-9 | Resolve XAOBS001 — `SupportBackgroundTintList` in AppShell | Google internal API; two warnings on the Entry/Editor no-underline mapper |
 | 12 | M-4 | Prayer statistics | Streak, totals, answered %, on Home or Stats tab |
 | 13 | BL-1 | Bible verse integration | Research done — needs planning conversation |
 | 14 | BL-2 | Offline architecture | Needs planning conversation |
@@ -392,6 +395,42 @@ Currently 100% offline. No risk until BL-1 or other network feature ships.
 | BUG-1 | Post-save view not refreshing | #10 | Added prayerSaved/saved handlers to ApplyQueryAttributes; view-only page now reloads after save |
 | BUG-2 | Prayer Time — blank card content | #10 | Bypassed SetProperty no-op on first load; CurrentEntry + dependents now fire PropertyChanged correctly |
 | UX-3 | Card list — dividers between prayer request rows | #10 | VerticalStackLayout wrap + BoxView DividerLine in BindableLayout DataTemplate |
+
+---
+
+### TD-7 Replace obsolete `DisplayAlert` calls with `DisplayAlertAsync`
+
+CS0618 warnings on every `Shell.Current.DisplayAlert(...)` call (non-async overload
+was deprecated in MAUI 10). Affects:
+
+- `ViewModels/QuickAddViewModel.cs` lines 57, 65, 70
+- `ViewModels/PrayerTimeScopeViewModel.cs` lines 51, 64
+- `ViewModels/PrayerTimeViewModel.cs` line 179
+
+**Fix**: Replace each `DisplayAlert(title, msg, cancel)` call with
+`await DisplayAlertAsync(title, msg, cancel)` and ensure the calling method is `async`.
+
+---
+
+### TD-8 Remove unreachable code in `MauiProgram.cs` line 75
+
+CS0162 warning — a code path after an unconditional `return` or `throw`, likely a
+leftover debug block or stale conditional.
+
+**Fix**: Inspect line 75 in `MauiProgram.cs`, delete the dead code.
+
+---
+
+### TD-9 Resolve XAOBS001 — `SupportBackgroundTintList` in `AppShell.xaml.cs`
+
+The Android Entry/Editor no-underline mapper uses `AppCompatEditText.SupportBackgroundTintList`,
+which Google marks as internal API (two XAOBS001 warnings). Will break silently on a
+future Android SDK version.
+
+**Fix**: Replace with `editText.Background = null` or wrap in a try/catch with a
+version guard (`Build.VERSION.SdkInt >= BuildVersionCodes.Q` path). Research current
+MAUI community recommendation first — this is a common pain point and a better pattern
+may exist.
 
 ---
 

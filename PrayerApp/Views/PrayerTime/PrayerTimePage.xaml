@@ -4,77 +4,31 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.PrayerTime.PrayerTimePage"
              x:DataType="viewModels:PrayerTimeViewModel"
-             Title="Prayer Time"
-             NavigationPage.HasNavigationBar="False">
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False">
     <ContentPage.BindingContext>
         <viewModels:PrayerTimeViewModel />
     </ContentPage.BindingContext>
 
-    <!-- Toolbar items rendered manually since we hide the nav bar -->
+    <Grid RowDefinitions="Auto, *, Auto" Padding="20,12,20,8">
 
-    <Grid RowDefinitions="Auto, *, Auto" Padding="16">
-
-        <!-- Row 0: Top bar (manual toolbar replacement) -->
-        <Grid ColumnDefinitions="Auto, *, Auto, Auto" Padding="0,8">
-            <Button Grid.Column="0"
-                    Text="← End"
-                    Command="{Binding EndSessionCommand}"
-                    Style="{StaticResource GhostButton}"
-                    Padding="0" />
-            <Label Grid.Column="1"
-                   Text="{Binding ProgressDisplay}"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"
-                   Style="{StaticResource MutedText}"
-                   FontSize="14" />
-            <!-- Countdown: visible only while auto-mode is running -->
-            <Label Grid.Column="2"
-                   Text="{Binding CountdownDisplay}"
-                   IsVisible="{Binding IsAutoMode}"
+        <!-- Row 0: Progress + countdown only -->
+        <Grid ColumnDefinitions="*, Auto">
+            <Label Text="{Binding ProgressDisplay}"
                    HorizontalOptions="Center"
                    VerticalOptions="Center"
                    Style="{StaticResource MutedText}"
                    FontSize="13" />
-            <!-- Auto mode toggle -->
-            <Button Grid.Column="3"
-                    Text="{Binding AutoModeButtonText}"
-                    Command="{Binding ToggleAutoModeCommand}"
-                    IsEnabled="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
-                    Style="{StaticResource GhostButton}"
-                    FontSize="13"
-                    Padding="4,0" />
+            <Label Grid.Column="1"
+                   Text="{Binding CountdownDisplay}"
+                   IsVisible="{Binding IsAutoMode}"
+                   VerticalOptions="Center"
+                   Style="{StaticResource MutedText}"
+                   FontSize="13" />
         </Grid>
 
-        <!-- Row 1: Card area (swipeable) -->
-        <Grid Grid.Row="1" VerticalOptions="Center">
-
-            <!-- The prayer card — hidden when loading or completed -->
-            <Border Style="{StaticResource PrayerCardBorder}"
-                    Padding="20"
-                    IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
-                <Border.GestureRecognizers>
-                    <SwipeGestureRecognizer Direction="Left" Command="{Binding NextCommand}" />
-                    <SwipeGestureRecognizer Direction="Right" Command="{Binding PreviousCommand}" />
-                </Border.GestureRecognizers>
-                <VerticalStackLayout Spacing="12">
-                    <!-- Card header (person/topic name) -->
-                    <Label Text="{Binding CurrentEntry.CardTitle, FallbackValue=''}"
-                           FontSize="18"
-                           FontAttributes="Bold"
-                           TextColor="{StaticResource Tertiary}" />
-                    <!-- Divider -->
-
-                    <BoxView Style="{StaticResource DividerLine}" />
-                    <!-- Prayer request title -->
-                    <Label Text="{Binding CurrentEntry.PrayerTitle, FallbackValue=''}"
-                           FontSize="16"
-                           TextColor="{StaticResource OffBlack}" />
-                    <!-- Details (hidden if empty) -->
-                    <Label Text="{Binding CurrentEntry.Details, FallbackValue=''}"
-                           Style="{StaticResource MutedText}"
-                           IsVisible="{Binding CurrentEntry.Details, Converter={StaticResource StringToBool}}" />
-                </VerticalStackLayout>
-            </Border>
+        <!-- Row 1: Prayer content — fills remaining screen estate -->
+        <Grid Grid.Row="1">
 
             <!-- Loading indicator -->
             <ActivityIndicator IsRunning="{Binding IsLoading}"
@@ -99,25 +53,81 @@
                         HorizontalOptions="Center" />
             </VerticalStackLayout>
 
+            <!-- Main prayer content -->
+            <Grid RowDefinitions="Auto, Auto, Auto, *"
+                  IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
+                <Grid.GestureRecognizers>
+                    <SwipeGestureRecognizer Direction="Left" Command="{Binding NextCommand}" />
+                    <SwipeGestureRecognizer Direction="Right" Command="{Binding PreviousCommand}" />
+                </Grid.GestureRecognizers>
+
+                <!-- Card title (small muted header) -->
+                <Label Text="{Binding CurrentEntry.CardTitle, FallbackValue=''}"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource Tertiary}"
+                       Margin="0,8,0,0" />
+
+                <!-- Divider -->
+                <BoxView Grid.Row="1"
+                         Style="{StaticResource DividerLine}"
+                         Margin="0,6" />
+
+                <!-- Prayer title -->
+                <Label Grid.Row="2"
+                       Text="{Binding CurrentEntry.PrayerTitle, FallbackValue=''}"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+
+                <!-- Details — dominant content, scrollable -->
+                <ScrollView Grid.Row="3" Margin="0,12,0,0">
+                    <Label Text="{Binding CurrentEntry.Details, FallbackValue=''}"
+                           FontSize="17"
+                           LineHeight="1.5"
+                           TextColor="{AppThemeBinding Light={StaticResource OffBlack}, Dark={StaticResource White}}" />
+                </ScrollView>
+            </Grid>
+
         </Grid>
 
-        <!-- Row 2: Navigation arrows -->
-        <Grid Grid.Row="2" ColumnDefinitions="*, Auto, Auto, *" Padding="0,8"
+        <!-- Row 2: [I'm done] [*] [←] [→] [*] [Auto] -->
+        <Grid Grid.Row="2"
+              ColumnDefinitions="Auto, *, Auto, Auto, *, Auto"
+              Padding="0,8"
               IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
-            <Button Grid.Column="1"
+
+            <Button Grid.Column="0"
+                    Text="I'm done"
+                    Command="{Binding EndSessionCommand}"
+                    BackgroundColor="{StaticResource Secondary}"
+                    TextColor="{StaticResource Primary}"
+                    Style="{StaticResource CircleNavButton}"
+                    FontSize="11" />
+            <Button Grid.Column="2"
                     Text="←"
                     Command="{Binding PreviousCommand}"
                     IsEnabled="{Binding HasPrevious}"
                     BackgroundColor="{StaticResource Secondary}"
                     TextColor="{StaticResource Primary}"
                     Style="{StaticResource CircleNavButton}" />
-            <Button Grid.Column="2"
+            <Button Grid.Column="3"
                     Text="→"
                     Command="{Binding NextCommand}"
                     IsEnabled="{Binding HasNext}"
                     BackgroundColor="{StaticResource Primary}"
                     TextColor="White"
-                    Style="{StaticResource CircleNavButton}" />
+                    Style="{StaticResource CircleNavButton}"
+                    Margin="16,0,0,0" />
+            <Button Grid.Column="5"
+                    Text="{Binding AutoModeButtonText}"
+                    Command="{Binding ToggleAutoModeCommand}"
+                    IsEnabled="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
+                    BackgroundColor="{StaticResource Secondary}"
+                    TextColor="{StaticResource Primary}"
+                    Style="{StaticResource CircleNavButton}"
+                    FontSize="11" />
+
         </Grid>
 
     </Grid>
