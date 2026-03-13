@@ -1,25 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:DataType="viewModels:HomeViewModel"
              x:Class="PrayerApp.Views.MainPage">
 
     <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
-            <Label
-                x:Name="LblGreeting"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
-            <Label
-                Style="{StaticResource SubHeadline}"
-                Text="Prayer App" />
-            
-            <Button
-                x:Name="BtnQuickAdd"
-                Text="Quick Add"
-                SemanticProperties.Hint="Add a prayer request"
-                HorizontalOptions="Fill" />
+        <VerticalStackLayout Padding="20,16" Spacing="16">
+
+            <Button x:Name="BtnQuickAdd"
+                    Text="Quick Add"
+                    SemanticProperties.Hint="Add a prayer request"
+                    HorizontalOptions="Fill" />
 
             <Button x:Name="BtnPrayerTime"
                     Text="Prayer Time"
@@ -27,6 +19,51 @@
                     TextColor="White"
                     SemanticProperties.Hint="Start a prayer session"
                     HorizontalOptions="Fill" />
+
+            <!-- Overdue count summary -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16,14">
+                <Label Text="{Binding OverdueHeadline}"
+                       FontSize="15"
+                       TextColor="{StaticResource Tertiary}"
+                       LineHeight="1.4" />
+            </Border>
+
+            <!-- Suggested prayers — only shown when there are overdue requests -->
+            <Border IsVisible="{Binding HasOverdue}"
+                    Style="{StaticResource PrayerCardBorder}"
+                    Padding="12,12">
+                <VerticalStackLayout Spacing="0">
+                    <Label Text="Needs attention"
+                           FontSize="12"
+                           Style="{StaticResource MutedText}"
+                           Margin="4,0,4,8" />
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedPrayers}"
+                                         Spacing="0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:SuggestedPrayerViewModel">
+                                <Grid RowDefinitions="Auto, Auto"
+                                      Padding="4,8">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectCommand}" />
+                                    </Grid.GestureRecognizers>
+                                    <Label Text="{Binding CardTitle}"
+                                           FontSize="11"
+                                           Style="{StaticResource MutedText}" />
+                                    <Label Grid.Row="1"
+                                           Text="{Binding PrayerTitle}"
+                                           FontSize="15"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Tertiary}" />
+                                    <BoxView Grid.Row="1"
+                                             Style="{StaticResource DividerLine}"
+                                             VerticalOptions="End" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
         </VerticalStackLayout>
     </ScrollView>
 
