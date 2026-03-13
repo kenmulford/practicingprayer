@@ -1,10 +1,16 @@
+using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Extensions;
+using PrayerApp.Models;
+using PrayerApp.Services;
 using PrayerApp.ViewModels;
+using PrayerApp.Views.Onboarding;
 
 namespace PrayerApp.Views;
 
 public partial class MainPage : ContentPage
 {
     private readonly HomeViewModel _homeViewModel;
+    private readonly IOnboardingService _onboardingService;
 
     public MainPage()
     {
@@ -12,6 +18,9 @@ public partial class MainPage : ContentPage
 
         _homeViewModel = new HomeViewModel();
         BindingContext = _homeViewModel;
+
+        _onboardingService = IPlatformApplication.Current!.Services
+            .GetRequiredService<IOnboardingService>();
 
         BtnQuickAdd.Clicked += async (s, e) =>
             await Shell.Current.Navigation.PushModalAsync(new QuickAddPage());
@@ -30,5 +39,15 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         await _homeViewModel.LoadAsync();
+
+        // Show welcome popup on first visit — one-shot guard prevents re-showing on back navigation
+        if (_onboardingService.CurrentStep == OnboardingStep.Welcome
+            && !_onboardingService.WelcomeShownThisSession)
+        {
+            _onboardingService.MarkWelcomeShown();
+            await this.ShowPopupAsync(new OnboardingWelcomePopup(_onboardingService),
+                new PopupOptions { CanBeDismissedByTappingOutsideOfPopup = false },
+                CancellationToken.None);
+        }
     }
 }
