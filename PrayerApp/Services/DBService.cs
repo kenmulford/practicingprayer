@@ -107,62 +107,65 @@ namespace PrayerApp.Services
 
         public async Task SeedDataAsync()
         {
-            if (PrayerApp.Services.Settings.FirstRun)
+            // Idempotent: row-count gate prevents double-seeding on repeated calls
+            var cardCount = await _db.Table<PrayerCard>().CountAsync();
+            if (cardCount > 0) return;
+
+            // Seed single prayer card
+            var generalCard = new PrayerCard
             {
-                await DropSyncDataAsync();
+                Title = "General",
+                IsFavorite = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            await InsertAsync(generalCard);
 
-                // Seed single prayer card
-                var generalCard = new PrayerCard
-                {
-                    Title = "General",
-                    IsFavorite = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                await InsertAsync(generalCard);
-
-                //TODO: Seed initial tags here when tag taxonomy is decided
+            // Seed initial tags (separate gate — tags could exist independently)
+            var tagCount = await _db.Table<PrayerTag>().CountAsync();
+            if (tagCount == 0)
+            {
                 await InsertAsync(new PrayerTag { Name = "Urgent", Color = "#FF0000" });
                 await InsertAsync(new PrayerTag { Name = "Family", Color = "#0000FF" });
                 await InsertAsync(new PrayerTag { Name = "Work", Color = "#00FF00" });
-
-                // Seed original prayer request items - all attached to General card
-                await InsertAsync(new Prayer
-                {
-                    PrayerCardId = generalCard.Id,
-                    Title = "Sample Prayer Entry 1",
-                    Details = "Sample details.",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-
-                await InsertAsync(new Prayer
-                {
-                    PrayerCardId = generalCard.Id,
-                    Title = "Sample Prayer Entry 2",
-                    Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus.",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-
-                await InsertAsync(new Prayer
-                {
-                    PrayerCardId = generalCard.Id,
-                    Title = "Sample Prayer Entry 3",
-                    Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus.",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-
-                await InsertAsync(new Prayer
-                {
-                    PrayerCardId = generalCard.Id,
-                    Title = "Sample Prayer Entry 4",
-                    Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus. Phasellus aliquam fringilla libero et feugiat. Nam eget varius mi. Curabitur sit amet rutrum sem. Morbi ut ipsum ex. Nulla est ante, hendrerit vitae mollis quis, fringilla id ligula. Vestibulum id nisi sed nunc finibus egestas. Phasellus eleifend ante at enim ornare auctor a ac dolor. Nullam nec nisi vulputate, ultrices nisi quis, bibendum ligula. Proin fermentum mauris nec ipsum ultrices gravida. Sed faucibus scelerisque massa at porttitor.",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
             }
+
+            // Seed original prayer request items - all attached to General card
+            await InsertAsync(new Prayer
+            {
+                PrayerCardId = generalCard.Id,
+                Title = "Sample Prayer Entry 1",
+                Details = "Sample details.",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            await InsertAsync(new Prayer
+            {
+                PrayerCardId = generalCard.Id,
+                Title = "Sample Prayer Entry 2",
+                Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus.",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            await InsertAsync(new Prayer
+            {
+                PrayerCardId = generalCard.Id,
+                Title = "Sample Prayer Entry 3",
+                Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus.",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            await InsertAsync(new Prayer
+            {
+                PrayerCardId = generalCard.Id,
+                Title = "Sample Prayer Entry 4",
+                Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus. Phasellus aliquam fringilla libero et feugiat. Nam eget varius mi. Curabitur sit amet rutrum sem. Morbi ut ipsum ex. Nulla est ante, hendrerit vitae mollis quis, fringilla id ligula. Vestibulum id nisi sed nunc finibus egestas. Phasellus eleifend ante at enim ornare auctor a ac dolor. Nullam nec nisi vulputate, ultrices nisi quis, bibendum ligula. Proin fermentum mauris nec ipsum ultrices gravida. Sed faucibus scelerisque massa at porttitor.",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
         }
 
         public async Task<List<Prayer>> GetPrayersByCardIdAsync(int prayerCardId)
@@ -177,40 +180,6 @@ namespace PrayerApp.Services
             return await _db.Table<PrayerInteraction>()
                 .Where(i => i.PrayerId == prayerId)
                 .ToListAsync();
-        }
-
-        private async Task DropSyncDataAsync()
-        {
-            await DropTableAsync<PrayerCardTag>();
-            await _db.CreateTableAsync<PrayerCardTag>();
-
-            await DropTableAsync<PrayerTag>();
-            await _db.CreateTableAsync<PrayerTag>();
-
-            await DropTableAsync<Prayer>();
-            await _db.CreateTableAsync<Prayer>();
-
-            await DropTableAsync<PrayerCard>();
-            await _db.CreateTableAsync<PrayerCard>();
-
-            try
-            {
-                await DropTableAsync<PrayerInteraction>();
-            }
-            catch { }
-
-            try
-            {
-                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerCategory");
-            }
-            catch { }
-
-            try
-            {
-                // Also drop old PrayerRequestTag if it exists from a pre-rename install
-                await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
-            }
-            catch { }
         }
 
         private async Task EnsurePrayerCardColumnsAsync()

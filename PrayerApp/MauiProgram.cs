@@ -44,6 +44,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
             // Register notification service as singleton
             builder.Services.AddSingleton<INotificationService, NotificationService>();
+            // Register onboarding service as singleton
+            builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
