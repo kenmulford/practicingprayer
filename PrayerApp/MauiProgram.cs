@@ -10,9 +10,6 @@ namespace PrayerApp
 {
     public static class MauiProgram
     {
-        // Set to true to reset database and re-seed on next run (DEBUG ONLY)
-        private const bool FORCE_RESET_DATABASE = false;
-
         public static MauiApp CreateMauiApp()
         {
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");
@@ -68,12 +65,6 @@ namespace PrayerApp
             PrayerCardTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
             PrayerInteraction.SetDBService(myDBService);
-
-            // DEBUG: Force reset database and re-seed
-            if (FORCE_RESET_DATABASE)
-            {
-                PrayerApp.Services.Settings.ClearSettings();
-            }
 
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();

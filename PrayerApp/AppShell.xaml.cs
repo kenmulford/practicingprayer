@@ -2,6 +2,7 @@
 using Android.Content.Res;
 using Android.Graphics;
 using AndroidX.AppCompat.Widget;
+using AndroidX.Core.View;
 #endif
 using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
@@ -20,7 +21,7 @@ namespace PrayerApp
             {
                 if (handler.PlatformView is AppCompatEditText editText)
                 {
-                    editText.SupportBackgroundTintList = ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+                    ViewCompat.SetBackgroundTintList(editText, ColorStateList.ValueOf(Android.Graphics.Color.Transparent));
                 }
             });
 
@@ -28,7 +29,7 @@ namespace PrayerApp
             {
                 if (handler.PlatformView is AppCompatEditText editText)
                 {
-                    editText.SupportBackgroundTintList = ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+                    ViewCompat.SetBackgroundTintList(editText, ColorStateList.ValueOf(Android.Graphics.Color.Transparent));
                 }
             });
 #endif
