@@ -18,7 +18,7 @@
                    TextColor="{StaticResource WarmGold}"
                    FontSize="11"
                    FontAttributes="Bold"
-                   LetterSpacing="1" />
+                   CharacterSpacing="1" />
 
             <!-- Headline -->
             <Label x:Name="HeadlineLabel"
