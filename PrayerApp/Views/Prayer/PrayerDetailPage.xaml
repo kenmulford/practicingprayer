@@ -233,7 +233,7 @@
                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedTags}"
                                              Spacing="0">
                             <BindableLayout.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="{x:Null}">
                                     <Grid Padding="12,10"
                                           BackgroundColor="Transparent">
                                         <Grid.GestureRecognizers>

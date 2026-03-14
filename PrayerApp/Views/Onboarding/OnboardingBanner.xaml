@@ -7,7 +7,7 @@
     <Border BackgroundColor="{StaticResource Tertiary}"
             StrokeThickness="0">
         <Border.StrokeShape>
-            <RoundRectangle CornerRadii="12,12,0,0" />
+            <RoundRectangle CornerRadius="12,12,0,0" />
         </Border.StrokeShape>
 
         <Grid RowDefinitions="Auto,Auto,Auto" Padding="16,12,16,16" RowSpacing="4">

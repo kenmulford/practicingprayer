@@ -10,7 +10,7 @@ namespace PrayerApp.Views.Tags
         public TagsPage()
         {
             InitializeComponent();
-            var tagService = IPlatformApplication.Current.Services.GetRequiredService<ITagService>();
+            var tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
             _vm = new TagsViewModel(tagService);
             BindingContext = _vm;
         }
