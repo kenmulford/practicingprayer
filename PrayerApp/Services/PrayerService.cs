@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using PrayerApp.Models;
@@ -8,8 +8,14 @@ namespace PrayerApp.Services;
 
 public class PrayerService : IPrayerService
 {
+    private readonly IDBService _dbService;
     private Dictionary<int, List<Prayer>>? _cardCache;
     private List<Prayer>? _allCache;
+
+    public PrayerService(IDBService dbService)
+    {
+        _dbService = dbService;
+    }
 
     public async Task<IReadOnlyList<Prayer>> GetPrayersByCardAsync(int prayerCardId)
     {
@@ -52,6 +58,24 @@ public class PrayerService : IPrayerService
         await prayer.DeleteAsync();
         _cardCache = null;
         _allCache = null;
+    }
+
+    public async Task<IReadOnlyList<Prayer>> GetOverduePrayersAsync(int dayThreshold = 30)
+    {
+        var allActive = await GetAllActivePrayersAsync();
+        var allInteractions = await _dbService.GetAllAsync<PrayerInteraction>();
+
+        var latestByPrayer = allInteractions
+            .GroupBy(i => i.PrayerId)
+            .ToDictionary(g => g.Key, g => g.Max(i => i.InteractionAt));
+
+        var cutoff = DateTime.Now.AddDays(-dayThreshold);
+
+        return allActive
+            .Where(p => !latestByPrayer.TryGetValue(p.Id, out var latest) || latest < cutoff)
+            .OrderBy(p => latestByPrayer.TryGetValue(p.Id, out var latest) ? latest : DateTime.MinValue)
+            .ToList()
+            .AsReadOnly();
     }
 
     public void InvalidateCache()

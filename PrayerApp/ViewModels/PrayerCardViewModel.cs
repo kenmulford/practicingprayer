@@ -19,6 +19,7 @@ namespace PrayerApp.ViewModels
         private bool _prayersLoaded;
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
+        private readonly IOnboardingService _onboardingService;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
@@ -140,6 +141,7 @@ namespace PrayerApp.ViewModels
             _prayerCard = new PrayerCard();
             _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
             _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
+            _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
@@ -162,7 +164,10 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
+            bool isNew = _prayerCard.Id == 0;
             await _cardService.SaveCardAsync(_prayerCard);
+            if (isNew)
+                _onboardingService.Advance(); // NameCard → AddRequest
             await Shell.Current.GoToAsync($"..?saved={Identifier}");
         }
 
@@ -199,6 +204,7 @@ namespace PrayerApp.ViewModels
 
         private async Task AddPrayerAsync()
         {
+            _onboardingService.Advance(); // AddRequest → NameRequest
             await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?newForCard={_prayerCard.Id}");
         }
 

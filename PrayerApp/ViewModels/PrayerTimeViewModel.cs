@@ -14,11 +14,26 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly ICardService _cardService;
     private readonly ITagService _tagService;
     private readonly IPrayerInteractionService _interactionService;
+    private readonly IOnboardingService _onboardingService;
     private CancellationTokenSource _loadCts = new();
 
     // Auto-mode
-    private const int AutoIntervalSeconds = 30;
+    private static readonly int[] _intervalOptions = { 30, 60, 120 };
     private IDispatcherTimer? _autoTimer;
+
+    private int _selectedIntervalSeconds;
+    public int SelectedIntervalSeconds
+    {
+        get => _selectedIntervalSeconds;
+        private set
+        {
+            if (SetProperty(ref _selectedIntervalSeconds, value))
+            {
+                Services.Settings.AutoModeIntervalSeconds = value;
+                OnPropertyChanged(nameof(CountdownDisplay));
+            }
+        }
+    }
 
     public IReadOnlyList<PrayerTimeEntry> Entries { get; private set; } = Array.Empty<PrayerTimeEntry>();
 
@@ -67,9 +82,23 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             {
                 OnPropertyChanged(nameof(AutoModeButtonText));
                 OnPropertyChanged(nameof(CountdownDisplay));
+                if (!value) IsPaused = false;
             }
         }
     }
+
+    private bool _isPaused;
+    public bool IsPaused
+    {
+        get => _isPaused;
+        private set
+        {
+            if (SetProperty(ref _isPaused, value))
+                OnPropertyChanged(nameof(PauseButtonText));
+        }
+    }
+
+    public string PauseButtonText => IsPaused ? "▶" : "⏸";
 
     private int _countdownSeconds;
     public int CountdownSeconds
@@ -85,13 +114,26 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     /// <summary>Label text for the Auto toggle button.</summary>
     public string AutoModeButtonText => IsAutoMode ? "⏸ Auto" : "Auto ▷";
 
-    /// <summary>Countdown shown while auto-mode is running; empty otherwise.</summary>
-    public string CountdownDisplay => IsAutoMode ? $"{CountdownSeconds}s" : string.Empty;
+    /// <summary>
+    /// Shows the live countdown while auto-mode is running; otherwise shows the
+    /// configured interval so the user knows what they'll get when they start auto-mode.
+    /// Tapping this label cycles the interval (30s → 1m → 2m → 30s).
+    /// </summary>
+    public string CountdownDisplay => IsAutoMode ? $"{CountdownSeconds}s" : IntervalLabel(SelectedIntervalSeconds);
+
+    private static string IntervalLabel(int seconds) => seconds switch
+    {
+        60 => "1m",
+        120 => "2m",
+        _ => $"{seconds}s",
+    };
 
     public ICommand NextCommand { get; }
     public ICommand PreviousCommand { get; }
     public ICommand EndSessionCommand { get; }
     public ICommand ToggleAutoModeCommand { get; }
+    public ICommand CycleIntervalCommand { get; }
+    public ICommand TogglePauseCommand { get; }
 
     public PrayerTimeViewModel()
     {
@@ -99,11 +141,16 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
         _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
         _interactionService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerInteractionService>();
+        _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
+
+        _selectedIntervalSeconds = Services.Settings.AutoModeIntervalSeconds;
 
         NextCommand = new AsyncRelayCommand(NextAsync);
         PreviousCommand = new RelayCommand(Previous);
         EndSessionCommand = new AsyncRelayCommand(EndSessionAsync);
         ToggleAutoModeCommand = new RelayCommand(ToggleAutoMode);
+        CycleIntervalCommand = new RelayCommand(CycleInterval);
+        TogglePauseCommand = new RelayCommand(TogglePause);
     }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -158,7 +205,14 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                 .ToList();
 
             Entries = entries.AsReadOnly();
-            CurrentIndex = 0;
+            // SetProperty(ref _currentIndex, 0) is a no-op when _currentIndex is already 0
+            // (int default value). Bypass it and fire dependent notifications manually so
+            // the XAML bindings on CurrentEntry update correctly after the first load.
+            _currentIndex = 0;
+            OnPropertyChanged(nameof(CurrentEntry));
+            OnPropertyChanged(nameof(ProgressDisplay));
+            OnPropertyChanged(nameof(HasPrevious));
+            OnPropertyChanged(nameof(HasNext));
             HasCompleted = entries.Count == 0;
         }
         catch (OperationCanceledException)
@@ -169,7 +223,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load prayer time entries: {ex.Message}");
             if (Shell.Current is not null)
-                await Shell.Current.DisplayAlert("Error", "Unable to load prayers for this session.", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", "Unable to load prayers for this session.", "OK");
         }
         finally
         {
@@ -198,7 +252,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             CurrentIndex++;
             // Reset countdown so user gets full interval on the new card
             if (IsAutoMode)
-                CountdownSeconds = AutoIntervalSeconds;
+                CountdownSeconds = SelectedIntervalSeconds;
         }
         else
         {
@@ -216,6 +270,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private async Task EndSessionAsync()
     {
         StopAutoMode();
+        _onboardingService.Advance(); // PrayerTimeActive → Complete
         await Shell.Current.GoToAsync("..");
     }
 
@@ -231,10 +286,20 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             StartAutoMode();
     }
 
+    private void CycleInterval()
+    {
+        var idx = Array.IndexOf(_intervalOptions, SelectedIntervalSeconds);
+        SelectedIntervalSeconds = _intervalOptions[(idx + 1) % _intervalOptions.Length];
+        // If auto-mode is running, reset the countdown to the new interval immediately
+        if (IsAutoMode)
+            CountdownSeconds = SelectedIntervalSeconds;
+    }
+
     private void StartAutoMode()
     {
         IsAutoMode = true;
-        CountdownSeconds = AutoIntervalSeconds;
+        IsPaused = false;
+        CountdownSeconds = SelectedIntervalSeconds;
 
         _autoTimer = Application.Current!.Dispatcher.CreateTimer();
         _autoTimer.Interval = TimeSpan.FromSeconds(1);
@@ -258,12 +323,28 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         CountdownSeconds = 0;
     }
 
+    private void TogglePause()
+    {
+        if (!IsAutoMode) return;
+        if (IsPaused)
+        {
+            IsPaused = false;
+            _autoTimer?.Start();
+        }
+        else
+        {
+            IsPaused = true;
+            _autoTimer?.Stop();
+        }
+    }
+
     /// <summary>
     /// Pauses the countdown without disabling auto-mode.
     /// Called when the app goes to background.
     /// </summary>
     public void PauseAutoMode()
     {
+        IsPaused = true;
         _autoTimer?.Stop();
     }
 
@@ -273,8 +354,11 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     /// </summary>
     public void ResumeAutoMode()
     {
-        if (IsAutoMode)
+        if (IsAutoMode && IsPaused)
+        {
+            IsPaused = false;
             _autoTimer?.Start();
+        }
     }
 
     private void OnAutoTimerTick(object? sender, EventArgs e)

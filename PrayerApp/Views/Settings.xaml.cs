@@ -5,7 +5,7 @@ public partial class Settings : ContentPage
 	public Settings()
 	{
 		InitializeComponent();
-        OnAppearing();
+        // Removed: manual OnAppearing() call — MAUI invokes it automatically on page appearance
 	}
 
     protected override void OnAppearing()
@@ -14,10 +14,10 @@ public partial class Settings : ContentPage
         chkSettingsAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
     }
 
-    private void btnClearSettings_Clicked(object sender, EventArgs e)
+    private async void btnClearSettings_Clicked(object sender, EventArgs e)
     {
         PrayerApp.Services.Settings.ClearSettings();
-        DisplayAlertAsync("Settings Cleared", "The next time the app runs all DB info will be reset.", "OK");
+        await DisplayAlertAsync("Settings Cleared", "The next time the app runs all DB info will be reset.", "OK");
     }
 
     private void chkSettingsAllowNotifications_Toggled(object sender, ToggledEventArgs e)

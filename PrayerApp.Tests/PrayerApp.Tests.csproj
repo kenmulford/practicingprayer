@@ -22,14 +22,14 @@
     <PackageReference Include="NSubstitute" Version="5.3.0" />
     <!-- Required for SQLite attribute types used in model files ([Table], [Column], etc.) -->
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
-    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.9" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
   </ItemGroup>
 
   <!--
     Link non-MAUI source files from the main project.
-    Excluded: DBService.cs (needs native SQLite at runtime), Settings.cs
-    (MAUI Preferences), NotificationService.cs (Plugin.LocalNotification),
+    Excluded: DBService.cs (needs native SQLite at runtime), Settings.cs and
+    OnboardingService.cs (MAUI Preferences), NotificationService.cs (Plugin.LocalNotification),
     OrientationService (platform-specific), and all ViewModels/Views (Shell/Application).
   -->
   <ItemGroup>
@@ -40,6 +40,7 @@
     <Compile Include="../PrayerApp/Models/PrayerTag.cs" />
     <Compile Include="../PrayerApp/Models/PrayerFrequency.cs" />
     <Compile Include="../PrayerApp/Models/PrayerInteraction.cs" />
+    <Compile Include="../PrayerApp/Models/OnboardingStep.cs" />
 
     <!-- Service interfaces -->
     <Compile Include="../PrayerApp/Services/IDBService.cs" />
@@ -47,12 +48,14 @@
     <Compile Include="../PrayerApp/Services/IPrayerService.cs" />
     <Compile Include="../PrayerApp/Services/ITagService.cs" />
     <Compile Include="../PrayerApp/Services/IPrayerInteractionService.cs" />
+    <Compile Include="../PrayerApp/Services/IOnboardingService.cs" />
 
     <!-- Service implementations (no MAUI dependencies) -->
     <Compile Include="../PrayerApp/Services/CardService.cs" />
     <Compile Include="../PrayerApp/Services/PrayerService.cs" />
     <Compile Include="../PrayerApp/Services/TagService.cs" />
     <Compile Include="../PrayerApp/Services/PrayerInteractionService.cs" />
+    <!-- OnboardingService.cs excluded: uses MAUI Preferences (same reason as Settings.cs) -->
   </ItemGroup>
 
 </Project>

@@ -8,7 +8,7 @@ namespace PrayerApp.Models
     public class PrayerTag
     {
         private static IDBService? _dbService;
-        private string _name;
+        private string _name = string.Empty;
 
         [PrimaryKey, AutoIncrement]
         [Column("Id")]

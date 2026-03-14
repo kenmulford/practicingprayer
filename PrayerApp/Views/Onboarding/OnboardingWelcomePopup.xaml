@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               x:Class="PrayerApp.Views.Onboarding.OnboardingWelcomePopup"
+               CanBeDismissedByTappingOutsideOfPopup="False">
+
+    <Border BackgroundColor="{StaticResource Secondary}"
+            Stroke="{StaticResource Primary}"
+            StrokeThickness="1"
+            Margin="24,0">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="16" />
+        </Border.StrokeShape>
+
+        <VerticalStackLayout Padding="28,32" Spacing="16">
+
+            <Label Text="🙏"
+                   FontSize="48"
+                   HorizontalOptions="Center" />
+
+            <Label Text="Welcome to Prayer App"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource Tertiary}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+            <Label Text="Let's set up your first prayer card."
+                   FontSize="15"
+                   TextColor="{StaticResource Gray500}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+            <Button x:Name="BtnGetStarted"
+                    Text="Get Started"
+                    BackgroundColor="{StaticResource Primary}"
+                    TextColor="White"
+                    Margin="0,8,0,0" />
+
+            <Label x:Name="LblSkip"
+                   Text="Skip tour"
+                   FontSize="13"
+                   TextColor="{StaticResource Gray400}"
+                   HorizontalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer x:Name="SkipTap" />
+                </Label.GestureRecognizers>
+            </Label>
+
+        </VerticalStackLayout>
+    </Border>
+</toolkit:Popup>

@@ -4,11 +4,14 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Prayer.PrayerDetailPage"
              x:DataType="viewModels:PrayerRequestDetailViewModel"
+             xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
+             x:Name="page"
              Title="Prayer Request">
     <ContentPage.BindingContext>
         <viewModels:PrayerRequestDetailViewModel />
     </ContentPage.BindingContext>
-    <ScrollView>
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
         <VerticalStackLayout Padding="12,8" Spacing="16">
 
             <!-- VIEW MODE -->
@@ -22,12 +25,8 @@
                            FontSize="22"
                            FontAttributes="Bold"
                            TextColor="{StaticResource Tertiary}" />
-
                     <!-- Divider -->
-                    <BoxView Color="{StaticResource Primary}"
-                             Opacity="0.4"
-                             HeightRequest="1"
-                             HorizontalOptions="Fill" />
+                    <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Details -->
                     <Label Text="{Binding Details, FallbackValue='No details added.'}"
@@ -37,7 +36,7 @@
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
                            FontSize="13"
-                           TextColor="#4CAF50"
+                           TextColor="{StaticResource SuccessGreen}"
                            FontAttributes="Bold"
                            IsVisible="{Binding IsAnswered}" />
 
@@ -53,28 +52,43 @@
                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
+                    <!-- Tags (view mode) -->
+                    <FlexLayout BindableLayout.ItemsSource="{Binding SelectedTags}"
+                                Wrap="Wrap"
+                                Direction="Row"
+                                IsVisible="{Binding HasTags}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:TagChipViewModel">
+                                <Border BackgroundColor="{Binding ChipColor}"
+                                        Stroke="Transparent"
+                                        StrokeShape="RoundRectangle 12"
+                                        Padding="8,4"
+                                        Margin="2,2">
+                                    <Label Text="{Binding Name}"
+                                           TextColor="White"
+                                           FontSize="12"
+                                           VerticalOptions="Center" />
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+
                     <!-- Action Buttons -->
                     <Grid ColumnDefinitions="*, *, *" ColumnSpacing="6">
-                        <!-- Set Reminder: placeholder for Phase 3 notification scheduling -->
                         <Button Grid.Column="0"
-                                Text="Set Reminder"
-                                FontSize="13"
-                                Padding="8,6"
-                                IsEnabled="False"
+                                Text="Share"
+                                Style="{StaticResource SmallActionButton}"
+                                Command="{Binding ShareCommand}"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Edit"
-                                FontSize="13"
-                                Padding="8,6"
+                                Style="{StaticResource SmallActionButton}"
                                 Command="{Binding EditPrayerCommand}"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="2"
                                 Text="Mark Answered"
-                                FontSize="13"
-                                Padding="8,6"
+                                Style="{StaticResource AnsweredButton}"
                                 Command="{Binding MarkAnsweredCommand}"
-                                BackgroundColor="{StaticResource WarmGold}"
-                                TextColor="White"
                                 IsVisible="{Binding IsNotAnswered}"
                                 HorizontalOptions="Fill" />
                     </Grid>
@@ -90,29 +104,29 @@
 
                     <!-- Title -->
                     <Label Text="Title"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Entry Text="{Binding Title}"
                            Placeholder="Prayer title"
+                           SemanticProperties.Hint="Prayer request title"
                            HorizontalOptions="Fill" />
 
                     <!-- Details -->
                     <Label Text="Details"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Editor Text="{Binding Details}"
                             Placeholder="Add details..."
+                            SemanticProperties.Hint="Prayer request details or Scripture reference"
                             HeightRequest="100"
                             HorizontalOptions="Fill" />
 
                     <!-- Frequency -->
                     <Label Text="Frequency"
-                           FontSize="13"
-                           TextColor="{StaticResource Tertiary}" />
+                           Style="{StaticResource FormLabel}" />
                     <Picker Title="Select Frequency"
                             ItemsSource="{Binding FrequencyOptions}"
                             ItemDisplayBinding="{Binding .}"
                             SelectedItem="{Binding PrayerFrequency}"
+                            SemanticProperties.Hint="How often to be reminded"
                             HorizontalOptions="Fill" />
 
                     <!-- Notifications Switch -->
@@ -120,6 +134,7 @@
                         <Label Text="Notifications"
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding CanNotify}"
+                                SemanticProperties.Description="Enable reminders for this request"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -147,6 +162,7 @@
                         <Label Text="Answered"
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding IsAnswered}"
+                                SemanticProperties.Description="Mark this request as answered"
                                 VerticalOptions="Center">
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroupList>
@@ -169,19 +185,79 @@
                         </Switch>
                     </HorizontalStackLayout>
 
+                    <!-- Tags (edit mode) -->
+                    <Label Text="Tags" Style="{StaticResource FormLabel}" />
+
+                    <!-- Selected tag chips (removable) -->
+                    <FlexLayout BindableLayout.ItemsSource="{Binding SelectedTags}"
+                                Wrap="Wrap"
+                                Direction="Row"
+                                IsVisible="{Binding HasTags}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:TagChipViewModel">
+                                <Border BackgroundColor="{Binding ChipColor}"
+                                        Stroke="Transparent"
+                                        StrokeShape="RoundRectangle 12"
+                                        Padding="6,4"
+                                        Margin="2,2">
+                                    <HorizontalStackLayout Spacing="4">
+                                        <Label Text="{Binding Name}"
+                                               TextColor="White"
+                                               FontSize="12"
+                                               VerticalOptions="Center" />
+                                        <Label Text="×"
+                                               TextColor="White"
+                                               FontSize="14"
+                                               VerticalOptions="Center">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding RemoveCommand}" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
+                                    </HorizontalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+
+                    <!-- Tag search entry -->
+                    <Entry Text="{Binding TagSearchText}"
+                           Placeholder="Add tags..."
+                           ReturnCommand="{Binding SubmitTagEntryCommand}"
+                           HorizontalOptions="Fill" />
+
+                    <!-- Suggestions list -->
+                    <Border IsVisible="{Binding HasSuggestions}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="0">
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedTags}"
+                                             Spacing="0">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="{x:Null}">
+                                    <Grid Padding="12,10"
+                                          BackgroundColor="Transparent">
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}}"
+                                                CommandParameter="{Binding Id}" />
+                                        </Grid.GestureRecognizers>
+                                        <Label Text="{Binding Name}" FontSize="14" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </Border>
+
                     <!-- Save / Delete Buttons -->
                     <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                         <Button Grid.Column="0"
                                 Text="Delete"
                                 Command="{Binding DeleteCommand}"
-                                BackgroundColor="IndianRed"
-                                TextColor="White"
+                                Style="{StaticResource DangerButton}"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Save"
                                 Command="{Binding SaveCommand}"
-                                BackgroundColor="{StaticResource Primary}"
-                                TextColor="White"
                                 HorizontalOptions="Fill" />
                     </Grid>
 
@@ -189,5 +265,13 @@
             </Border>
 
         </VerticalStackLayout>
-    </ScrollView>
+        </ScrollView>
+
+        <!-- Onboarding coaching banner — NameRequest step -->
+        <onboarding:OnboardingBanner
+            Grid.Row="1"
+            ExpectedStep="NameRequest"
+            HeadlineText="Enter your prayer request and tap Save" />
+
+    </Grid>
 </ContentPage>

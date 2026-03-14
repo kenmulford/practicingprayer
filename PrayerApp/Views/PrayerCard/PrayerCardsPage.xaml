@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
              NavigatedTo="ContentPage_NavigatedTo"
              x:DataType="viewModels:PrayerCardsViewModel">
@@ -12,11 +13,14 @@
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <CollectionView
-        x:Name="cardCollection"
-        ItemsSource="{Binding AllPrayerCards}"
-        Margin="12,8"
-        SelectionMode="None">
+    <Grid RowDefinitions="*,Auto,Auto">
+
+        <CollectionView
+            Grid.Row="0"
+            x:Name="cardCollection"
+            ItemsSource="{Binding AllPrayerCards}"
+            Margin="12,8"
+            SelectionMode="None">
         <CollectionView.ItemsLayout>
             <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
         </CollectionView.ItemsLayout>
@@ -40,7 +44,7 @@
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="IndianRed"
+                                BackgroundColor="{StaticResource DangerRed}"
                                 IconImageSource="trash_can_solid_full.png"
                                 Command="{Binding DeleteCommand}"
                                 Text="Delete" />
@@ -62,8 +66,7 @@
                                 </Grid.GestureRecognizers>
                                 <Label
                                     Text="{Binding Title}"
-                                    FontSize="17"
-                                    FontAttributes="Bold"
+                                    Style="{StaticResource CardTitle}"
                                     TextColor="{StaticResource Tertiary}"
                                     VerticalOptions="Center" />
                                 <Label
@@ -77,11 +80,9 @@
                             </Grid>
 
                             <!-- Horizontal rule -->
-                            <BoxView
-                                HeightRequest="1"
-                                BackgroundColor="{StaticResource Primary}"
-                                Opacity="0.4"
-                                HorizontalOptions="Fill" />
+
+
+                            <BoxView Style="{StaticResource DividerLine}" />
 
                             <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
                             <VerticalStackLayout
@@ -90,47 +91,49 @@
                                 BindableLayout.ItemsSource="{Binding Prayers}">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
-                                        <SwipeView Threshold="80">
-                                            <SwipeView.LeftItems>
-                                                <SwipeItems Mode="Reveal">
-                                                    <SwipeItem
-                                                        BackgroundColor="{StaticResource Primary}"
-                                                        Command="{Binding EditPrayerCommand}"
-                                                        Text="Edit" />
-                                                </SwipeItems>
-                                            </SwipeView.LeftItems>
-                                            <SwipeView.RightItems>
-                                                <SwipeItems Mode="Reveal">
-                                                    <SwipeItem
-                                                        BackgroundColor="IndianRed"
-                                                        Command="{Binding DeleteCommand}"
-                                                        Text="Delete" />
-                                                </SwipeItems>
-                                            </SwipeView.RightItems>
+                                        <VerticalStackLayout Spacing="0">
+                                            <SwipeView Threshold="80">
+                                                <SwipeView.LeftItems>
+                                                    <SwipeItems Mode="Reveal">
+                                                        <SwipeItem
+                                                            BackgroundColor="{StaticResource Primary}"
+                                                            Command="{Binding EditPrayerCommand}"
+                                                            Text="Edit" />
+                                                    </SwipeItems>
+                                                </SwipeView.LeftItems>
+                                                <SwipeView.RightItems>
+                                                    <SwipeItems Mode="Reveal">
+                                                        <SwipeItem
+                                                            BackgroundColor="{StaticResource DangerRed}"
+                                                            Command="{Binding DeleteCommand}"
+                                                            Text="Delete" />
+                                                    </SwipeItems>
+                                                </SwipeView.RightItems>
 
-                                            <!-- Prayer row -->
-                                            <Grid
-                                                Padding="16,8,12,8"
-                                                ColumnDefinitions="*,Auto">
-                                                <Grid.GestureRecognizers>
-                                                    <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
-                                                </Grid.GestureRecognizers>
-                                                <Label
-                                                    Text="{Binding Title}"
-                                                    FontSize="15"
-                                                    TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
-                                                    TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
-                                                    VerticalOptions="Center" />
-                                                <Label
-                                                    Grid.Column="1"
-                                                    Text="{Binding AnsweredAtDisplay}"
-                                                    FontSize="11"
-                                                    TextColor="#4CAF50"
-                                                    IsVisible="{Binding IsAnswered}"
-                                                    VerticalOptions="Start"
-                                                    Margin="6,0,0,0" />
-                                            </Grid>
-                                        </SwipeView>
+                                                <!-- Prayer row -->
+                                                <Grid
+                                                    Padding="16,8,12,8"
+                                                    ColumnDefinitions="*,Auto">
+                                                    <Grid.GestureRecognizers>
+                                                        <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
+                                                    </Grid.GestureRecognizers>
+                                                    <Label
+                                                        Text="{Binding Title}"
+                                                        FontSize="15"
+                                                        TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                                                        TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                                                        VerticalOptions="Center" />
+                                                    <Label
+                                                        Grid.Column="1"
+                                                        Text="{Binding AnsweredAtDisplay}"
+                                                        Style="{StaticResource SuccessBadge}"
+                                                        IsVisible="{Binding IsAnswered}"
+                                                        VerticalOptions="Start"
+                                                        Margin="6,0,0,0" />
+                                                </Grid>
+                                            </SwipeView>
+                                            <BoxView Style="{StaticResource DividerLine}" />
+                                        </VerticalStackLayout>
                                     </DataTemplate>
                                 </BindableLayout.ItemTemplate>
                             </VerticalStackLayout>
@@ -155,5 +158,22 @@
 
             </DataTemplate>
         </CollectionView.ItemTemplate>
-    </CollectionView>
+        </CollectionView>
+
+        <!-- CreateCard step banner -->
+        <onboarding:OnboardingBanner
+            Grid.Row="1"
+            ExpectedStep="CreateCard"
+            HeadlineText="Tap 'Add Card' to create your first prayer card"
+            SubText="Give it a name — a person, a topic, or a place." />
+
+        <!-- AddRequest step banner -->
+        <onboarding:OnboardingBanner
+            Grid.Row="2"
+            ExpectedStep="AddRequest"
+            HeadlineText="Great! Now expand your card and tap '+ Add prayer'"
+            SubText="Add your first prayer request to this card." />
+
+    </Grid>
 </ContentPage>
+

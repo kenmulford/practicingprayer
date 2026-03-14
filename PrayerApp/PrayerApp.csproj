@@ -64,6 +64,9 @@
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\star_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\tag_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\trash_can_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
@@ -85,6 +88,7 @@
 	  <None Remove="Resources\Images\FontAwesomeIcons\folder_regular_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\pen_to_square_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\star_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\tag_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\trash_can_solid_full.svg" />
 	</ItemGroup>
 
@@ -97,6 +101,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.2" />
 		<PackageReference Include="Plugin.LocalNotification" Version="13.0.0" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
 	</ItemGroup>
 
 	<ItemGroup>
