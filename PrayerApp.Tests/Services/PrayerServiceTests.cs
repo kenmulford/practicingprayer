@@ -205,4 +205,91 @@ public class PrayerServiceTests
         await _service.GetAllPrayersAsync();
         await _db.Received(2).GetAllAsync<Prayer>();
     }
+
+    // ── GetOverduePrayersAsync ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetOverduePrayersAsync_NeverPrayed_IsIncluded()
+    {
+        var prayer = new Prayer { Id = 1, IsAnswered = false };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
+        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction>()));
+
+        var result = await _service.GetOverduePrayersAsync();
+
+        Assert.Single(result);
+        Assert.Equal(1, result[0].Id);
+    }
+
+    [Fact]
+    public async Task GetOverduePrayersAsync_PrayedWithinThreshold_NotIncluded()
+    {
+        var prayer = new Prayer { Id = 1, IsAnswered = false };
+        var interaction = new PrayerInteraction { PrayerId = 1, InteractionAt = DateTime.Now.AddDays(-5) };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
+        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { interaction }));
+
+        var result = await _service.GetOverduePrayersAsync(dayThreshold: 30);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetOverduePrayersAsync_PrayedBeforeThreshold_IsIncluded()
+    {
+        var prayer = new Prayer { Id = 1, IsAnswered = false };
+        var interaction = new PrayerInteraction { PrayerId = 1, InteractionAt = DateTime.Now.AddDays(-60) };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
+        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { interaction }));
+
+        var result = await _service.GetOverduePrayersAsync(dayThreshold: 30);
+
+        Assert.Single(result);
+    }
+
+    [Fact]
+    public async Task GetOverduePrayersAsync_AnsweredPrayer_NotIncluded()
+    {
+        var prayer = new Prayer { Id = 1, IsAnswered = true };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
+        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction>()));
+
+        var result = await _service.GetOverduePrayersAsync();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetOverduePrayersAsync_OrderedOldestFirst_NeverPrayedAtFront()
+    {
+        var pNever = new Prayer { Id = 1, IsAnswered = false };
+        var pOld   = new Prayer { Id = 2, IsAnswered = false };
+        var pOlder = new Prayer { Id = 3, IsAnswered = false };
+        var iOld   = new PrayerInteraction { PrayerId = 2, InteractionAt = DateTime.Now.AddDays(-40) };
+        var iOlder = new PrayerInteraction { PrayerId = 3, InteractionAt = DateTime.Now.AddDays(-60) };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { pNever, pOld, pOlder }));
+        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { iOld, iOlder }));
+
+        var result = await _service.GetOverduePrayersAsync(dayThreshold: 30);
+
+        Assert.Equal(3, result.Count);
+        Assert.Equal(1, result[0].Id); // never prayed → DateTime.MinValue sorts first
+        Assert.Equal(3, result[1].Id); // oldest prayed next
+        Assert.Equal(2, result[2].Id); // least old last
+    }
+
+    [Fact]
+    public async Task GetOverduePrayersAsync_CustomThreshold_UsedAsFilter()
+    {
+        var prayer = new Prayer { Id = 1, IsAnswered = false };
+        var interaction = new PrayerInteraction { PrayerId = 1, InteractionAt = DateTime.Now.AddDays(-10) };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
+        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { interaction }));
+
+        var overdue7  = await _service.GetOverduePrayersAsync(dayThreshold: 7);
+        var overdue30 = await _service.GetOverduePrayersAsync(dayThreshold: 30);
+
+        Assert.Single(overdue7);  // 10 days > 7 day threshold → overdue
+        Assert.Empty(overdue30);  // 10 days < 30 day threshold → not overdue
+    }
 }
