@@ -65,7 +65,7 @@ namespace PrayerApp.ViewModels
             if (query.ContainsKey("deleted"))
             {
                 string? PrayerString = query["deleted"].ToString();
-                PrayerRequestDetailViewModel matched = AllPrayers.FirstOrDefault(p => p.Identifier == PrayerString);
+                PrayerRequestDetailViewModel? matched = AllPrayers.FirstOrDefault(p => p.Identifier == PrayerString);
 
                 if (matched != null)
                 {
@@ -75,7 +75,7 @@ namespace PrayerApp.ViewModels
             else if (query.ContainsKey("saved"))
             {
                 string? PrayerString = query["saved"].ToString();
-                PrayerRequestDetailViewModel matched = AllPrayers.Where((p) => p.Identifier == PrayerString).FirstOrDefault();
+                PrayerRequestDetailViewModel? matched = AllPrayers.Where((p) => p.Identifier == PrayerString).FirstOrDefault();
 
                 // If prayer is found, update it
                 if (matched != null)

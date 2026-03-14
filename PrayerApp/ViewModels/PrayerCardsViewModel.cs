@@ -69,8 +69,8 @@ namespace PrayerApp.ViewModels
         {
             if (query.ContainsKey("deleted"))
             {
-                string PrayerCardString = query["deleted"].ToString();
-                PrayerCardViewModel matched = AllPrayerCards.FirstOrDefault<PrayerCardViewModel>(pc => pc.Identifier == PrayerCardString);
+                string? PrayerCardString = query["deleted"].ToString();
+                PrayerCardViewModel? matched = AllPrayerCards.FirstOrDefault<PrayerCardViewModel>(pc => pc.Identifier == PrayerCardString);
 
                 if (matched != null)
                 {
@@ -80,7 +80,7 @@ namespace PrayerApp.ViewModels
             else if (query.ContainsKey("saved"))
             {
                 string? PrayerCardString = query["saved"].ToString();
-                PrayerCardViewModel matched = AllPrayerCards.Where((c) => c.Identifier == PrayerCardString).FirstOrDefault();
+                PrayerCardViewModel? matched = AllPrayerCards.Where((c) => c.Identifier == PrayerCardString).FirstOrDefault();
 
                 // If card is found, update it
                 if (matched != null)
