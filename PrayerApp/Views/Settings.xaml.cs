@@ -2,10 +2,14 @@ namespace PrayerApp.Views;
 
 public partial class Settings : ContentPage
 {
+    // TODO: Replace with the hosted privacy policy URL before publishing
+    private const string PrivacyPolicyUrl = "https://example.com/privacy";
+
 	public Settings()
 	{
 		InitializeComponent();
         // Removed: manual OnAppearing() call — MAUI invokes it automatically on page appearance
+        TapPrivacyPolicy.Tapped += async (_, _) => await Launcher.OpenAsync(PrivacyPolicyUrl);
 	}
 
     protected override void OnAppearing()
