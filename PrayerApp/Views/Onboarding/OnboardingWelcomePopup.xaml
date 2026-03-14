@@ -19,7 +19,7 @@
                    FontSize="48"
                    HorizontalOptions="Center" />
 
-            <Label Text="Welcome to Prayer App"
+            <Label Text="Welcome to Prayer Cards"
                    FontSize="22"
                    FontAttributes="Bold"
                    TextColor="{StaticResource Tertiary}"

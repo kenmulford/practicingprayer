@@ -80,12 +80,14 @@ namespace PrayerApp
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();
 
+#if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)
             {
-                // seed initial data if needed
+                // seed initial data for development/testing only — never runs in Release builds
                 Task.Run(async () => await myDBService.SeedDataAsync()).Wait();
                 PrayerApp.Services.Settings.FirstRun = false;
             }
+#endif
 
             return app;
         }
