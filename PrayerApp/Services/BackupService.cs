@@ -49,13 +49,15 @@ public class BackupService : IBackupService
 
             // Share via OS share sheet — lets user save to Google Drive, Files, email, etc.
             // More reliable than IFileSaver on Android (avoids onActivityResult crash on API 36).
+            // Share.RequestAsync returns immediately after dispatching the intent —
+            // there is no completion callback, so no success toast here.
+            // The share sheet itself is the UX confirmation.
             await Share.RequestAsync(new ShareFileRequest
             {
                 Title = "Save Prayer Cards Backup",
                 File = new ShareFile(tempZipPath, "application/zip")
             });
 
-            await Toast.Make("Backup saved").Show();
             return true;
         }
         catch (Exception ex)
