@@ -411,11 +411,11 @@
     </Style>
     -->
 
-    <!-- Named style for all prayer card Borders — Secondary bg, Primary stroke, 8px corners.
-         Set Padding inline on each usage site; all other appearance props come from here. -->
+    <!-- Named style for all prayer card Borders — Secondary bg (light) / DeepEarth bg (dark),
+         8px corners. Set Padding inline on each usage site; all other appearance props come from here. -->
     <Style x:Key="PrayerCardBorder" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="{StaticResource Secondary}" />
-        <Setter Property="Stroke" Value="{StaticResource Primary}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource DeepEarth}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource SecondaryDarkText}}" />
         <Setter Property="StrokeThickness" Value="1.5" />
         <Setter Property="StrokeShape">
             <Setter.Value>

@@ -24,14 +24,14 @@
                     <Label Text="{Binding Title}"
                            FontSize="22"
                            FontAttributes="Bold"
-                           TextColor="{StaticResource Tertiary}" />
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Details -->
                     <Label Text="{Binding Details, FallbackValue='No details added.'}"
                            FontSize="15"
-                           TextColor="{StaticResource OffBlack}" />
+                           TextColor="{AppThemeBinding Light={StaticResource OffBlack}, Dark={StaticResource White}}" />
 
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
@@ -44,11 +44,11 @@
                     <HorizontalStackLayout Spacing="6">
                         <Label Text="Frequency:"
                                FontSize="13"
-                               TextColor="{StaticResource Gray400}"
+                               Style="{StaticResource MutedText}"
                                VerticalOptions="Center" />
                         <Label Text="{Binding PrayerFrequencyDisplay}"
                                FontSize="13"
-                               TextColor="{StaticResource Primary}"
+                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
 

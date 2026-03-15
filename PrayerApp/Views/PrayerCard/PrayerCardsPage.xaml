@@ -67,7 +67,7 @@
                                 <Label
                                     Text="{Binding Title}"
                                     Style="{StaticResource CardTitle}"
-                                    TextColor="{StaticResource Tertiary}"
+                                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
                                     VerticalOptions="Center" />
                                 <Label
                                     Grid.Column="1"
@@ -171,7 +171,7 @@
         <onboarding:OnboardingBanner
             Grid.Row="2"
             ExpectedStep="AddRequest"
-            HeadlineText="Great! Now expand your card and tap '+ Add prayer'"
+            HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />
 
     </Grid>

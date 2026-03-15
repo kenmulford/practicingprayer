@@ -14,7 +14,7 @@
             <Label Text="Filter by Tags"
                    FontSize="20"
                    FontAttributes="Bold"
-                   TextColor="{StaticResource Tertiary}" />
+                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
 
             <Label Text="Select the tags to include in your Prayer Time session."
                    Style="{StaticResource MutedText}" />
@@ -28,11 +28,11 @@
                                 <Label Grid.Column="0"
                                        Text="{Binding Tag.Name}"
                                        VerticalOptions="Center"
-                                       TextColor="{StaticResource Tertiary}" />
+                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
                                 <CheckBox Grid.Column="1"
                                           IsChecked="{Binding IsSelected}"
                                           SemanticProperties.Description="{Binding Tag.Name}"
-                                          Color="{StaticResource Primary}"
+                                          Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                           VerticalOptions="Center" />
                             </Grid>
                         </DataTemplate>
