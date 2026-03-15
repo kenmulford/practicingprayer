@@ -20,7 +20,7 @@ Format: date · tester · raw quote · mapped bug ID.
 > _(photo attached — screenshot of failure)_
 
 **Bug:** BUG-8
-**Status:** Open
-**Note:** Investigating whether a missing Android permission declaration or a runtime exception in `BackupService.ExportAsync()` is the root cause.
+**Status:** Fixed
+**Root cause:** `PRAGMA wal_checkpoint(TRUNCATE)` returns a result set; `ExecuteAsync` calls `ExecuteNonQuery` internally which throws `SQLiteException("not an error")` on receiving `SQLITE_ROW`. Fixed by switching to `ExecuteScalarAsync<int>` which correctly reads the first column and discards the rest.
 
 ---

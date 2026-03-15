@@ -13,9 +13,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Idle — no active feature branch
-**Last completed**: Contrast audit + version bump to 1.0.1
-**Next up**: See Priority Queue below
+**Status**: Idle
+**Last completed**: BUG-7 color picker + BUG-8 backup crash (commit 5f36cd5); feature/f11-backup pending merge
+**Next up**: F-10 deep-link share (or merge feature/f11-backup → dev first)
 
 ---
 
@@ -25,47 +25,12 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | BUG-7 | Tag color picker clips "gray" — last swatch half off screen, no scroll | New tag page; color row needs horizontal scroll or wrapping |
-| 2 | BUG-8 | Backup fails immediately on tap | Todd (closed test); "Backup failed" toast fires instantly — likely missing Android permission or FileSaver init issue |
-| 3 | F-10 | Deep-link share — create card/request via tapped link | Custom URI scheme; recipient opens app (or store if not installed) and lands on pre-filled create flow |
-| 4 | F-11 | iCloud / Google Drive backup — export/import DB for cross-device transfer | Implementation complete on feature/f11-backup; needs merge after BUG-8 resolved |
+| 1 | F-10 | Deep-link share — create card/request via tapped link | Custom URI scheme; recipient opens app (or store if not installed) and lands on pre-filled create flow |
+| 2 | F-11 | iCloud / Google Drive backup — export/import DB for cross-device transfer | Implementation complete on feature/f11-backup; pending merge to dev |
 
 ---
 
 ## Detailed Descriptions
-
-### BUG-7 — Tag color picker clips last swatch
-
-**Reporter:** Tony (closed testing, 2026-03-15)
-**Verbatim:** "the color selector on the new tag page won't let me select the 'gray' icon. It's half off the screen and he cannot scroll the colors horizontally."
-
-The color swatch row on the new/edit tag page is a fixed horizontal layout. The last color ("gray") is partially clipped outside the visible area and the row is not scrollable, making it impossible to select.
-
-**Likely files:**
-`Views/Tags/TagDetailPage.xaml` — the color picker control or `HorizontalStackLayout` hosting the swatches
-
-**Fix options:**
-- Wrap the swatch row in a `ScrollView` with `Orientation="Horizontal"`
-- Or switch to a `FlexLayout` with `Wrap="Wrap"` so swatches flow to a second row
-
----
-
-### BUG-8 — Backup fails immediately on tap
-
-**Reporter:** Todd (closed testing, 2026-03-15)
-**Verbatim:** "backup failed immediately when tapped" _(screenshot attached)_
-
-The "Back Up Now" button shows a "Backup failed" toast almost instantly. The failure is caught in `BackupService.ExportAsync()` and surfaced as a toast, so an unhandled exception is occurring before or during `IFileSaver.SaveAsync()`.
-
-**Suspected causes (in order of likelihood):**
-1. **`FileSaver.Default` eager initialization** — registered as `AddSingleton<IFileSaver>(FileSaver.Default)` which accesses `Default` before the MAUI platform is fully ready. Should use a factory lambda: `_ => FileSaver.Default`
-2. **Missing `READ_MEDIA_*` or `WRITE_EXTERNAL_STORAGE` manifest entry** — some Android versions require this even with SAF
-3. **`IFileSaver` not initialized via `UseMauiCommunityToolkitStorage()`** — separate setup call needed in some CommunityToolkit versions
-
-**Files to check:**
-`Services/BackupService.cs`, `MauiProgram.cs` (registration), `Platforms/Android/AndroidManifest.xml`
-
----
 
 ### F-10 Deep-link share
 
@@ -142,10 +107,12 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | BUG-4 | Final Prayer Time card unreachable | — | Removed `IsEnabled="{Binding HasNext}"` from → button |
 | BUG-5 | Tutorial text says "tap checkmark"; UI says "I'm Done" | — | HeadlineText copy corrected |
 | BUG-6 | ObservableCollection crash on Add Card (API 36) | — | Reentrancy guard `_isSorting` flag in ApplySorting |
+| BUG-7 | Tag color picker clips last swatch (closed test — Tony) | 5f36cd5 | HorizontalScrollView added around swatch row |
+| BUG-8 | Backup fails immediately on tap (closed test — Todd) | 5f36cd5 | `ExecuteAsync` → `ExecuteScalarAsync<int>` for WAL checkpoint pragma |
 | UX-3 | Card list — dividers between rows | #10 | BoxView DividerLine in BindableLayout |
 | — | Dark mode contrast audit | — | 7 files fixed; version bumped to 1.0.1 |
 | — | App renamed to "Prayer Cards" | — | ApplicationTitle + ApplicationId updated |
 
 ---
 
-*Last updated: 2026-03-15 (Round 1 closed testing feedback — BUG-7, BUG-8 logged)*
+*Last updated: 2026-03-15*

@@ -1,19 +1,16 @@
 using System.IO.Compression;
 using CommunityToolkit.Maui.Alerts;
-using CommunityToolkit.Maui.Storage;
 
 namespace PrayerApp.Services;
 
 public class BackupService : IBackupService
 {
     private readonly IDBService _dbService;
-    private readonly IFileSaver _fileSaver;
     private readonly string _dbPath;
 
-    public BackupService(IDBService dbService, IFileSaver fileSaver)
+    public BackupService(IDBService dbService)
     {
         _dbService = dbService;
-        _fileSaver = fileSaver;
         _dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");
     }
 
@@ -25,6 +22,13 @@ public class BackupService : IBackupService
 
         try
         {
+            // Clear any stale backup files from cache before creating a new one.
+            // We do NOT delete after sharing because the receiving app (Google Drive,
+            // Files, etc.) reads the file asynchronously after the share sheet closes.
+            // The OS will evict the cache directory on its own schedule.
+            foreach (var old in Directory.GetFiles(FileSystem.CacheDirectory, "*.pcrd"))
+                File.Delete(old);
+
             // Close DB with WAL checkpoint to ensure the .db file is complete
             await _dbService.CloseAsync();
 
@@ -43,31 +47,22 @@ public class BackupService : IBackupService
                 await entryStream.WriteAsync(dbBytes);
             }
 
-            // Invoke OS save dialog
-            await using var fileStream = File.OpenRead(tempZipPath);
-            var result = await _fileSaver.SaveAsync(fileName, fileStream, CancellationToken.None);
+            // Share via OS share sheet — lets user save to Google Drive, Files, email, etc.
+            // More reliable than IFileSaver on Android (avoids onActivityResult crash on API 36).
+            await Share.RequestAsync(new ShareFileRequest
+            {
+                Title = "Save Prayer Cards Backup",
+                File = new ShareFile(tempZipPath, "application/zip")
+            });
 
-            if (result.IsSuccessful)
-            {
-                await Toast.Make("Backup saved").Show();
-                return true;
-            }
-            else
-            {
-                await Toast.Make("Backup cancelled").Show();
-                return false;
-            }
+            await Toast.Make("Backup saved").Show();
+            return true;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[BackupService.ExportAsync] {ex}");
             await Toast.Make("Backup failed").Show();
             return false;
-        }
-        finally
-        {
-            if (File.Exists(tempZipPath))
-                File.Delete(tempZipPath);
         }
     }
 
