@@ -91,7 +91,10 @@ namespace PrayerApp.Services
         public async Task CloseAsync()
         {
             if (_db == null) return;
-            await _db.ExecuteAsync("PRAGMA wal_checkpoint(TRUNCATE)");
+            // ExecuteScalarAsync handles the result set PRAGMA wal_checkpoint returns
+            // (busy, log, checkpointed columns). ExecuteAsync calls ExecuteNonQuery
+            // which throws SQLiteException("not an error") on SQLITE_ROW being returned.
+            await _db.ExecuteScalarAsync<int>("PRAGMA wal_checkpoint(TRUNCATE)");
             await _db.CloseAsync();
             _db = null;
         }
