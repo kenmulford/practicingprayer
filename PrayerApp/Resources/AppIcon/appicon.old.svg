@@ -1,0 +1,18 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+	<!-- App background -->
+
+	<!-- Card shadow -->
+	<!-- Card -->
+	<!-- Vertical fold / prayer line -->
+	<!-- Horizontal crossbar -->
+	<!-- Gold focus accent -->
+	<g>
+		<title>Layer 1</title>
+		<rect id="svg_1" fill="#6B7D5A" rx="96" height="512" width="512"/>
+		<g stroke="null" id="svg_7">
+			<rect stroke="null" id="svg_2" opacity="0.35" fill="#2D3428" rx="28" height="241.09092" width="428.60607" y="146.78788" x="53.39394"/>
+			<rect stroke="null" id="svg_3" fill="#E8EDE3" rx="28" height="241.09092" width="428.60607" y="120" x="40"/>
+			<rect stroke="null" id="svg_6" fill="#C4A052" height="8.03636" width="428.60607" y="120" x="40"/>
+		</g>
+	</g>
+</svg>
