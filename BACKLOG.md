@@ -25,16 +25,47 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | BUG-3 | Prayer card accordion doesn't update request title after save | Title stale until full reload; observed Pixel 9 API 36 |
-| 2 | BUG-4 | Final card in Prayer Time cannot be marked as prayed | I'm Done / arrows unresponsive on last entry; Pixel 9 API 36 |
-| 3 | BUG-5 | Tutorial text says "tap checkmark"; button is "I'm Done" | Onboarding copy mismatch |
-| 4 | BUG-6 | "Cannot change ObservableCollection during a CollectionChanged event" on Add Card | Crash on new card save; Pixel 9 API 36 |
-| 5 | F-10 | Deep-link share — create card/request via tapped link | Custom URI scheme; recipient opens app (or store if not installed) and lands on pre-filled create flow |
-| 6 | F-11 | iCloud / Google Drive backup — export/import DB for cross-device transfer | User-initiated backup of SQLite data; restore on new device |
+| 1 | BUG-7 | Tag color picker clips "gray" — last swatch half off screen, no scroll | New tag page; color row needs horizontal scroll or wrapping |
+| 2 | BUG-8 | Backup fails immediately on tap | Todd (closed test); "Backup failed" toast fires instantly — likely missing Android permission or FileSaver init issue |
+| 3 | F-10 | Deep-link share — create card/request via tapped link | Custom URI scheme; recipient opens app (or store if not installed) and lands on pre-filled create flow |
+| 4 | F-11 | iCloud / Google Drive backup — export/import DB for cross-device transfer | Implementation complete on feature/f11-backup; needs merge after BUG-8 resolved |
 
 ---
 
 ## Detailed Descriptions
+
+### BUG-7 — Tag color picker clips last swatch
+
+**Reporter:** Tony (closed testing, 2026-03-15)
+**Verbatim:** "the color selector on the new tag page won't let me select the 'gray' icon. It's half off the screen and he cannot scroll the colors horizontally."
+
+The color swatch row on the new/edit tag page is a fixed horizontal layout. The last color ("gray") is partially clipped outside the visible area and the row is not scrollable, making it impossible to select.
+
+**Likely files:**
+`Views/Tags/TagDetailPage.xaml` — the color picker control or `HorizontalStackLayout` hosting the swatches
+
+**Fix options:**
+- Wrap the swatch row in a `ScrollView` with `Orientation="Horizontal"`
+- Or switch to a `FlexLayout` with `Wrap="Wrap"` so swatches flow to a second row
+
+---
+
+### BUG-8 — Backup fails immediately on tap
+
+**Reporter:** Todd (closed testing, 2026-03-15)
+**Verbatim:** "backup failed immediately when tapped" _(screenshot attached)_
+
+The "Back Up Now" button shows a "Backup failed" toast almost instantly. The failure is caught in `BackupService.ExportAsync()` and surfaced as a toast, so an unhandled exception is occurring before or during `IFileSaver.SaveAsync()`.
+
+**Suspected causes (in order of likelihood):**
+1. **`FileSaver.Default` eager initialization** — registered as `AddSingleton<IFileSaver>(FileSaver.Default)` which accesses `Default` before the MAUI platform is fully ready. Should use a factory lambda: `_ => FileSaver.Default`
+2. **Missing `READ_MEDIA_*` or `WRITE_EXTERNAL_STORAGE` manifest entry** — some Android versions require this even with SAF
+3. **`IFileSaver` not initialized via `UseMauiCommunityToolkitStorage()`** — separate setup call needed in some CommunityToolkit versions
+
+**Files to check:**
+`Services/BackupService.cs`, `MauiProgram.cs` (registration), `Platforms/Android/AndroidManifest.xml`
+
+---
 
 ### F-10 Deep-link share
 
@@ -107,10 +138,14 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | Phase 2 | Card 3×5 visual + answered rendering | #4/5 | SwipeView, strikethrough, muted color |
 | BUG-1 | Post-save view not refreshing | #10 | ApplyQueryAttributes reload |
 | BUG-2 | Prayer Time — blank card content | #10 | CurrentEntry PropertyChanged fix |
+| BUG-3 | Prayer card accordion title stale after save | — | Navigation depth fix: `../..` for existing prayer edit |
+| BUG-4 | Final Prayer Time card unreachable | — | Removed `IsEnabled="{Binding HasNext}"` from → button |
+| BUG-5 | Tutorial text says "tap checkmark"; UI says "I'm Done" | — | HeadlineText copy corrected |
+| BUG-6 | ObservableCollection crash on Add Card (API 36) | — | Reentrancy guard `_isSorting` flag in ApplySorting |
 | UX-3 | Card list — dividers between rows | #10 | BoxView DividerLine in BindableLayout |
 | — | Dark mode contrast audit | — | 7 files fixed; version bumped to 1.0.1 |
 | — | App renamed to "Prayer Cards" | — | ApplicationTitle + ApplicationId updated |
 
 ---
 
-*Last updated: 2026-03-15*
+*Last updated: 2026-03-15 (Round 1 closed testing feedback — BUG-7, BUG-8 logged)*
