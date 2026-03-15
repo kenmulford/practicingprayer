@@ -17,6 +17,7 @@ namespace PrayerApp.ViewModels
         private readonly ICardService _cardService;
         private readonly IOnboardingService _onboardingService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
+        private bool _isSorting;
 
         public ICommand NewCommand { get; }
 
@@ -165,29 +166,38 @@ namespace PrayerApp.ViewModels
 
         private void ApplySorting()
         {
-            var sorted = AllPrayerCards
-                .OrderByDescending(pc => pc.IsFavorite)
-                .ThenBy(pc => pc.Title)
-                .ToList();
-
-            // Only update if order changed (minimize UI updates)
-            bool needsUpdate = false;
-            for (int i = 0; i < sorted.Count; i++)
+            if (_isSorting) return;
+            _isSorting = true;
+            try
             {
-                if (i >= AllPrayerCards.Count || AllPrayerCards[i] != sorted[i])
+                var sorted = AllPrayerCards
+                    .OrderByDescending(pc => pc.IsFavorite)
+                    .ThenBy(pc => pc.Title)
+                    .ToList();
+
+                // Only update if order changed (minimize UI updates)
+                bool needsUpdate = false;
+                for (int i = 0; i < sorted.Count; i++)
                 {
-                    needsUpdate = true;
-                    break;
+                    if (i >= AllPrayerCards.Count || AllPrayerCards[i] != sorted[i])
+                    {
+                        needsUpdate = true;
+                        break;
+                    }
+                }
+
+                if (needsUpdate)
+                {
+                    AllPrayerCards.Clear();
+                    foreach (var card in sorted)
+                    {
+                        AllPrayerCards.Add(card);
+                    }
                 }
             }
-
-            if (needsUpdate)
+            finally
             {
-                AllPrayerCards.Clear();
-                foreach (var card in sorted)
-                {
-                    AllPrayerCards.Add(card);
-                }
+                _isSorting = false;
             }
         }
 

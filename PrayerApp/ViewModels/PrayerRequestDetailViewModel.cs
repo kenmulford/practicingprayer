@@ -223,7 +223,10 @@ namespace PrayerApp.ViewModels
                 _onboardingService.Advance(); // NameRequest → PrayerTime
             if (ReturnToCards)
             {
-                await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+                // New prayers: stack is Cards→Edit (1 level back)
+                // Existing prayers: stack is Cards→View→Edit (2 levels back)
+                string route = isNew ? ".." : "../..";
+                await Shell.Current.GoToAsync($"{route}?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
             }
             else
             {
