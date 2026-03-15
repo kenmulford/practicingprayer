@@ -28,5 +28,8 @@ namespace PrayerApp.Services
         Task SeedDataAsync();
 
         Task UpdateSchema();
+
+        Task CloseAsync();
+        Task ReinitializeAsync(string path);
     }
 }

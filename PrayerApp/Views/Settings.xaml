@@ -53,6 +53,27 @@
                     </VisualStateManager.VisualStateGroups>
                 </Switch>
             </Grid>
+            <!-- Online Backup -->
+            <Label
+                Text="Online Backup"
+                Style="{StaticResource Headline}"
+                Margin="0,20,0,4" />
+            <Label
+                Text="Export your prayer data to a file you can restore on another device."
+                Style="{StaticResource SubHeadline}"
+                Margin="0,0,0,8" />
+            <Button
+                x:Name="btnBackup"
+                Text="Back Up Now"
+                Clicked="btnBackup_Clicked"
+                HorizontalOptions="Fill" />
+            <Button
+                x:Name="btnRestore"
+                Text="Restore from Backup"
+                Clicked="btnRestore_Clicked"
+                HorizontalOptions="Fill"
+                Margin="0,8,0,0" />
+
             <!-- Privacy Policy -->
             <Label x:Name="LblPrivacyPolicy"
                    Text="Privacy Policy"

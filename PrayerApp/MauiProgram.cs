@@ -1,5 +1,6 @@
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Storage;
 using Microsoft.Extensions.Logging;
 using PrayerApp.Models;
 using PrayerApp.Services;
@@ -48,6 +49,9 @@ namespace PrayerApp
             builder.Services.AddSingleton<INotificationService, NotificationService>();
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
+            // Register backup service and file saver
+            builder.Services.AddSingleton<IFileSaver>(FileSaver.Default);
+            builder.Services.AddSingleton<IBackupService, BackupService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();

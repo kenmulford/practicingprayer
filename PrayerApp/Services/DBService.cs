@@ -12,29 +12,72 @@ namespace PrayerApp.Services
 {
     class DBService : IDBService
     {
-        private readonly SQLiteAsyncConnection _db;
+        private SQLiteAsyncConnection? _db;
 
         public DBService(string dbPath)
         {
+            // Startup recovery check — runs synchronously before any connection is opened.
+            // Handles any state left behind by a force-close mid-restore.
+            RunStartupRecovery(dbPath);
+
             _db = new SQLiteAsyncConnection(dbPath);
-            _db.CreateTableAsync<PrayerCard>().Wait(); // Create Table
-            _db.CreateTableAsync<Prayer>().Wait(); // Create Prayer/Request Table
-            _db.CreateTableAsync<PrayerTag>().Wait(); // Create Table
-            _db.CreateTableAsync<PrayerCardTag>().Wait(); // Create Table
-            _db.CreateTableAsync<PrayerInteraction>().Wait(); // Create Table
+            _db.CreateTableAsync<PrayerCard>().Wait();
+            _db.CreateTableAsync<Prayer>().Wait();
+            _db.CreateTableAsync<PrayerTag>().Wait();
+            _db.CreateTableAsync<PrayerCardTag>().Wait();
+            _db.CreateTableAsync<PrayerInteraction>().Wait();
+        }
+
+        private static void RunStartupRecovery(string dbPath)
+        {
+            var dir = Path.GetDirectoryName(dbPath)!;
+            var restorePath = Path.Combine(dir, "prayer_app_restore.db");
+            var backupTmpPath = Path.Combine(dir, "prayer_app_backup.tmp");
+
+            bool restoreExists = File.Exists(restorePath);
+            bool dbExists = File.Exists(dbPath);
+            bool backupTmpExists = File.Exists(backupTmpPath);
+
+            if (restoreExists && backupTmpExists)
+            {
+                // Both stale — impossible by construction but handle defensively
+                File.Delete(restorePath);
+                File.Delete(backupTmpPath);
+            }
+            else if (restoreExists && dbExists)
+            {
+                // Write interrupted — original intact; discard partial restore
+                File.Delete(restorePath);
+            }
+            else if (restoreExists && !dbExists)
+            {
+                // Swap interrupted mid-flight — complete the rename
+                File.Move(restorePath, dbPath);
+            }
+            else if (backupTmpExists && dbExists)
+            {
+                // Swap completed, stale backup remains
+                File.Delete(backupTmpPath);
+            }
+            else if (backupTmpExists && !dbExists)
+            {
+                // Catastrophic swap failure — roll back to original
+                File.Move(backupTmpPath, dbPath);
+            }
+            // else: normal startup — nothing to do
         }
 
         public async Task UpdateSchema()
         {
-            await _db.CreateTableAsync<PrayerCard>(); // Ensure table is created
-            await _db.CreateTableAsync<Prayer>(); // Ensure prayer/request table is created
-            await _db.CreateTableAsync<PrayerTag>(); // Ensure table is created
-            await _db.CreateTableAsync<PrayerCardTag>(); // Ensure table is created
-            await _db.CreateTableAsync<PrayerInteraction>(); // Ensure table is created
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            await _db.CreateTableAsync<PrayerCard>();
+            await _db.CreateTableAsync<Prayer>();
+            await _db.CreateTableAsync<PrayerTag>();
+            await _db.CreateTableAsync<PrayerCardTag>();
+            await _db.CreateTableAsync<PrayerInteraction>();
 
             await EnsurePrayerCardColumnsAsync();
 
-            // Migration: drop old PrayerRequestTag table name if present from a pre-rename install
             try
             {
                 await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
@@ -45,38 +88,59 @@ namespace PrayerApp.Services
             }
         }
 
+        public async Task CloseAsync()
+        {
+            if (_db == null) return;
+            await _db.ExecuteAsync("PRAGMA wal_checkpoint(TRUNCATE)");
+            await _db.CloseAsync();
+            _db = null;
+        }
+
+        public async Task ReinitializeAsync(string path)
+        {
+            _db = new SQLiteAsyncConnection(path);
+            await UpdateSchema();
+        }
+
         public async Task<List<T>> GetAllAsync<T>() where T : new()
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<T>().ToListAsync();
         }
 
         public async Task<T> GetByIdAsync<T>(int id) where T : new()
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.FindAsync<T>(id);
         }
 
         public async Task<int> InsertAsync<T>(T item)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.InsertAsync(item);
         }
 
         public async Task<int> UpdateAsync<T>(T item)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.UpdateAsync(item);
         }
 
         public async Task<int> DeleteAsync<T>(T item)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.DeleteAsync(item);
         }
 
         public async Task<int> DropTableAsync<T>() where T : new()
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.DropTableAsync<T>();
         }
 
         public async Task<List<PrayerCardTag>> GetByCardIdAsync(int prayerCardId)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<PrayerCardTag>()
                 .Where(pct => pct.PrayerCardId == prayerCardId)
                 .ToListAsync();
@@ -84,6 +148,7 @@ namespace PrayerApp.Services
 
         public async Task<List<PrayerCardTag>> GetByTagIdAsync(int prayerTagId)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<PrayerCardTag>()
                 .Where(pct => pct.PrayerTagId == prayerTagId)
                 .ToListAsync();
@@ -91,6 +156,7 @@ namespace PrayerApp.Services
 
         public async Task<int> DeleteByCardIdAsync(int prayerCardId)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.ExecuteAsync(
                 "DELETE FROM PrayerCardTag WHERE PrayerCardId = ?",
                 prayerCardId
@@ -99,6 +165,7 @@ namespace PrayerApp.Services
 
         public async Task<int> DeleteByTagIdAsync(int prayerTagId)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.ExecuteAsync(
                 "DELETE FROM PrayerCardTag WHERE PrayerTagId = ?",
                 prayerTagId
@@ -107,11 +174,10 @@ namespace PrayerApp.Services
 
         public async Task SeedDataAsync()
         {
-            // Idempotent: row-count gate prevents double-seeding on repeated calls
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             var cardCount = await _db.Table<PrayerCard>().CountAsync();
             if (cardCount > 0) return;
 
-            // Seed single prayer card
             var generalCard = new PrayerCard
             {
                 Title = "General",
@@ -121,7 +187,6 @@ namespace PrayerApp.Services
             };
             await InsertAsync(generalCard);
 
-            // Seed initial tags (separate gate — tags could exist independently)
             var tagCount = await _db.Table<PrayerTag>().CountAsync();
             if (tagCount == 0)
             {
@@ -130,7 +195,6 @@ namespace PrayerApp.Services
                 await InsertAsync(new PrayerTag { Name = "Work", Color = "#00FF00" });
             }
 
-            // Seed original prayer request items - all attached to General card
             await InsertAsync(new Prayer
             {
                 PrayerCardId = generalCard.Id,
@@ -170,6 +234,7 @@ namespace PrayerApp.Services
 
         public async Task<List<Prayer>> GetPrayersByCardIdAsync(int prayerCardId)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<Prayer>()
                 .Where(prayer => prayer.PrayerCardId == prayerCardId)
                 .ToListAsync();
@@ -177,6 +242,7 @@ namespace PrayerApp.Services
 
         public async Task<List<PrayerInteraction>> GetInteractionsByPrayerIdAsync(int prayerId)
         {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<PrayerInteraction>()
                 .Where(i => i.PrayerId == prayerId)
                 .ToListAsync();
@@ -184,9 +250,10 @@ namespace PrayerApp.Services
 
         private async Task EnsurePrayerCardColumnsAsync()
         {
+            // _db is guaranteed non-null here — callers hold the null guard
             try
             {
-                await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsFavorite INTEGER DEFAULT 0");
+                await _db!.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsFavorite INTEGER DEFAULT 0");
             }
             catch
             {
@@ -194,7 +261,7 @@ namespace PrayerApp.Services
 
             try
             {
-                await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN AnsweredAt TEXT");
+                await _db!.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN AnsweredAt TEXT");
             }
             catch
             {
