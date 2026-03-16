@@ -27,6 +27,12 @@ Items are listed in work order. Start at the top, work down.
 |---|-----|------|-------|
 | 1 | F-10 | Deep-link share — create card/request via tapped link | Custom URI scheme; recipient opens app (or store if not installed) and lands on pre-filled create flow |
 | 2 | F-11 | iCloud / Google Drive backup — export/import DB for cross-device transfer | Implementation complete on feature/f11-backup; pending merge to dev |
+| 3 | INV-1 | Audit: are all notifications cancelled when a prayer is marked answered? | Verify `INotificationService` cancels scheduled reminders on answered; check if stale notifications can fire after mark-answered |
+| 4 | INV-2 | Audit: why does add/edit prayer card still show reminder/notification UI? | Was this intentionally re-added or is it leftover UI that should have been removed? Confirm intended behaviour before touching |
+| 5 | BUG-9 | Notification permission prompt only fires on first Settings visit — misses tutorial flow | Users can toggle notifications ON during tutorial (prayer request creation) before ever hitting Settings; OS permission is never requested. Fix: trigger permission check at the moment the user first enables notifications anywhere in the app, not at Settings load |
+| 6 | BUG-10 | Settings "Go" button text clipped on some devices | `ColumnDefinitions="300, *"` gives fixed 300dp to label, starving button column on smaller screens. Rethink layout — likely `Auto` label column or a stacked row |
+| 7 | BUG-11 | Keyboard covers prayer request entry buttons — cannot save without manually dismissing keyboard | Soft keyboard overlaps bottom of form; save/accept buttons unreachable while keyboard is open. Known MAUI issue — fix via `android:windowSoftInputMode="adjustResize"` in AndroidManifest and/or CommunityToolkit `KeyboardAutoManagerScroll` |
+| 8 | INV-3 | Lock app to portrait everywhere except Prayer Time — passive UX signal that Prayer Time should landscape | Portrait lock on all pages via `IOrientationService`; Prayer Time already uses `IOrientationService` to force landscape — confirm that removing the lock on page leave restores correctly and that no other page breaks |
 
 ---
 
@@ -115,4 +121,4 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 
 ---
 
-*Last updated: 2026-03-15*
+*Last updated: 2026-03-16*
