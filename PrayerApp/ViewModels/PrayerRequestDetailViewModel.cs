@@ -134,6 +134,9 @@ namespace PrayerApp.ViewModels
                 {
                     _prayer.CanNotify = value;
                     OnPropertyChanged();
+                    // Request OS permission immediately when user enables notifications here
+                    // (e.g. during tutorial) rather than waiting for Settings page visit.
+                    if (value) Services.Settings.EnsureNotificationPermissionRequested();
                 }
             }
         }

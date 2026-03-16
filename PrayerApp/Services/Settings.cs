@@ -67,6 +67,17 @@ namespace PrayerApp.Services
             }
         }
 
+        /// <summary>
+        /// Requests the OS notification permission if global notifications are enabled.
+        /// Call when a user enables per-item notifications anywhere in the app (e.g. during
+        /// onboarding or prayer creation) so the OS dialog isn't deferred until Settings is visited.
+        /// </summary>
+        public static void EnsureNotificationPermissionRequested()
+        {
+            if (AllowNotifications && _notificationService != null)
+                _ = _notificationService.RequestPermissionAsync();
+        }
+
         public static void ClearSettings()
         {
             // reset "first run" flag
