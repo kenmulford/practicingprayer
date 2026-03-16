@@ -28,8 +28,10 @@
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>1.0.0</string>
 	<key>NSUserNotificationUsageDescription</key>
-  <string>Prayer App uses notifications to remind you to pray for your requests.</string>
+	<string>Prayer Cards uses notifications to remind you to pray for your requests.</string>
+	<key>CFBundleIdentifier</key>
+	<string></string>
 </dict>
 </plist>
