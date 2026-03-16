@@ -84,38 +84,6 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public bool CanNotify
-        {
-            get => _prayerCard.CanNotify;
-            set
-            {
-                if (_prayerCard.CanNotify != value)
-                {
-                    _prayerCard.CanNotify = value;
-                    OnPropertyChanged();
-                    // Request OS permission immediately when user enables notifications here
-                    // (e.g. during tutorial) rather than waiting for Settings page visit.
-                    if (value) Services.Settings.EnsureNotificationPermissionRequested();
-                }
-            }
-        }
-
-        public PrayerFrequency PrayerFrequency
-        {
-            get => _prayerCard.PrayerFrequency;
-            set
-            {
-                if (_prayerCard.PrayerFrequency != value)
-                {
-                    _prayerCard.PrayerFrequency = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(PrayerFrequencyDisplay));
-                }
-            }
-        }
-
-        public string PrayerFrequencyDisplay => PrayerFrequency.ToString();
-
         public bool IsAnswered
         {
             get => _prayerCard.IsAnswered;
@@ -128,8 +96,6 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
-
-        public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; }
 
         public ObservableCollection<PrayerRequestDetailViewModel> Prayers { get; }
 
@@ -153,7 +119,6 @@ namespace PrayerApp.ViewModels
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
-            FrequencyOptions = new ReadOnlyCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>().ToList());
         }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
@@ -261,10 +226,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
             OnPropertyChanged(nameof(HasPrayers));
-            OnPropertyChanged(nameof(CanNotify));
             OnPropertyChanged(nameof(IsAnswered));
-            OnPropertyChanged(nameof(PrayerFrequency));
-            OnPropertyChanged(nameof(PrayerFrequencyDisplay));
         }
 
         private async Task LoadPrayersAsync()

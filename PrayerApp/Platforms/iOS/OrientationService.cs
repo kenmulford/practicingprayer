@@ -13,6 +13,14 @@ public class OrientationService : IOrientationService
         UINavigationController.AttemptRotationToDeviceOrientation();
     }
 
+    public void LockPortrait()
+    {
+        UIDevice.CurrentDevice.SetValueForKey(
+            new Foundation.NSNumber((int)UIInterfaceOrientation.Portrait),
+            new Foundation.NSString("orientation"));
+        UINavigationController.AttemptRotationToDeviceOrientation();
+    }
+
     public void Unlock()
     {
         UIDevice.CurrentDevice.SetValueForKey(
