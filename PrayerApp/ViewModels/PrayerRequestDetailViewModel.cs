@@ -134,6 +134,9 @@ namespace PrayerApp.ViewModels
                 {
                     _prayer.CanNotify = value;
                     OnPropertyChanged();
+                    // Request OS permission immediately when user enables notifications here
+                    // (e.g. during tutorial) rather than waiting for Settings page visit.
+                    if (value) Services.Settings.EnsureNotificationPermissionRequested();
                 }
             }
         }
@@ -223,7 +226,10 @@ namespace PrayerApp.ViewModels
                 _onboardingService.Advance(); // NameRequest → PrayerTime
             if (ReturnToCards)
             {
-                await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+                // New prayers: stack is Cards→Edit (1 level back)
+                // Existing prayers: stack is Cards→View→Edit (2 levels back)
+                string route = isNew ? ".." : "../..";
+                await Shell.Current.GoToAsync($"{route}?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
             }
             else
             {

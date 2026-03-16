@@ -8,12 +8,12 @@
             Padding="20,5"
             Spacing="5">
             <Grid
-                ColumnDefinitions="300, *"
-                ColumnSpacing="5"
-                RowDefinitions="*,*"
-                HorizontalOptions="Start"
+                ColumnDefinitions="*, Auto"
+                ColumnSpacing="12"
+                RowDefinitions="Auto,Auto"
+                HorizontalOptions="Fill"
                 VerticalOptions="Center"
-                RowSpacing="5">
+                RowSpacing="8">
                 <Label
                     Text="Clear Settings" />
                 <Button
@@ -53,6 +53,27 @@
                     </VisualStateManager.VisualStateGroups>
                 </Switch>
             </Grid>
+            <!-- Online Backup -->
+            <Label
+                Text="Online Backup"
+                Style="{StaticResource Headline}"
+                Margin="0,20,0,4" />
+            <Label
+                Text="Export your prayer data to a file you can restore on another device."
+                Style="{StaticResource SubHeadline}"
+                Margin="0,0,0,8" />
+            <Button
+                x:Name="btnBackup"
+                Text="Back Up Now"
+                Clicked="btnBackup_Clicked"
+                HorizontalOptions="Fill" />
+            <Button
+                x:Name="btnRestore"
+                Text="Restore from Backup"
+                Clicked="btnRestore_Clicked"
+                HorizontalOptions="Fill"
+                Margin="0,8,0,0" />
+
             <!-- Privacy Policy -->
             <Label x:Name="LblPrivacyPolicy"
                    Text="Privacy Policy"

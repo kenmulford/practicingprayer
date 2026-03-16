@@ -24,34 +24,36 @@
                 <Label Text="Color" FontSize="12"
                        TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
 
-                <HorizontalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Swatches}">
-                    <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
-                            <Grid WidthRequest="40" HeightRequest="40">
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding SelectCommand}" />
-                                </Grid.GestureRecognizers>
-                                <!-- Color circle -->
-                                <Ellipse
-                                    Fill="{Binding SwatchColor}"
-                                    WidthRequest="36"
-                                    HeightRequest="36"
-                                    HorizontalOptions="Center"
-                                    VerticalOptions="Center" />
-                                <!-- Selected ring -->
-                                <Ellipse
-                                    Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
-                                    StrokeThickness="2"
-                                    Fill="Transparent"
-                                    WidthRequest="40"
-                                    HeightRequest="40"
-                                    IsVisible="{Binding IsSelected}"
-                                    HorizontalOptions="Center"
-                                    VerticalOptions="Center" />
-                            </Grid>
-                        </DataTemplate>
-                    </BindableLayout.ItemTemplate>
-                </HorizontalStackLayout>
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Swatches}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
+                                <Grid WidthRequest="40" HeightRequest="40">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectCommand}" />
+                                    </Grid.GestureRecognizers>
+                                    <!-- Color circle -->
+                                    <Ellipse
+                                        Fill="{Binding SwatchColor}"
+                                        WidthRequest="36"
+                                        HeightRequest="36"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                                    <!-- Selected ring -->
+                                    <Ellipse
+                                        Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
+                                        StrokeThickness="2"
+                                        Fill="Transparent"
+                                        WidthRequest="40"
+                                        HeightRequest="40"
+                                        IsVisible="{Binding IsSelected}"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </HorizontalStackLayout>
+                </ScrollView>
             </VerticalStackLayout>
 
             <!-- Save button -->

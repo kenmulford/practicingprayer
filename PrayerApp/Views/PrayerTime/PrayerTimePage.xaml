@@ -130,7 +130,6 @@
             <Button Grid.Column="3"
                     Text="→"
                     Command="{Binding NextCommand}"
-                    IsEnabled="{Binding HasNext}"
                     BackgroundColor="{StaticResource Primary}"
                     TextColor="White"
                     Style="{StaticResource CircleNavButton}"
@@ -150,7 +149,7 @@
         <onboarding:OnboardingBanner
             Grid.Row="3"
             ExpectedStep="PrayerTimeActive"
-            HeadlineText="Swipe through your cards. Tap ✓ when you're done."
+            HeadlineText="Swipe through your cards. Tap &apos;I&apos;m done&apos; when finished."
             SubText="You can use the auto-advance timer too." />
 
     </Grid>

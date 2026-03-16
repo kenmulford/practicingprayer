@@ -48,6 +48,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<INotificationService, NotificationService>();
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
+            // Register backup service
+            builder.Services.AddSingleton<IBackupService, BackupService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
