@@ -36,9 +36,6 @@ namespace PrayerApp.ViewModels
                 _prayerCards.Select(pc => new PrayerCardViewModel(pc))
             );
 
-            // Subscribe to collection changes to re-sort when items are added/removed
-            AllPrayerCards.CollectionChanged += (s, e) => ApplySorting();
-
             // Subscribe to property changes on each existing card
             foreach (var card in AllPrayerCards)
             {
@@ -76,6 +73,7 @@ namespace PrayerApp.ViewModels
                 if (matched != null)
                 {
                     AllPrayerCards.Remove(matched);
+                    ApplySorting();
                 }
             }
             else if (query.ContainsKey("saved"))
@@ -129,6 +127,7 @@ namespace PrayerApp.ViewModels
                 var newCard = new PrayerCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
+                ApplySorting();
             }
             catch (Exception e)
             {
