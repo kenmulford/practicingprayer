@@ -141,6 +141,9 @@ namespace PrayerApp.ViewModels
 
         private async Task DeleteAsync()
         {
+            var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
+            foreach (var prayer in prayers)
+                await _prayerService.DeletePrayerAsync(prayer);
             await _cardService.DeleteCardAsync(_prayerCard);
             await Shell.Current.GoToAsync($"..?deleted={Identifier}");
         }

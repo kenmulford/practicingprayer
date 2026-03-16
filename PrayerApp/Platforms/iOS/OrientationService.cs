@@ -5,27 +5,34 @@ namespace PrayerApp.Platforms.iOS;
 
 public class OrientationService : IOrientationService
 {
+    public static UIInterfaceOrientationMask AllowedOrientations { get; private set; }
+        = UIInterfaceOrientationMask.Portrait;
+
     public void LockLandscape()
     {
-        UIDevice.CurrentDevice.SetValueForKey(
-            new Foundation.NSNumber((int)UIInterfaceOrientation.LandscapeRight),
-            new Foundation.NSString("orientation"));
-        UINavigationController.AttemptRotationToDeviceOrientation();
+        AllowedOrientations = UIInterfaceOrientationMask.LandscapeRight;
+        RequestUpdate(UIInterfaceOrientationMask.LandscapeRight);
     }
 
     public void LockPortrait()
     {
-        UIDevice.CurrentDevice.SetValueForKey(
-            new Foundation.NSNumber((int)UIInterfaceOrientation.Portrait),
-            new Foundation.NSString("orientation"));
-        UINavigationController.AttemptRotationToDeviceOrientation();
+        AllowedOrientations = UIInterfaceOrientationMask.Portrait;
+        RequestUpdate(UIInterfaceOrientationMask.Portrait);
     }
 
     public void Unlock()
     {
-        UIDevice.CurrentDevice.SetValueForKey(
-            new Foundation.NSNumber((int)UIInterfaceOrientation.Unknown),
-            new Foundation.NSString("orientation"));
-        UINavigationController.AttemptRotationToDeviceOrientation();
+        AllowedOrientations = UIInterfaceOrientationMask.AllButUpsideDown;
+        RequestUpdate(UIInterfaceOrientationMask.AllButUpsideDown);
+    }
+
+    private static void RequestUpdate(UIInterfaceOrientationMask mask)
+    {
+        var geometryPreferences = new UIWindowSceneGeometryPreferencesIOS(mask);
+        foreach (var scene in UIApplication.SharedApplication.ConnectedScenes)
+        {
+            if (scene is UIWindowScene windowScene)
+                windowScene.RequestGeometryUpdate(geometryPreferences, _ => { });
+        }
     }
 }

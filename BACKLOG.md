@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: INV-1/2/3 — notification scheduling, card reminder UI cleanup, portrait lock
-**Next up**: F-10 deep-link share
+**Last completed**: BUG-12/13/14/15/16 — iOS orientation lock, tag prayer count, all-done re-entry, cascade delete + prayer delete button, switch dark-mode contrast
+**Next up**: F-10 deep-link share (deferred until app store — see `docs/plans/F10-deep-link-share.md`)
 
 ---
 
@@ -25,7 +25,7 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | F-10 | Deep-link share — create card/request via tapped link | Custom URI scheme; recipient opens app (or store if not installed) and lands on pre-filled create flow |
+| 1 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
 | 2 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
 | 3 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
 
@@ -72,28 +72,23 @@ All ViewModels resolve services via `IPlatformApplication.Current!.Services.GetR
 
 ### F-10 Deep-link share
 
-Allow users to share a prayer card or request as a deep link. Recipient taps the link and:
-- If the app is installed → opens directly into a pre-filled "Create Card" or "Create Request" flow with the shared title/details pre-populated
-- If the app is not installed → routes to the Play Store / App Store listing
+> **Full implementation plan:** [`docs/plans/F10-deep-link-share.md`](docs/plans/F10-deep-link-share.md)
+> **Deferred until app is live in the App Store / Play Store** — the `prayercards://` URI scheme must be registered and live before links work for recipients.
 
-**Platform mechanics:**
-- Android: custom URI scheme (`prayercards://`) via `Intent` filter in `AndroidManifest.xml`; handled in `MainActivity.OnNewIntent`
-- iOS: custom URL scheme in `Info.plist`; handled in `AppDelegate.OpenUrl`
-- MAUI bridge: `App.OnAppLinkRequestReceived` or a registered `IAppLinkEntry`
+Both cards and individual requests are shareable. Share sheet sends a `prayercards://` deep link alongside a plain-text fallback (for recipients without the app).
 
-**Share payload**: URL-encoded query params, e.g.
-`prayercards://create?type=request&title=...&details=...`
+**Recipient behavior:**
+- Shared card → auto-saved silently as a new card with all active requests
+- Shared request → auto-saved into a "Shared with me" system card (top of list, cannot be deleted, hideable in Settings)
 
-**Files likely involved:**
-`Platforms/Android/MainActivity.cs`, `Platforms/iOS/AppDelegate.cs`,
-`App.xaml.cs` (deep-link routing), `Views/Prayer/PrayerDetailPage.xaml` (share button),
-`ViewModels/PrayerRequestDetailViewModel.cs` (`ShareDeepLinkCommand`),
-possibly a new `DeepLinkService`
-
-**Decisions needed before building:**
-- URI scheme name (e.g. `prayercards://`)
-- Should the link pre-fill and prompt user to save, or auto-save silently?
-- Card share vs. request share vs. both?
+**Sub-features (all designed, details in plan doc):**
+1. `IDeepLinkService` / `DeepLinkService` — build URIs and handle incoming links
+2. `prayercards://` URI scheme registration (Android intent filter + iOS CFBundleURLTypes)
+3. Platform handlers: `MainActivity.OnNewIntent` + `AppDelegate.OpenUrl`
+4. "Shared with me" system card (`PrayerCard.IsSystem` column + `GetOrCreateSystemCardAsync`)
+5. Share button on card edit page + swipe action on card list
+6. Move-to-card action on prayer request edit page
+7. Settings toggle to hide "Shared with me" card
 
 ---
 
@@ -150,6 +145,11 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | BUG-9 | Notification permission prompt only fires on first Settings visit | d125486 | `EnsureNotificationPermissionRequested()` called on CanNotify toggle in both ViewModels |
 | BUG-10 | Settings "Go" button text clipped on some devices | d125486 | Layout reworked to `Auto` label column |
 | BUG-11 | Keyboard covers prayer request entry buttons | d125486 | `android:windowSoftInputMode="adjustResize"` in AndroidManifest |
+| BUG-12 | iOS orientation lock broken — Prayer Time doesn't go landscape | — | Replaced broken `UIDevice.SetValueForKey` with `UIWindowScene.RequestGeometryUpdate` + `AppDelegate.GetSupportedInterfaceOrientations` |
+| BUG-13 | Prayer Time by tag shows wrong prayer count | — | Filter compared card IDs against prayer IDs; fixed to use `p.PrayerCardId` |
+| BUG-14 | "All done" re-enters Prayer Time / requires second tap | — | Reset `HasCompleted = false` at start of `LoadEntriesAsync`; BUG-13 fix also eliminates empty-set trigger |
+| BUG-15 | Card delete leaves prayers orphaned; no delete in view mode | — | Cascade delete in `PrayerCardViewModel.DeleteAsync`; added Delete button to prayer view mode |
+| BUG-16 | Switch thumb insufficient contrast in dark mode | — | Off-state thumb `Dark` value raised from `Gray500` to `Gray200` |
 | F-11 | iCloud / Google Drive backup | — | BackupService with Share.RequestAsync export + FilePicker import; already on dev |
 | INV-1 | Audit: notifications cancelled on mark-answered? | — | Scheduling was unimplemented; added `ScheduleAsync`/`CancelAsync` to `INotificationService`; hooked into SaveAsync and MarkAnsweredAsync |
 | INV-2 | Audit: add/edit prayer card shows reminder UI? | — | Confirmed leftover; removed Reminders toggle + Frequency picker from PrayerCardPage and PrayerCardViewModel |
@@ -160,4 +160,4 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 
 ---
 
-*Last updated: 2026-03-16 (session 2)*
+*Last updated: 2026-03-16 (session 4 — BUG-12 through BUG-16)*

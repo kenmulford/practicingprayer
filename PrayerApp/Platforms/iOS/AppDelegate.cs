@@ -1,4 +1,5 @@
-﻿using Foundation;
+using Foundation;
+using UIKit;
 
 namespace PrayerApp
 {
@@ -6,5 +7,9 @@ namespace PrayerApp
     public class AppDelegate : MauiUIApplicationDelegate
     {
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+
+        public override UIInterfaceOrientationMask GetSupportedInterfaceOrientations(
+            UIApplication application, UIWindow forWindow)
+            => Platforms.iOS.OrientationService.AllowedOrientations;
     }
 }
