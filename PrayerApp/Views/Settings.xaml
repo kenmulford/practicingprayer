@@ -8,12 +8,12 @@
             Padding="20,5"
             Spacing="5">
             <Grid
-                ColumnDefinitions="300, *"
-                ColumnSpacing="5"
-                RowDefinitions="*,*"
-                HorizontalOptions="Start"
+                ColumnDefinitions="*, Auto"
+                ColumnSpacing="12"
+                RowDefinitions="Auto,Auto"
+                HorizontalOptions="Fill"
                 VerticalOptions="Center"
-                RowSpacing="5">
+                RowSpacing="8">
                 <Label
                     Text="Clear Settings" />
                 <Button
