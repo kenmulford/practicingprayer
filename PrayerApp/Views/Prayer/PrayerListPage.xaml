@@ -12,63 +12,185 @@
         <ToolbarItem Text="Add" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <CollectionView
-        x:Name="prayerCollection"
-        ItemsSource="{Binding AllPrayers}"
-        Margin="20,0"
-        SelectionMode="None">
+    <Grid RowDefinitions="Auto, *">
 
-        <CollectionView.Header>
+        <!-- Filter controls (sticky above the list) -->
+        <VerticalStackLayout Grid.Row="0" Margin="20,16,20,0" Spacing="8">
+
             <Label Text="Prayer Requests"
                    Style="{StaticResource Headline}"
-                   SemanticProperties.HeadingLevel="Level1"
-                   Margin="0,16,0,8" />
-        </CollectionView.Header>
+                   SemanticProperties.HeadingLevel="Level1" />
 
-        <CollectionView.ItemsLayout>
-            <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
-        </CollectionView.ItemsLayout>
+            <!-- 3-way status toggle -->
+            <Grid ColumnDefinitions="*, *, *" ColumnSpacing="4">
 
-        <CollectionView.ItemTemplate>
-            <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
-                <Grid RowDefinitions="Auto, Auto"
-                      Padding="4,10"
-                      HorizontalOptions="Fill">
-                    <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
-                    </Grid.GestureRecognizers>
+                <Button Text="Active"
+                        Command="{Binding SetStatusCommand}"
+                        CommandParameter="Active"
+                        FontSize="13">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                            <Setter Property="TextColor"       Value="White" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="False">
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray700}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
 
-                    <!-- Card title (small muted) -->
-                    <Label Grid.Row="0"
-                           Text="{Binding CardTitle}"
-                           FontSize="11"
-                           Style="{StaticResource MutedText}" />
+                <Button Grid.Column="1"
+                        Text="Answered"
+                        Command="{Binding SetStatusCommand}"
+                        CommandParameter="Answered"
+                        FontSize="13">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                            <Setter Property="TextColor"       Value="White" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="False">
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray700}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
 
-                    <!-- Prayer title + answered badge -->
-                    <Grid Grid.Row="1"
-                          ColumnDefinitions="*, Auto">
-                        <Label Grid.Column="0"
-                               Text="{Binding Title}"
-                               FontSize="17"
-                               TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
-                               TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
-                               VerticalOptions="Center" />
-                        <Label Grid.Column="1"
-                               Text="{Binding AnsweredAtDisplay}"
-                               Style="{StaticResource SuccessBadge}"
-                               IsVisible="{Binding IsAnswered}"
-                               VerticalOptions="Center"
-                               Margin="6,0,0,0" />
+                <Button Grid.Column="2"
+                        Text="All"
+                        Command="{Binding SetStatusCommand}"
+                        CommandParameter="All"
+                        FontSize="13">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                            <Setter Property="TextColor"       Value="White" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="False">
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray700}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+
+            </Grid>
+
+            <!-- Search bar -->
+            <SearchBar Text="{Binding SearchText}"
+                       Placeholder="Search prayers..."
+                       BackgroundColor="Transparent" />
+
+            <!-- Tag chip row — only shown when tags exist -->
+            <ScrollView Orientation="Horizontal"
+                        IsVisible="{Binding HasTags}"
+                        HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout
+                    BindableLayout.ItemsSource="{Binding AvailableTags}"
+                    Spacing="6"
+                    Padding="0,2,0,6">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:TagFilterChipViewModel">
+                            <Border Padding="10,4"
+                                    StrokeThickness="1.5">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12" />
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleCommand}" />
+                                </Border.GestureRecognizers>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                        <Setter Property="Stroke"          Value="{StaticResource Primary}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
+                                        <Setter Property="BackgroundColor" Value="Transparent" />
+                                        <Setter Property="Stroke"          Value="{StaticResource Primary}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="{Binding Tag.Name}"
+                                       FontSize="12"
+                                       VerticalOptions="Center">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="TextColor" Value="White" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="False">
+                                            <Setter Property="TextColor" Value="{StaticResource Primary}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </HorizontalStackLayout>
+            </ScrollView>
+
+        </VerticalStackLayout>
+
+        <!-- Prayer list -->
+        <CollectionView
+            x:Name="prayerCollection"
+            Grid.Row="1"
+            ItemsSource="{Binding FilteredPrayers}"
+            Margin="20,0"
+            SelectionMode="None">
+
+            <CollectionView.EmptyView>
+                <Label Text="No prayers match your filters."
+                       Style="{StaticResource MutedText}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,32" />
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
+                    <Grid RowDefinitions="Auto, Auto"
+                          Padding="4,10"
+                          HorizontalOptions="Fill">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
+                        </Grid.GestureRecognizers>
+
+                        <!-- Card title (small muted) -->
+                        <Label Grid.Row="0"
+                               Text="{Binding CardTitle}"
+                               FontSize="11"
+                               Style="{StaticResource MutedText}" />
+
+                        <!-- Prayer title + answered badge -->
+                        <Grid Grid.Row="1"
+                              ColumnDefinitions="*, Auto">
+                            <Label Grid.Column="0"
+                                   Text="{Binding Title}"
+                                   FontSize="17"
+                                   TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                                   TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding AnsweredAtDisplay}"
+                                   Style="{StaticResource SuccessBadge}"
+                                   IsVisible="{Binding IsAnswered}"
+                                   VerticalOptions="Center"
+                                   Margin="6,0,0,0" />
+                        </Grid>
+
+                        <!-- Divider -->
+                        <BoxView Grid.Row="1"
+                                 Style="{StaticResource DividerLine}"
+                                 VerticalOptions="End" />
                     </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
 
-                    <!-- Divider -->
-                    <BoxView Grid.Row="1"
-                             Style="{StaticResource DividerLine}"
-                             VerticalOptions="End" />
-                </Grid>
-            </DataTemplate>
-        </CollectionView.ItemTemplate>
+        </CollectionView>
 
-    </CollectionView>
+    </Grid>
 
 </ContentPage>

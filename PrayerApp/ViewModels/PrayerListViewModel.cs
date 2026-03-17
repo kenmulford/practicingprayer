@@ -1,108 +1,222 @@
 using PrayerApp.Models;
 using PrayerApp.Services;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerListViewModel : IQueryAttributable
+    public enum FilterStatus { Active, Answered, All }
+
+    internal class PrayerListViewModel : ObservableObject, IQueryAttributable
     {
-        private List<Prayer> _prayerList;
+        private List<Prayer> _prayerList = new();
         private readonly IPrayerService _prayerService;
         private readonly ICardService _cardService;
+        private readonly ITagService _tagService;
         private Dictionary<int, string> _cardTitleLookup = new();
-        public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; }
+
+        // requestId → set of tagIds assigned to that request (for chip filter)
+        private Dictionary<int, HashSet<int>> _requestTagIds = new();
+
+        // Full unfiltered backing store — manipulated by IQueryAttributable
+        public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; } = new();
+
+        // Filtered + sorted view that the CollectionView binds to
+        public ObservableCollection<PrayerRequestDetailViewModel> FilteredPrayers { get; } = new();
+
+        // Tag chips
+        public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
+        public bool HasTags => AvailableTags.Count > 0;
+
+        // Search
+        private string _searchText = string.Empty;
+        public string SearchText
+        {
+            get => _searchText;
+            set { if (SetProperty(ref _searchText, value)) ApplyFilter(); }
+        }
+
+        // Status toggle
+        private FilterStatus _statusFilter = FilterStatus.Active;
+        public FilterStatus StatusFilter
+        {
+            get => _statusFilter;
+            set
+            {
+                if (SetProperty(ref _statusFilter, value))
+                {
+                    OnPropertyChanged(nameof(IsActiveSelected));
+                    OnPropertyChanged(nameof(IsAnsweredSelected));
+                    OnPropertyChanged(nameof(IsAllSelected));
+                    ApplyFilter();
+                }
+            }
+        }
+        public bool IsActiveSelected   => StatusFilter == FilterStatus.Active;
+        public bool IsAnsweredSelected => StatusFilter == FilterStatus.Answered;
+        public bool IsAllSelected      => StatusFilter == FilterStatus.All;
 
         public ICommand NewCommand { get; }
+        public ICommand SetStatusCommand { get; }
 
         public PrayerListViewModel()
         {
             _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+            _cardService   = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+            _tagService    = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
 
             // Build card title lookup
             var cards = Task.Run(async () => await _cardService.GetCardsAsync()).Result;
             _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
 
-            // GET all prayer requests
+            // Load all prayers
             _prayerList = Task.Run(async () => await _prayerService.GetAllPrayersAsync()).Result.ToList();
 
-            // Convert Prayer to PrayerRequestDetailViewModel
-            AllPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(
-                _prayerList.Select(p =>
-                {
-                    var vm = new PrayerRequestDetailViewModel(p);
-                    vm.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
-                    return vm;
-                })
-            );
+            // Build tag→request lookup for chip filter
+            _requestTagIds = Task.Run(BuildRequestTagLookupAsync).Result;
 
-            // subscribe to collection changes to re-sort when items are added/removed
-            AllPrayers.CollectionChanged += (s, e) => ApplySorting();
-
-            // subscribe to property changes on each existing prayer
-            foreach (var prayer in AllPrayers)
+            // Build prayer ViewModels
+            foreach (var p in _prayerList)
             {
-                SubscribeToPropertyChanges(prayer);
+                var vm = BuildViewModel(p);
+                AllPrayers.Add(vm);
             }
 
-            // sort the prayer list
-            ApplySorting();
+            // Load tag chips
+            var allTags = Task.Run(async () => (await _tagService.GetTagsAsync()).ToList()).Result;
+            foreach (var tag in allTags)
+                AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
+            OnPropertyChanged(nameof(HasTags));
 
-            // register commands
+            // Any change to the backing store re-runs the filter
+            AllPrayers.CollectionChanged += (_, _) => ApplyFilter();
+
+            // Initial filtered view
+            ApplyFilter();
+
+            // Commands
             NewCommand = new AsyncRelayCommand(NewPrayerAsync);
+            SetStatusCommand = new RelayCommand<string>(s =>
+            {
+                StatusFilter = s switch
+                {
+                    "Answered" => FilterStatus.Answered,
+                    "All"      => FilterStatus.All,
+                    _          => FilterStatus.Active
+                };
+            });
         }
 
-        #region IQueryAttributable Implementation
+        #region IQueryAttributable
+
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
             if (query.ContainsKey("deleted"))
             {
-                string? PrayerString = query["deleted"].ToString();
-                PrayerRequestDetailViewModel? matched = AllPrayers.FirstOrDefault(p => p.Identifier == PrayerString);
-
+                var id = query["deleted"].ToString();
+                var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
                 if (matched != null)
-                {
-                    AllPrayers.Remove(matched);
-                }
+                    AllPrayers.Remove(matched); // CollectionChanged → ApplyFilter
             }
             else if (query.ContainsKey("saved"))
             {
-                string? PrayerString = query["saved"].ToString();
-                PrayerRequestDetailViewModel? matched = AllPrayers.Where((p) => p.Identifier == PrayerString).FirstOrDefault();
-
-                // If prayer is found, update it
+                var id = query["saved"].ToString();
+                var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
                 if (matched != null)
                 {
                     matched.Reload();
+                    ApplyFilter(); // reload doesn't fire CollectionChanged, so force it
                 }
-                // If prayer isn't found, it's new; add it.
                 else
                 {
-                    _ = AddNewPrayerAsync(PrayerString);
+                    _ = AddNewPrayerAsync(id);
                 }
             }
         }
 
         #endregion
 
-        #region private methods
+        #region Private helpers
+
+        private PrayerRequestDetailViewModel BuildViewModel(Prayer p)
+        {
+            var vm = new PrayerRequestDetailViewModel(p);
+            vm.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
+            SubscribeToPropertyChanges(vm);
+            return vm;
+        }
+
+        private async Task<Dictionary<int, HashSet<int>>> BuildRequestTagLookupAsync()
+        {
+            var lookup = new Dictionary<int, HashSet<int>>();
+            var allRows = await PrayerCardTag.LoadAllAsync();
+            foreach (var row in allRows.Where(r => r.PrayerRequestId > 0))
+            {
+                if (!lookup.ContainsKey(row.PrayerRequestId))
+                    lookup[row.PrayerRequestId] = new HashSet<int>();
+                lookup[row.PrayerRequestId].Add(row.PrayerTagId);
+            }
+            return lookup;
+        }
+
+        private void ApplyFilter()
+        {
+            IEnumerable<PrayerRequestDetailViewModel> result = AllPrayers;
+
+            // 1. Status filter
+            result = StatusFilter switch
+            {
+                FilterStatus.Active   => result.Where(p => !p.IsAnswered),
+                FilterStatus.Answered => result.Where(p => p.IsAnswered),
+                _                     => result
+            };
+
+            // 2. Tag chip filter
+            var selectedTagIds = AvailableTags
+                .Where(c => c.IsSelected)
+                .Select(c => c.Tag.Id)
+                .ToHashSet();
+
+            if (selectedTagIds.Count > 0)
+            {
+                result = result.Where(p =>
+                    _requestTagIds.TryGetValue(p.Id, out var tagIds) &&
+                    selectedTagIds.Overlaps(tagIds));
+            }
+
+            // 3. Text search (title + card name)
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var q = _searchText.Trim();
+                result = result.Where(p =>
+                    (p.Title?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.CardTitle?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            // 4. Sort
+            var sorted = result
+                .OrderBy(p => p.CardTitle, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(p => p.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            FilteredPrayers.Clear();
+            foreach (var p in sorted)
+                FilteredPrayers.Add(p);
+        }
 
         private async Task AddNewPrayerAsync(string? prayerIdString)
         {
             try
             {
                 var p = await Prayer.LoadAsync(int.Parse(prayerIdString ?? "0"));
-                var newPrayer = new PrayerRequestDetailViewModel(p);
-                newPrayer.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
-                SubscribeToPropertyChanges(newPrayer);
-                AllPrayers.Add(newPrayer);
+                var vm = BuildViewModel(p);
+                AllPrayers.Add(vm); // CollectionChanged → ApplyFilter
             }
             catch (Exception e)
             {
@@ -126,76 +240,34 @@ namespace PrayerApp.ViewModels
                 var cards = await _cardService.GetCardsAsync();
                 _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
 
-                var viewModels = _prayerList.Select(p =>
-                {
-                    var vm = new PrayerRequestDetailViewModel(p);
-                    vm.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
-                    return vm;
-                }).ToList();
-                foreach (var vm in viewModels)
-                {
-                    SubscribeToPropertyChanges(vm);
-                }
+                // Rebuild tag lookup
+                _requestTagIds = await BuildRequestTagLookupAsync();
+
+                var viewModels = _prayerList.Select(BuildViewModel).ToList();
 
                 AllPrayers.Clear();
                 foreach (var vm in viewModels)
-                {
                     AllPrayers.Add(vm);
-                }
 
-                ApplySorting();
+                ApplyFilter();
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayer: {e.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
             }
         }
 
-        private void ApplySorting()
-        {
-            var sorted = AllPrayers
-                .OrderBy(p => p.CardTitle, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(p => p.Title, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            // Only update if order changed (minimize UI updates)
-            bool needsUpdate = false;
-            for (int i = 0; i < sorted.Count; i++)
-            {
-                if (i >= AllPrayers.Count || AllPrayers[i] != sorted[i])
-                {
-                    needsUpdate = true;
-                    break;
-                }
-            }
-
-            if (needsUpdate)
-            {
-                AllPrayers.Clear();
-                foreach (var p in sorted)
-                {
-                    AllPrayers.Add(p);
-                }
-            }
-        }
-
-        // Only name properties used for sorting/filtering; not all of them
         private void SubscribeToPropertyChanges(PrayerRequestDetailViewModel prayer)
         {
-            prayer.PropertyChanged += (s, e) =>
+            prayer.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName == nameof(PrayerRequestDetailViewModel.Title))
-                {
-                    ApplySorting();
-                }
+                if (e.PropertyName is nameof(PrayerRequestDetailViewModel.Title)
+                                   or nameof(PrayerRequestDetailViewModel.IsAnswered))
+                    ApplyFilter();
             };
         }
 
-
-        public void Reload()
-        {
-            _ = LoadPrayersAsync();
-        }
+        public void Reload() => _ = LoadPrayersAsync();
 
         #endregion
     }
