@@ -30,7 +30,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.0</string>
 	<key>NSUserNotificationUsageDescription</key>
-	<string>Prayer Cards uses notifications to remind you to pray for your requests.</string>
+	<string>Practicing Prayer uses notifications to remind you to pray for your requests.</string>
 	<key>CFBundleIdentifier</key>
 	<string></string>
 </dict>

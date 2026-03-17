@@ -8,7 +8,8 @@ namespace PrayerApp
     {
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 
-        public override UIInterfaceOrientationMask GetSupportedInterfaceOrientations(
+        [Export("application:supportedInterfaceOrientationsForWindow:")]
+        public UIInterfaceOrientationMask GetSupportedInterfaceOrientations(
             UIApplication application, UIWindow forWindow)
             => Platforms.iOS.OrientationService.AllowedOrientations;
     }

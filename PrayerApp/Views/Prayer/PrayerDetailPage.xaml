@@ -74,23 +74,23 @@
                     </FlexLayout>
 
                     <!-- Action Buttons -->
-                    <Grid ColumnDefinitions="*, *, *, *" ColumnSpacing="6">
-                        <Button Grid.Column="0"
+                    <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="6" RowSpacing="6">
+                        <Button Grid.Row="0" Grid.Column="0"
                                 Text="Share"
                                 Style="{StaticResource SmallActionButton}"
                                 Command="{Binding ShareCommand}"
                                 HorizontalOptions="Fill" />
-                        <Button Grid.Column="1"
+                        <Button Grid.Row="0" Grid.Column="1"
                                 Text="Edit"
                                 Style="{StaticResource SmallActionButton}"
                                 Command="{Binding EditPrayerCommand}"
                                 HorizontalOptions="Fill" />
-                        <Button Grid.Column="2"
+                        <Button Grid.Row="1" Grid.Column="0"
                                 Text="Delete"
                                 Style="{StaticResource DangerButton}"
                                 Command="{Binding DeleteCommand}"
                                 HorizontalOptions="Fill" />
-                        <Button Grid.Column="3"
+                        <Button Grid.Row="1" Grid.Column="1"
                                 Text="Mark Answered"
                                 Style="{StaticResource AnsweredButton}"
                                 Command="{Binding MarkAnsweredCommand}"

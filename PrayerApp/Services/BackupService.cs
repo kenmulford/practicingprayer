@@ -54,7 +54,7 @@ public class BackupService : IBackupService
             // The share sheet itself is the UX confirmation.
             await Share.RequestAsync(new ShareFileRequest
             {
-                Title = "Save Prayer Cards Backup",
+                Title = "Save Practicing Prayer Backup",
                 File = new ShareFile(tempZipPath, "application/zip")
             });
 
@@ -73,7 +73,7 @@ public class BackupService : IBackupService
         // Pick file BEFORE showing any modal (iOS constraint: UIDocumentPicker conflicts with modal)
         FileResult? picked = await FilePicker.PickAsync(new PickOptions
         {
-            PickerTitle = "Select a Prayer Cards backup (.pcrd)"
+            PickerTitle = "Select a Practicing Prayer backup (.pcrd)"
         });
         if (picked is null) return false;
 
@@ -87,7 +87,7 @@ public class BackupService : IBackupService
             if (entry is null)
             {
                 await Shell.Current.DisplayAlertAsync("Invalid Backup",
-                    "This file doesn't appear to be a valid Prayer Cards backup.", "OK");
+                    "This file doesn't appear to be a valid Practicing Prayer backup.", "OK");
                 return false;
             }
             await using var entryStream = entry.Open();
@@ -98,7 +98,7 @@ public class BackupService : IBackupService
         catch
         {
             await Shell.Current.DisplayAlertAsync("Invalid Backup",
-                "This file doesn't appear to be a valid Prayer Cards backup.", "OK");
+                "This file doesn't appear to be a valid Practicing Prayer backup.", "OK");
             return false;
         }
 

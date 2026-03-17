@@ -13,7 +13,7 @@
 		<Nullable>enable</Nullable>
 
 		<!-- Display name -->
-		<ApplicationTitle>Prayer Cards</ApplicationTitle>
+		<ApplicationTitle>Practicing Prayer</ApplicationTitle>
 
 		<!-- App Identifier -->
 		<ApplicationId>com.multithreadedllc.prayercards</ApplicationId>

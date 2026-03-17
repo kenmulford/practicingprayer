@@ -58,7 +58,7 @@ public class NotificationService : INotificationService
         var request = new NotificationRequest
         {
             NotificationId = prayer.Id,
-            Title = "Prayer Cards",
+            Title = "Practicing Prayer",
             Description = prayer.Title,
             Schedule = new NotificationRequestSchedule
             {

@@ -34,16 +34,7 @@
                         SemanticProperties.Hint="Name or topic for this prayer card" />
                 </HorizontalStackLayout>
 
-                <!-- Is Answered -->
-                <HorizontalStackLayout Spacing="10">
-                    <Label VerticalOptions="Center" WidthRequest="100" Text="Answered" />
-                    <Switch IsToggled="{Binding IsAnswered}"
-                            SemanticProperties.Description="Mark this card as fully answered"
-                            OnColor="{StaticResource Secondary}"
-                            VerticalOptions="Center" />
-                </HorizontalStackLayout>
-
-                <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
+<Grid ColumnDefinitions="*, *" ColumnSpacing="4">
                     <Button 
                         StyleClass=""
                         HorizontalOptions="Start"
