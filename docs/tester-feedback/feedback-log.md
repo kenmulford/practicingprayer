@@ -9,6 +9,14 @@ Format: date · tester · raw quote · mapped bug ID.
 
 ### Ken (developer)
 
+> "In dark mode, the two containers below the Prayer Time button on the home screen are hard to read. The text doesn't have enough contrast against the background."
+
+**Bug:** BUG-20
+**Status:** Open
+**Notes:** Home screen dark mode contrast issue on the summary/quick-action containers below the Prayer Time button. Check both iOS and Android.
+
+---
+
 > "the UX is nice but does not feel very 'iOS' native; especially the entry/editor fields. I know we did the styling for Android, but perhaps we've done too much to detract from the iOS native UX? Worth evaluating."
 
 **Feature:** F-13

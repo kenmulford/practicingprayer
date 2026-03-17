@@ -374,13 +374,13 @@ namespace PrayerApp.ViewModels
 
         private async Task LoadTagsAsync()
         {
-            if (_prayer.PrayerCardId <= 0) return;
+            if (_prayer.Id <= 0) return;
 
             _allTags = (await _tagService.GetTagsAsync()).ToList();
-            var cardTags = await _tagService.GetTagsByCardIdAsync(_prayer.PrayerCardId);
+            var requestTags = await _tagService.GetTagsByRequestIdAsync(_prayer.Id);
 
             SelectedTags.Clear();
-            foreach (var tag in cardTags.OrderBy(t => t.Name))
+            foreach (var tag in requestTags.OrderBy(t => t.Name))
                 SelectedTags.Add(new TagChipViewModel(tag, RemoveTagAsync));
 
             UpdateSuggestions();
@@ -408,14 +408,14 @@ namespace PrayerApp.ViewModels
             var tag = _allTags.FirstOrDefault(t => t.Id == tagId);
             if (tag is null) return;
 
-            await _tagService.AddTagToCardAsync(_prayer.PrayerCardId, tagId);
+            await _tagService.AddTagToRequestAsync(_prayer.Id, tagId);
             SelectedTags.Add(new TagChipViewModel(tag, RemoveTagAsync));
             TagSearchText = string.Empty;
         }
 
         private async Task RemoveTagAsync(int tagId)
         {
-            await _tagService.RemoveTagFromCardAsync(_prayer.PrayerCardId, tagId);
+            await _tagService.RemoveTagFromRequestAsync(_prayer.Id, tagId);
             var chip = SelectedTags.FirstOrDefault(t => t.Id == tagId);
             if (chip is not null)
                 SelectedTags.Remove(chip);
@@ -441,7 +441,7 @@ namespace PrayerApp.ViewModels
             newTag = await _tagService.SaveTagAsync(newTag);
             _allTags.Add(newTag);
 
-            await _tagService.AddTagToCardAsync(_prayer.PrayerCardId, newTag.Id);
+            await _tagService.AddTagToRequestAsync(_prayer.Id, newTag.Id);
             SelectedTags.Add(new TagChipViewModel(newTag, RemoveTagAsync));
             TagSearchText = string.Empty;
         }

@@ -149,6 +149,14 @@ namespace PrayerApp.Services
                 .ToListAsync();
         }
 
+        public async Task<List<PrayerCardTag>> GetByRequestIdAsync(int prayerRequestId)
+        {
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            return await _db.Table<PrayerCardTag>()
+                .Where(pct => pct.PrayerRequestId == prayerRequestId)
+                .ToListAsync();
+        }
+
         public async Task<List<PrayerCardTag>> GetByTagIdAsync(int prayerTagId)
         {
             if (_db == null) throw new InvalidOperationException("Database is not available.");
@@ -268,6 +276,62 @@ namespace PrayerApp.Services
             }
             catch
             {
+            }
+
+            // BUG-21: Add PrayerRequestId column to PrayerCardTag — tags now live at the request level
+            try
+            {
+                await _db!.ExecuteAsync("ALTER TABLE PrayerCardTag ADD COLUMN PrayerRequestId INTEGER DEFAULT 0");
+            }
+            catch
+            {
+            }
+
+            // BUG-21 data migration: promote legacy card-level tag rows to request-level rows.
+            // For each PrayerCardTag row where PrayerRequestId is still 0 (old schema),
+            // find all prayer requests on that card and create a new row per request.
+            await MigrateCardTagsToRequestTagsAsync();
+        }
+
+        private async Task MigrateCardTagsToRequestTagsAsync()
+        {
+            if (_db == null) return;
+
+            // Find all legacy rows (PrayerRequestId == 0)
+            var legacyRows = await _db.Table<PrayerCardTag>()
+                .Where(pct => pct.PrayerRequestId == 0)
+                .ToListAsync();
+
+            if (legacyRows.Count == 0) return;
+
+            foreach (var legacy in legacyRows)
+            {
+                // Get all prayer requests on the card this tag was assigned to
+                var prayers = await _db.Table<Prayer>()
+                    .Where(p => p.PrayerCardId == legacy.PrayerCardId)
+                    .ToListAsync();
+
+                foreach (var prayer in prayers)
+                {
+                    // Avoid duplicates
+                    var existing = await _db.Table<PrayerCardTag>()
+                        .Where(pct => pct.PrayerRequestId == prayer.Id && pct.PrayerTagId == legacy.PrayerTagId)
+                        .FirstOrDefaultAsync();
+
+                    if (existing == null)
+                    {
+                        await _db.InsertAsync(new PrayerCardTag
+                        {
+                            PrayerCardId = legacy.PrayerCardId,
+                            PrayerTagId = legacy.PrayerTagId,
+                            PrayerRequestId = prayer.Id,
+                            CreatedAt = legacy.CreatedAt
+                        });
+                    }
+                }
+
+                // Remove the legacy card-level row now that it's been migrated
+                await _db.DeleteAsync(legacy);
             }
         }
     }

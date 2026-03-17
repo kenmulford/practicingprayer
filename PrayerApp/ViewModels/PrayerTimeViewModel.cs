@@ -183,9 +183,9 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             IEnumerable<Prayer> filtered;
             if (tagIds is not null)
             {
-                var prayerIdSet = (await _tagService.GetPrayerIdsByTagIdsAsync(tagIds)).ToHashSet();
+                var requestIdSet = (await _tagService.GetRequestIdsByTagIdsAsync(tagIds)).ToHashSet();
                 token.ThrowIfCancellationRequested();
-                filtered = allActive.Where(p => prayerIdSet.Contains(p.PrayerCardId));
+                filtered = allActive.Where(p => requestIdSet.Contains(p.Id));
             }
             else
             {

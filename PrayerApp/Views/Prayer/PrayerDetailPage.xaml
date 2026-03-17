@@ -110,7 +110,8 @@
                     <!-- Title -->
                     <Label Text="Title"
                            Style="{StaticResource FormLabel}" />
-                    <Entry Text="{Binding Title}"
+                    <Entry x:Name="TitleEntry"
+                           Text="{Binding Title}"
                            Placeholder="Prayer title"
                            SemanticProperties.Hint="Prayer request title"
                            HorizontalOptions="Fill" />

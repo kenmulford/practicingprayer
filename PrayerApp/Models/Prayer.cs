@@ -12,7 +12,7 @@ namespace PrayerApp.Models
     public class Prayer
     {
         private static IDBService? _dbService;
-        private string _title = "Prayer Request";
+        private string _title = string.Empty;
 
         [PrimaryKey, AutoIncrement]
         [Column("Id")]
@@ -24,7 +24,7 @@ namespace PrayerApp.Models
         [Column("Title"), MaxLength(100)]
         public string Title {
             get => _title;
-            set => _title = value ?? "Prayer Request";
+            set => _title = value ?? string.Empty;
         }
 
         [Column("Details"), MaxLength(1000)]

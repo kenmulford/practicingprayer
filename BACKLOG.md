@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 5 — App renamed to "Practicing Prayer", iOS TestFlight build 1.0.4 (build 7) submitted, BUG-17/18 + F-12/13 logged from tester feedback
-**Next up**: BUG-17 (prayer request title pre-population) or BUG-18 (Prayer Time timer end-state)
+**Last completed**: Session 6 — BUG-17, BUG-18, BUG-19, BUG-20, BUG-21 (tag model migration to request-level); F-12 and F-13 plans written
+**Next up**: F-12 (Prayer list overhaul) or F-13 (iOS field styling)
 
 ---
 
@@ -25,14 +25,12 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | BUG-17 | Prayer request title pre-populated on new form | Should start blank; currently pre-filled (likely with card name). Logged from Liz (Round 2) |
-| 2 | BUG-18 | Prayer Time timer (30s) visible on "all done" end state | Timer UI should be hidden when session completes. Needs full visual state audit: hidden → counting → done |
-| 3 | BUG-19 | iOS Info.plist missing `NSLocationWhenInUseUsageDescription` + `NSLocationAlwaysAndWhenInUseUsageDescription` | Apple submission error 90683 — SDK references location APIs; purpose strings required even if app doesn't use location |
-| 4 | F-12 | Prayer list page UX overhaul | Page purpose unclear to users. Add: live-filter search bar, tag filter (carry forward BUG-13 fix), active/completed/all 3-way toggle, empty-state explanation. Logged from Liz (Round 2) |
-| 5 | F-13 | iOS native field styling audit | Entry/Editor custom styles feel un-iOS. Evaluate platform-conditional styling via `OnPlatform` to let iOS render fields natively while keeping Android customizations. Logged from Ken (Round 2) |
-| 6 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 7 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
-| 8 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
+| 1 | F-12 | Prayer list page UX overhaul | Full plan at `docs/plans/F12-prayer-list-overhaul.md`. Live search (title + card name), 3-way status toggle, tag chip filter. Logged from Liz (Round 2) |
+| 2 | F-13 | iOS native field styling | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state using app palette. Logged from Ken (Round 2) |
+| 3 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 4 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
+| 5 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
+| 6 | TD-9 | Dark mode color audit — static ResourceColor usages without AppThemeBinding | Low priority. Scan all XAML files for `{StaticResource ...}` on TextColor/BackgroundColor/Stroke that should be `AppThemeBinding`. Produce a list for a follow-up contrast fix pass. |
 
 ---
 
@@ -164,7 +162,12 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | — | App renamed to "Prayer Cards" | — | ApplicationTitle + ApplicationId updated |
 | — | App renamed to "Practicing Prayer" | — | ApplicationTitle, BackupService filename, NotificationService title, AppShell, Info.plist, website, onboarding popup all updated |
 | — | iOS TestFlight — build 1.0.4 (build 7) | — | Provisioning profile "Practicing Prayer" (App Store Distribution), Entitlements.plist added, xcode-select fixed, submitted via Transporter |
+| BUG-17 | Prayer request title pre-populated on new form | — | `Prayer.cs` default changed from "Prayer Request" to `string.Empty`; auto-focus added to TitleEntry on new request |
+| BUG-19 | iOS Info.plist missing NSLocation* purpose strings | — | Keys already present from prior session; no code change needed |
+| BUG-20 | Home screen containers low contrast in dark mode | — | Two `{StaticResource Tertiary}` labels in MainPage.xaml switched to `AppThemeBinding` (Tertiary light / White dark) |
+| BUG-18 | Prayer Time timer visible on "all done" end state | — | Added `IsVisible` InverseBool binding to Row 0 header Grid in PrayerTimePage.xaml |
+| BUG-21 | Tag data model — tags stored at card level instead of request level | — | Added `PrayerRequestId` column to `PrayerCardTag`; new request-level service methods; data migration on startup; `PrayerRequestDetailViewModel` and `PrayerTimeViewModel` updated |
 
 ---
 
-*Last updated: 2026-03-17 (session 5 — app rename, iOS TestFlight, BUG-17/18/19, F-12/13 logged)*
+*Last updated: 2026-03-17 (session 6 — BUG-17/18/19/20/21 fixed; F-12/F-13 plans written to docs/plans/)*
