@@ -38,7 +38,7 @@
 	  <EnableSGenConc>False</EnableSGenConc>
 	  <AdditionalArgs>ValidateXcodeVersion=false</AdditionalArgs>
 	  <CodesignKey>Apple Distribution: Kenneth Mulford (6GV6UL86RM)</CodesignKey>
-	  <CodesignProvision>prayer card distribution</CodesignProvision>
+	  <CodesignProvision>com.multithreadedllc.prayercards</CodesignProvision>
 	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
