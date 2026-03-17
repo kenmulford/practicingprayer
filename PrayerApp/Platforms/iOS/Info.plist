@@ -34,5 +34,7 @@
 	<string>Practicing Prayer uses notifications to remind you to pray for your requests.</string>
 	<key>CFBundleIdentifier</key>
 	<string></string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
