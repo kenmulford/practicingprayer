@@ -358,7 +358,7 @@
                     </VisualState>
                     <VisualState x:Name="Off">
                         <VisualState.Setters>
-                            <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+                            <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray200}}" />
                         </VisualState.Setters>
                     </VisualState>
                 </VisualStateGroup>

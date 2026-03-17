@@ -174,6 +174,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         var token = _loadCts.Token;
 
         IsLoading = true;
+        HasCompleted = false;
         try
         {
             var allActive = await _prayerService.GetAllActivePrayersAsync();
@@ -184,7 +185,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             {
                 var prayerIdSet = (await _tagService.GetPrayerIdsByTagIdsAsync(tagIds)).ToHashSet();
                 token.ThrowIfCancellationRequested();
-                filtered = allActive.Where(p => prayerIdSet.Contains(p.Id));
+                filtered = allActive.Where(p => prayerIdSet.Contains(p.PrayerCardId));
             }
             else
             {

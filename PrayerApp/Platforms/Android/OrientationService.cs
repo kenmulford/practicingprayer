@@ -12,6 +12,13 @@ public class OrientationService : IOrientationService
             activity.RequestedOrientation = ScreenOrientation.Landscape;
     }
 
+    public void LockPortrait()
+    {
+        var activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;
+        if (activity is not null)
+            activity.RequestedOrientation = ScreenOrientation.Portrait;
+    }
+
     public void Unlock()
     {
         var activity = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity;

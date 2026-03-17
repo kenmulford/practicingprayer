@@ -11,6 +11,7 @@ public partial class MainPage : ContentPage
 {
     private readonly HomeViewModel _homeViewModel;
     private readonly IOnboardingService _onboardingService;
+    private readonly IOrientationService? _orientationService;
 
     public MainPage()
     {
@@ -21,6 +22,8 @@ public partial class MainPage : ContentPage
 
         _onboardingService = IPlatformApplication.Current!.Services
             .GetRequiredService<IOnboardingService>();
+        _orientationService = IPlatformApplication.Current!.Services
+            .GetService<IOrientationService>();
 
         BtnQuickAdd.Clicked += async (s, e) =>
             await Shell.Current.Navigation.PushModalAsync(new QuickAddPage());
@@ -38,6 +41,7 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        _orientationService?.LockPortrait();
         await _homeViewModel.LoadAsync();
 
         // Show welcome popup on first visit — one-shot guard prevents re-showing on back navigation

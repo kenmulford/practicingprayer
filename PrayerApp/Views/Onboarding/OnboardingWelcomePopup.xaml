@@ -19,7 +19,7 @@
                    FontSize="48"
                    HorizontalOptions="Center" />
 
-            <Label Text="Welcome to Prayer Cards"
+            <Label Text="Welcome to Practicing Prayer"
                    FontSize="22"
                    FontAttributes="Bold"
                    TextColor="{StaticResource Tertiary}"

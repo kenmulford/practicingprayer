@@ -34,37 +34,7 @@
                         SemanticProperties.Hint="Name or topic for this prayer card" />
                 </HorizontalStackLayout>
 
-                <!-- Frequency Picker -->
-                <HorizontalStackLayout Spacing="10">
-                    <Label VerticalOptions="Center" WidthRequest="100" Text="Frequency" />
-                    <Picker Title="Select Frequency"
-                            ItemsSource="{Binding FrequencyOptions}"
-                            SelectedItem="{Binding PrayerFrequency}"
-                            SemanticProperties.Hint="Default reminder frequency for this card"
-                            HorizontalOptions="Start"
-                            WidthRequest="200"
-                            VerticalOptions="Center" />
-                </HorizontalStackLayout>
-
-                <!-- Allow Notifications -->
-                <HorizontalStackLayout Spacing="10">
-                    <Label VerticalOptions="Center" WidthRequest="100" Text="Reminders" />
-                    <Switch IsToggled="{Binding CanNotify}"
-                            SemanticProperties.Description="Enable reminders for this card"
-                            OnColor="{StaticResource Secondary}"
-                            VerticalOptions="Center" />
-                </HorizontalStackLayout>
-
-                <!-- Is Answered -->
-                <HorizontalStackLayout Spacing="10">
-                    <Label VerticalOptions="Center" WidthRequest="100" Text="Answered" />
-                    <Switch IsToggled="{Binding IsAnswered}"
-                            SemanticProperties.Description="Mark this card as fully answered"
-                            OnColor="{StaticResource Secondary}"
-                            VerticalOptions="Center" />
-                </HorizontalStackLayout>
-
-                <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
+<Grid ColumnDefinitions="*, *" ColumnSpacing="4">
                     <Button 
                         StyleClass=""
                         HorizontalOptions="Start"

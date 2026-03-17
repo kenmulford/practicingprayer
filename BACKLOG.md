@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: BUG-7 color picker + BUG-8 backup crash (commit 5f36cd5); feature/f11-backup pending merge
-**Next up**: F-10 deep-link share (or merge feature/f11-backup → dev first)
+**Last completed**: BUG-12/13/14/15/16 — iOS orientation lock, tag prayer count, all-done re-entry, cascade delete + prayer delete button, switch dark-mode contrast
+**Next up**: F-10 deep-link share (deferred until app store — see `docs/plans/F10-deep-link-share.md`)
 
 ---
 
@@ -25,43 +25,70 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | F-10 | Deep-link share — create card/request via tapped link | Custom URI scheme; recipient opens app (or store if not installed) and lands on pre-filled create flow |
-| 2 | F-11 | iCloud / Google Drive backup — export/import DB for cross-device transfer | Implementation complete on feature/f11-backup; pending merge to dev |
-| 3 | INV-1 | Audit: are all notifications cancelled when a prayer is marked answered? | Verify `INotificationService` cancels scheduled reminders on answered; check if stale notifications can fire after mark-answered |
-| 4 | INV-2 | Audit: why does add/edit prayer card still show reminder/notification UI? | Was this intentionally re-added or is it leftover UI that should have been removed? Confirm intended behaviour before touching |
-| 5 | BUG-9 | Notification permission prompt only fires on first Settings visit — misses tutorial flow | Users can toggle notifications ON during tutorial (prayer request creation) before ever hitting Settings; OS permission is never requested. Fix: trigger permission check at the moment the user first enables notifications anywhere in the app, not at Settings load |
-| 6 | BUG-10 | Settings "Go" button text clipped on some devices | `ColumnDefinitions="300, *"` gives fixed 300dp to label, starving button column on smaller screens. Rethink layout — likely `Auto` label column or a stacked row |
-| 7 | BUG-11 | Keyboard covers prayer request entry buttons — cannot save without manually dismissing keyboard | Soft keyboard overlaps bottom of form; save/accept buttons unreachable while keyboard is open. Known MAUI issue — fix via `android:windowSoftInputMode="adjustResize"` in AndroidManifest and/or CommunityToolkit `KeyboardAutoManagerScroll` |
-| 8 | INV-3 | Lock app to portrait everywhere except Prayer Time — passive UX signal that Prayer Time should landscape | Portrait lock on all pages via `IOrientationService`; Prayer Time already uses `IOrientationService` to force landscape — confirm that removing the lock on page leave restores correctly and that no other page breaks |
+| 1 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 2 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
+| 3 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
 
 ---
 
 ## Detailed Descriptions
 
-### F-10 Deep-link share
+### TD-7 Extract ILocalNotificationCenter
 
-Allow users to share a prayer card or request as a deep link. Recipient taps the link and:
-- If the app is installed → opens directly into a pre-filled "Create Card" or "Create Request" flow with the shared title/details pre-populated
-- If the app is not installed → routes to the Play Store / App Store listing
+`NotificationService.ScheduleAsync` and `CancelAsync` call `LocalNotificationCenter.Current` directly — a static singleton from `Plugin.LocalNotification`. This is not mockable, so `NotificationService` has no unit tests.
 
-**Platform mechanics:**
-- Android: custom URI scheme (`prayercards://`) via `Intent` filter in `AndroidManifest.xml`; handled in `MainActivity.OnNewIntent`
-- iOS: custom URL scheme in `Info.plist`; handled in `AppDelegate.OpenUrl`
-- MAUI bridge: `App.OnAppLinkRequestReceived` or a registered `IAppLinkEntry`
-
-**Share payload**: URL-encoded query params, e.g.
-`prayercards://create?type=request&title=...&details=...`
+**Fix:** Introduce a thin `ILocalNotificationCenter` interface:
+```csharp
+public interface ILocalNotificationCenter
+{
+    Task Show(NotificationRequest request);
+    void Cancel(params int[] notificationIds);
+    void CancelAll();
+}
+```
+Register a production wrapper in `MauiProgram.cs` that delegates to `LocalNotificationCenter.Current`. Inject it into `NotificationService` via constructor.
 
 **Files likely involved:**
-`Platforms/Android/MainActivity.cs`, `Platforms/iOS/AppDelegate.cs`,
-`App.xaml.cs` (deep-link routing), `Views/Prayer/PrayerDetailPage.xaml` (share button),
-`ViewModels/PrayerRequestDetailViewModel.cs` (`ShareDeepLinkCommand`),
-possibly a new `DeepLinkService`
+`Services/ILocalNotificationCenter.cs` (new), `Services/LocalNotificationCenterWrapper.cs` (new),
+`Services/NotificationService.cs`, `MauiProgram.cs`,
+`PrayerApp.Tests/Services/NotificationServiceTests.cs` (new)
 
-**Decisions needed before building:**
-- URI scheme name (e.g. `prayercards://`)
-- Should the link pre-fill and prompt user to save, or auto-save silently?
-- Card share vs. request share vs. both?
+---
+
+### TD-8 Refactor ViewModels to constructor injection
+
+All ViewModels resolve services via `IPlatformApplication.Current!.Services.GetRequiredService<>()` inside the default constructor. This couples them to the MAUI runtime — they cannot be instantiated in a test context.
+
+**Fix:** Add constructor overloads (or replace the default constructor) that accept injected services. Register ViewModels with DI in `MauiProgram.cs` and update XAML pages to resolve them from the container rather than using `<viewModels:XViewModel />` in XAML.
+
+**Affects all ViewModels:** `PrayerRequestDetailViewModel`, `PrayerCardViewModel`, `HomeViewModel`, `PrayerTimeViewModel`, `TagDetailViewModel`, `SettingsViewModel`
+
+**Files likely involved:**
+`MauiProgram.cs`, all ViewModel `.cs` files, all page `.xaml` and `.xaml.cs` files
+
+**Unlocks:** Full ViewModel unit test coverage including notification scheduling hooks, mark-answered flow, onboarding state transitions
+
+---
+
+### F-10 Deep-link share
+
+> **Full implementation plan:** [`docs/plans/F10-deep-link-share.md`](docs/plans/F10-deep-link-share.md)
+> **Deferred until app is live in the App Store / Play Store** — the `prayercards://` URI scheme must be registered and live before links work for recipients.
+
+Both cards and individual requests are shareable. Share sheet sends a `prayercards://` deep link alongside a plain-text fallback (for recipients without the app).
+
+**Recipient behavior:**
+- Shared card → auto-saved silently as a new card with all active requests
+- Shared request → auto-saved into a "Shared with me" system card (top of list, cannot be deleted, hideable in Settings)
+
+**Sub-features (all designed, details in plan doc):**
+1. `IDeepLinkService` / `DeepLinkService` — build URIs and handle incoming links
+2. `prayercards://` URI scheme registration (Android intent filter + iOS CFBundleURLTypes)
+3. Platform handlers: `MainActivity.OnNewIntent` + `AppDelegate.OpenUrl`
+4. "Shared with me" system card (`PrayerCard.IsSystem` column + `GetOrCreateSystemCardAsync`)
+5. Share button on card edit page + swipe action on card list
+6. Move-to-card action on prayer request edit page
+7. Settings toggle to hide "Shared with me" card
 
 ---
 
@@ -115,10 +142,22 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | BUG-6 | ObservableCollection crash on Add Card (API 36) | — | Reentrancy guard `_isSorting` flag in ApplySorting |
 | BUG-7 | Tag color picker clips last swatch (closed test — Tony) | 5f36cd5 | HorizontalScrollView added around swatch row |
 | BUG-8 | Backup fails immediately on tap (closed test — Todd) | 5f36cd5 | `ExecuteAsync` → `ExecuteScalarAsync<int>` for WAL checkpoint pragma |
+| BUG-9 | Notification permission prompt only fires on first Settings visit | d125486 | `EnsureNotificationPermissionRequested()` called on CanNotify toggle in both ViewModels |
+| BUG-10 | Settings "Go" button text clipped on some devices | d125486 | Layout reworked to `Auto` label column |
+| BUG-11 | Keyboard covers prayer request entry buttons | d125486 | `android:windowSoftInputMode="adjustResize"` in AndroidManifest |
+| BUG-12 | iOS orientation lock broken — Prayer Time doesn't go landscape | — | Replaced broken `UIDevice.SetValueForKey` with `UIWindowScene.RequestGeometryUpdate` + `AppDelegate.GetSupportedInterfaceOrientations` |
+| BUG-13 | Prayer Time by tag shows wrong prayer count | — | Filter compared card IDs against prayer IDs; fixed to use `p.PrayerCardId` |
+| BUG-14 | "All done" re-enters Prayer Time / requires second tap | — | Reset `HasCompleted = false` at start of `LoadEntriesAsync`; BUG-13 fix also eliminates empty-set trigger |
+| BUG-15 | Card delete leaves prayers orphaned; no delete in view mode | — | Cascade delete in `PrayerCardViewModel.DeleteAsync`; added Delete button to prayer view mode |
+| BUG-16 | Switch thumb insufficient contrast in dark mode | — | Off-state thumb `Dark` value raised from `Gray500` to `Gray200` |
+| F-11 | iCloud / Google Drive backup | — | BackupService with Share.RequestAsync export + FilePicker import; already on dev |
+| INV-1 | Audit: notifications cancelled on mark-answered? | — | Scheduling was unimplemented; added `ScheduleAsync`/`CancelAsync` to `INotificationService`; hooked into SaveAsync and MarkAnsweredAsync |
+| INV-2 | Audit: add/edit prayer card shows reminder UI? | — | Confirmed leftover; removed Reminders toggle + Frequency picker from PrayerCardPage and PrayerCardViewModel |
+| INV-3 | Portrait lock everywhere except Prayer Time | — | Added `LockPortrait()` to `IOrientationService`; PrayerTimePage restores portrait on exit; Android `[Activity]` + iOS startup lock |
 | UX-3 | Card list — dividers between rows | #10 | BoxView DividerLine in BindableLayout |
 | — | Dark mode contrast audit | — | 7 files fixed; version bumped to 1.0.1 |
 | — | App renamed to "Prayer Cards" | — | ApplicationTitle + ApplicationId updated |
 
 ---
 
-*Last updated: 2026-03-16*
+*Last updated: 2026-03-16 (session 4 — BUG-12 through BUG-16)*
