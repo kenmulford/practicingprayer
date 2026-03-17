@@ -147,7 +147,7 @@
                                         <VisualState x:Name="On">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"
-                                                        Value="{StaticResource Primary}" />
+                                                        Value="{StaticResource White}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="Off">
@@ -175,7 +175,7 @@
                                         <VisualState x:Name="On">
                                             <VisualState.Setters>
                                                 <Setter Property="ThumbColor"
-                                                        Value="{StaticResource Primary}" />
+                                                        Value="{StaticResource White}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="Off">
