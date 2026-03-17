@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: BUG-12/13/14/15/16 — iOS orientation lock, tag prayer count, all-done re-entry, cascade delete + prayer delete button, switch dark-mode contrast
-**Next up**: F-10 deep-link share (deferred until app store — see `docs/plans/F10-deep-link-share.md`)
+**Last completed**: Session 5 — App renamed to "Practicing Prayer", iOS TestFlight build 1.0.4 (build 7) submitted, BUG-17/18 + F-12/13 logged from tester feedback
+**Next up**: BUG-17 (prayer request title pre-population) or BUG-18 (Prayer Time timer end-state)
 
 ---
 
@@ -25,9 +25,14 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 2 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
-| 3 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
+| 1 | BUG-17 | Prayer request title pre-populated on new form | Should start blank; currently pre-filled (likely with card name). Logged from Liz (Round 2) |
+| 2 | BUG-18 | Prayer Time timer (30s) visible on "all done" end state | Timer UI should be hidden when session completes. Needs full visual state audit: hidden → counting → done |
+| 3 | BUG-19 | iOS Info.plist missing `NSLocationWhenInUseUsageDescription` + `NSLocationAlwaysAndWhenInUseUsageDescription` | Apple submission error 90683 — SDK references location APIs; purpose strings required even if app doesn't use location |
+| 4 | F-12 | Prayer list page UX overhaul | Page purpose unclear to users. Add: live-filter search bar, tag filter (carry forward BUG-13 fix), active/completed/all 3-way toggle, empty-state explanation. Logged from Liz (Round 2) |
+| 5 | F-13 | iOS native field styling audit | Entry/Editor custom styles feel un-iOS. Evaluate platform-conditional styling via `OnPlatform` to let iOS render fields natively while keeping Android customizations. Logged from Ken (Round 2) |
+| 6 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 7 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
+| 8 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
 
 ---
 
@@ -157,7 +162,9 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | UX-3 | Card list — dividers between rows | #10 | BoxView DividerLine in BindableLayout |
 | — | Dark mode contrast audit | — | 7 files fixed; version bumped to 1.0.1 |
 | — | App renamed to "Prayer Cards" | — | ApplicationTitle + ApplicationId updated |
+| — | App renamed to "Practicing Prayer" | — | ApplicationTitle, BackupService filename, NotificationService title, AppShell, Info.plist, website, onboarding popup all updated |
+| — | iOS TestFlight — build 1.0.4 (build 7) | — | Provisioning profile "Practicing Prayer" (App Store Distribution), Entitlements.plist added, xcode-select fixed, submitted via Transporter |
 
 ---
 
-*Last updated: 2026-03-16 (session 4 — BUG-12 through BUG-16)*
+*Last updated: 2026-03-17 (session 5 — app rename, iOS TestFlight, BUG-17/18/19, F-12/13 logged)*
