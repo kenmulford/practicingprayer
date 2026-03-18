@@ -172,7 +172,8 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | TD-9 | Dark mode color audit | — | Scanned all XAML files. 2 confirmed contrast failures (Primary text on dark bg ≈ 2.85–3.18:1), 1 borderline (SuccessGreen 4.08:1). Most hits intentionally fixed colors. Fixes tracked as TD-11. Full notes at `docs/research/TD-9-dark-mode-color-audit.md`. |
 | TD-7 | Extract `ILocalNotificationCenter` | — | Created `ILocalNotificationCenter` + `NotifyRepeat` enum; `LocalNotificationCenterWrapper` delegates to Plugin static. `NotificationService` now injects both — zero MAUI/Plugin dependencies in the class itself. `Settings.AllowNotifications` lambda supplied in `MauiProgram.cs`. 11 new tests; 66/66 passing. |
 | TD-11 | Dark-mode contrast fixes (from TD-9 audit) | — | `PrayerCardsPage.xaml:151` and `Settings.xaml:80`: `Primary` → `AppThemeBinding Light=Primary, Dark=PrimaryDark`. `PrayerDetailPage.xaml:39`: `SuccessGreen` → `AppThemeBinding Light=SuccessGreen, Dark=SuccessGreenDark`. Added `SuccessGreenDark #66BB6A` to Colors.xaml. |
+| UX-4 | Delete confirmation dialogs | — | `PrayerCardViewModel.DeleteAsync`: confirms with prayer count ("Delete 'X'? This will also delete N prayer requests."). `PrayerRequestDetailViewModel.DeleteAsync`: confirms with title. Tags already had confirmation. Covers all entry points (swipe + detail page buttons). |
 
 ---
 
-*Last updated: 2026-03-17 (session 10 — TD-9/TD-11/TD-7 done; 66/66 tests; pausing before TD-8)*
+*Last updated: 2026-03-17 (session 10 — TD-9/TD-11/TD-7/UX-4 done; 66/66 tests; pausing before TD-8)*
