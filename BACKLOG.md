@@ -175,4 +175,4 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 
 ---
 
-*Last updated: 2026-03-17 (session 10 — TD-9 audit done → TD-11; TD-7 done; 66/66 tests; pausing before TD-8)*
+*Last updated: 2026-03-17 (session 10 — TD-9/TD-11/TD-7 done; 66/66 tests; pausing before TD-8)*
