@@ -29,6 +29,60 @@ public class TagService : ITagService
         return _cache;
     }
 
+    // ── Request-level tag methods (current) ────────────────────────────────
+
+    public async Task<IReadOnlyList<PrayerTag>> GetTagsByRequestIdAsync(int prayerRequestId)
+    {
+        var requestTags = await _dbService.GetByRequestIdAsync(prayerRequestId);
+        var tagIds = requestTags.Select(rt => rt.PrayerTagId).ToHashSet();
+        var allTags = await GetTagsAsync();
+
+        var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
+        return new ReadOnlyCollection<PrayerTag>(tags);
+    }
+
+    public async Task<int> AddTagToRequestAsync(int prayerRequestId, int prayerTagId)
+    {
+        var requestTag = new PrayerCardTag
+        {
+            PrayerRequestId = prayerRequestId,
+            PrayerTagId = prayerTagId
+        };
+
+        var result = await _dbService.InsertAsync(requestTag);
+        InvalidateCache();
+        return result;
+    }
+
+    public async Task<int> RemoveTagFromRequestAsync(int prayerRequestId, int prayerTagId)
+    {
+        var requestTags = await _dbService.GetByRequestIdAsync(prayerRequestId);
+        var toDelete = requestTags.FirstOrDefault(rt => rt.PrayerTagId == prayerTagId);
+
+        if (toDelete is null)
+            return 0;
+
+        var result = await _dbService.DeleteAsync(toDelete);
+        InvalidateCache();
+        return result;
+    }
+
+    public async Task<IReadOnlyList<int>> GetRequestIdsByTagIdsAsync(IEnumerable<int> tagIds)
+    {
+        var requestIds = new HashSet<int>();
+        foreach (var tagId in tagIds)
+        {
+            var rows = await _dbService.GetByTagIdAsync(tagId);
+            foreach (var r in rows)
+                if (r.PrayerRequestId > 0)
+                    requestIds.Add(r.PrayerRequestId);
+        }
+        return requestIds.ToList().AsReadOnly();
+    }
+
+    // ── Deprecated card-level methods — kept for transition ────────────────
+
+    [Obsolete("Tags are now per-request. Use GetTagsByRequestIdAsync instead.")]
     public async Task<IReadOnlyList<PrayerTag>> GetTagsByCardIdAsync(int prayerCardId)
     {
         var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
@@ -39,6 +93,7 @@ public class TagService : ITagService
         return new ReadOnlyCollection<PrayerTag>(tags);
     }
 
+    [Obsolete("Tags are now per-request. Use AddTagToRequestAsync instead.")]
     public async Task<int> AddTagToCardAsync(int prayerCardId, int prayerTagId)
     {
         var cardTag = new PrayerCardTag
@@ -52,6 +107,7 @@ public class TagService : ITagService
         return result;
     }
 
+    [Obsolete("Tags are now per-request. Use RemoveTagFromRequestAsync instead.")]
     public async Task<int> RemoveTagFromCardAsync(int prayerCardId, int prayerTagId)
     {
         var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
@@ -84,17 +140,9 @@ public class TagService : ITagService
         InvalidateCache();
     }
 
+    [Obsolete("Tags are now per-request. Use GetRequestIdsByTagIdsAsync instead.")]
     public async Task<IReadOnlyList<int>> GetPrayerIdsByTagIdsAsync(IEnumerable<int> tagIds)
-    {
-        var cardIds = new HashSet<int>();
-        foreach (var tagId in tagIds)
-        {
-            var cardTags = await _dbService.GetByTagIdAsync(tagId);
-            foreach (var ct in cardTags)
-                cardIds.Add(ct.PrayerCardId);
-        }
-        return cardIds.ToList().AsReadOnly();
-    }
+        => await GetRequestIdsByTagIdsAsync(tagIds);
 
     private void InvalidateCache()
     {

@@ -19,7 +19,7 @@ namespace PrayerApp.ViewModels
     public class PrayerTagSelectionViewModel : ObservableObject
     {
         private readonly ITagService _tagService;
-        private int _prayerCardId;
+        private int _prayerRequestId;
         private ObservableCollection<PrayerTagItemViewModel> _allTags;
         private ObservableCollection<PrayerTagItemViewModel> _selectedTags;
 
@@ -46,9 +46,9 @@ namespace PrayerApp.ViewModels
             ClearSelectionCommand = new RelayCommand(ClearSelection);
         }
 
-        public async Task InitializeForCardAsync(int prayerCardId)
+        public async Task InitializeForRequestAsync(int prayerRequestId)
         {
-            _prayerCardId = prayerCardId;
+            _prayerRequestId = prayerRequestId;
             await LoadTagsAsync();
             await LoadSelectedTagsAsync();
         }
@@ -76,7 +76,7 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                var selectedTags = await _tagService.GetTagsByCardIdAsync(_prayerCardId);
+                var selectedTags = await _tagService.GetTagsByRequestIdAsync(_prayerRequestId);
                 var selectedIds = selectedTags.Select(t => t.Id).ToHashSet();
 
                 // Update AllTags to mark selected ones
@@ -106,11 +106,11 @@ namespace PrayerApp.ViewModels
             {
                 if (isSelected)
                 {
-                    await _tagService.AddTagToCardAsync(_prayerCardId, tagId);
+                    await _tagService.AddTagToRequestAsync(_prayerRequestId, tagId);
                 }
                 else
                 {
-                    await _tagService.RemoveTagFromCardAsync(_prayerCardId, tagId);
+                    await _tagService.RemoveTagFromRequestAsync(_prayerRequestId, tagId);
                 }
             }
             catch (Exception ex)

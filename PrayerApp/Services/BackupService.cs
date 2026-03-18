@@ -17,7 +17,7 @@ public class BackupService : IBackupService
     public async Task<bool> ExportAsync()
     {
         var today = DateTime.Now.ToString("yyyy-MM-dd");
-        var fileName = $"prayer_cards_{today}.pcrd";
+        var fileName = $"practicing_prayer_{today}.pcrd";
         var tempZipPath = Path.Combine(FileSystem.CacheDirectory, fileName);
 
         try

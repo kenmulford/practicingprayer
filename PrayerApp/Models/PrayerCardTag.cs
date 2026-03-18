@@ -19,6 +19,14 @@ namespace PrayerApp.Models
         [Column("PrayerTagId"), Indexed]
         public int PrayerTagId { get; set; }
 
+        /// <summary>
+        /// The prayer REQUEST (Prayer.Id) this tag is assigned to.
+        /// PrayerCardId is deprecated — tags now live at the request level.
+        /// Rows with PrayerRequestId == 0 are legacy data migrated from the card-level schema.
+        /// </summary>
+        [Column("PrayerRequestId"), Indexed]
+        public int PrayerRequestId { get; set; }
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

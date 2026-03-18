@@ -13,8 +13,9 @@
 
     <Grid RowDefinitions="Auto, *, Auto, Auto" Padding="20,12,20,8">
 
-        <!-- Row 0: Progress | [⏸/▶] [interval/countdown] -->
-        <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
+        <!-- Row 0: Progress | [⏸/▶] [interval/countdown] — hidden when session completes -->
+        <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8"
+              IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
             <Label Text="{Binding ProgressDisplay}"
                    HorizontalOptions="Center"
                    VerticalOptions="Center"

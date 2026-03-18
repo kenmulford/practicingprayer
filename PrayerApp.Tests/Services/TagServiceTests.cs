@@ -48,8 +48,9 @@ public class TagServiceTests
         await _db.Received(1).GetAllAsync<PrayerTag>();
     }
 
-    // ── GetTagsByCardIdAsync ──────────────────────────────────────────────────
+    // ── GetTagsByCardIdAsync (deprecated stubs) ───────────────────────────────
 
+#pragma warning disable CS0618 // intentionally testing deprecated card-level methods
     [Fact]
     public async Task GetTagsByCardIdAsync_ReturnsTagsForSpecifiedCard()
     {
@@ -85,7 +86,7 @@ public class TagServiceTests
         Assert.Empty(result);
     }
 
-    // ── AddTagToCardAsync ─────────────────────────────────────────────────────
+    // ── AddTagToCardAsync (deprecated stubs) ─────────────────────────────────
 
     [Fact]
     public async Task AddTagToCardAsync_InsertsJunctionRecord()
@@ -112,7 +113,7 @@ public class TagServiceTests
         await _db.Received(2).GetAllAsync<PrayerTag>();
     }
 
-    // ── RemoveTagFromCardAsync ────────────────────────────────────────────────
+    // ── RemoveTagFromCardAsync (deprecated stubs) ─────────────────────────────
 
     [Fact]
     public async Task RemoveTagFromCardAsync_DeletesJunctionRecord()
@@ -139,6 +140,7 @@ public class TagServiceTests
         Assert.Equal(0, result);
         await _db.DidNotReceive().DeleteAsync(Arg.Any<PrayerCardTag>());
     }
+#pragma warning restore CS0618
 
     // ── SaveTagAsync / DeleteTagAsync ─────────────────────────────────────────
 
@@ -196,25 +198,162 @@ public class TagServiceTests
         await _db.Received(2).GetAllAsync<PrayerTag>();
     }
 
-    // ── GetPrayerIdsByTagIdsAsync ─────────────────────────────────────────────
+    // ── GetTagsByRequestIdAsync ───────────────────────────────────────────────
 
     [Fact]
-    public async Task GetPrayerIdsByTagIdsAsync_ReturnsUnionOfCardIds()
+    public async Task GetTagsByRequestIdAsync_ReturnsTagsForSpecifiedRequest()
     {
-        // Tag 1 is on cards 10 and 20; tag 2 is on card 10 only
+        var allTags = new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Family" },
+            new() { Id = 2, Name = "Work" }
+        };
+        var requestTags = new List<PrayerCardTag>
+        {
+            new() { PrayerRequestId = 5, PrayerTagId = 1 }
+        };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(allTags));
+        _db.GetByRequestIdAsync(5).Returns(Task.FromResult(requestTags));
+
+        var result = await _service.GetTagsByRequestIdAsync(5);
+
+        Assert.Single(result);
+        Assert.Equal("Family", result[0].Name);
+    }
+
+    [Fact]
+    public async Task GetTagsByRequestIdAsync_RequestWithNoTags_ReturnsEmpty()
+    {
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Work" }
+        }));
+        _db.GetByRequestIdAsync(99).Returns(Task.FromResult(new List<PrayerCardTag>()));
+
+        var result = await _service.GetTagsByRequestIdAsync(99);
+
+        Assert.Empty(result);
+    }
+
+    // ── AddTagToRequestAsync ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AddTagToRequestAsync_InsertsJunctionRecord()
+    {
+        _db.InsertAsync(Arg.Any<PrayerCardTag>()).Returns(Task.FromResult(1));
+
+        await _service.AddTagToRequestAsync(prayerRequestId: 3, prayerTagId: 7);
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCardTag>(
+            ct => ct.PrayerRequestId == 3 && ct.PrayerTagId == 7));
+    }
+
+    [Fact]
+    public async Task AddTagToRequestAsync_InvalidatesCache()
+    {
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>()));
+        await _service.GetTagsAsync();
+
+        _db.InsertAsync(Arg.Any<PrayerCardTag>()).Returns(Task.FromResult(1));
+        await _service.AddTagToRequestAsync(1, 2);
+
+        await _service.GetTagsAsync();
+        await _db.Received(2).GetAllAsync<PrayerTag>();
+    }
+
+    // ── RemoveTagFromRequestAsync ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task RemoveTagFromRequestAsync_DeletesJunctionRecord()
+    {
+        var requestTags = new List<PrayerCardTag>
+        {
+            new() { Id = 10, PrayerRequestId = 3, PrayerTagId = 7 }
+        };
+        _db.GetByRequestIdAsync(3).Returns(Task.FromResult(requestTags));
+        _db.DeleteAsync(Arg.Any<PrayerCardTag>()).Returns(Task.FromResult(1));
+
+        await _service.RemoveTagFromRequestAsync(prayerRequestId: 3, prayerTagId: 7);
+
+        await _db.Received(1).DeleteAsync(Arg.Is<PrayerCardTag>(ct => ct.Id == 10));
+    }
+
+    [Fact]
+    public async Task RemoveTagFromRequestAsync_TagNotPresent_DoesNotDelete()
+    {
+        _db.GetByRequestIdAsync(3).Returns(Task.FromResult(new List<PrayerCardTag>()));
+
+        var result = await _service.RemoveTagFromRequestAsync(prayerRequestId: 3, prayerTagId: 99);
+
+        Assert.Equal(0, result);
+        await _db.DidNotReceive().DeleteAsync(Arg.Any<PrayerCardTag>());
+    }
+
+    // ── GetRequestIdsByTagIdsAsync ────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetRequestIdsByTagIdsAsync_ReturnsUnionOfRequestIds()
+    {
+        // Tag 1 is on requests 10 and 20; tag 2 is on request 10 only
         _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>
         {
-            new() { PrayerCardId = 10, PrayerTagId = 1 },
-            new() { PrayerCardId = 20, PrayerTagId = 1 }
+            new() { PrayerRequestId = 10, PrayerTagId = 1 },
+            new() { PrayerRequestId = 20, PrayerTagId = 1 }
         }));
         _db.GetByTagIdAsync(2).Returns(Task.FromResult(new List<PrayerCardTag>
         {
-            new() { PrayerCardId = 10, PrayerTagId = 2 }
+            new() { PrayerRequestId = 10, PrayerTagId = 2 }
         }));
 
-        var result = await _service.GetPrayerIdsByTagIdsAsync(new[] { 1, 2 });
+        var result = await _service.GetRequestIdsByTagIdsAsync(new[] { 1, 2 });
 
-        // Union: 10 and 20 (no duplicates)
+        Assert.Equal(2, result.Count);
+        Assert.Contains(10, result);
+        Assert.Contains(20, result);
+    }
+
+    [Fact]
+    public async Task GetRequestIdsByTagIdsAsync_NoMatchingTags_ReturnsEmpty()
+    {
+        _db.GetByTagIdAsync(Arg.Any<int>()).Returns(Task.FromResult(new List<PrayerCardTag>()));
+
+        var result = await _service.GetRequestIdsByTagIdsAsync(new[] { 99 });
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetRequestIdsByTagIdsAsync_SkipsLegacyCardLevelRows()
+    {
+        // Legacy rows have PrayerRequestId == 0 and should be excluded
+        _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>
+        {
+            new() { PrayerCardId = 5, PrayerRequestId = 0, PrayerTagId = 1 }, // legacy
+            new() { PrayerRequestId = 42, PrayerTagId = 1 }                  // current
+        }));
+
+        var result = await _service.GetRequestIdsByTagIdsAsync(new[] { 1 });
+
+        Assert.Single(result);
+        Assert.Contains(42, result);
+    }
+
+    // ── GetPrayerIdsByTagIdsAsync (deprecated stub) ───────────────────────────
+
+    [Fact]
+    public async Task GetPrayerIdsByTagIdsAsync_DelegatesToGetRequestIdsByTagIdsAsync()
+    {
+        // Verify the deprecated stub still returns request IDs (same as new method)
+        _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>
+        {
+            new() { PrayerRequestId = 10, PrayerTagId = 1 },
+            new() { PrayerRequestId = 20, PrayerTagId = 1 }
+        }));
+
+#pragma warning disable CS0618 // intentionally testing deprecated method
+        var result = await _service.GetPrayerIdsByTagIdsAsync(new[] { 1 });
+#pragma warning restore CS0618
+
         Assert.Equal(2, result.Count);
         Assert.Contains(10, result);
         Assert.Contains(20, result);
@@ -225,7 +364,9 @@ public class TagServiceTests
     {
         _db.GetByTagIdAsync(Arg.Any<int>()).Returns(Task.FromResult(new List<PrayerCardTag>()));
 
+#pragma warning disable CS0618
         var result = await _service.GetPrayerIdsByTagIdsAsync(new[] { 99 });
+#pragma warning restore CS0618
 
         Assert.Empty(result);
     }

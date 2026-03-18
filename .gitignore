@@ -366,3 +366,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /.claude
 *.keystore
+.DS_Store

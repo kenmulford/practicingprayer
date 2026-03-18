@@ -19,8 +19,8 @@
 		<ApplicationId>com.multithreadedllc.prayercards</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
-		<ApplicationVersion>5</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.4</ApplicationDisplayVersion>
+		<ApplicationVersion>7</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -30,11 +30,16 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-ios|AnyCPU'">
 	  <EnableSGenConc>False</EnableSGenConc>
 	  <AdditionalArgs>ValidateXcodeVersion=false</AdditionalArgs>
+	  <CodesignKey>Apple Development: Created via API (MXJG78A3AF)</CodesignKey>
+	  <CodesignProvision>VS: com.multithreadedllc.prayercards Development</CodesignProvision>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-ios|AnyCPU'">
 	  <EnableSGenConc>False</EnableSGenConc>
 	  <AdditionalArgs>ValidateXcodeVersion=false</AdditionalArgs>
+	  <CodesignKey>Apple Distribution: Kenneth Mulford (6GV6UL86RM)</CodesignKey>
+	  <CodesignProvision>Practicing Prayer</CodesignProvision>
+	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
@@ -52,10 +57,11 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
-	  <CodesignKey>Apple Development: Created via API (MXJG78A3AF)</CodesignKey>
-	  <CodesignProvision>VS: com.multithreadedllc.prayercards Development</CodesignProvision>
 	  <!-- Xcode 26.2 and 26.3 have identical SDKs; skip the version check until workloads catch up -->
 	  <ValidateXcodeVersion>false</ValidateXcodeVersion>
+	  <CodesignKey>iPhone Distribution</CodesignKey>
+	  <CodesignProvision></CodesignProvision>
+	  <ProvisioningType>manual</ProvisioningType>
 	</PropertyGroup>
 
 	<ItemGroup>

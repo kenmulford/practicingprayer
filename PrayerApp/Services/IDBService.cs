@@ -17,7 +17,8 @@ namespace PrayerApp.Services
         Task<int> DropTableAsync<T>() where T : new();
 
         // PrayerCardTag specific queries
-        Task<List<PrayerApp.Models.PrayerCardTag>> GetByCardIdAsync(int prayerCardId);
+        Task<List<PrayerApp.Models.PrayerCardTag>> GetByCardIdAsync(int prayerCardId); // deprecated — card-level tags
+        Task<List<PrayerApp.Models.PrayerCardTag>> GetByRequestIdAsync(int prayerRequestId);
         Task<List<PrayerApp.Models.PrayerCardTag>> GetByTagIdAsync(int prayerTagId);
         Task<int> DeleteByCardIdAsync(int prayerCardId);
         Task<int> DeleteByTagIdAsync(int prayerTagId);

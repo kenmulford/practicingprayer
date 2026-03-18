@@ -27,7 +27,7 @@
                 <Border Style="{StaticResource PrayerCardBorder}" Padding="16,14">
                     <Label Text="{Binding OverdueHeadline}"
                            FontSize="15"
-                           TextColor="{StaticResource Tertiary}"
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
                            LineHeight="1.4" />
                 </Border>
 
@@ -56,7 +56,7 @@
                                                Text="{Binding PrayerTitle}"
                                                FontSize="15"
                                                FontAttributes="Bold"
-                                               TextColor="{StaticResource Tertiary}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
                                         <BoxView Grid.Row="1"
                                                  Style="{StaticResource DividerLine}"
                                                  VerticalOptions="End" />
