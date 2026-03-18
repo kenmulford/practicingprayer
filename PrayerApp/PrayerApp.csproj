@@ -20,7 +20,7 @@
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0.4</ApplicationDisplayVersion>
-		<ApplicationVersion>8</ApplicationVersion>
+		<ApplicationVersion>10</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -132,6 +132,11 @@
 		<PackageReference Include="Plugin.LocalNotification" Version="13.0.0" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
+	</ItemGroup>
+
+	<!-- Linker preservation rules — prevents iOS AOT "SQLite-net out of date" crash -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+	  <TrimmerRootDescriptor Include="Platforms\iOS\LinkerConfig.xml" />
 	</ItemGroup>
 
 	<ItemGroup>
