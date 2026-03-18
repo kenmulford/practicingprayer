@@ -51,7 +51,7 @@ namespace PrayerApp
             builder.Services.AddSingleton<INotificationService>(sp =>
                 new NotificationService(
                     sp.GetRequiredService<ILocalNotificationCenter>(),
-                    () => Settings.AllowNotifications));
+                    () => PrayerApp.Services.Settings.AllowNotifications));
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
             // Register backup service
