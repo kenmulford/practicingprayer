@@ -14,7 +14,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 7 — F-12 (Prayer list page UX overhaul); unit test CS0618 pragma fixes
+**Last completed**: Session 8 — BUG-22 (iOS AOT SQLite-net crash); LinkerConfig.xml added; IL2007 warning fixed; TD-10 logged
 **Next up**: F-13 (iOS native field styling)
 
 ---
@@ -30,6 +30,7 @@ Items are listed in work order. Start at the top, work down.
 | 4 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
 | 5 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
 | 6 | TD-9 | Dark mode color audit — static ResourceColor usages without AppThemeBinding | Low priority. Scan all XAML files for `{StaticResource ...}` on TextColor/BackgroundColor/Stroke that should be `AppThemeBinding`. Produce a list for a follow-up contrast fix pass. |
+| 8 | TD-10 | Fix XC0022/XC0023 compiled binding warnings in PrayerDetailPage.xaml and QuickAddPage.xaml | Add `x:DataType` to untyped binding scopes (lines 133, 247, 248, 250 in PrayerDetailPage.xaml; line 28 in QuickAddPage.xaml). Low risk, performance improvement. |
 | 7 | INV-4 | In-app update notification — surface new version availability to users | Investigate options for detecting a newer app version and showing a non-blocking in-app nudge to update from the App Store / Play Store. Especially useful during active beta. Research: `AppInfo.Version` vs. store-fetched latest, `Plugin.StoreReview`, platform-specific In-App Update API (Android Play Core), iOS SKStoreProductViewController, or a lightweight remote-config approach (e.g. version JSON on GitHub Pages). No lockout — heads-up banner only. |
 
 ---
@@ -168,7 +169,8 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | BUG-18 | Prayer Time timer visible on "all done" end state | — | Added `IsVisible` InverseBool binding to Row 0 header Grid in PrayerTimePage.xaml |
 | BUG-21 | Tag data model — tags stored at card level instead of request level | — | Added `PrayerRequestId` column to `PrayerCardTag`; new request-level service methods; data migration on startup; `PrayerRequestDetailViewModel` and `PrayerTimeViewModel` updated |
 | F-12 | Prayer list page UX overhaul | — | Live search (title + card name + tag name), 3-way status toggle (Active/Answered/All), tag chip filter; `PrayerListViewModel` full rewrite; 55 tests passing |
+| BUG-22 | iOS AOT crash on launch (build 8) — SQLite-net module out of date | — | Root cause: iOS linker trimming SQLite-net internals, making AOT module stale after Mac workload update. Fix: `Platforms/iOS/LinkerConfig.xml` with `preserve="all"` for SQLite-net + SQLitePCLRaw; wired via `TrimmerRootDescriptor` in csproj. Clean rebuild (rm -rf bin/obj) required. Shipped as build 10. |
 
 ---
 
-*Last updated: 2026-03-17 (session 7 — F-12 implemented; CS0618 pragma fixes in test suite)*
+*Last updated: 2026-03-17 (session 8 — BUG-22 fixed; LinkerConfig.xml; IL2007 resolved; TD-10 logged)*
