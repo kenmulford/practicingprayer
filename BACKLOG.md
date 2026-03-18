@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 6 — BUG-17, BUG-18, BUG-19, BUG-20, BUG-21 (tag model migration to request-level); F-12 and F-13 plans written
-**Next up**: F-12 (Prayer list overhaul) or F-13 (iOS field styling)
+**Last completed**: Session 7 — F-12 (Prayer list page UX overhaul); unit test CS0618 pragma fixes
+**Next up**: F-13 (iOS native field styling)
 
 ---
 
@@ -25,8 +25,7 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Notes |
 |---|-----|------|-------|
-| 1 | F-12 | Prayer list page UX overhaul | Full plan at `docs/plans/F12-prayer-list-overhaul.md`. Live search (title + card name), 3-way status toggle, tag chip filter. Logged from Liz (Round 2) |
-| 2 | F-13 | iOS native field styling | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state using app palette. Logged from Ken (Round 2) |
+| 1 | F-13 | iOS native field styling | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state using app palette. Logged from Ken (Round 2) |
 | 3 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
 | 4 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
 | 5 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
@@ -167,7 +166,8 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | BUG-20 | Home screen containers low contrast in dark mode | — | Two `{StaticResource Tertiary}` labels in MainPage.xaml switched to `AppThemeBinding` (Tertiary light / White dark) |
 | BUG-18 | Prayer Time timer visible on "all done" end state | — | Added `IsVisible` InverseBool binding to Row 0 header Grid in PrayerTimePage.xaml |
 | BUG-21 | Tag data model — tags stored at card level instead of request level | — | Added `PrayerRequestId` column to `PrayerCardTag`; new request-level service methods; data migration on startup; `PrayerRequestDetailViewModel` and `PrayerTimeViewModel` updated |
+| F-12 | Prayer list page UX overhaul | — | Live search (title + card name + tag name), 3-way status toggle (Active/Answered/All), tag chip filter; `PrayerListViewModel` full rewrite; 55 tests passing |
 
 ---
 
-*Last updated: 2026-03-17 (session 6 — BUG-17/18/19/20/21 fixed; F-12/F-13 plans written to docs/plans/)*
+*Last updated: 2026-03-17 (session 7 — F-12 implemented; CS0618 pragma fixes in test suite)*
