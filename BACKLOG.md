@@ -14,7 +14,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 8 — BUG-22 (iOS AOT SQLite-net crash); LinkerConfig.xml added; IL2007 warning fixed; TD-10 logged
+**Last completed**: Session 9 — BUG-23 (Gray700 XamlParseException on Prayers tab); build bumped to 11
 **Next up**: F-13 (iOS native field styling)
 
 ---
@@ -170,7 +170,8 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | BUG-21 | Tag data model — tags stored at card level instead of request level | — | Added `PrayerRequestId` column to `PrayerCardTag`; new request-level service methods; data migration on startup; `PrayerRequestDetailViewModel` and `PrayerTimeViewModel` updated |
 | F-12 | Prayer list page UX overhaul | — | Live search (title + card name + tag name), 3-way status toggle (Active/Answered/All), tag chip filter; `PrayerListViewModel` full rewrite; 55 tests passing |
 | BUG-22 | iOS AOT crash on launch (build 8) — SQLite-net module out of date | — | Root cause: iOS linker trimming SQLite-net internals, making AOT module stale after Mac workload update. Fix: `Platforms/iOS/LinkerConfig.xml` with `preserve="all"` for SQLite-net + SQLitePCLRaw; wired via `TrimmerRootDescriptor` in csproj. Clean rebuild (rm -rf bin/obj) required. Shipped as build 10. |
+| BUG-23 | Prayers tab crash — `XamlParseException: StaticResource not found for key Gray700` | — | PrayerListPage.xaml (F-12 work) referenced `Gray700` in 3 toggle-button `AppThemeBinding` Dark values. `Gray700` was never defined in Colors.xaml (palette goes Gray600 → Gray900). Fixed: all 3 replaced with `Gray600` (`#404040`). Build bumped to 11. |
 
 ---
 
-*Last updated: 2026-03-17 (session 8 — BUG-22 fixed; LinkerConfig.xml; IL2007 resolved; TD-10 logged)*
+*Last updated: 2026-03-17 (session 9 — BUG-23 fixed; Gray700→Gray600 in PrayerListPage.xaml; build 11)*
