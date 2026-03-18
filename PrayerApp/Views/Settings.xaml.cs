@@ -4,8 +4,7 @@ namespace PrayerApp.Views;
 
 public partial class Settings : ContentPage
 {
-    // TODO: Replace with the hosted privacy policy URL before publishing
-    private const string PrivacyPolicyUrl = "https://prayercardapp.com/privacy";
+    private const string PrivacyPolicyUrl = "https://practicingprayerapp.com/privacy";
 
     private readonly IBackupService _backupService;
 
