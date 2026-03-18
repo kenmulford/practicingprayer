@@ -246,6 +246,13 @@ namespace PrayerApp.ViewModels
 
         private async Task DeleteAsync()
         {
+            bool confirmed = await Shell.Current.DisplayAlertAsync(
+                "Delete Prayer Request",
+                $"Delete \"{Title}\"?",
+                "Delete", "Cancel");
+
+            if (!confirmed) return;
+
             await _prayerService.DeletePrayerAsync(_prayer);
             if (ReturnToCards)
             {
