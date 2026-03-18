@@ -148,7 +148,7 @@
                                 <Label
                                     Text="+ Add prayer"
                                     FontSize="14"
-                                    TextColor="{StaticResource Primary}"
+                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                     FontAttributes="Italic" />
                             </Grid>
 

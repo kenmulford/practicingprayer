@@ -44,8 +44,14 @@ namespace PrayerApp
             builder.Services.AddSingleton<IPrayerService, PrayerService>();
             // Register prayer interaction service as singleton
             builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
-            // Register notification service as singleton
-            builder.Services.AddSingleton<INotificationService, NotificationService>();
+            // Register local notification center wrapper (wraps Plugin.LocalNotification static)
+            builder.Services.AddSingleton<ILocalNotificationCenter, LocalNotificationCenterWrapper>();
+            // Register notification service — Settings.AllowNotifications supplied here so
+            // NotificationService.cs itself has no MAUI dependency and can be unit-tested.
+            builder.Services.AddSingleton<INotificationService>(sp =>
+                new NotificationService(
+                    sp.GetRequiredService<ILocalNotificationCenter>(),
+                    () => Settings.AllowNotifications));
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
             // Register backup service

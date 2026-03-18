@@ -36,7 +36,7 @@
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
                            FontSize="13"
-                           TextColor="{StaticResource SuccessGreen}"
+                           TextColor="{AppThemeBinding Light={StaticResource SuccessGreen}, Dark={StaticResource SuccessGreenDark}}"
                            FontAttributes="Bold"
                            IsVisible="{Binding IsAnswered}" />
 

@@ -27,11 +27,9 @@ Items are listed in work order. Start at the top, work down.
 |---|-----|------|-------|
 | 1 | F-13 | iOS native field styling | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state using app palette. Logged from Ken (Round 2) |
 | 3 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 4 | TD-7 | Extract `ILocalNotificationCenter` to make `NotificationService` unit-testable | `NotificationService` calls `LocalNotificationCenter.Current` (static). Wrap it behind an injectable interface so tests can mock scheduling without a device |
 | 5 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
-| 6 | TD-9 | Dark mode color audit — static ResourceColor usages without AppThemeBinding | Low priority. Scan all XAML files for `{StaticResource ...}` on TextColor/BackgroundColor/Stroke that should be `AppThemeBinding`. Produce a list for a follow-up contrast fix pass. |
 | 8 | TD-10 | Fix XC0022/XC0023 compiled binding warnings in PrayerDetailPage.xaml and QuickAddPage.xaml | Add `x:DataType` to untyped binding scopes (lines 133, 247, 248, 250 in PrayerDetailPage.xaml; line 28 in QuickAddPage.xaml). Low risk, performance improvement. |
-| 7 | INV-4 | In-app update notification — surface new version availability to users | Investigate options for detecting a newer app version and showing a non-blocking in-app nudge to update from the App Store / Play Store. Especially useful during active beta. Research: `AppInfo.Version` vs. store-fetched latest, `Plugin.StoreReview`, platform-specific In-App Update API (Android Play Core), iOS SKStoreProductViewController, or a lightweight remote-config approach (e.g. version JSON on GitHub Pages). No lockout — heads-up banner only. |
+| 7 | INV-4 | In-app update notification — Android Play Core flexible update flow | **Approach decided: Android-only, Play Core flexible update (no server/JSON).** Full implementation written on branch `feature/inv4-android-update`. Research notes at `docs/research/INV-4-android-update-research.md`. **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin (`Lifecycle.LiveData 2.9.x`); Play Core binding requires `>= 2.10.x`. Resume when MAUI bumps its AndroidX floor or a compatible binding ships. |
 
 ---
 
@@ -171,7 +169,10 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | F-12 | Prayer list page UX overhaul | — | Live search (title + card name + tag name), 3-way status toggle (Active/Answered/All), tag chip filter; `PrayerListViewModel` full rewrite; 55 tests passing |
 | BUG-22 | iOS AOT crash on launch (build 8) — SQLite-net module out of date | — | Root cause: iOS linker trimming SQLite-net internals, making AOT module stale after Mac workload update. Fix: `Platforms/iOS/LinkerConfig.xml` with `preserve="all"` for SQLite-net + SQLitePCLRaw; wired via `TrimmerRootDescriptor` in csproj. Clean rebuild (rm -rf bin/obj) required. Shipped as build 10. |
 | BUG-23 | Prayers tab crash — `XamlParseException: StaticResource not found for key Gray700` | — | PrayerListPage.xaml (F-12 work) referenced `Gray700` in 3 toggle-button `AppThemeBinding` Dark values. `Gray700` was never defined in Colors.xaml (palette goes Gray600 → Gray900). Fixed: all 3 replaced with `Gray600` (`#404040`). Build bumped to 11. |
+| TD-9 | Dark mode color audit | — | Scanned all XAML files. 2 confirmed contrast failures (Primary text on dark bg ≈ 2.85–3.18:1), 1 borderline (SuccessGreen 4.08:1). Most hits intentionally fixed colors. Fixes tracked as TD-11. Full notes at `docs/research/TD-9-dark-mode-color-audit.md`. |
+| TD-7 | Extract `ILocalNotificationCenter` | — | Created `ILocalNotificationCenter` + `NotifyRepeat` enum; `LocalNotificationCenterWrapper` delegates to Plugin static. `NotificationService` now injects both — zero MAUI/Plugin dependencies in the class itself. `Settings.AllowNotifications` lambda supplied in `MauiProgram.cs`. 11 new tests; 66/66 passing. |
+| TD-11 | Dark-mode contrast fixes (from TD-9 audit) | — | `PrayerCardsPage.xaml:151` and `Settings.xaml:80`: `Primary` → `AppThemeBinding Light=Primary, Dark=PrimaryDark`. `PrayerDetailPage.xaml:39`: `SuccessGreen` → `AppThemeBinding Light=SuccessGreen, Dark=SuccessGreenDark`. Added `SuccessGreenDark #66BB6A` to Colors.xaml. |
 
 ---
 
-*Last updated: 2026-03-17 (session 9 — BUG-23 fixed; Gray700→Gray600 in PrayerListPage.xaml; build 11)*
+*Last updated: 2026-03-17 (session 10 — TD-9 audit done → TD-11; TD-7 done; 66/66 tests; pausing before TD-8)*
