@@ -26,7 +26,7 @@
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
-            <Label Text="May God bless your prayer life. 🙏"
+            <Label Text="Enjoy the app! 🙏"
                    FontSize="15"
                    TextColor="{StaticResource Gray500}"
                    HorizontalOptions="Center"
