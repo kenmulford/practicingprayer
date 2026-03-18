@@ -48,8 +48,9 @@ public class TagServiceTests
         await _db.Received(1).GetAllAsync<PrayerTag>();
     }
 
-    // ── GetTagsByCardIdAsync ──────────────────────────────────────────────────
+    // ── GetTagsByCardIdAsync (deprecated stubs) ───────────────────────────────
 
+#pragma warning disable CS0618 // intentionally testing deprecated card-level methods
     [Fact]
     public async Task GetTagsByCardIdAsync_ReturnsTagsForSpecifiedCard()
     {
@@ -85,7 +86,7 @@ public class TagServiceTests
         Assert.Empty(result);
     }
 
-    // ── AddTagToCardAsync ─────────────────────────────────────────────────────
+    // ── AddTagToCardAsync (deprecated stubs) ─────────────────────────────────
 
     [Fact]
     public async Task AddTagToCardAsync_InsertsJunctionRecord()
@@ -112,7 +113,7 @@ public class TagServiceTests
         await _db.Received(2).GetAllAsync<PrayerTag>();
     }
 
-    // ── RemoveTagFromCardAsync ────────────────────────────────────────────────
+    // ── RemoveTagFromCardAsync (deprecated stubs) ─────────────────────────────
 
     [Fact]
     public async Task RemoveTagFromCardAsync_DeletesJunctionRecord()
@@ -139,6 +140,7 @@ public class TagServiceTests
         Assert.Equal(0, result);
         await _db.DidNotReceive().DeleteAsync(Arg.Any<PrayerCardTag>());
     }
+#pragma warning restore CS0618
 
     // ── SaveTagAsync / DeleteTagAsync ─────────────────────────────────────────
 
