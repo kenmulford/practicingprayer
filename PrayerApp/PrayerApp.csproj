@@ -59,7 +59,7 @@
 	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
 	  <!-- Xcode 26.2 and 26.3 have identical SDKs; skip the version check until workloads catch up -->
 	  <ValidateXcodeVersion>false</ValidateXcodeVersion>
-	  <CodesignKey>iPhone Distribution</CodesignKey>
+	  <CodesignKey>iPhone Developer</CodesignKey>
 	  <CodesignProvision></CodesignProvision>
 	  <ProvisioningType>manual</ProvisioningType>
 	</PropertyGroup>
