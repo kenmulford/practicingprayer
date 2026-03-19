@@ -28,22 +28,8 @@ namespace PrayerApp.ViewModels
             _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
             _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
 
-            // GET all cards
-            _prayerCards = Task.Run(async () => await _cardService.GetCardsAsync()).Result.ToList();
-
-            // Convert PrayerCard to PrayerCardViewModel
-            AllPrayerCards = new ObservableCollection<PrayerCardViewModel>(
-                _prayerCards.Select(pc => new PrayerCardViewModel(pc))
-            );
-
-            // Subscribe to property changes on each existing card
-            foreach (var card in AllPrayerCards)
-            {
-                SubscribeToPropertyChanges(card);
-            }
-
-            // sort the card list
-            ApplySorting();
+            _prayerCards = new List<PrayerCard>();
+            AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
 
             // register commands
             NewCommand = new AsyncRelayCommand(NewPrayerCardAsync);
@@ -135,7 +121,7 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        private async Task LoadPrayerCardsAsync()
+        public async Task LoadAsync()
         {
             try
             {
@@ -214,7 +200,7 @@ namespace PrayerApp.ViewModels
 
         public void Reload()
         {
-            _ = LoadPrayerCardsAsync();
+            _ = LoadAsync();
         }
 
         #endregion

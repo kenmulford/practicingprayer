@@ -71,34 +71,8 @@ namespace PrayerApp.ViewModels
             _cardService   = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
             _tagService    = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
 
-            // Build card title lookup
-            var cards = Task.Run(async () => await _cardService.GetCardsAsync()).Result;
-            _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
-
-            // Load all prayers
-            _prayerList = Task.Run(async () => await _prayerService.GetAllPrayersAsync()).Result.ToList();
-
-            // Build tag→request lookup for chip filter
-            _requestTagIds = Task.Run(BuildRequestTagLookupAsync).Result;
-
-            // Build prayer ViewModels
-            foreach (var p in _prayerList)
-            {
-                var vm = BuildViewModel(p);
-                AllPrayers.Add(vm);
-            }
-
-            // Load tag chips
-            var allTags = Task.Run(async () => (await _tagService.GetTagsAsync()).ToList()).Result;
-            foreach (var tag in allTags)
-                AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
-            OnPropertyChanged(nameof(HasTags));
-
             // Any change to the backing store re-runs the filter
             AllPrayers.CollectionChanged += (_, _) => ApplyFilter();
-
-            // Initial filtered view
-            ApplyFilter();
 
             // Commands
             NewCommand = new AsyncRelayCommand(NewPrayerAsync);
@@ -111,6 +85,37 @@ namespace PrayerApp.ViewModels
                     _          => FilterStatus.Active
                 };
             });
+        }
+
+        public async Task LoadAsync()
+        {
+            // Build card title lookup
+            var cards = await _cardService.GetCardsAsync();
+            _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
+
+            // Load all prayers
+            _prayerList = (await _prayerService.GetAllPrayersAsync()).ToList();
+
+            // Build tag→request lookup for chip filter
+            _requestTagIds = await BuildRequestTagLookupAsync();
+
+            // Build prayer ViewModels
+            AllPrayers.Clear();
+            foreach (var p in _prayerList)
+            {
+                var vm = BuildViewModel(p);
+                AllPrayers.Add(vm);
+            }
+
+            // Load tag chips
+            var allTags = (await _tagService.GetTagsAsync()).ToList();
+            AvailableTags.Clear();
+            foreach (var tag in allTags)
+                AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
+            OnPropertyChanged(nameof(HasTags));
+
+            // Initial filtered view
+            ApplyFilter();
         }
 
         #region IQueryAttributable

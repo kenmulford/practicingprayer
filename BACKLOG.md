@@ -14,7 +14,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 12 — TD-10/BUG-27 done; 66/66 tests; 0 Android warnings
+**Last completed**: Session 12 — BUG-28/BUG-27/TD-10 done; 66/66 tests; 0 Android warnings
 **Next up**: UX-7 (Home page UI improvements)
 
 ---
@@ -135,7 +135,8 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | UX-8 | Remove underline from prayer requests on home + prayers pages | — | Removed per-request DividerLine BoxView from MainPage.xaml and PrayerListPage.xaml item templates. |
 | TD-10 | Fix XC0022/XC0023 compiled binding warnings | — | Replaced `x:DataType="{x:Null}"` with `x:DataType="models:PrayerTag"` in PrayerDetailPage.xaml SuggestedTags DataTemplate. QuickAddPage already fully typed. |
 | BUG-27 | Splash screen shows broken image instead of app icon | — | Replaced placeholder `splash.svg` (yellow line on card) with app icon foreground SVG. `MauiSplashScreen Color` provides the green background. |
+| BUG-28 | iOS 26 crash on launch during tab transition | — | Removed blocking `.Result` calls from PrayerCardsViewModel and PrayerListViewModel constructors (deadlock risk on iOS 26 scheduler). Added async `LoadAsync()` called from `OnAppearing`. Added global exception handlers to iOS AppDelegate for diagnostics. Guarded onboarding popup with try/catch. |
 
 ---
 
-*Last updated: 2026-03-19 (session 12 — TD-10 completed; 66/66 tests; 0 Android warnings)*
+*Last updated: 2026-03-19 (session 12 — BUG-28/BUG-27/TD-10 completed; 66/66 tests; 0 Android warnings)*
