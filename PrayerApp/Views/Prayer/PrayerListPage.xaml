@@ -181,10 +181,6 @@
                                    Margin="6,0,0,0" />
                         </Grid>
 
-                        <!-- Divider -->
-                        <BoxView Grid.Row="1"
-                                 Style="{StaticResource DividerLine}"
-                                 VerticalOptions="End" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

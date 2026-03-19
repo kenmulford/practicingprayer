@@ -23,25 +23,25 @@
                 <Label Text="Title" 
                        Style="{StaticResource FormLabel}" />
 
-                <Entry
-                    x:Name="TitleEntry"
-                    Text="{Binding Title}"
-                    HorizontalOptions="Fill"
-                    Placeholder="Card Title"
-                    SemanticProperties.Hint="Name or topic for this prayer card" />
+                <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                    <Entry
+                        x:Name="TitleEntry"
+                        Text="{Binding Title}"
+                        HorizontalOptions="Fill"
+                        Placeholder="Card Title"
+                        SemanticProperties.Hint="Name or topic for this prayer card" />
+                </Border>
 
-                    <Grid ColumnDefinitions="*, *" ColumnSpacing="4">
-                    <Button 
-                        StyleClass=""
-                        HorizontalOptions="Start"
-                        Command="{Binding DeleteCommand}"
-                        Text="Delete" />
-                    <Button 
-                        StyleClass=""
-                        Grid.Column="1"
-                        HorizontalOptions="End"
-                        Command="{Binding SaveCommand}"
-                        Text="Save" />
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Text="Delete"
+                            Style="{StaticResource DangerButton}"
+                            Command="{Binding DeleteCommand}"
+                            HorizontalOptions="Fill" />
+                    <Button Grid.Column="1"
+                            Text="Save"
+                            Command="{Binding SaveCommand}"
+                            HorizontalOptions="Fill" />
                 </Grid>
             </VerticalStackLayout>
         </Border>

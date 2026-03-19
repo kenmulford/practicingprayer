@@ -150,6 +150,7 @@ namespace PrayerApp.ViewModels
                 if (_prayer.PrayerFrequency != value)
                 {
                     _prayer.PrayerFrequency = value;
+                    OnPropertyChanged();
                     OnPropertyChanged(nameof(PrayerFrequencyDisplay));
                 }
             }
@@ -222,6 +223,10 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
+            // Auto-submit any tag text the user typed without pressing Return
+            if (!string.IsNullOrWhiteSpace(_tagSearchText))
+                await SubmitTagEntryAsync();
+
             bool isNew = _prayer.Id == 0;
             await _prayerService.SavePrayerAsync(_prayer);
             // Id is now assigned (even for new prayers); schedule or cancel accordingly.
@@ -466,6 +471,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(CreatedAt));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
+            OnPropertyChanged(nameof(PrayerFrequency));
             OnPropertyChanged(nameof(PrayerFrequencyDisplay));
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(IsEditable));

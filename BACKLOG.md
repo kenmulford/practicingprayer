@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 9 — BUG-23 (Gray700 XamlParseException on Prayers tab); build bumped to 11
-**Next up**: F-13 (iOS native field styling)
+**Last completed**: Session 12 — TD-10/BUG-27 done; 66/66 tests; 0 Android warnings
+**Next up**: UX-7 (Home page UI improvements)
 
 ---
 
@@ -23,39 +23,27 @@
 
 Items are listed in work order. Start at the top, work down.
 
-| # | ID | Item | Notes |
-|---|-----|------|-------|
-| 1 | F-13 | iOS native field styling | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state using app palette. Logged from Ken (Round 2) |
-| 3 | F-10 | Deep-link share — create card/request via tapped link | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 5 | TD-8 | Refactor ViewModels to use constructor injection instead of `IPlatformApplication.Current!.Services` | All ViewModels resolve services at runtime via the MAUI DI host, making them impossible to unit test. Switching to constructor injection unlocks ViewModel tests |
-| 8 | TD-10 | Fix XC0022/XC0023 compiled binding warnings in PrayerDetailPage.xaml and QuickAddPage.xaml | Add `x:DataType` to untyped binding scopes (lines 133, 247, 248, 250 in PrayerDetailPage.xaml; line 28 in QuickAddPage.xaml). Low risk, performance improvement. |
-| 7 | INV-4 | In-app update notification — Android Play Core flexible update flow | **Approach decided: Android-only, Play Core flexible update (no server/JSON).** Full implementation written on branch `feature/inv4-android-update`. Research notes at `docs/research/INV-4-android-update-research.md`. **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin (`Lifecycle.LiveData 2.9.x`); Play Core binding requires `>= 2.10.x`. Resume when MAUI bumps its AndroidX floor or a compatible binding ships. |
+| # | ID | Item | Source | Notes |
+|---|-----|------|--------|-------|
+| 1 | UX-7 | Home page UI improvements | Ken | Need to improve UI and explain what each summary box represents. |
+| 2 | F-14 | Expand tag color palette | Tony (Android) | Consider multi-row swatch grid with more color variants, or a full color picker control instead of horizontal scroll. |
+| 3 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
+| 4 | F-13 | iOS native field styling | Ken | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state. May need scope review now that UX-9 InputBorder is in place. |
+| 5 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
+| 6 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 7 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Also tried `Xamarin.Google.Android.Play.Core 1.10.3` — only targets `net6.0-android31.0`. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
 
 ---
 
 ## Detailed Descriptions
 
-### TD-7 Extract ILocalNotificationCenter
+### F-15 Notification deep-link + ad hoc "I prayed" button
 
-`NotificationService.ScheduleAsync` and `CancelAsync` call `LocalNotificationCenter.Current` directly — a static singleton from `Plugin.LocalNotification`. This is not mockable, so `NotificationService` has no unit tests.
-
-**Fix:** Introduce a thin `ILocalNotificationCenter` interface:
-```csharp
-public interface ILocalNotificationCenter
-{
-    Task Show(NotificationRequest request);
-    void Cancel(params int[] notificationIds);
-    void CancelAll();
-}
-```
-Register a production wrapper in `MauiProgram.cs` that delegates to `LocalNotificationCenter.Current`. Inject it into `NotificationService` via constructor.
-
-**Files likely involved:**
-`Services/ILocalNotificationCenter.cs` (new), `Services/LocalNotificationCenterWrapper.cs` (new),
-`Services/NotificationService.cs`, `MauiProgram.cs`,
-`PrayerApp.Tests/Services/NotificationServiceTests.cs` (new)
-
----
+**Reporter:** Ken
+**Details:** Two related changes:
+1. When user taps a notification, navigate to the specific prayer request's view page instead of the home page.
+2. Add an "I prayed for this" button on the prayer request view/detail page so users can log interactions without entering a full Prayer Time session.
+**Requires:** Deep-link routing from notification payload → Shell navigation to PrayerDetailPage with prayer ID.
 
 ### TD-8 Refactor ViewModels to constructor injection
 
@@ -64,9 +52,6 @@ All ViewModels resolve services via `IPlatformApplication.Current!.Services.GetR
 **Fix:** Add constructor overloads (or replace the default constructor) that accept injected services. Register ViewModels with DI in `MauiProgram.cs` and update XAML pages to resolve them from the container rather than using `<viewModels:XViewModel />` in XAML.
 
 **Affects all ViewModels:** `PrayerRequestDetailViewModel`, `PrayerCardViewModel`, `HomeViewModel`, `PrayerTimeViewModel`, `TagDetailViewModel`, `SettingsViewModel`
-
-**Files likely involved:**
-`MauiProgram.cs`, all ViewModel `.cs` files, all page `.xaml` and `.xaml.cs` files
 
 **Unlocks:** Full ViewModel unit test coverage including notification scheduling hooks, mark-answered flow, onboarding state transitions
 
@@ -82,38 +67,6 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 **Recipient behavior:**
 - Shared card → auto-saved silently as a new card with all active requests
 - Shared request → auto-saved into a "Shared with me" system card (top of list, cannot be deleted, hideable in Settings)
-
-**Sub-features (all designed, details in plan doc):**
-1. `IDeepLinkService` / `DeepLinkService` — build URIs and handle incoming links
-2. `prayercards://` URI scheme registration (Android intent filter + iOS CFBundleURLTypes)
-3. Platform handlers: `MainActivity.OnNewIntent` + `AppDelegate.OpenUrl`
-4. "Shared with me" system card (`PrayerCard.IsSystem` column + `GetOrCreateSystemCardAsync`)
-5. Share button on card edit page + swipe action on card list
-6. Move-to-card action on prayer request edit page
-7. Settings toggle to hide "Shared with me" card
-
----
-
-### F-11 iCloud / Google Drive backup
-
-User-initiated export of the SQLite database (or a JSON snapshot) to cloud storage, with matching import/restore flow.
-
-**Primary use case:** Transfer data to a new device without going through a store update.
-**Secondary use case:** Manual backup / peace of mind.
-
-**Platform options:**
-- Android: Google Drive API (`com.google.android.gms:play-services-drive`) or `StorageAccessFramework` file picker → user picks Drive location
-- iOS: `NSFileManager` + iCloud `ubiquityContainerIdentifier` or Files app integration
-- Cross-platform fallback: export to a `.json` file → OS share sheet → user saves wherever they want
-
-**Files likely involved:**
-New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage.xaml` (export/import buttons), `Platforms/Android/` and `Platforms/iOS/` for platform-specific cloud auth
-
-**Decisions needed before building:**
-- Automatic scheduled backup vs. manual only?
-- Full SQLite file copy or structured JSON export?
-- Android: Drive API (requires Google sign-in) vs. SAF file picker (no sign-in)?
-- iOS: iCloud Drive vs. Files app integration?
 
 ---
 
@@ -167,13 +120,22 @@ New `Services/BackupService.cs` (`IBackupService`), `Views/Settings/SettingsPage
 | BUG-18 | Prayer Time timer visible on "all done" end state | — | Added `IsVisible` InverseBool binding to Row 0 header Grid in PrayerTimePage.xaml |
 | BUG-21 | Tag data model — tags stored at card level instead of request level | — | Added `PrayerRequestId` column to `PrayerCardTag`; new request-level service methods; data migration on startup; `PrayerRequestDetailViewModel` and `PrayerTimeViewModel` updated |
 | F-12 | Prayer list page UX overhaul | — | Live search (title + card name + tag name), 3-way status toggle (Active/Answered/All), tag chip filter; `PrayerListViewModel` full rewrite; 55 tests passing |
-| BUG-22 | iOS AOT crash on launch (build 8) — SQLite-net module out of date | — | Root cause: iOS linker trimming SQLite-net internals, making AOT module stale after Mac workload update. Fix: `Platforms/iOS/LinkerConfig.xml` with `preserve="all"` for SQLite-net + SQLitePCLRaw; wired via `TrimmerRootDescriptor` in csproj. Clean rebuild (rm -rf bin/obj) required. Shipped as build 10. |
-| BUG-23 | Prayers tab crash — `XamlParseException: StaticResource not found for key Gray700` | — | PrayerListPage.xaml (F-12 work) referenced `Gray700` in 3 toggle-button `AppThemeBinding` Dark values. `Gray700` was never defined in Colors.xaml (palette goes Gray600 → Gray900). Fixed: all 3 replaced with `Gray600` (`#404040`). Build bumped to 11. |
-| TD-9 | Dark mode color audit | — | Scanned all XAML files. 2 confirmed contrast failures (Primary text on dark bg ≈ 2.85–3.18:1), 1 borderline (SuccessGreen 4.08:1). Most hits intentionally fixed colors. Fixes tracked as TD-11. Full notes at `docs/research/TD-9-dark-mode-color-audit.md`. |
-| TD-7 | Extract `ILocalNotificationCenter` | — | Created `ILocalNotificationCenter` + `NotifyRepeat` enum; `LocalNotificationCenterWrapper` delegates to Plugin static. `NotificationService` now injects both — zero MAUI/Plugin dependencies in the class itself. `Settings.AllowNotifications` lambda supplied in `MauiProgram.cs`. 11 new tests; 66/66 passing. |
-| TD-11 | Dark-mode contrast fixes (from TD-9 audit) | — | `PrayerCardsPage.xaml:151` and `Settings.xaml:80`: `Primary` → `AppThemeBinding Light=Primary, Dark=PrimaryDark`. `PrayerDetailPage.xaml:39`: `SuccessGreen` → `AppThemeBinding Light=SuccessGreen, Dark=SuccessGreenDark`. Added `SuccessGreenDark #66BB6A` to Colors.xaml. |
-| UX-4 | Delete confirmation dialogs | — | `PrayerCardViewModel.DeleteAsync`: confirms with prayer count ("Delete 'X'? This will also delete N prayer requests."). `PrayerRequestDetailViewModel.DeleteAsync`: confirms with title. Tags already had confirmation. Covers all entry points (swipe + detail page buttons). |
+| BUG-22 | iOS AOT crash on launch (build 8) — SQLite-net module out of date | — | `Platforms/iOS/LinkerConfig.xml` with `preserve="all"` for SQLite-net + SQLitePCLRaw; wired via `TrimmerRootDescriptor` in csproj. |
+| BUG-23 | Prayers tab crash — `XamlParseException: StaticResource not found for key Gray700` | — | 3 references to undefined `Gray700` replaced with `Gray600` in PrayerListPage.xaml toggle buttons. |
+| TD-9 | Dark mode color audit | — | Full audit. 2 confirmed failures, 1 borderline. Fixes tracked as TD-11. Notes at `docs/research/TD-9-dark-mode-color-audit.md`. |
+| TD-7 | Extract `ILocalNotificationCenter` | — | `ILocalNotificationCenter` + `NotifyRepeat` enum; `LocalNotificationCenterWrapper`; `NotificationService` fully injectable. 11 new tests; 66/66 passing. |
+| TD-11 | Dark-mode contrast fixes (from TD-9 audit) | — | Primary → AppThemeBinding on PrayerCardsPage + Settings; SuccessGreen → AppThemeBinding on PrayerDetailPage. Added `SuccessGreenDark` to Colors.xaml. |
+| UX-4 | Delete confirmation dialogs | — | Confirmation on card delete (with prayer count), prayer delete (with title), tag delete (already had it). All entry points covered. |
+| BUG-25 | Prayer edit shows wrong notification toggle + frequency | — | `RefreshProperties()` never notified `PrayerFrequency` (only `PrayerFrequencyDisplay`). Picker stayed at model default (`Weekly`). Added `OnPropertyChanged(nameof(PrayerFrequency))` to setter and `RefreshProperties()`. |
+| BUG-24 | Tag filter doesn't refresh after saving prayer via card | — | `_requestTagIds` lookup in `PrayerListViewModel` was only built in constructor, never rebuilt on save. Extracted `HandleSavedAsync` that rebuilds tag lookup + refreshes tag chips. |
+| UX-9 | InputBorder — bordered container for all input fields | — | Added `InputBorder` named style (White/Gray900 bg, Gray300/Gray600 stroke, 8px corners). Wrapped 8 inputs across 4 edit pages. Editor implicit bg changed to Transparent. TagDetailPage label standardized to FormLabel. |
+| UX-6 | Uniform action buttons across all data entry forms | — | PrayerCardPage Delete now uses `DangerButton` (was unstyled `StyleClass=""`). QuickAddPage Cancel uses `GhostButton`. All button grids standardized to `ColumnSpacing="8"` + `HorizontalOptions="Fill"`. |
+| UX-5 | Tag entry UX — section header + spacing | — | Tags section already had FormLabel header. Added DividerLine separator with top margin between tag area and action buttons on PrayerDetailPage. |
+| BUG-26 | Typed tag without hitting Return doesn't save | — | `SaveAsync` now auto-submits any pending `TagSearchText` before saving via `SubmitTagEntryAsync()`. |
+| UX-8 | Remove underline from prayer requests on home + prayers pages | — | Removed per-request DividerLine BoxView from MainPage.xaml and PrayerListPage.xaml item templates. |
+| TD-10 | Fix XC0022/XC0023 compiled binding warnings | — | Replaced `x:DataType="{x:Null}"` with `x:DataType="models:PrayerTag"` in PrayerDetailPage.xaml SuggestedTags DataTemplate. QuickAddPage already fully typed. |
+| BUG-27 | Splash screen shows broken image instead of app icon | — | Replaced placeholder `splash.svg` (yellow line on card) with app icon foreground SVG. `MauiSplashScreen Color` provides the green background. |
 
 ---
 
-*Last updated: 2026-03-17 (session 10 — TD-9/TD-11/TD-7/UX-4 done; 66/66 tests; pausing before TD-8)*
+*Last updated: 2026-03-19 (session 12 — TD-10 completed; 66/66 tests; 0 Android warnings)*

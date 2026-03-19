@@ -126,23 +126,37 @@ namespace PrayerApp.ViewModels
             }
             else if (query.ContainsKey("saved"))
             {
-                var id = query["saved"].ToString();
-                var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
-                if (matched != null)
-                {
-                    matched.Reload();
-                    ApplyFilter(); // reload doesn't fire CollectionChanged, so force it
-                }
-                else
-                {
-                    _ = AddNewPrayerAsync(id);
-                }
+                _ = HandleSavedAsync(query["saved"].ToString());
             }
         }
 
         #endregion
 
         #region Private helpers
+
+        private async Task HandleSavedAsync(string? id)
+        {
+            // Rebuild tag lookup so chip filter reflects tag changes made on the detail page
+            _requestTagIds = await BuildRequestTagLookupAsync();
+
+            // Refresh tag chips in case a new tag was created on the detail page
+            var allTags = (await _tagService.GetTagsAsync()).ToList();
+            var existingIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
+            foreach (var tag in allTags.Where(t => !existingIds.Contains(t.Id)))
+                AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
+            OnPropertyChanged(nameof(HasTags));
+
+            var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
+            if (matched != null)
+            {
+                matched.Reload();
+                ApplyFilter();
+            }
+            else
+            {
+                await AddNewPrayerAsync(id);
+            }
+        }
 
         private PrayerRequestDetailViewModel BuildViewModel(Prayer p)
         {
