@@ -203,6 +203,35 @@ namespace PrayerApp.ViewModels
             _ = LoadAsync();
         }
 
+        /// <summary>
+        /// Lightweight refresh for cross-tab consistency. Detects new/deleted cards
+        /// without tearing down the entire ViewModel state (preserving expanded
+        /// accordions, loaded prayers, etc.). Called from OnAppearing on subsequent
+        /// tab visits.
+        /// </summary>
+        public async Task RefreshAsync()
+        {
+            _cardService.InvalidateCache();
+            var cards = await _cardService.GetCardsAsync();
+            var freshIds = cards.Select(c => c.Id).ToHashSet();
+            var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
+
+            // Remove deleted cards
+            var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
+            foreach (var vm in toRemove)
+                AllPrayerCards.Remove(vm);
+
+            // Add new cards
+            foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
+            {
+                var vm = new PrayerCardViewModel(card);
+                SubscribeToPropertyChanges(vm);
+                AllPrayerCards.Add(vm);
+            }
+
+            ApplySorting();
+        }
+
         #endregion
     }
 }

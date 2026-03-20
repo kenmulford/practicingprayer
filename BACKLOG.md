@@ -14,7 +14,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 12 — BUG-28/BUG-27/TD-10 done; 66/66 tests; 0 Android warnings
+**Last completed**: Session 13 — BUG-29 done
 **Next up**: UX-7 (Home page UI improvements)
 
 ---
@@ -26,12 +26,14 @@ Items are listed in work order. Start at the top, work down.
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
 | 1 | UX-7 | Home page UI improvements | Ken | Need to improve UI and explain what each summary box represents. |
-| 2 | F-14 | Expand tag color palette | Tony (Android) | Consider multi-row swatch grid with more color variants, or a full color picker control instead of horizontal scroll. |
-| 3 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
-| 4 | F-13 | iOS native field styling | Ken | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state. May need scope review now that UX-9 InputBorder is in place. |
-| 5 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
-| 6 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 7 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Also tried `Xamarin.Google.Android.Play.Core 1.10.3` — only targets `net6.0-android31.0`. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 2 | UX-10 | Prayer card form styling — match request form | Ken | Apply `PrayerCardBorder` style, remove redundant title label, add divider. |
+| 3 | F-14 | Expand tag color palette | Tony (Android) | Consider multi-row swatch grid with more color variants, or a full color picker control instead of horizontal scroll. |
+| 4 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
+| 5 | F-13 | iOS native field styling | Ken | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state. May need scope review now that UX-9 InputBorder is in place. |
+| 6 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. Standardize initialization patterns using modern best practices. |
+| 7 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
+| 8 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 9 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Also tried `Xamarin.Google.Android.Play.Core 1.10.3` — only targets `net6.0-android31.0`. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
 
 ---
 
@@ -136,7 +138,8 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | TD-10 | Fix XC0022/XC0023 compiled binding warnings | — | Replaced `x:DataType="{x:Null}"` with `x:DataType="models:PrayerTag"` in PrayerDetailPage.xaml SuggestedTags DataTemplate. QuickAddPage already fully typed. |
 | BUG-27 | Splash screen shows broken image instead of app icon | — | Replaced placeholder `splash.svg` (yellow line on card) with app icon foreground SVG. `MauiSplashScreen Color` provides the green background. |
 | BUG-28 | iOS 26 crash on launch during tab transition | — | Removed blocking `.Result` calls from PrayerCardsViewModel and PrayerListViewModel constructors (deadlock risk on iOS 26 scheduler). Added async `LoadAsync()` called from `OnAppearing`. Added global exception handlers to iOS AppDelegate for diagnostics. Guarded onboarding popup with try/catch. |
+| BUG-29 | iPad crash when skipping onboarding tour | — | `PopupBlockedException` — popup must be closed before mutating onboarding state so modal stack is clear when completion popup fires. Reordered `CloseAsync` before `Skip()`/`Advance()`. |
 
 ---
 
-*Last updated: 2026-03-19 (session 12 — BUG-28/BUG-27/TD-10 completed; 66/66 tests; 0 Android warnings)*
+*Last updated: 2026-03-19 (session 13 — BUG-29 completed; ViewModel audit deferred to TD-12; UX-10 added)*

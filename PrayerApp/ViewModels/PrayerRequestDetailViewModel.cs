@@ -223,13 +223,23 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
+            bool isNew = _prayer.Id == 0;
+            await _prayerService.SavePrayerAsync(_prayer);
+            // Id is now assigned (even for new prayers).
+
+            // For new prayers, persist any tags that were staged in SelectedTags
+            // (they couldn't be persisted earlier because the prayer had no ID).
+            if (isNew)
+            {
+                foreach (var chip in SelectedTags)
+                    await _tagService.AddTagToRequestAsync(_prayer.Id, chip.Id);
+            }
+
             // Auto-submit any tag text the user typed without pressing Return
             if (!string.IsNullOrWhiteSpace(_tagSearchText))
                 await SubmitTagEntryAsync();
 
-            bool isNew = _prayer.Id == 0;
-            await _prayerService.SavePrayerAsync(_prayer);
-            // Id is now assigned (even for new prayers); schedule or cancel accordingly.
+            // Schedule or cancel notifications accordingly.
             if (_prayer.CanNotify)
                 await _notificationService.ScheduleAsync(_prayer);
             else
@@ -386,14 +396,18 @@ namespace PrayerApp.ViewModels
 
         private async Task LoadTagsAsync()
         {
-            if (_prayer.Id <= 0) return;
-
             _allTags = (await _tagService.GetTagsAsync()).ToList();
-            var requestTags = await _tagService.GetTagsByRequestIdAsync(_prayer.Id);
 
-            SelectedTags.Clear();
-            foreach (var tag in requestTags.OrderBy(t => t.Name))
-                SelectedTags.Add(new TagChipViewModel(tag, RemoveTagAsync));
+            // For existing prayers, load their assigned tags from the DB.
+            // For new prayers (Id <= 0), SelectedTags stays empty — user can still
+            // add tags via the search entry; they'll be staged locally until save.
+            if (_prayer.Id > 0)
+            {
+                var requestTags = await _tagService.GetTagsByRequestIdAsync(_prayer.Id);
+                SelectedTags.Clear();
+                foreach (var tag in requestTags.OrderBy(t => t.Name))
+                    SelectedTags.Add(new TagChipViewModel(tag, RemoveTagAsync));
+            }
 
             UpdateSuggestions();
         }
@@ -420,14 +434,19 @@ namespace PrayerApp.ViewModels
             var tag = _allTags.FirstOrDefault(t => t.Id == tagId);
             if (tag is null) return;
 
-            await _tagService.AddTagToRequestAsync(_prayer.Id, tagId);
+            // Only persist immediately if the prayer has been saved (has a real ID).
+            // For new prayers (Id == 0), just stage locally — SaveAsync persists them.
+            if (_prayer.Id > 0)
+                await _tagService.AddTagToRequestAsync(_prayer.Id, tagId);
             SelectedTags.Add(new TagChipViewModel(tag, RemoveTagAsync));
             TagSearchText = string.Empty;
         }
 
         private async Task RemoveTagAsync(int tagId)
         {
-            await _tagService.RemoveTagFromRequestAsync(_prayer.Id, tagId);
+            // Only hit the DB if the prayer has been saved (has a real ID).
+            if (_prayer.Id > 0)
+                await _tagService.RemoveTagFromRequestAsync(_prayer.Id, tagId);
             var chip = SelectedTags.FirstOrDefault(t => t.Id == tagId);
             if (chip is not null)
                 SelectedTags.Remove(chip);
@@ -453,7 +472,10 @@ namespace PrayerApp.ViewModels
             newTag = await _tagService.SaveTagAsync(newTag);
             _allTags.Add(newTag);
 
-            await _tagService.AddTagToRequestAsync(_prayer.Id, newTag.Id);
+            // Only persist junction row if prayer has been saved (has a real ID).
+            // For new prayers (Id == 0), just stage locally — SaveAsync persists them.
+            if (_prayer.Id > 0)
+                await _tagService.AddTagToRequestAsync(_prayer.Id, newTag.Id);
             SelectedTags.Add(new TagChipViewModel(newTag, RemoveTagAsync));
             TagSearchText = string.Empty;
         }
