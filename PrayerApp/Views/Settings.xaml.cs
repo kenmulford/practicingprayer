@@ -7,11 +7,13 @@ public partial class Settings : ContentPage
     private const string PrivacyPolicyUrl = "https://practicingprayerapp.com/privacy";
 
     private readonly IBackupService _backupService;
+    private readonly IDiagnosticLog _diagnosticLog;
 
     public Settings()
     {
         InitializeComponent();
         _backupService = IPlatformApplication.Current!.Services.GetRequiredService<IBackupService>();
+        _diagnosticLog = IPlatformApplication.Current!.Services.GetRequiredService<IDiagnosticLog>();
         TapPrivacyPolicy.Tapped += async (_, _) => await Launcher.OpenAsync(PrivacyPolicyUrl);
     }
 
@@ -19,6 +21,9 @@ public partial class Settings : ContentPage
     {
         base.OnAppearing();
         chkSettingsAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
+
+        var logPath = _diagnosticLog.GetLogPath();
+        btnSendDiagnostics.IsVisible = File.Exists(logPath) && new FileInfo(logPath).Length > 0;
     }
 
     private async void btnClearSettings_Clicked(object sender, EventArgs e)
@@ -43,6 +48,18 @@ public partial class Settings : ContentPage
         {
             btnBackup.IsEnabled = true;
         }
+    }
+
+    private async void btnSendDiagnostics_Clicked(object sender, EventArgs e)
+    {
+        var logPath = _diagnosticLog.GetLogPath();
+        if (!File.Exists(logPath)) return;
+
+        await Share.RequestAsync(new ShareFileRequest
+        {
+            Title = "Diagnostic Log",
+            File = new ShareFile(logPath)
+        });
     }
 
     private async void btnRestore_Clicked(object sender, EventArgs e)

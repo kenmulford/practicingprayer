@@ -331,7 +331,7 @@ namespace PrayerApp.ViewModels
                     _deletedQueryKey = "prayerDeleted";
                     IsReadOnly = false;
                     RefreshProperties();
-                    _ = LoadTagsAsync();
+                    LoadTagsAsync().SafeFireAndForget();
                 }
             }
             else if (query.ContainsKey("load"))
@@ -354,7 +354,7 @@ namespace PrayerApp.ViewModels
 
                 if (int.TryParse(query["load"].ToString(), out int _id))
                 {
-                    _ = LoadPrayerAsync(_id);
+                    LoadPrayerAsync(_id).SafeFireAndForget();
                 }
             }
             else if (query.ContainsKey("prayerSaved"))
@@ -376,22 +376,26 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                _prayer = await Prayer.LoadAsync(id);
+                var result = await Prayer.LoadAsync(id);
+                if (result is null)
+                {
+                    await Shell.Current.GoToAsync("..");
+                    return;
+                }
+                _prayer = result;
             }
             catch (Exception e)
             {
                 await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayer: {e.Message}", "OK");
+                return;
             }
-            finally
-            {
-                RefreshProperties();
-                await LoadTagsAsync();
-            }
+            RefreshProperties();
+            await LoadTagsAsync();
         }
 
         public void Reload()
         {
-            _ = LoadPrayerAsync(_prayer.Id);
+            LoadPrayerAsync(_prayer.Id).SafeFireAndForget();
         }
 
         private async Task LoadTagsAsync()

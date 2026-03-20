@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.Views.Prayer;
@@ -199,11 +200,8 @@ namespace PrayerApp.ViewModels
             {
                 if (int.TryParse(query["load"].ToString(), out int _id))
                 {
-                    // fire task and forget
-                    _ = LoadPrayerCardAsync(_id);
+                    LoadPrayerCardAsync(_id).SafeFireAndForget();
                 }
-
-                RefreshProperties();
             }
         }
 
@@ -229,8 +227,7 @@ namespace PrayerApp.ViewModels
 
         public void Reload()
         {
-            _ = LoadPrayerCardAsync(_prayerCard.Id);
-            RefreshProperties();
+            LoadPrayerCardAsync(_prayerCard.Id).SafeFireAndForget();
         }
 
         private void RefreshProperties()
@@ -281,6 +278,7 @@ namespace PrayerApp.ViewModels
             }
 
             var prayer = await Prayer.LoadAsync(prayerId);
+            if (prayer is null) return;
             if (prayer.PrayerCardId != _prayerCard.Id)
             {
                 return;

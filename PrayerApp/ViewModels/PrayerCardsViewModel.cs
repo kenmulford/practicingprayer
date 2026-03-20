@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.Views.PrayerCard;
@@ -75,7 +76,7 @@ namespace PrayerApp.ViewModels
                 // If card isn't found, it's new; add it.
                 else
                 {
-                    _ = AddNewCardAsync(PrayerCardString);
+                    AddNewCardAsync(PrayerCardString).SafeFireAndForget();
                 }
             }
             else if (query.ContainsKey("prayerSaved") && query.ContainsKey("parentCardId"))
@@ -86,7 +87,7 @@ namespace PrayerApp.ViewModels
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     if (matched != null)
                     {
-                        _ = matched.AddOrUpdatePrayerAsync(prayerId);
+                        matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
                     }
                 }
             }
@@ -110,6 +111,7 @@ namespace PrayerApp.ViewModels
             try
             {
                 var card = await PrayerCard.LoadAsync(int.Parse(cardIdString ?? "0"));
+                if (card is null) return;
                 var newCard = new PrayerCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
@@ -200,7 +202,7 @@ namespace PrayerApp.ViewModels
 
         public void Reload()
         {
-            _ = LoadAsync();
+            LoadAsync().SafeFireAndForget();
         }
 
         /// <summary>

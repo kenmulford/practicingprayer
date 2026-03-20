@@ -1,7 +1,7 @@
 # Prayer App — Backlog
 
 > **Session start checklist:**
-> 1. Read `CONTEXT.md` (architecture, conventions, gotchas)
+> 1. Read `CLAUDE.md` (vision, architecture, conventions, gotchas)
 > 2. Read the **Currently In Progress** section below
 > 3. Pick up the next `[ ]` item in the Priority Queue
 >
@@ -51,6 +51,7 @@ Items are listed in work order. Start at the top, work down.
 | 24 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
 | 25 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
 | 26 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 27 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
 
 ---
 

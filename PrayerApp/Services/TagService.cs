@@ -136,6 +136,7 @@ public class TagService : ITagService
             await row.DeleteAsync();
 
         var tag = await PrayerTag.LoadAsync(tagId);
+        if (tag is null) return;
         await tag.DeleteAsync();
         InvalidateCache();
     }

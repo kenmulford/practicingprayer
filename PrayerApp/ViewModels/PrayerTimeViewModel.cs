@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Windows.Input;
@@ -164,7 +165,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                        .Where(id => id > 0)
             : Enumerable.Empty<int>();
 
-        _ = LoadEntriesAsync(scope == "tags" ? tagIds : null);
+        LoadEntriesAsync(scope == "tags" ? tagIds : null).SafeFireAndForget();
     }
 
     private async Task LoadEntriesAsync(IEnumerable<int>? tagIds)
@@ -366,6 +367,6 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     {
         CountdownSeconds--;
         if (CountdownSeconds <= 0)
-            _ = NextAsync();
+            NextAsync().SafeFireAndForget();
     }
 }

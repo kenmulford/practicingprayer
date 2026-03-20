@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -150,7 +151,7 @@ namespace PrayerApp.ViewModels
             }
             else if (query.ContainsKey("saved"))
             {
-                _ = HandleSavedAsync(query["saved"].ToString());
+                HandleSavedAsync(query["saved"].ToString()).SafeFireAndForget();
             }
         }
 
@@ -262,6 +263,7 @@ namespace PrayerApp.ViewModels
             try
             {
                 var p = await Prayer.LoadAsync(int.Parse(prayerIdString ?? "0"));
+                if (p is null) return;
                 var vm = BuildViewModel(p);
                 AllPrayers.Add(vm); // CollectionChanged → ApplyFilter
             }
@@ -314,7 +316,7 @@ namespace PrayerApp.ViewModels
             };
         }
 
-        public void Reload() => _ = LoadPrayersAsync();
+        public void Reload() => LoadPrayersAsync().SafeFireAndForget();
 
         /// <summary>
         /// Lightweight refresh for cross-tab consistency. Rebuilds the tag lookup

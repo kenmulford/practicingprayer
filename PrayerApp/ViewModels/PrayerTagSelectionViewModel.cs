@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System;
@@ -96,7 +97,7 @@ namespace PrayerApp.ViewModels
         private void OnTagToggled(int tagId, bool isSelected)
         {
             // Queue the tag operation but don't await here to keep UI responsive
-            _ = ToggleTagAsync(tagId, isSelected);
+            ToggleTagAsync(tagId, isSelected).SafeFireAndForget();
             RefreshSelectedTags();
         }
 

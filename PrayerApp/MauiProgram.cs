@@ -54,6 +54,8 @@ namespace PrayerApp
                     () => PrayerApp.Services.Settings.AllowNotifications));
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
+            // Register diagnostic log service
+            builder.Services.AddSingleton<IDiagnosticLog>(s => new DiagnosticLog(FileSystem.AppDataDirectory));
             // Register backup service
             builder.Services.AddSingleton<IBackupService, BackupService>();
             // Register user color service
@@ -72,6 +74,8 @@ namespace PrayerApp
             // tag detail page + viewmodel (transient — each navigation gets a fresh instance)
             builder.Services.AddTransient<TagDetailViewModel>();
             builder.Services.AddTransient<TagDetailPage>();
+
+            RegisterGlobalExceptionHandlers();
 
             var app = builder.Build();
 
@@ -96,11 +100,42 @@ namespace PrayerApp
         }
 
         /// <summary>
+        /// Registers global exception handlers that log to <see cref="IDiagnosticLog"/>
+        /// with a console fallback (DI may not be built yet during startup).
+        /// Called once from CreateMauiApp — shared by both iOS and Android.
+        /// </summary>
+        private static void RegisterGlobalExceptionHandlers()
+        {
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                var ex = e.ExceptionObject as Exception;
+                var log = IPlatformApplication.Current?.Services?.GetService<IDiagnosticLog>();
+                if (log != null && ex != null)
+                    log.Log("UnhandledException", ex);
+                else
+                    Console.Error.WriteLine(ex?.ToString() ?? e.ExceptionObject?.ToString());
+            };
+
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                var log = IPlatformApplication.Current?.Services?.GetService<IDiagnosticLog>();
+                if (log != null)
+                    log.Log("UnobservedTaskException", e.Exception);
+                else
+                    Console.Error.WriteLine(e.Exception.ToString());
+                e.SetObserved();
+            };
+        }
+
+        /// <summary>
         /// Runs post-schema seed work asynchronously. Awaited by App.InitTask
         /// before the first page loads data.
         /// </summary>
         private static async Task SeedAsync(IServiceProvider services)
         {
+            // Trim the diagnostic log on startup (non-blocking — runs inside InitTask)
+            services.GetRequiredService<IDiagnosticLog>().Trim();
+
             var userColorService = services.GetRequiredService<IUserColorService>();
             await userColorService.SeedDefaultsAsync();
 
