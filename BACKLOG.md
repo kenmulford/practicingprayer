@@ -165,7 +165,17 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | M-8 | Card delete orphans PrayerCardTag junction rows | — | `DeleteJunctionRowsByRequestIdAsync` added to IDBService/DBService. Called in `PrayerService.DeletePrayerAsync` cascade. |
 | M-9 | Prayer delete orphans PrayerInteraction rows | — | `DeleteInteractionsByPrayerIdAsync` added to IDBService/DBService. Called in `PrayerService.DeletePrayerAsync` cascade. One-time orphan cleanup migration in `DBService.UpdateSchema()`. |
 | L-4 | Remove deprecated card-level ITagService methods | — | 4 `[Obsolete]` card-level methods removed from `ITagService`, `TagService`, `IDBService`, `DBService`, `PrayerCardTag`. Associated tests removed. |
+| M-4 | Loading indicators on list pages | — | `IsLoading` property + `ActivityIndicator` added to PrayerCardsPage, PrayerListPage, TagsPage. Spinner shown during async load. |
+| M-7 | Accessibility on SwipeView actions | — | `SemanticProperties.Description` added to all 7 SwipeItems across PrayerCardsPage and TagsPage. |
+| M-5 | Hardcoded SwipeItem colors in TagsPage | — | `LightSteelBlue` → `{StaticResource Primary}`, `IndianRed` → `{StaticResource DangerRed}`. |
+| M-10 | Custom colors no dark mode adjustment | — | `TagColorPalette.Resolve()` now lightens custom (non-palette) colors 25% in dark mode via `Lighten()` helper. |
+| M-1 | OnboardingBanner StepChanged event leak | — | Added unsubscribe-before-subscribe guard in `OnHandlerChanged` to prevent double-subscribe on re-parent. |
+| M-2 | AppShell StepChanged lambda no try/catch | — | Extracted `ShowOnboardingCompletePopupAsync()` and routed through `SafeFireAndForget()` for error logging. |
+| M-3 | TagsPage full reload every OnAppearing | — | Added `_loaded` guard + `RefreshAsync()` with differential add/remove (no flicker from clear+rebuild). |
+| M-6 | Hardcoded `TextColor="White"` in XAML | — | All 9 instances across MainPage, PrayerTimePage, PrayerDetailPage, PrayerListPage, OnboardingBanner, popups, Styles.xaml replaced with `{StaticResource White}`. |
+| BUG-31 | Tag color stale on prayer detail view after tag edit | — | `PrayerDetailPage.OnAppearing` now calls `Reload()` on subsequent visits (not just first load), picking up tag color/name changes. |
+| BUG-32 | iOS color picker returns wrong/stale color on iOS 26 iPad | — | `NativeColorPicker.ColorPickerDelegate` now tracks every `DidSelectColor` selection. `DidFinish` and swipe-dismiss both use the tracked color instead of re-reading `SelectedColor`. |
 
 ---
 
-*Last updated: 2026-03-20 (session 16 — H-5/M-8/M-9/L-4 fixed; Settings redesign; Switch styling unified; 81/81 tests; 0 warnings)*
+*Last updated: 2026-03-20 (session 17 — M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-10 fixed; BUG-31/BUG-32 fixed; 81/81 tests; 0 warnings)*
