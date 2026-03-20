@@ -148,26 +148,7 @@
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding CanNotify}"
                                 SemanticProperties.Description="Enable reminders for this request"
-                                VerticalOptions="Center">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroupList>
-                                    <VisualStateGroup>
-                                        <VisualState x:Name="On">
-                                            <VisualState.Setters>
-                                                <Setter Property="ThumbColor"
-                                                        Value="{StaticResource White}" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                        <VisualState x:Name="Off">
-                                            <VisualState.Setters>
-                                                <Setter Property="ThumbColor"
-                                                        Value="{StaticResource Gray600}" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                </VisualStateGroupList>
-                            </VisualStateManager.VisualStateGroups>
-                        </Switch>
+                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
                     <!-- Answered Switch -->
@@ -176,26 +157,7 @@
                                VerticalOptions="Center" />
                         <Switch IsToggled="{Binding IsAnswered}"
                                 SemanticProperties.Description="Mark this request as answered"
-                                VerticalOptions="Center">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroupList>
-                                    <VisualStateGroup>
-                                        <VisualState x:Name="On">
-                                            <VisualState.Setters>
-                                                <Setter Property="ThumbColor"
-                                                        Value="{StaticResource White}" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                        <VisualState x:Name="Off">
-                                            <VisualState.Setters>
-                                                <Setter Property="ThumbColor"
-                                                        Value="{StaticResource Gray600}" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                </VisualStateGroupList>
-                            </VisualStateManager.VisualStateGroups>
-                        </Switch>
+                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
                     <!-- Tags (edit mode) -->

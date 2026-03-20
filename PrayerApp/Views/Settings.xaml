@@ -25,27 +25,7 @@
                             x:Name="chkSettingsAllowNotifications"
                             Grid.Column="1"
                             SemanticProperties.Description="Allow the app to send prayer reminder notifications"
-                            OnColor="{StaticResource Secondary}"
-                            Toggled="chkSettingsAllowNotifications_Toggled">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroupList>
-                                    <VisualStateGroup x:Name="CommonStates">
-                                        <VisualState x:Name="On">
-                                            <VisualState.Setters>
-                                                <Setter Property="ThumbColor"
-                                                    Value="{StaticResource Primary}" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                        <VisualState x:Name="Off">
-                                            <VisualState.Setters>
-                                                <Setter Property="ThumbColor"
-                                                    Value="{StaticResource Gray600}" />
-                                            </VisualState.Setters>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                </VisualStateGroupList>
-                            </VisualStateManager.VisualStateGroups>
-                        </Switch>
+                            Toggled="chkSettingsAllowNotifications_Toggled" />
                     </Grid>
                 </VerticalStackLayout>
             </Border>
