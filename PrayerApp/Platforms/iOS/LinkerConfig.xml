@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Linker preservation rules for iOS AOT builds.
+  Prevents the trimmer from stripping SQLite-net and SQLitePCLRaw internals,
+  which causes "Failed to load AOT module 'SQLite-net'" at runtime.
+-->
+<linker>
+  <!-- Preserve all sqlite-net-pcl types used via reflection (TableMapping, column accessors, etc.) -->
+  <assembly fullname="SQLite-net" preserve="all" />
+
+  <!-- Preserve SQLitePCLRaw core provider interface and raw API -->
+  <assembly fullname="SQLitePCLRaw.core" preserve="all" />
+
+  <!-- Note: SQLitePCLRaw.provider.e_sqlite3 is a native lib, not a .NET assembly —
+       no linker entry needed for it. -->
+</linker>

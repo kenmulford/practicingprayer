@@ -9,7 +9,7 @@
     <ContentPage.BindingContext>
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
-    <Grid RowDefinitions="*,Auto">
+    <VerticalStackLayout>
         <VerticalStackLayout Grid.Row="0" Padding="24">
         <Label 
             Text="Prayer Card"
@@ -20,32 +20,28 @@
 
         <Border Padding="20">
             <VerticalStackLayout Spacing="15" Margin="5">
+                <Label Text="Title" 
+                       Style="{StaticResource FormLabel}" />
 
-                <HorizontalStackLayout Spacing="10">
-                    <Label
-                        VerticalOptions="Center"
-                        WidthRequest="100"
-                        Text="Title" />
+                <Border Style="{StaticResource InputBorder}" Padding="10,0">
                     <Entry
                         x:Name="TitleEntry"
                         Text="{Binding Title}"
-                        VerticalOptions="Center"
+                        HorizontalOptions="Fill"
                         Placeholder="Card Title"
                         SemanticProperties.Hint="Name or topic for this prayer card" />
-                </HorizontalStackLayout>
+                </Border>
 
-<Grid ColumnDefinitions="*, *" ColumnSpacing="4">
-                    <Button 
-                        StyleClass=""
-                        HorizontalOptions="Start"
-                        Command="{Binding DeleteCommand}"
-                        Text="Delete" />
-                    <Button 
-                        StyleClass=""
-                        Grid.Column="1"
-                        HorizontalOptions="End"
-                        Command="{Binding SaveCommand}"
-                        Text="Save" />
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Text="Delete"
+                            Style="{StaticResource DangerButton}"
+                            Command="{Binding DeleteCommand}"
+                            HorizontalOptions="Fill" />
+                    <Button Grid.Column="1"
+                            Text="Save"
+                            Command="{Binding SaveCommand}"
+                            HorizontalOptions="Fill" />
                 </Grid>
             </VerticalStackLayout>
         </Border>
@@ -58,5 +54,5 @@
             HeadlineText="Give it a name — a person, a topic, your church"
             SubText="Then tap Save." />
 
-    </Grid>
+    </VerticalStackLayout>
 </ContentPage>

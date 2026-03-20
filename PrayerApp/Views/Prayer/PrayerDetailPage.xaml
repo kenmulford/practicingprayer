@@ -4,6 +4,7 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Prayer.PrayerDetailPage"
              x:DataType="viewModels:PrayerRequestDetailViewModel"
+             xmlns:models="clr-namespace:PrayerApp.Models"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Name="page"
              Title="Prayer Request">
@@ -36,7 +37,7 @@
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
                            FontSize="13"
-                           TextColor="{StaticResource SuccessGreen}"
+                           TextColor="{AppThemeBinding Light={StaticResource SuccessGreen}, Dark={StaticResource SuccessGreenDark}}"
                            FontAttributes="Bold"
                            IsVisible="{Binding IsAnswered}" />
 
@@ -74,7 +75,7 @@
                     </FlexLayout>
 
                     <!-- Action Buttons -->
-                    <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="6" RowSpacing="6">
+                    <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="8" RowSpacing="8">
                         <Button Grid.Row="0" Grid.Column="0"
                                 Text="Share"
                                 Style="{StaticResource SmallActionButton}"
@@ -110,30 +111,36 @@
                     <!-- Title -->
                     <Label Text="Title"
                            Style="{StaticResource FormLabel}" />
-                    <Entry x:Name="TitleEntry"
-                           Text="{Binding Title}"
-                           Placeholder="Prayer title"
-                           SemanticProperties.Hint="Prayer request title"
-                           HorizontalOptions="Fill" />
+                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                        <Entry x:Name="TitleEntry"
+                               Text="{Binding Title}"
+                               Placeholder="Prayer title"
+                               SemanticProperties.Hint="Prayer request title"
+                               HorizontalOptions="Fill" />
+                    </Border>
 
                     <!-- Details -->
                     <Label Text="Details"
                            Style="{StaticResource FormLabel}" />
-                    <Editor Text="{Binding Details}"
-                            Placeholder="Add details..."
-                            SemanticProperties.Hint="Prayer request details or Scripture reference"
-                            HeightRequest="100"
-                            HorizontalOptions="Fill" />
+                    <Border Style="{StaticResource InputBorder}" Padding="10,4">
+                        <Editor Text="{Binding Details}"
+                                Placeholder="Add details..."
+                                SemanticProperties.Hint="Prayer request details or Scripture reference"
+                                HeightRequest="100"
+                                HorizontalOptions="Fill" />
+                    </Border>
 
                     <!-- Frequency -->
                     <Label Text="Frequency"
                            Style="{StaticResource FormLabel}" />
-                    <Picker Title="Select Frequency"
-                            ItemsSource="{Binding FrequencyOptions}"
-                            ItemDisplayBinding="{Binding .}"
-                            SelectedItem="{Binding PrayerFrequency}"
-                            SemanticProperties.Hint="How often to be reminded"
-                            HorizontalOptions="Fill" />
+                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                        <Picker Title="Select Frequency"
+                                ItemsSource="{Binding FrequencyOptions}"
+                                ItemDisplayBinding="{Binding .}"
+                                SelectedItem="{Binding PrayerFrequency}"
+                                SemanticProperties.Hint="How often to be reminded"
+                                HorizontalOptions="Fill" />
+                    </Border>
 
                     <!-- Notifications Switch -->
                     <HorizontalStackLayout Spacing="10">
@@ -226,10 +233,12 @@
                     </FlexLayout>
 
                     <!-- Tag search entry -->
-                    <Entry Text="{Binding TagSearchText}"
-                           Placeholder="Add tags..."
-                           ReturnCommand="{Binding SubmitTagEntryCommand}"
-                           HorizontalOptions="Fill" />
+                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                        <Entry Text="{Binding TagSearchText}"
+                               Placeholder="Add tags..."
+                               ReturnCommand="{Binding SubmitTagEntryCommand}"
+                               HorizontalOptions="Fill" />
+                    </Border>
 
                     <!-- Suggestions list -->
                     <Border IsVisible="{Binding HasSuggestions}"
@@ -239,7 +248,7 @@
                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedTags}"
                                              Spacing="0">
                             <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="{x:Null}">
+                                <DataTemplate x:DataType="models:PrayerTag">
                                     <Grid Padding="12,10"
                                           BackgroundColor="Transparent">
                                         <Grid.GestureRecognizers>
@@ -253,6 +262,9 @@
                             </BindableLayout.ItemTemplate>
                         </VerticalStackLayout>
                     </Border>
+
+                    <!-- Divider before action buttons -->
+                    <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
                     <!-- Save / Delete Buttons -->
                     <Grid ColumnDefinitions="*, *" ColumnSpacing="8">

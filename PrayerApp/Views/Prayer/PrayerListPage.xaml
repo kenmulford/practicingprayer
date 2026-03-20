@@ -34,7 +34,7 @@
                             <Setter Property="TextColor"       Value="White" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="False">
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray700}}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
                             <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
                         </DataTrigger>
                     </Button.Triggers>
@@ -51,7 +51,7 @@
                             <Setter Property="TextColor"       Value="White" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="False">
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray700}}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
                             <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
                         </DataTrigger>
                     </Button.Triggers>
@@ -68,7 +68,7 @@
                             <Setter Property="TextColor"       Value="White" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="False">
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray700}}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
                             <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
                         </DataTrigger>
                     </Button.Triggers>
@@ -181,10 +181,6 @@
                                    Margin="6,0,0,0" />
                         </Grid>
 
-                        <!-- Divider -->
-                        <BoxView Grid.Row="1"
-                                 Style="{StaticResource DividerLine}"
-                                 VerticalOptions="End" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

@@ -290,12 +290,43 @@ namespace PrayerApp.Services
             // BUG-21 data migration: promote legacy card-level tag rows to request-level rows.
             // For each PrayerCardTag row where PrayerRequestId is still 0 (old schema),
             // find all prayer requests on that card and create a new row per request.
-            await MigrateCardTagsToRequestTagsAsync();
+            try
+            {
+                await MigrateCardTagsToRequestTagsAsync();
+            }
+            catch (Exception ex)
+            {
+                // Non-fatal: app continues, but existing tag assignments may not be migrated.
+                // The exception message here will surface in device logs for diagnosis.
+                System.Diagnostics.Debug.WriteLine($"[BUG-21 Migration] MigrateCardTagsToRequestTagsAsync failed — {ex.GetType().Name}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[BUG-21 Migration] Stack: {ex.StackTrace}");
+            }
         }
 
         private async Task MigrateCardTagsToRequestTagsAsync()
         {
             if (_db == null) return;
+
+            // Guard: verify PrayerRequestId column is present before querying it.
+            // If the ALTER TABLE above failed silently, the column may not exist yet,
+            // which would cause a SQLiteException here and crash the app on startup.
+            var columnExists = false;
+            try
+            {
+                var rows = await _db.QueryAsync<SQLiteColumnInfo>("PRAGMA table_info(PrayerCardTag)");
+                columnExists = rows.Any(r => r.name == "PrayerRequestId");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[BUG-21 Migration] PRAGMA table_info failed: {ex.Message}");
+                return;
+            }
+
+            if (!columnExists)
+            {
+                System.Diagnostics.Debug.WriteLine("[BUG-21 Migration] PrayerRequestId column not found — skipping migration.");
+                return;
+            }
 
             // Find all legacy rows (PrayerRequestId == 0)
             var legacyRows = await _db.Table<PrayerCardTag>()
@@ -303,6 +334,8 @@ namespace PrayerApp.Services
                 .ToListAsync();
 
             if (legacyRows.Count == 0) return;
+
+            System.Diagnostics.Debug.WriteLine($"[BUG-21 Migration] Migrating {legacyRows.Count} legacy card-level tag row(s).");
 
             foreach (var legacy in legacyRows)
             {
@@ -333,6 +366,14 @@ namespace PrayerApp.Services
                 // Remove the legacy card-level row now that it's been migrated
                 await _db.DeleteAsync(legacy);
             }
+
+            System.Diagnostics.Debug.WriteLine("[BUG-21 Migration] Migration complete.");
+        }
+
+        /// <summary>Maps a single row from PRAGMA table_info(...) for column existence checks.</summary>
+        private class SQLiteColumnInfo
+        {
+            public string name { get; set; } = string.Empty;
         }
     }
 }

@@ -11,12 +11,13 @@
 
             <!-- Name field -->
             <VerticalStackLayout Spacing="6">
-                <Label Text="Name" FontSize="12"
-                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
-                <Entry
-                    Text="{Binding Name}"
-                    Placeholder="Tag name"
-                    ReturnType="Done" />
+                <Label Text="Name" Style="{StaticResource FormLabel}" />
+                <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                    <Entry
+                        Text="{Binding Name}"
+                        Placeholder="Tag name"
+                        ReturnType="Done" />
+                </Border>
             </VerticalStackLayout>
 
             <!-- Color picker -->

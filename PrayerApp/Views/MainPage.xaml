@@ -57,9 +57,6 @@
                                                FontSize="15"
                                                FontAttributes="Bold"
                                                TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
-                                        <BoxView Grid.Row="1"
-                                                 Style="{StaticResource DividerLine}"
-                                                 VerticalOptions="End" />
                                     </Grid>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>

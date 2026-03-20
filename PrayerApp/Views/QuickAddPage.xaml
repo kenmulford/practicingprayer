@@ -17,18 +17,22 @@
 
                     <Label Text="Prayer Title"
                            Style="{StaticResource FormLabel}" />
-                    <Entry Text="{Binding Title}"
-                           Placeholder="Enter prayer title"
-                           HorizontalOptions="Fill" />
+                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                        <Entry Text="{Binding Title}"
+                               Placeholder="Enter prayer title"
+                               HorizontalOptions="Fill" />
+                    </Border>
 
                     <Label Text="Add to Card"
                            Style="{StaticResource FormLabel}" />
-                    <Picker ItemsSource="{Binding Cards}"
-                            SelectedItem="{Binding SelectedCard}"
-                            ItemDisplayBinding="{Binding Title}"
-                            Title="Select a card"
-                            SemanticProperties.Hint="Select which prayer card to add this request to"
-                            HorizontalOptions="Fill" />
+                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                        <Picker ItemsSource="{Binding Cards}"
+                                SelectedItem="{Binding SelectedCard}"
+                                ItemDisplayBinding="{Binding Title}"
+                                Title="Select a card"
+                                SemanticProperties.Hint="Select which prayer card to add this request to"
+                                HorizontalOptions="Fill" />
+                    </Border>
 
                 </VerticalStackLayout>
             </Border>
@@ -36,6 +40,7 @@
             <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                 <Button Grid.Column="0"
                         Text="Cancel"
+                        Style="{StaticResource GhostButton}"
                         Command="{Binding CancelCommand}"
                         HorizontalOptions="Fill" />
                 <Button Grid.Column="1"

@@ -28,22 +28,8 @@ namespace PrayerApp.ViewModels
             _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
             _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
 
-            // GET all cards
-            _prayerCards = Task.Run(async () => await _cardService.GetCardsAsync()).Result.ToList();
-
-            // Convert PrayerCard to PrayerCardViewModel
-            AllPrayerCards = new ObservableCollection<PrayerCardViewModel>(
-                _prayerCards.Select(pc => new PrayerCardViewModel(pc))
-            );
-
-            // Subscribe to property changes on each existing card
-            foreach (var card in AllPrayerCards)
-            {
-                SubscribeToPropertyChanges(card);
-            }
-
-            // sort the card list
-            ApplySorting();
+            _prayerCards = new List<PrayerCard>();
+            AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
 
             // register commands
             NewCommand = new AsyncRelayCommand(NewPrayerCardAsync);
@@ -135,7 +121,7 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        private async Task LoadPrayerCardsAsync()
+        public async Task LoadAsync()
         {
             try
             {
@@ -214,7 +200,36 @@ namespace PrayerApp.ViewModels
 
         public void Reload()
         {
-            _ = LoadPrayerCardsAsync();
+            _ = LoadAsync();
+        }
+
+        /// <summary>
+        /// Lightweight refresh for cross-tab consistency. Detects new/deleted cards
+        /// without tearing down the entire ViewModel state (preserving expanded
+        /// accordions, loaded prayers, etc.). Called from OnAppearing on subsequent
+        /// tab visits.
+        /// </summary>
+        public async Task RefreshAsync()
+        {
+            _cardService.InvalidateCache();
+            var cards = await _cardService.GetCardsAsync();
+            var freshIds = cards.Select(c => c.Id).ToHashSet();
+            var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
+
+            // Remove deleted cards
+            var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
+            foreach (var vm in toRemove)
+                AllPrayerCards.Remove(vm);
+
+            // Add new cards
+            foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
+            {
+                var vm = new PrayerCardViewModel(card);
+                SubscribeToPropertyChanges(vm);
+                AllPrayerCards.Add(vm);
+            }
+
+            ApplySorting();
         }
 
         #endregion

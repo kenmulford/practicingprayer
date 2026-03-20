@@ -10,7 +10,7 @@ namespace PrayerApp.Models
     public class PrayerCard
     {
         private static IDBService? _dbService;
-        private string _title = "Prayer Request";
+        private string _title = String.Empty;
 
         [PrimaryKey, AutoIncrement]
         [Column("Id")]
@@ -20,7 +20,7 @@ namespace PrayerApp.Models
         public string Title
         {
             get => _title;
-            set => _title = value ?? "Prayer Request";
+            set => _title = value ?? String.Empty;
         }
 
         [Column("CanNotify")]

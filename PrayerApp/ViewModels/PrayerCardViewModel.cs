@@ -141,6 +141,16 @@ namespace PrayerApp.ViewModels
 
         private async Task DeleteAsync()
         {
+            int prayerCount = Prayers.Count;
+            string detail = prayerCount > 0
+                ? $"Delete \"{Title}\"? This will also delete {prayerCount} prayer request{(prayerCount == 1 ? "" : "s")}."
+                : $"Delete \"{Title}\"?";
+
+            bool confirmed = await Shell.Current.DisplayAlertAsync(
+                "Delete Card", detail, "Delete", "Cancel");
+
+            if (!confirmed) return;
+
             var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
             foreach (var prayer in prayers)
                 await _prayerService.DeletePrayerAsync(prayer);

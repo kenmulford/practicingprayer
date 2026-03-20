@@ -1,79 +1,75 @@
-using System.Threading.Tasks;
-using Plugin.LocalNotification;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
 
 public class NotificationService : INotificationService
 {
-    public Task<bool> RequestPermissionAsync()
+    private readonly ILocalNotificationCenter _center;
+    private readonly Func<bool> _isNotificationsAllowed;
+
+    public NotificationService(ILocalNotificationCenter center, Func<bool> isNotificationsAllowed)
     {
-        return LocalNotificationCenter.Current.RequestNotificationPermission();
+        _center = center;
+        _isNotificationsAllowed = isNotificationsAllowed;
     }
 
-    public Task<bool> AreNotificationsEnabledAsync()
-    {
-        return LocalNotificationCenter.Current.AreNotificationsEnabled();
-    }
+    public Task<bool> RequestPermissionAsync() =>
+        _center.RequestNotificationPermission();
+
+    public Task<bool> AreNotificationsEnabledAsync() =>
+        _center.AreNotificationsEnabled();
 
     public Task ClearAllAsync()
     {
-        LocalNotificationCenter.Current.CancelAll();
+        _center.CancelAll();
+        return Task.CompletedTask;
+    }
+
+    public Task CancelAsync(int notificationId)
+    {
+        _center.Cancel(notificationId);
         return Task.CompletedTask;
     }
 
     public async Task ScheduleAsync(Prayer prayer)
     {
-        if (!Settings.AllowNotifications) return;
+        if (!_isNotificationsAllowed()) return;
 
         // Schedule at 9 AM; if today's 9 AM has passed, use tomorrow's.
         var notifyTime = DateTime.Now.Date.AddHours(9);
         if (notifyTime <= DateTime.Now)
             notifyTime = notifyTime.AddDays(1);
 
-        NotificationRepeat repeatType;
+        NotifyRepeat repeatType;
         TimeSpan? repeatInterval = null;
 
         switch (prayer.PrayerFrequency)
         {
             case PrayerFrequency.Daily:
-                repeatType = NotificationRepeat.Daily;
+                repeatType = NotifyRepeat.Daily;
                 break;
             case PrayerFrequency.Weekly:
-                repeatType = NotificationRepeat.Weekly;
+                repeatType = NotifyRepeat.Weekly;
                 break;
             case PrayerFrequency.Monthly:
-                repeatType = NotificationRepeat.TimeInterval;
+                repeatType = NotifyRepeat.TimeInterval;
                 repeatInterval = TimeSpan.FromDays(30);
                 break;
             case PrayerFrequency.Yearly:
-                repeatType = NotificationRepeat.TimeInterval;
+                repeatType = NotifyRepeat.TimeInterval;
                 repeatInterval = TimeSpan.FromDays(365);
                 break;
             default: // OneTime
-                repeatType = NotificationRepeat.No;
+                repeatType = NotifyRepeat.No;
                 break;
         }
 
-        var request = new NotificationRequest
-        {
-            NotificationId = prayer.Id,
-            Title = "Practicing Prayer",
-            Description = prayer.Title,
-            Schedule = new NotificationRequestSchedule
-            {
-                NotifyTime = notifyTime,
-                RepeatType = repeatType,
-                NotifyRepeatInterval = repeatInterval
-            }
-        };
-
-        await LocalNotificationCenter.Current.Show(request);
-    }
-
-    public Task CancelAsync(int notificationId)
-    {
-        LocalNotificationCenter.Current.Cancel(notificationId);
-        return Task.CompletedTask;
+        await _center.ShowAsync(
+            prayer.Id,
+            "Practicing Prayer",
+            prayer.Title,
+            notifyTime,
+            repeatType,
+            repeatInterval);
     }
 }

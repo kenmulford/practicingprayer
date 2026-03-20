@@ -49,9 +49,16 @@ public partial class MainPage : ContentPage
             && !_onboardingService.WelcomeShownThisSession)
         {
             _onboardingService.MarkWelcomeShown();
-            await this.ShowPopupAsync(new OnboardingWelcomePopup(_onboardingService),
-                new PopupOptions { CanBeDismissedByTappingOutsideOfPopup = false },
-                CancellationToken.None);
+            try
+            {
+                await this.ShowPopupAsync(new OnboardingWelcomePopup(_onboardingService),
+                    new PopupOptions { CanBeDismissedByTappingOutsideOfPopup = false },
+                    CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Onboarding popup failed: {ex}");
+            }
         }
     }
 }
