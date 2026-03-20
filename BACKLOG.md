@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 15 — H-1/H-2/H-3/H-4/H-6 fixed (5 high-priority audit items); 86/86 tests; 0 warnings
-**Next up**: H-5 (PrayerInteraction unbounded growth) or F-13 Phase 1 (iOS form styling)
+**Last completed**: Session 16 — H-5/M-8/M-9/L-4 fixed; Settings page redesign; emoji glyphs removed; Switch styling unified; 81/81 tests; 0 warnings
+**Next up**: F-13 Phase 1 (iOS form styling) or M-4 (loading indicators)
 
 ---
 
@@ -25,29 +25,25 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
-| 1 | H-5 | PrayerInteraction table unbounded growth | Audit | `GetOverduePrayersAsync` loads ALL interaction rows into memory. ~18,250 rows/year. Need SQL GROUP BY query or periodic cleanup. **Requires plan/discussion.** |
-| 2 | M-8 | Card delete orphans PrayerCardTag junction rows | Audit | `PrayerCardViewModel.DeleteAsync` deletes prayers + card but not junction rows for child prayers. |
-| 3 | M-9 | Prayer delete orphans PrayerInteraction rows | Audit | `PrayerService.DeletePrayerAsync` doesn't cascade-delete interaction rows. Compounds H-5. |
-| 4 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
-| 5 | M-4 | Loading indicators on list pages | Audit | PrayerCardsPage, PrayerListPage, TagsPage show blank screen during async load. Add `IsLoading` + `ActivityIndicator`. |
-| 6 | M-7 | Accessibility on SwipeView actions | Audit | No `SemanticProperties` on swipe actions (Edit/Delete/Favorite). VoiceOver/TalkBack users can't discover them. |
-| 7 | M-5 | Hardcoded SwipeItem colors in TagsPage | Audit | `LightSteelBlue` and `IndianRed` — should use `StaticResource Primary`/`DangerRed`. Won't match theme or dark mode. |
-| 8 | M-10 | Custom colors no dark mode adjustment | Audit | Non-palette colors use raw hex in both themes. Dark colors invisible on dark bg. Need brightness adjustment. |
-| 9 | M-1 | OnboardingBanner StepChanged event leak | Audit | Can double-subscribe on re-parent. Unsubscribe before subscribing. |
-| 10 | M-2 | AppShell StepChanged lambda no try/catch | Audit | Fire-and-forget async lambda — if `ShowPopupAsync` throws, exception is unobserved. |
-| 11 | M-3 | TagsPage full reload every OnAppearing | Audit | No `_loaded` guard like other tabs. Causes flicker. Add `RefreshAsync()` pattern. |
-| 12 | M-6 | Hardcoded `TextColor="White"` in XAML | Audit | MainPage, PrayerTimePage — should use `{StaticResource White}` for consistency. |
-| 13 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
-| 14 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Spec out full UX before implementing. |
-| 15 | L-1/2 | Dead NavigatedTo handlers | Audit | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. Remove. |
-| 16 | L-4 | Remove deprecated card-level ITagService methods | Audit | 4 `[Obsolete]` methods with no callers. Remove from interface + implementation. |
-| 17 | L-7 | Remove unused location privacy strings from Info.plist | Audit | `NSLocationWhenInUseUsageDescription` etc. — app doesn't use location. May confuse Apple reviewers. |
-| 18 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. |
-| 19 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
-| 20 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 21 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
-| 22 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
-| 23 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
+| 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
+| 2 | M-4 | Loading indicators on list pages | Audit | PrayerCardsPage, PrayerListPage, TagsPage show blank screen during async load. Add `IsLoading` + `ActivityIndicator`. |
+| 3 | M-7 | Accessibility on SwipeView actions | Audit | No `SemanticProperties` on swipe actions (Edit/Delete/Favorite). VoiceOver/TalkBack users can't discover them. |
+| 4 | M-5 | Hardcoded SwipeItem colors in TagsPage | Audit | `LightSteelBlue` and `IndianRed` — should use `StaticResource Primary`/`DangerRed`. Won't match theme or dark mode. |
+| 5 | M-10 | Custom colors no dark mode adjustment | Audit | Non-palette colors use raw hex in both themes. Dark colors invisible on dark bg. Need brightness adjustment. |
+| 6 | M-1 | OnboardingBanner StepChanged event leak | Audit | Can double-subscribe on re-parent. Unsubscribe before subscribing. |
+| 7 | M-2 | AppShell StepChanged lambda no try/catch | Audit | Fire-and-forget async lambda — if `ShowPopupAsync` throws, exception is unobserved. |
+| 8 | M-3 | TagsPage full reload every OnAppearing | Audit | No `_loaded` guard like other tabs. Causes flicker. Add `RefreshAsync()` pattern. |
+| 9 | M-6 | Hardcoded `TextColor="White"` in XAML | Audit | MainPage, PrayerTimePage — should use `{StaticResource White}` for consistency. |
+| 10 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
+| 11 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Spec out full UX before implementing. |
+| 12 | L-1/2 | Dead NavigatedTo handlers | Audit | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. Remove. |
+| 13 | L-7 | Remove unused location privacy strings from Info.plist | Audit | `NSLocationWhenInUseUsageDescription` etc. — app doesn't use location. May confuse Apple reviewers. |
+| 14 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. |
+| 15 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
+| 16 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 17 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 18 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
+| 19 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
 
 ---
 
@@ -173,7 +169,11 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | H-3 | PrayerCardViewModel.Reload() race condition | — | Removed redundant synchronous `RefreshProperties()` from `Reload()` and `ApplyQueryAttributes`. `LoadPrayerCardAsync` `finally` block is the single notification point. |
 | H-4 | Null checks on `LoadAsync` return values | — | 6 call sites guarded. Page-load methods navigate back on null; in-list operations return silently. `PrayerRequestDetailViewModel.LoadPrayerAsync` restructured to avoid `finally` on null. |
 | H-6 | PrayerTag.Color MaxLength(7) too short | — | `MaxLength(7)` → `MaxLength(9)` to support `#AARRGGBB`. No DB migration needed. |
+| H-5 | PrayerInteraction table unbounded growth | — | `GetOverduePrayersAsync` and `GetLastInteractionDateAsync` rewritten to use SQL GROUP BY / MAX queries via `GetLatestInteractionByPrayerAsync` and `GetMaxInteractionDateAsync`. No longer loads all rows into memory. |
+| M-8 | Card delete orphans PrayerCardTag junction rows | — | `DeleteJunctionRowsByRequestIdAsync` added to IDBService/DBService. Called in `PrayerService.DeletePrayerAsync` cascade. |
+| M-9 | Prayer delete orphans PrayerInteraction rows | — | `DeleteInteractionsByPrayerIdAsync` added to IDBService/DBService. Called in `PrayerService.DeletePrayerAsync` cascade. One-time orphan cleanup migration in `DBService.UpdateSchema()`. |
+| L-4 | Remove deprecated card-level ITagService methods | — | 4 `[Obsolete]` card-level methods removed from `ITagService`, `TagService`, `IDBService`, `DBService`, `PrayerCardTag`. Associated tests removed. |
 
 ---
 
-*Last updated: 2026-03-20 (session 15 — H-1/H-2/H-3/H-4/H-6 fixed; 86/86 tests; 0 warnings)*
+*Last updated: 2026-03-20 (session 16 — H-5/M-8/M-9/L-4 fixed; Settings redesign; Switch styling unified; 81/81 tests; 0 warnings)*
