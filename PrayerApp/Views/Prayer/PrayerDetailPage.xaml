@@ -66,7 +66,7 @@
                                         Padding="8,4"
                                         Margin="2,2">
                                     <Label Text="{Binding Name}"
-                                           TextColor="White"
+                                           TextColor="{StaticResource White}"
                                            FontSize="12"
                                            VerticalOptions="Center" />
                                 </Border>
@@ -177,11 +177,11 @@
                                         Margin="2,2">
                                     <HorizontalStackLayout Spacing="4">
                                         <Label Text="{Binding Name}"
-                                               TextColor="White"
+                                               TextColor="{StaticResource White}"
                                                FontSize="12"
                                                VerticalOptions="Center" />
                                         <Label Text="×"
-                                               TextColor="White"
+                                               TextColor="{StaticResource White}"
                                                FontSize="14"
                                                VerticalOptions="Center">
                                             <Label.GestureRecognizers>

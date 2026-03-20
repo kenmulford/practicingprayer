@@ -12,13 +12,20 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerCardsViewModel : IQueryAttributable
+    internal class PrayerCardsViewModel : ObservableObject, IQueryAttributable
     {
         private List<PrayerCard> _prayerCards;
         private readonly ICardService _cardService;
         private readonly IOnboardingService _onboardingService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
         private bool _isSorting;
+
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
         public ICommand NewCommand { get; }
 
@@ -125,6 +132,7 @@ namespace PrayerApp.ViewModels
 
         public async Task LoadAsync()
         {
+            IsLoading = true;
             try
             {
                 _cardService.InvalidateCache();
@@ -148,6 +156,10 @@ namespace PrayerApp.ViewModels
             catch (Exception e)
             {
                 await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 

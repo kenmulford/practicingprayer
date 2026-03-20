@@ -25,15 +25,15 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
-| 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
-| 2 | M-4 | Loading indicators on list pages | Audit | PrayerCardsPage, PrayerListPage, TagsPage show blank screen during async load. Add `IsLoading` + `ActivityIndicator`. |
-| 3 | M-7 | Accessibility on SwipeView actions | Audit | No `SemanticProperties` on swipe actions (Edit/Delete/Favorite). VoiceOver/TalkBack users can't discover them. |
-| 4 | M-5 | Hardcoded SwipeItem colors in TagsPage | Audit | `LightSteelBlue` and `IndianRed` — should use `StaticResource Primary`/`DangerRed`. Won't match theme or dark mode. |
-| 5 | M-10 | Custom colors no dark mode adjustment | Audit | Non-palette colors use raw hex in both themes. Dark colors invisible on dark bg. Need brightness adjustment. |
-| 6 | M-1 | OnboardingBanner StepChanged event leak | Audit | Can double-subscribe on re-parent. Unsubscribe before subscribing. |
-| 7 | M-2 | AppShell StepChanged lambda no try/catch | Audit | Fire-and-forget async lambda — if `ShowPopupAsync` throws, exception is unobserved. |
-| 8 | M-3 | TagsPage full reload every OnAppearing | Audit | No `_loaded` guard like other tabs. Causes flicker. Add `RefreshAsync()` pattern. |
-| 9 | M-6 | Hardcoded `TextColor="White"` in XAML | Audit | MainPage, PrayerTimePage — should use `{StaticResource White}` for consistency. |
+| 1 | M-4 | Loading indicators on list pages | Audit | PrayerCardsPage, PrayerListPage, TagsPage show blank screen during async load. Add `IsLoading` + `ActivityIndicator`. |
+| 2 | M-7 | Accessibility on SwipeView actions | Audit | No `SemanticProperties` on swipe actions (Edit/Delete/Favorite). VoiceOver/TalkBack users can't discover them. |
+| 3 | M-5 | Hardcoded SwipeItem colors in TagsPage | Audit | `LightSteelBlue` and `IndianRed` — should use `StaticResource Primary`/`DangerRed`. Won't match theme or dark mode. |
+| 4 | M-10 | Custom colors no dark mode adjustment | Audit | Non-palette colors use raw hex in both themes. Dark colors invisible on dark bg. Need brightness adjustment. |
+| 5 | M-1 | OnboardingBanner StepChanged event leak | Audit | Can double-subscribe on re-parent. Unsubscribe before subscribing. |
+| 6 | M-2 | AppShell StepChanged lambda no try/catch | Audit | Fire-and-forget async lambda — if `ShowPopupAsync` throws, exception is unobserved. |
+| 7 | M-3 | TagsPage full reload every OnAppearing | Audit | No `_loaded` guard like other tabs. Causes flicker. Add `RefreshAsync()` pattern. |
+| 8 | M-6 | Hardcoded `TextColor="White"` in XAML | Audit | MainPage, PrayerTimePage — should use `{StaticResource White}` for consistency. |
+| 9 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
 | 10 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
 | 11 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Spec out full UX before implementing. |
 | 12 | L-1/2 | Dead NavigatedTo handlers | Audit | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. Remove. |

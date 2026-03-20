@@ -51,10 +51,15 @@ public partial class OnboardingBanner : ContentView
         SkipTap.Tapped += (_, _) => _onboardingService?.Skip();
     }
 
-    // Subscribe when handler is attached
+    // Subscribe when handler is attached (unsubscribe first to prevent double-subscribe on re-parent)
     protected override void OnHandlerChanged()
     {
         base.OnHandlerChanged();
+
+        // Unsubscribe from any previous service instance
+        if (_onboardingService is not null)
+            _onboardingService.StepChanged -= OnStepChanged;
+
         _onboardingService = IPlatformApplication.Current?.Services
             .GetService<IOnboardingService>();
 

@@ -497,7 +497,7 @@
          MUST follow SmallActionButton in this file (BasedOn dependency). -->
     <Style x:Key="AnsweredButton" TargetType="Button" BasedOn="{StaticResource SmallActionButton}">
         <Setter Property="BackgroundColor" Value="{StaticResource WarmGold}" />
-        <Setter Property="TextColor" Value="White" />
+        <Setter Property="TextColor" Value="{StaticResource White}" />
     </Style>
 
     <!-- CircleNavButton: Prayer Time previous/next arrows.

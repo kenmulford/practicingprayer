@@ -38,8 +38,21 @@ namespace PrayerApp.Helpers
                     return Color.FromArgb(isDark ? dark : light);
             }
 
-            // Not in palette — use the stored value directly
-            return Color.FromArgb(storedHex);
+            // Not in palette — custom color. Lighten for dark mode so it's
+            // visible against dark backgrounds.
+            var color = Color.FromArgb(storedHex);
+            return isDark ? Lighten(color, 0.25f) : color;
+        }
+
+        /// <summary>
+        /// Lightens a color by blending it toward white by the given fraction (0–1).
+        /// </summary>
+        private static Color Lighten(Color c, float amount)
+        {
+            float r = (float)Math.Min(1.0, c.Red   + (1.0 - c.Red)   * amount);
+            float g = (float)Math.Min(1.0, c.Green  + (1.0 - c.Green) * amount);
+            float b = (float)Math.Min(1.0, c.Blue   + (1.0 - c.Blue)  * amount);
+            return new Color(r, g, b, (float)c.Alpha);
         }
 
         /// <summary>

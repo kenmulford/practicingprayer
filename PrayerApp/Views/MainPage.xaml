@@ -20,7 +20,7 @@
                 <Button x:Name="BtnPrayerTime"
                         Text="Prayer Time"
                         BackgroundColor="{StaticResource Primary}"
-                        TextColor="White"
+                        TextColor="{StaticResource White}"
                         SemanticProperties.Hint="Start a prayer session"
                         HorizontalOptions="Fill" />
 

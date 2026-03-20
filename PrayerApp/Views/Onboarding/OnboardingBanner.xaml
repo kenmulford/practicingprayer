@@ -23,7 +23,7 @@
             <!-- Headline -->
             <Label x:Name="HeadlineLabel"
                    Grid.Row="1"
-                   TextColor="White"
+                   TextColor="{StaticResource White}"
                    FontSize="15"
                    FontAttributes="Bold"
                    LineBreakMode="WordWrap" />

@@ -9,6 +9,15 @@
         <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
     </ContentPage.ToolbarItems>
 
+    <Grid>
+
+    <!-- Loading indicator -->
+    <ActivityIndicator IsRunning="{Binding IsLoading}"
+                       IsVisible="{Binding IsLoading}"
+                       Color="{StaticResource Primary}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+
     <CollectionView
         ItemsSource="{Binding Tags}"
         SelectionMode="None"
@@ -32,16 +41,18 @@
                     <SwipeView.LeftItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="LightSteelBlue"
+                                BackgroundColor="{StaticResource Primary}"
                                 Command="{Binding EditCommand}"
+                                SemanticProperties.Description="Edit tag"
                                 Text="Edit" />
                         </SwipeItems>
                     </SwipeView.LeftItems>
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="IndianRed"
+                                BackgroundColor="{StaticResource DangerRed}"
                                 Command="{Binding DeleteCommand}"
+                                SemanticProperties.Description="Delete tag"
                                 Text="Delete" />
                         </SwipeItems>
                     </SwipeView.RightItems>
@@ -91,4 +102,6 @@
                 TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
         </CollectionView.EmptyView>
     </CollectionView>
+
+    </Grid>
 </ContentPage>

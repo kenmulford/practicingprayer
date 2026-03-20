@@ -132,7 +132,7 @@
                     Text="→"
                     Command="{Binding NextCommand}"
                     BackgroundColor="{StaticResource Primary}"
-                    TextColor="White"
+                    TextColor="{StaticResource White}"
                     Style="{StaticResource CircleNavButton}"
                     Margin="16,0,0,0" />
             <Button Grid.Column="5"

@@ -6,6 +6,7 @@ namespace PrayerApp.Views.Tags
     public partial class TagsPage : ContentPage
     {
         private readonly TagsViewModel _vm;
+        private bool _loaded;
 
         public TagsPage()
         {
@@ -19,7 +20,17 @@ namespace PrayerApp.Views.Tags
         {
             base.OnAppearing();
             await App.InitTask; // ensure DB seeding is complete before loading data
-            await _vm.LoadAsync();
+
+            if (!_loaded)
+            {
+                _loaded = true;
+                await _vm.LoadAsync();
+            }
+            else
+            {
+                // Subsequent visits — refresh without flicker
+                await _vm.RefreshAsync();
+            }
         }
     }
 }
