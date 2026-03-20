@@ -42,18 +42,16 @@
 	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
+	<!--
+	  Android signing — passwords loaded from environment variables.
+	  Set ANDROID_SIGNING_STORE_PASS and ANDROID_SIGNING_KEY_PASS in your
+	  shell profile (or CI secrets) before building.
+	-->
+	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-android'">
 	  <AndroidKeyStore>True</AndroidKeyStore>
-	  <AndroidSigningStorePass>***REDACTED***</AndroidSigningStorePass>
 	  <AndroidSigningKeyAlias>prayerapp</AndroidSigningKeyAlias>
-	  <AndroidSigningKeyPass>***REDACTED***</AndroidSigningKeyPass>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
-	  <AndroidKeyStore>True</AndroidKeyStore>
-	  <AndroidSigningStorePass>***REDACTED***</AndroidSigningStorePass>
-	  <AndroidSigningKeyAlias>prayerapp</AndroidSigningKeyAlias>
-	  <AndroidSigningKeyPass>***REDACTED***</AndroidSigningKeyPass>
+	  <AndroidSigningStorePass>$(ANDROID_SIGNING_STORE_PASS)</AndroidSigningStorePass>
+	  <AndroidSigningKeyPass>$(ANDROID_SIGNING_KEY_PASS)</AndroidSigningKeyPass>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
