@@ -42,6 +42,7 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         _orientationService?.LockPortrait();
+        await App.InitTask; // ensure DB seeding is complete before loading data
         await _homeViewModel.LoadAsync();
 
         // Show welcome popup on first visit — one-shot guard prevents re-showing on back navigation

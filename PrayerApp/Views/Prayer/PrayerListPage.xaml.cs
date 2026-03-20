@@ -14,6 +14,7 @@ public partial class PrayerListPage : ContentPage
 	protected override async void OnAppearing()
 	{
 		base.OnAppearing();
+		await App.InitTask; // ensure DB seeding is complete before loading data
 		if (BindingContext is PrayerListViewModel vm)
 		{
 			if (!_loaded)

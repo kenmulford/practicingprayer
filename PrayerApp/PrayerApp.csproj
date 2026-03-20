@@ -46,8 +46,9 @@
 	  Android signing — passwords loaded from environment variables.
 	  Set ANDROID_SIGNING_STORE_PASS and ANDROID_SIGNING_KEY_PASS in your
 	  shell profile (or CI secrets) before building.
+	  When the env vars are absent the build still succeeds (debug-signed).
 	-->
-	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-android'">
+	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-android' AND '$(ANDROID_SIGNING_STORE_PASS)'!=''">
 	  <AndroidKeyStore>True</AndroidKeyStore>
 	  <AndroidSigningKeyAlias>prayerapp</AndroidSigningKeyAlias>
 	  <AndroidSigningStorePass>$(ANDROID_SIGNING_STORE_PASS)</AndroidSigningStorePass>

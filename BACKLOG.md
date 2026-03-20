@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 14 — F-14 done (color picker + tests); 77/77 tests; 0 warnings
-**Next up**: F-13 Phase 1 (iOS form styling)
+**Last completed**: Session 14 — F-14 done, C-1/C-2/C-3 fixed, full app audit (27 findings); 77/77 tests; 0 warnings
+**Next up**: H-1 (fire-and-forget error handling) or F-13 Phase 1 (iOS form styling)
 
 ---
 
@@ -25,13 +25,32 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
-| 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
-| 2 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
-| 3 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Need: long-press or edit mode on color swatches to delete custom colors; confirm dialog; ensure deleted swatch doesn't affect existing tags (tags store hex independently). Spec out full UX before implementing. |
-| 4 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. Standardize initialization patterns using modern best practices. |
-| 5 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
-| 6 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 7 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Also tried `Xamarin.Google.Android.Play.Core 1.10.3` — only targets `net6.0-android31.0`. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 1 | H-1 | Fire-and-forget async error handling | Audit | 19 `_ = SomeAsync()` locations across ViewModels/Settings with no error handling. Unhandled exceptions become `UnobservedTaskException`. Add safe-fire helper or `.ContinueWith` error logging. |
+| 2 | H-2 | iOS AppDelegate missing `e.SetObserved()` | Audit | `UnobservedTaskException` handler logs but doesn't call `e.SetObserved()`. Exception may still propagate. |
+| 3 | H-4 | Null checks on `LoadAsync` return values | Audit | `Prayer.LoadAsync`, `PrayerCard.LoadAsync`, `PrayerTag.LoadAsync` can return null if record deleted between navigation. Multiple ViewModels assume non-null. |
+| 4 | H-5 | PrayerInteraction table unbounded growth | Audit | `GetOverduePrayersAsync` loads ALL interaction rows into memory. ~18,250 rows/year. Need SQL GROUP BY query or periodic cleanup. |
+| 5 | M-8 | Card delete orphans PrayerCardTag junction rows | Audit | `PrayerCardViewModel.DeleteAsync` deletes prayers + card but not junction rows for child prayers. |
+| 6 | M-9 | Prayer delete orphans PrayerInteraction rows | Audit | `PrayerService.DeletePrayerAsync` doesn't cascade-delete interaction rows. Compounds H-5. |
+| 7 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
+| 8 | M-4 | Loading indicators on list pages | Audit | PrayerCardsPage, PrayerListPage, TagsPage show blank screen during async load. Add `IsLoading` + `ActivityIndicator`. |
+| 9 | M-7 | Accessibility on SwipeView actions | Audit | No `SemanticProperties` on swipe actions (Edit/Delete/Favorite). VoiceOver/TalkBack users can't discover them. |
+| 10 | M-5 | Hardcoded SwipeItem colors in TagsPage | Audit | `LightSteelBlue` and `IndianRed` — should use `StaticResource Primary`/`DangerRed`. Won't match theme or dark mode. |
+| 11 | M-10 | Custom colors no dark mode adjustment | Audit | Non-palette colors use raw hex in both themes. Dark colors invisible on dark bg. Need brightness adjustment. |
+| 12 | H-6 | PrayerTag.Color MaxLength(7) too short | Audit | `#AARRGGBB` (9 chars) from `Color.ToArgbHex()` silently truncated. Increase to 9 or strip alpha at save. |
+| 13 | H-3 | PrayerCardViewModel.Reload() race condition | Audit | `RefreshProperties()` called after un-awaited `LoadPrayerCardAsync`. Remove redundant call. |
+| 14 | M-1 | OnboardingBanner StepChanged event leak | Audit | Can double-subscribe on re-parent. Unsubscribe before subscribing. |
+| 15 | M-2 | AppShell StepChanged lambda no try/catch | Audit | Fire-and-forget async lambda — if `ShowPopupAsync` throws, exception is unobserved. |
+| 16 | M-3 | TagsPage full reload every OnAppearing | Audit | No `_loaded` guard like other tabs. Causes flicker. Add `RefreshAsync()` pattern. |
+| 17 | M-6 | Hardcoded `TextColor="White"` in XAML | Audit | MainPage, PrayerTimePage — should use `{StaticResource White}` for consistency. |
+| 18 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
+| 19 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Spec out full UX before implementing. |
+| 20 | L-1/2 | Dead NavigatedTo handlers | Audit | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. Remove. |
+| 21 | L-4 | Remove deprecated card-level ITagService methods | Audit | 4 `[Obsolete]` methods with no callers. Remove from interface + implementation. |
+| 22 | L-7 | Remove unused location privacy strings from Info.plist | Audit | `NSLocationWhenInUseUsageDescription` etc. — app doesn't use location. May confuse Apple reviewers. |
+| 23 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. |
+| 24 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
+| 25 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 26 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
 
 ---
 

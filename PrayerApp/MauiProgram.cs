@@ -78,34 +78,40 @@ namespace PrayerApp
             PrayerApp.Services.Settings.ConfigureNotificationService(
                 app.Services.GetRequiredService<INotificationService>());
 
-            // get the new DB Service
-            using var scope = app.Services.CreateScope();
-            var myDBService = scope.ServiceProvider.GetRequiredService<IDBService>();
-
-            // set DB service for the necessary models
+            // Set DB service for the necessary models (synchronous — just stores a reference).
+            var myDBService = app.Services.GetRequiredService<IDBService>();
             PrayerCard.SetDBService(myDBService);
             PrayerTag.SetDBService(myDBService);
             PrayerCardTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
             PrayerInteraction.SetDBService(myDBService);
 
-            // ensure the schema is updated
-            Task.Run(async () => await myDBService.UpdateSchema()).Wait();
+            // Kick off seeding asynchronously — no blocking on the startup thread.
+            // DBService internally awaits its own schema init before any query runs,
+            // so seeding will wait for tables to exist automatically.
+            // Pages await App.InitTask before loading data.
+            App.InitTask = SeedAsync(app.Services);
 
-            // Seed default color palette (no-op after first run)
-            var userColorService = app.Services.GetRequiredService<IUserColorService>();
-            Task.Run(async () => await userColorService.SeedDefaultsAsync()).Wait();
+            return app;
+        }
+
+        /// <summary>
+        /// Runs post-schema seed work asynchronously. Awaited by App.InitTask
+        /// before the first page loads data.
+        /// </summary>
+        private static async Task SeedAsync(IServiceProvider services)
+        {
+            var userColorService = services.GetRequiredService<IUserColorService>();
+            await userColorService.SeedDefaultsAsync();
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)
             {
-                // seed initial data for development/testing only — never runs in Release builds
-                Task.Run(async () => await myDBService.SeedDataAsync()).Wait();
+                var dbService = services.GetRequiredService<IDBService>();
+                await dbService.SeedDataAsync();
                 PrayerApp.Services.Settings.FirstRun = false;
             }
 #endif
-
-            return app;
         }
     }
 }

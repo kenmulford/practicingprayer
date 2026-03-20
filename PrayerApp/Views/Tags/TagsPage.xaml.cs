@@ -18,6 +18,7 @@ namespace PrayerApp.Views.Tags
         protected override async void OnAppearing()
         {
             base.OnAppearing();
+            await App.InitTask; // ensure DB seeding is complete before loading data
             await _vm.LoadAsync();
         }
     }
