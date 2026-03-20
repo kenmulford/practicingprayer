@@ -3,38 +3,53 @@
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                x:Class="PrayerApp.Views.Tags.ColorPickerPopup"
-               Size="300,320">
+               Size="320,460">
 
     <Border StrokeShape="RoundRectangle 12"
             BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
             Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
-            Padding="20">
-        <VerticalStackLayout Spacing="16">
+            Padding="16">
+        <VerticalStackLayout Spacing="12">
 
-            <Label Text="Pick a Color"
-                   FontSize="18"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center" />
+            <!-- Saturation / Value picker area -->
+            <GraphicsView x:Name="SvPicker"
+                          HeightRequest="200"
+                          HorizontalOptions="Fill"
+                          StartInteraction="OnSvStartInteraction"
+                          DragInteraction="OnSvDragInteraction" />
 
-            <!-- Live preview circle -->
-            <Ellipse x:Name="PreviewCircle"
-                     WidthRequest="60"
-                     HeightRequest="60"
-                     Fill="Gray"
-                     HorizontalOptions="Center" />
+            <!-- Hue slider bar -->
+            <GraphicsView x:Name="HueBar"
+                          HeightRequest="28"
+                          HorizontalOptions="Fill"
+                          StartInteraction="OnHueStartInteraction"
+                          DragInteraction="OnHueDragInteraction" />
 
-            <!-- Hex entry -->
-            <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                <Entry x:Name="HexEntry"
-                       Placeholder="#RRGGBB"
-                       MaxLength="7"
-                       Keyboard="Text"
-                       TextChanged="OnHexTextChanged"
-                       HorizontalOptions="Fill" />
-            </Border>
+            <!-- Hex display + color preview -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Padding="0,4,0,0">
+                <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                    <Entry x:Name="HexEntry"
+                           Placeholder="#RRGGBB"
+                           MaxLength="7"
+                           Keyboard="Text"
+                           TextChanged="OnHexTextChanged"
+                           HorizontalOptions="Fill" />
+                </Border>
+                <Border Grid.Column="1"
+                        StrokeShape="RoundRectangle 4"
+                        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Padding="0">
+                    <BoxView x:Name="PreviewBox"
+                             Color="Green"
+                             WidthRequest="44"
+                             HeightRequest="44" />
+                </Border>
+            </Grid>
 
             <!-- Buttons -->
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Padding="0,4,0,0">
                 <Button Grid.Column="0"
                         Text="Cancel"
                         Style="{StaticResource GhostButton}"

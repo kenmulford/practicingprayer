@@ -1,4 +1,3 @@
-using PrayerApp.Helpers;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -6,6 +5,16 @@ namespace PrayerApp.Services;
 public class UserColorService : IUserColorService
 {
     private readonly IDBService _dbService;
+
+    /// <summary>
+    /// Default palette hex values (light-mode). Matches TagColorPalette.Swatches order.
+    /// Kept here so UserColorService has no MAUI dependency and is unit-testable.
+    /// </summary>
+    internal static readonly string[] DefaultPaletteHexValues =
+    {
+        "#B84040", "#B35A20", "#7A4020", "#1E7870",
+        "#2E5A9A", "#663C8C", "#8C3860", "#505050",
+    };
 
     public UserColorService(IDBService dbService)
     {
@@ -46,9 +55,9 @@ public class UserColorService : IUserColorService
         var existing = await _dbService.GetAllAsync<UserColor>();
         if (existing.Count > 0) return; // Already seeded
 
-        foreach (var (light, _, _) in TagColorPalette.Swatches)
+        foreach (var hex in DefaultPaletteHexValues)
         {
-            await _dbService.InsertAsync(new UserColor { HexValue = light.ToUpperInvariant() });
+            await _dbService.InsertAsync(new UserColor { HexValue = hex });
         }
     }
 }

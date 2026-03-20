@@ -41,9 +41,11 @@
     <Compile Include="../PrayerApp/Models/PrayerFrequency.cs" />
     <Compile Include="../PrayerApp/Models/PrayerInteraction.cs" />
     <Compile Include="../PrayerApp/Models/OnboardingStep.cs" />
+    <Compile Include="../PrayerApp/Models/UserColor.cs" />
 
     <!-- Service interfaces -->
     <Compile Include="../PrayerApp/Services/IDBService.cs" />
+    <Compile Include="../PrayerApp/Services/IUserColorService.cs" />
     <Compile Include="../PrayerApp/Services/ICardService.cs" />
     <Compile Include="../PrayerApp/Services/IPrayerService.cs" />
     <Compile Include="../PrayerApp/Services/ITagService.cs" />
@@ -58,6 +60,7 @@
     <Compile Include="../PrayerApp/Services/TagService.cs" />
     <Compile Include="../PrayerApp/Services/PrayerInteractionService.cs" />
     <Compile Include="../PrayerApp/Services/NotificationService.cs" />
+    <Compile Include="../PrayerApp/Services/UserColorService.cs" />
     <!-- OnboardingService.cs excluded: uses MAUI Preferences (same reason as Settings.cs) -->
     <!-- LocalNotificationCenterWrapper.cs excluded: depends on Plugin.LocalNotification (MAUI) -->
     <!-- Settings.cs excluded: uses MAUI Preferences -->

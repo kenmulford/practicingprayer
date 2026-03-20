@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 13 — BUG-29, BUG-30, UX-7, UX-10 done; 66/66 tests; 0 warnings
-**Next up**: F-13 Phase 1 (iOS form styling) or F-14 (tag color picker)
+**Last completed**: Session 14 — F-14 done (color picker + tests); 77/77 tests; 0 warnings
+**Next up**: F-13 Phase 1 (iOS form styling)
 
 ---
 
@@ -26,8 +26,8 @@ Items are listed in work order. Start at the top, work down.
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
 | 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
-| 2 | F-14 | Tag color palette: user-defined colors + native picker | Tony/Ken | New `UserColor` table. FlexLayout wrap grid. iOS: native `UIColorPickerViewController`. Android: hex-entry popup. 8 defaults seeded. |
-| 3 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
+| 2 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
+| 3 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Need: long-press or edit mode on color swatches to delete custom colors; confirm dialog; ensure deleted swatch doesn't affect existing tags (tags store hex independently). Spec out full UX before implementing. |
 | 4 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. Standardize initialization patterns using modern best practices. |
 | 5 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
 | 6 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
@@ -44,6 +44,17 @@ Items are listed in work order. Start at the top, work down.
 1. When user taps a notification, navigate to the specific prayer request's view page instead of the home page.
 2. Add an "I prayed for this" button on the prayer request view/detail page so users can log interactions without entering a full Prayer Time session.
 **Requires:** Deep-link routing from notification payload → Shell navigation to PrayerDetailPage with prayer ID.
+
+### F-16 Manage user color palette — delete/reorder swatches
+
+**Reporter:** Internal (session 14)
+**Details:** `IUserColorService.DeleteColorAsync(int id)` exists in the service layer but has no UI surface. Users can add custom colors via the "+" button but cannot remove them.
+**To spec:**
+- How should delete be triggered? Long-press on a swatch? Edit mode toggle?
+- Should the 8 default palette colors be deletable, or only user-added ones?
+- Confirm dialog before delete?
+- Should there be a reorder capability?
+- Tags store their color as a raw hex string (`PrayerTag.Color`). Deleting a `UserColor` row does NOT affect existing tags — they keep their color. The swatch just won't appear in the picker. Should we warn if a color is in use?
 
 ### TD-8 Refactor ViewModels to constructor injection
 
@@ -140,7 +151,8 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | BUG-30 | Switch "On" state invisible in dark mode | — | `OnColor` dark value was `Gray200` (near-white) with white thumb. Changed to `Primary` (green) so white thumb is clearly visible in dark mode. |
 | UX-7 | Home page unified overdue card + Last Prayed stat | — | Merged two disconnected boxes into one `PrayerCardBorder` card: bold count header (tappable → Prayers filtered to Overdue) + inline needs-attention list. Added "Last prayed: X" stat label. Added `FilterStatus.Overdue` to PrayerListViewModel + `?filter=overdue` navigation. |
 | UX-10 | Prayer card form styling — match request form | — | Applied `PrayerCardBorder` style, removed redundant "Prayer Card" title label, restructured to Grid layout with pinned onboarding banner, added DividerLine above buttons. |
+| F-14 | Tag color palette: user-defined colors + native picker | — | New `UserColor` model + `IUserColorService` (CRUD + seed 8 defaults). iOS: native `UIColorPickerViewController`. Android: visual HSV color picker popup (saturation/value 2D area + hue slider + hex display). TagDetailPage swatches in FlexLayout wrap grid with "+" button. Decoupled `UserColorService` from MAUI for testability. 11 new unit tests (77/77 total). Tag deletion does not cascade to UserColors. |
 
 ---
 
-*Last updated: 2026-03-19 (session 13 — BUG-29/30, UX-7/10 completed; 66/66 tests; 0 warnings)*
+*Last updated: 2026-03-20 (session 14 — F-14 completed; 77/77 tests; 0 warnings)*
