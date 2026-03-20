@@ -23,7 +23,7 @@ public partial class Settings : ContentPage
         chkSettingsAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
 
         var logPath = _diagnosticLog.GetLogPath();
-        btnSendDiagnostics.IsVisible = File.Exists(logPath) && new FileInfo(logPath).Length > 0;
+        diagnosticsSection.IsVisible = File.Exists(logPath) && new FileInfo(logPath).Length > 0;
     }
 
     private void chkSettingsAllowNotifications_Toggled(object sender, ToggledEventArgs e)

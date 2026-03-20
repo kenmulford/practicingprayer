@@ -46,7 +46,8 @@ Items are listed in work order. Start at the top, work down.
 | 19 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
 | 20 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
 | 21 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
-| 22 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
+| 22 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
+| 23 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
 
 ---
 

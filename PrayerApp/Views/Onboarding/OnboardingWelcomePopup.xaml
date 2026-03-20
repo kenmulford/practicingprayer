@@ -15,11 +15,6 @@
 
         <VerticalStackLayout Padding="28,32" Spacing="16">
 
-            <Label Text="🙏"
-                   FontSize="48"
-                   FontFamily=""
-                   HorizontalOptions="Center" />
-
             <Label Text="Welcome to Practicing Prayer"
                    FontSize="22"
                    FontAttributes="Bold"
