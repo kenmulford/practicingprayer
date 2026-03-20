@@ -2,12 +2,12 @@
 <toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-               x:Class="PrayerApp.Views.Tags.ColorPickerPopup"
-               Size="320,460">
+               x:Class="PrayerApp.Views.Tags.ColorPickerPopup">
 
     <Border StrokeShape="RoundRectangle 12"
             BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
             Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+            WidthRequest="320"
             Padding="16">
         <VerticalStackLayout Spacing="12">
 
