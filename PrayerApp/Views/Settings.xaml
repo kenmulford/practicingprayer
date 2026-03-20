@@ -5,30 +5,23 @@
              Title="App Settings">
     <ScrollView>
         <VerticalStackLayout
-            Padding="20,5"
+            Padding="20,16"
             Spacing="5">
+
+            <!-- Notifications -->
+            <Label
+                Text="Notifications"
+                Style="{StaticResource SectionHeading}"
+                Margin="0,0,0,4" />
             <Grid
                 ColumnDefinitions="*, Auto"
                 ColumnSpacing="12"
-                RowDefinitions="Auto,Auto"
                 HorizontalOptions="Fill"
-                VerticalOptions="Center"
-                RowSpacing="8">
+                VerticalOptions="Center">
                 <Label
-                    Text="Clear Settings" />
-                <Button
-                    x:Name="btnClearSettings"
-                    Grid.Column="1"
-                    HorizontalOptions="End"
-                    Clicked="btnClearSettings_Clicked"
-                    Text="Go" />
-
-                <Label
-                    Grid.Row="1"
-                    Text="Allow Notifications?" />
+                    Text="Allow Notifications" />
                 <Switch
                     x:Name="chkSettingsAllowNotifications"
-                    Grid.Row="1"
                     Grid.Column="1"
                     SemanticProperties.Description="Allow the app to send prayer reminder notifications"
                     OnColor="{StaticResource Secondary}"
@@ -53,14 +46,15 @@
                     </VisualStateManager.VisualStateGroups>
                 </Switch>
             </Grid>
+
             <!-- Online Backup -->
             <Label
-                Text="Online Backup"
-                Style="{StaticResource Headline}"
+                Text="Backup &amp; Restore"
+                Style="{StaticResource SectionHeading}"
                 Margin="0,20,0,4" />
             <Label
                 Text="Export your prayer data to a file you can restore on another device."
-                Style="{StaticResource SubHeadline}"
+                Style="{StaticResource SectionDescription}"
                 Margin="0,0,0,8" />
             <Button
                 x:Name="btnBackup"
@@ -77,11 +71,11 @@
             <!-- Diagnostics -->
             <Label
                 Text="Diagnostics"
-                Style="{StaticResource Headline}"
+                Style="{StaticResource SectionHeading}"
                 Margin="0,20,0,4" />
             <Label
                 Text="If you're experiencing issues, send this log to help us diagnose the problem."
-                Style="{StaticResource SubHeadline}"
+                Style="{StaticResource SectionDescription}"
                 Margin="0,0,0,8" />
             <Button
                 x:Name="btnSendDiagnostics"
@@ -96,7 +90,7 @@
                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                    TextDecorations="Underline"
                    FontSize="14"
-                   Margin="0,12,0,0"
+                   Margin="0,20,0,0"
                    HorizontalOptions="Start">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer x:Name="TapPrivacyPolicy" />

@@ -80,47 +80,6 @@ public class TagService : ITagService
         return requestIds.ToList().AsReadOnly();
     }
 
-    // ── Deprecated card-level methods — kept for transition ────────────────
-
-    [Obsolete("Tags are now per-request. Use GetTagsByRequestIdAsync instead.")]
-    public async Task<IReadOnlyList<PrayerTag>> GetTagsByCardIdAsync(int prayerCardId)
-    {
-        var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
-        var tagIds = cardTags.Select(ct => ct.PrayerTagId).ToHashSet();
-        var allTags = await GetTagsAsync();
-
-        var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
-        return new ReadOnlyCollection<PrayerTag>(tags);
-    }
-
-    [Obsolete("Tags are now per-request. Use AddTagToRequestAsync instead.")]
-    public async Task<int> AddTagToCardAsync(int prayerCardId, int prayerTagId)
-    {
-        var cardTag = new PrayerCardTag
-        {
-            PrayerCardId = prayerCardId,
-            PrayerTagId = prayerTagId
-        };
-
-        var result = await _dbService.InsertAsync(cardTag);
-        InvalidateCache();
-        return result;
-    }
-
-    [Obsolete("Tags are now per-request. Use RemoveTagFromRequestAsync instead.")]
-    public async Task<int> RemoveTagFromCardAsync(int prayerCardId, int prayerTagId)
-    {
-        var cardTags = await PrayerCardTag.LoadByCardIdAsync(prayerCardId);
-        var toDelete = cardTags.FirstOrDefault(ct => ct.PrayerTagId == prayerTagId);
-
-        if (toDelete is null)
-            return 0;
-
-        var result = await _dbService.DeleteAsync(toDelete);
-        InvalidateCache();
-        return result;
-    }
-
     public async Task<PrayerTag> SaveTagAsync(PrayerTag tag)
     {
         await tag.SaveAsync();
@@ -140,10 +99,6 @@ public class TagService : ITagService
         await tag.DeleteAsync();
         InvalidateCache();
     }
-
-    [Obsolete("Tags are now per-request. Use GetRequestIdsByTagIdsAsync instead.")]
-    public async Task<IReadOnlyList<int>> GetPrayerIdsByTagIdsAsync(IEnumerable<int> tagIds)
-        => await GetRequestIdsByTagIdsAsync(tagIds);
 
     private void InvalidateCache()
     {

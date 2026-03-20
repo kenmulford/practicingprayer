@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-20
 **Scope:** H-2, H-6, H-1, H-3, H-4 from the pre-app-store audit
-**Status:** Approved for implementation
+**Status:** Completed (session 15)
 
 ---
 

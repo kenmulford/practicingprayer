@@ -70,7 +70,7 @@ Views (XAML)
 - Branch naming: `feature/<short-name>` (e.g., `feature/f7-home-personalization`)
 
 ### Styling
-- Dark-first theme with `AppThemeBinding` for light mode — never hardcode hex in XAML or C#
+- Full light and dark mode support via `AppThemeBinding` — never hardcode hex in XAML or C#
 - Use `StaticResource` color tokens from `Resources/Styles/Colors.xaml`
 - Card borders: `Style="{StaticResource PrayerCardBorder}"` on every card-wrapping `Border`
 - Named styles for reusable patterns in `Resources/Styles/Styles.xaml`

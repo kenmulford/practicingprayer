@@ -213,7 +213,7 @@ public class PrayerServiceTests
     {
         var prayer = new Prayer { Id = 1, IsAnswered = false };
         _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
-        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction>()));
+        _db.GetLatestInteractionByPrayerAsync().Returns(Task.FromResult(new List<LatestInteractionResult>()));
 
         var result = await _service.GetOverduePrayersAsync();
 
@@ -225,9 +225,11 @@ public class PrayerServiceTests
     public async Task GetOverduePrayersAsync_PrayedWithinThreshold_NotIncluded()
     {
         var prayer = new Prayer { Id = 1, IsAnswered = false };
-        var interaction = new PrayerInteraction { PrayerId = 1, InteractionAt = DateTime.Now.AddDays(-5) };
         _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
-        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { interaction }));
+        _db.GetLatestInteractionByPrayerAsync().Returns(Task.FromResult(new List<LatestInteractionResult>
+        {
+            new() { PrayerId = 1, LatestInteractionAt = DateTime.Now.AddDays(-5) }
+        }));
 
         var result = await _service.GetOverduePrayersAsync(dayThreshold: 30);
 
@@ -238,9 +240,11 @@ public class PrayerServiceTests
     public async Task GetOverduePrayersAsync_PrayedBeforeThreshold_IsIncluded()
     {
         var prayer = new Prayer { Id = 1, IsAnswered = false };
-        var interaction = new PrayerInteraction { PrayerId = 1, InteractionAt = DateTime.Now.AddDays(-60) };
         _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
-        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { interaction }));
+        _db.GetLatestInteractionByPrayerAsync().Returns(Task.FromResult(new List<LatestInteractionResult>
+        {
+            new() { PrayerId = 1, LatestInteractionAt = DateTime.Now.AddDays(-60) }
+        }));
 
         var result = await _service.GetOverduePrayersAsync(dayThreshold: 30);
 
@@ -252,7 +256,7 @@ public class PrayerServiceTests
     {
         var prayer = new Prayer { Id = 1, IsAnswered = true };
         _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
-        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction>()));
+        _db.GetLatestInteractionByPrayerAsync().Returns(Task.FromResult(new List<LatestInteractionResult>()));
 
         var result = await _service.GetOverduePrayersAsync();
 
@@ -265,10 +269,12 @@ public class PrayerServiceTests
         var pNever = new Prayer { Id = 1, IsAnswered = false };
         var pOld   = new Prayer { Id = 2, IsAnswered = false };
         var pOlder = new Prayer { Id = 3, IsAnswered = false };
-        var iOld   = new PrayerInteraction { PrayerId = 2, InteractionAt = DateTime.Now.AddDays(-40) };
-        var iOlder = new PrayerInteraction { PrayerId = 3, InteractionAt = DateTime.Now.AddDays(-60) };
         _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { pNever, pOld, pOlder }));
-        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { iOld, iOlder }));
+        _db.GetLatestInteractionByPrayerAsync().Returns(Task.FromResult(new List<LatestInteractionResult>
+        {
+            new() { PrayerId = 2, LatestInteractionAt = DateTime.Now.AddDays(-40) },
+            new() { PrayerId = 3, LatestInteractionAt = DateTime.Now.AddDays(-60) }
+        }));
 
         var result = await _service.GetOverduePrayersAsync(dayThreshold: 30);
 
@@ -282,14 +288,56 @@ public class PrayerServiceTests
     public async Task GetOverduePrayersAsync_CustomThreshold_UsedAsFilter()
     {
         var prayer = new Prayer { Id = 1, IsAnswered = false };
-        var interaction = new PrayerInteraction { PrayerId = 1, InteractionAt = DateTime.Now.AddDays(-10) };
         _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
-        _db.GetAllAsync<PrayerInteraction>().Returns(Task.FromResult(new List<PrayerInteraction> { interaction }));
+        _db.GetLatestInteractionByPrayerAsync().Returns(Task.FromResult(new List<LatestInteractionResult>
+        {
+            new() { PrayerId = 1, LatestInteractionAt = DateTime.Now.AddDays(-10) }
+        }));
 
         var overdue7  = await _service.GetOverduePrayersAsync(dayThreshold: 7);
         var overdue30 = await _service.GetOverduePrayersAsync(dayThreshold: 30);
 
         Assert.Single(overdue7);  // 10 days > 7 day threshold → overdue
         Assert.Empty(overdue30);  // 10 days < 30 day threshold → not overdue
+    }
+
+    // ── GetLastInteractionDateAsync ─────────────────────────────────────────
+
+    [Fact]
+    public async Task GetLastInteractionDateAsync_NoInteractions_ReturnsNull()
+    {
+        _db.GetMaxInteractionDateAsync().Returns(Task.FromResult<DateTime?>(null));
+
+        var result = await _service.GetLastInteractionDateAsync();
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetLastInteractionDateAsync_HasInteractions_ReturnsMaxDate()
+    {
+        var expected = new DateTime(2026, 3, 15, 10, 30, 0);
+        _db.GetMaxInteractionDateAsync().Returns(Task.FromResult<DateTime?>(expected));
+
+        var result = await _service.GetLastInteractionDateAsync();
+
+        Assert.Equal(expected, result);
+    }
+
+    // ── DeletePrayerAsync cascade ───────────────────────────────────────────
+
+    [Fact]
+    public async Task DeletePrayerAsync_DeletesInteractionsAndJunctionRows()
+    {
+        var prayer = new Prayer { Id = 42 };
+        _db.DeleteInteractionsByPrayerIdAsync(42).Returns(Task.FromResult(3));
+        _db.DeleteJunctionRowsByRequestIdAsync(42).Returns(Task.FromResult(1));
+        _db.DeleteAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        await _service.DeletePrayerAsync(prayer);
+
+        await _db.Received(1).DeleteInteractionsByPrayerIdAsync(42);
+        await _db.Received(1).DeleteJunctionRowsByRequestIdAsync(42);
+        await _db.Received(1).DeleteAsync(Arg.Is<Prayer>(p => p.Id == 42));
     }
 }

@@ -26,12 +26,6 @@ public partial class Settings : ContentPage
         btnSendDiagnostics.IsVisible = File.Exists(logPath) && new FileInfo(logPath).Length > 0;
     }
 
-    private async void btnClearSettings_Clicked(object sender, EventArgs e)
-    {
-        PrayerApp.Services.Settings.ClearSettings();
-        await DisplayAlertAsync("Settings Cleared", "The next time the app runs all DB info will be reset.", "OK");
-    }
-
     private void chkSettingsAllowNotifications_Toggled(object sender, ToggledEventArgs e)
     {
         PrayerApp.Services.Settings.AllowNotifications = e.Value;

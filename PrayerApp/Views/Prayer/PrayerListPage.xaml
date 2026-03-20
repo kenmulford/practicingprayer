@@ -79,7 +79,7 @@
             <!-- Search bar -->
             <SearchBar Text="{Binding SearchText}"
                        Placeholder="Search prayers..."
-                       BackgroundColor="Transparent" />
+                       BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
 
             <!-- Tag chip row — only shown when tags exist -->
             <ScrollView Orientation="Horizontal"
