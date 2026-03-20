@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               x:Class="PrayerApp.Views.Tags.ColorPickerPopup"
+               Size="300,320">
+
+    <Border StrokeShape="RoundRectangle 12"
+            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+            Padding="20">
+        <VerticalStackLayout Spacing="16">
+
+            <Label Text="Pick a Color"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" />
+
+            <!-- Live preview circle -->
+            <Ellipse x:Name="PreviewCircle"
+                     WidthRequest="60"
+                     HeightRequest="60"
+                     Fill="Gray"
+                     HorizontalOptions="Center" />
+
+            <!-- Hex entry -->
+            <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                <Entry x:Name="HexEntry"
+                       Placeholder="#RRGGBB"
+                       MaxLength="7"
+                       Keyboard="Text"
+                       TextChanged="OnHexTextChanged"
+                       HorizontalOptions="Fill" />
+            </Border>
+
+            <!-- Buttons -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        Style="{StaticResource GhostButton}"
+                        Clicked="OnCancel"
+                        HorizontalOptions="Fill" />
+                <Button Grid.Column="1"
+                        Text="Add"
+                        Clicked="OnAccept"
+                        HorizontalOptions="Fill" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </Border>
+
+</toolkit:Popup>

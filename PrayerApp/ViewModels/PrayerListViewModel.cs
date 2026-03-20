@@ -11,7 +11,7 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    public enum FilterStatus { Active, Answered, All }
+    public enum FilterStatus { Active, Answered, All, Overdue }
 
     internal class PrayerListViewModel : ObservableObject, IQueryAttributable
     {
@@ -23,6 +23,9 @@ namespace PrayerApp.ViewModels
 
         // requestId → set of tagIds assigned to that request (for chip filter)
         private Dictionary<int, HashSet<int>> _requestTagIds = new();
+
+        // prayer IDs considered overdue (not prayed in 30+ days)
+        private HashSet<int> _overdueIds = new();
 
         // Full unfiltered backing store — manipulated by IQueryAttributable
         public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; } = new();
@@ -54,6 +57,7 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged(nameof(IsActiveSelected));
                     OnPropertyChanged(nameof(IsAnsweredSelected));
                     OnPropertyChanged(nameof(IsAllSelected));
+                    OnPropertyChanged(nameof(IsOverdueSelected));
                     ApplyFilter();
                 }
             }
@@ -61,6 +65,7 @@ namespace PrayerApp.ViewModels
         public bool IsActiveSelected   => StatusFilter == FilterStatus.Active;
         public bool IsAnsweredSelected => StatusFilter == FilterStatus.Answered;
         public bool IsAllSelected      => StatusFilter == FilterStatus.All;
+        public bool IsOverdueSelected  => StatusFilter == FilterStatus.Overdue;
 
         public ICommand NewCommand { get; }
         public ICommand SetStatusCommand { get; }
@@ -82,6 +87,7 @@ namespace PrayerApp.ViewModels
                 {
                     "Answered" => FilterStatus.Answered,
                     "All"      => FilterStatus.All,
+                    "Overdue"  => FilterStatus.Overdue,
                     _          => FilterStatus.Active
                 };
             });
@@ -98,6 +104,10 @@ namespace PrayerApp.ViewModels
 
             // Build tag→request lookup for chip filter
             _requestTagIds = await BuildRequestTagLookupAsync();
+
+            // Build overdue set for Overdue filter
+            var overdue = await _prayerService.GetOverduePrayersAsync(30);
+            _overdueIds = overdue.Select(p => p.Id).ToHashSet();
 
             // Build prayer ViewModels
             AllPrayers.Clear();
@@ -122,7 +132,16 @@ namespace PrayerApp.ViewModels
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.ContainsKey("deleted"))
+            if (query.ContainsKey("filter"))
+            {
+                var filter = query["filter"].ToString();
+                StatusFilter = filter switch
+                {
+                    "overdue" => FilterStatus.Overdue,
+                    _         => FilterStatus.Active
+                };
+            }
+            else if (query.ContainsKey("deleted"))
             {
                 var id = query["deleted"].ToString();
                 var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
@@ -201,6 +220,7 @@ namespace PrayerApp.ViewModels
             {
                 FilterStatus.Active   => result.Where(p => !p.IsAnswered),
                 FilterStatus.Answered => result.Where(p => p.IsAnswered),
+                FilterStatus.Overdue  => result.Where(p => !p.IsAnswered && _overdueIds.Contains(p.Id)),
                 _                     => result
             };
 

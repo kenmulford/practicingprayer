@@ -78,6 +78,13 @@ public class PrayerService : IPrayerService
             .AsReadOnly();
     }
 
+    public async Task<DateTime?> GetLastInteractionDateAsync()
+    {
+        var all = await _dbService.GetAllAsync<PrayerInteraction>();
+        if (all.Count == 0) return null;
+        return all.Max(i => i.InteractionAt);
+    }
+
     public void InvalidateCache()
     {
         _cardCache = null;

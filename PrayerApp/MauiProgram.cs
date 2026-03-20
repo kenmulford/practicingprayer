@@ -56,11 +56,15 @@ namespace PrayerApp
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
             // Register backup service
             builder.Services.AddSingleton<IBackupService, BackupService>();
+            // Register user color service
+            builder.Services.AddSingleton<IUserColorService, UserColorService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
+            builder.Services.AddSingleton<IColorPickerService, PrayerApp.Platforms.Android.ColorPickerService>();
 #elif IOS
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.iOS.OrientationService>();
+            builder.Services.AddSingleton<IColorPickerService, PrayerApp.Platforms.iOS.ColorPickerService>();
 #endif
 
             // add transient viewmodel so each instance of PrayerCardPage is new (avoid data bleed/leak)
@@ -87,6 +91,10 @@ namespace PrayerApp
 
             // ensure the schema is updated
             Task.Run(async () => await myDBService.UpdateSchema()).Wait();
+
+            // Seed default color palette (no-op after first run)
+            var userColorService = app.Services.GetRequiredService<IUserColorService>();
+            Task.Run(async () => await userColorService.SeedDefaultsAsync()).Wait();
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)

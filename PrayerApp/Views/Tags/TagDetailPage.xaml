@@ -22,39 +22,65 @@
 
             <!-- Color picker -->
             <VerticalStackLayout Spacing="10">
-                <Label Text="Color" FontSize="12"
-                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                <Label Text="Color" Style="{StaticResource FormLabel}" />
 
-                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-                    <HorizontalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Swatches}">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
-                                <Grid WidthRequest="40" HeightRequest="40">
-                                    <Grid.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SelectCommand}" />
-                                    </Grid.GestureRecognizers>
-                                    <!-- Color circle -->
-                                    <Ellipse
-                                        Fill="{Binding SwatchColor}"
-                                        WidthRequest="36"
-                                        HeightRequest="36"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center" />
-                                    <!-- Selected ring -->
-                                    <Ellipse
-                                        Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
-                                        StrokeThickness="2"
-                                        Fill="Transparent"
-                                        WidthRequest="40"
-                                        HeightRequest="40"
-                                        IsVisible="{Binding IsSelected}"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center" />
-                                </Grid>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </HorizontalStackLayout>
-                </ScrollView>
+                <FlexLayout Wrap="Wrap" Direction="Row"
+                            AlignItems="Start" JustifyContent="Start">
+
+                    <!-- Dynamic swatches from UserColor table -->
+                    <BindableLayout.ItemsSource>
+                        <Binding Path="Swatches" />
+                    </BindableLayout.ItemsSource>
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
+                            <Grid WidthRequest="48" HeightRequest="48" Margin="4">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectCommand}" />
+                                </Grid.GestureRecognizers>
+                                <!-- Color circle -->
+                                <Ellipse
+                                    Fill="{Binding SwatchColor}"
+                                    WidthRequest="36"
+                                    HeightRequest="36"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                                <!-- Selected ring -->
+                                <Ellipse
+                                    Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
+                                    StrokeThickness="2"
+                                    Fill="Transparent"
+                                    WidthRequest="40"
+                                    HeightRequest="40"
+                                    IsVisible="{Binding IsSelected}"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+
+                <!-- Add custom color button -->
+                <Grid WidthRequest="48" HeightRequest="48" Margin="4,0,0,0"
+                      HorizontalOptions="Start">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding AddColorCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Ellipse
+                        Stroke="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
+                        StrokeThickness="1.5"
+                        StrokeDashArray="4,3"
+                        Fill="Transparent"
+                        WidthRequest="36"
+                        HeightRequest="36"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center" />
+                    <Label Text="+"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Grid>
             </VerticalStackLayout>
 
             <!-- Save button -->

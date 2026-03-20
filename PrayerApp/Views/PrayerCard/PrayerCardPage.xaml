@@ -9,43 +9,43 @@
     <ContentPage.BindingContext>
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
-    <VerticalStackLayout>
-        <VerticalStackLayout Grid.Row="0" Padding="24">
-        <Label 
-            Text="Prayer Card"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center"
-            Style="{StaticResource CardTitle}"
-            FontSize="24" />
 
-        <Border Padding="20">
-            <VerticalStackLayout Spacing="15" Margin="5">
-                <Label Text="Title" 
-                       Style="{StaticResource FormLabel}" />
+    <Grid RowDefinitions="*,Auto">
 
-                <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                    <Entry
-                        x:Name="TitleEntry"
-                        Text="{Binding Title}"
-                        HorizontalOptions="Fill"
-                        Placeholder="Card Title"
-                        SemanticProperties.Hint="Name or topic for this prayer card" />
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="12,8" Spacing="16">
+
+                <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+
+                        <Label Text="Title" Style="{StaticResource FormLabel}" />
+                        <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                            <Entry x:Name="TitleEntry"
+                                   Text="{Binding Title}"
+                                   HorizontalOptions="Fill"
+                                   Placeholder="Card title"
+                                   SemanticProperties.Hint="Name or topic for this prayer card" />
+                        </Border>
+
+                        <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
+
+                        <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                            <Button Grid.Column="0"
+                                    Text="Delete"
+                                    Style="{StaticResource DangerButton}"
+                                    Command="{Binding DeleteCommand}"
+                                    HorizontalOptions="Fill" />
+                            <Button Grid.Column="1"
+                                    Text="Save"
+                                    Command="{Binding SaveCommand}"
+                                    HorizontalOptions="Fill" />
+                        </Grid>
+
+                    </VerticalStackLayout>
                 </Border>
 
-                <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
-                    <Button Grid.Column="0"
-                            Text="Delete"
-                            Style="{StaticResource DangerButton}"
-                            Command="{Binding DeleteCommand}"
-                            HorizontalOptions="Fill" />
-                    <Button Grid.Column="1"
-                            Text="Save"
-                            Command="{Binding SaveCommand}"
-                            HorizontalOptions="Fill" />
-                </Grid>
             </VerticalStackLayout>
-        </Border>
-        </VerticalStackLayout>
+        </ScrollView>
 
         <!-- Onboarding coaching banner — NameCard step -->
         <onboarding:OnboardingBanner
@@ -54,5 +54,5 @@
             HeadlineText="Give it a name — a person, a topic, your church"
             SubText="Then tap Save." />
 
-    </VerticalStackLayout>
+    </Grid>
 </ContentPage>

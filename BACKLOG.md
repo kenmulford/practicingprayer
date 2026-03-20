@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 13 — BUG-29 done
-**Next up**: UX-7 (Home page UI improvements)
+**Last completed**: Session 13 — BUG-29, BUG-30, UX-7, UX-10 done; 66/66 tests; 0 warnings
+**Next up**: F-13 Phase 1 (iOS form styling) or F-14 (tag color picker)
 
 ---
 
@@ -25,15 +25,13 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
-| 1 | UX-7 | Home page UI improvements | Ken | Need to improve UI and explain what each summary box represents. |
-| 2 | UX-10 | Prayer card form styling — match request form | Ken | Apply `PrayerCardBorder` style, remove redundant title label, add divider. |
-| 3 | F-14 | Expand tag color palette | Tony (Android) | Consider multi-row swatch grid with more color variants, or a full color picker control instead of horizontal scroll. |
-| 4 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
-| 5 | F-13 | iOS native field styling | Ken | Full plan at `docs/plans/F13-ios-field-styling.md`. OnPlatform backgrounds + Focused VSM state. May need scope review now that UX-9 InputBorder is in place. |
-| 6 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. Standardize initialization patterns using modern best practices. |
-| 7 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
-| 8 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 9 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Also tried `Xamarin.Google.Android.Play.Core 1.10.3` — only targets `net6.0-android31.0`. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
+| 2 | F-14 | Tag color palette: user-defined colors + native picker | Tony/Ken | New `UserColor` table. FlexLayout wrap grid. iOS: native `UIColorPickerViewController`. Android: hex-entry popup. 8 defaults seeded. |
+| 3 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
+| 4 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. Standardize initialization patterns using modern best practices. |
+| 5 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
+| 6 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 7 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Also tried `Xamarin.Google.Android.Play.Core 1.10.3` — only targets `net6.0-android31.0`. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
 
 ---
 
@@ -139,7 +137,10 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | BUG-27 | Splash screen shows broken image instead of app icon | — | Replaced placeholder `splash.svg` (yellow line on card) with app icon foreground SVG. `MauiSplashScreen Color` provides the green background. |
 | BUG-28 | iOS 26 crash on launch during tab transition | — | Removed blocking `.Result` calls from PrayerCardsViewModel and PrayerListViewModel constructors (deadlock risk on iOS 26 scheduler). Added async `LoadAsync()` called from `OnAppearing`. Added global exception handlers to iOS AppDelegate for diagnostics. Guarded onboarding popup with try/catch. |
 | BUG-29 | iPad crash when skipping onboarding tour | — | `PopupBlockedException` — popup must be closed before mutating onboarding state so modal stack is clear when completion popup fires. Reordered `CloseAsync` before `Skip()`/`Advance()`. |
+| BUG-30 | Switch "On" state invisible in dark mode | — | `OnColor` dark value was `Gray200` (near-white) with white thumb. Changed to `Primary` (green) so white thumb is clearly visible in dark mode. |
+| UX-7 | Home page unified overdue card + Last Prayed stat | — | Merged two disconnected boxes into one `PrayerCardBorder` card: bold count header (tappable → Prayers filtered to Overdue) + inline needs-attention list. Added "Last prayed: X" stat label. Added `FilterStatus.Overdue` to PrayerListViewModel + `?filter=overdue` navigation. |
+| UX-10 | Prayer card form styling — match request form | — | Applied `PrayerCardBorder` style, removed redundant "Prayer Card" title label, restructured to Grid layout with pinned onboarding banner, added DividerLine above buttons. |
 
 ---
 
-*Last updated: 2026-03-19 (session 13 — BUG-29 completed; ViewModel audit deferred to TD-12; UX-10 added)*
+*Last updated: 2026-03-19 (session 13 — BUG-29/30, UX-7/10 completed; 66/66 tests; 0 warnings)*

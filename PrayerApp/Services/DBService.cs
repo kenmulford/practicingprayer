@@ -26,6 +26,7 @@ namespace PrayerApp.Services
             _db.CreateTableAsync<PrayerTag>().Wait();
             _db.CreateTableAsync<PrayerCardTag>().Wait();
             _db.CreateTableAsync<PrayerInteraction>().Wait();
+            _db.CreateTableAsync<UserColor>().Wait();
         }
 
         private static void RunStartupRecovery(string dbPath)
@@ -75,6 +76,7 @@ namespace PrayerApp.Services
             await _db.CreateTableAsync<PrayerTag>();
             await _db.CreateTableAsync<PrayerCardTag>();
             await _db.CreateTableAsync<PrayerInteraction>();
+            await _db.CreateTableAsync<UserColor>();
 
             await EnsurePrayerCardColumnsAsync();
 

@@ -50,17 +50,27 @@ public class HomeViewModel : ObservableObject
 
     public string OverdueHeadline => OverdueCount switch
     {
-        0 => "You're up to date — every request has been prayed for recently.",
-        1 => "1 prayer request hasn't been prayed for in the past month.",
-        _ => $"{OverdueCount} prayer requests haven't been prayed for in the past month."
+        0 => "You're all caught up",
+        1 => "1 Overdue",
+        _ => $"{OverdueCount} Overdue"
     };
 
+    private string _lastPrayedDisplay = string.Empty;
+    public string LastPrayedDisplay
+    {
+        get => _lastPrayedDisplay;
+        private set => SetProperty(ref _lastPrayedDisplay, value);
+    }
+
     public ObservableCollection<SuggestedPrayerViewModel> SuggestedPrayers { get; } = new();
+
+    public ICommand GoToOverdueCommand { get; }
 
     public HomeViewModel()
     {
         _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
         _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+        GoToOverdueCommand = new AsyncRelayCommand(GoToOverdueAsync);
     }
 
     public async Task LoadAsync()
@@ -74,15 +84,40 @@ public class HomeViewModel : ObservableObject
             var cardLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
 
             SuggestedPrayers.Clear();
-            foreach (var p in overdue.Take(3))
+            foreach (var p in overdue.Take(5))
             {
                 var cardTitle = cardLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
                 SuggestedPrayers.Add(new SuggestedPrayerViewModel(p.Id, cardTitle, p.Title));
             }
+
+            // Last prayed date
+            var lastDate = await _prayerService.GetLastInteractionDateAsync();
+            LastPrayedDisplay = FormatLastPrayed(lastDate);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load home dashboard: {ex.Message}");
         }
+    }
+
+    private static string FormatLastPrayed(DateTime? date)
+    {
+        if (date is null) return "Never";
+        var days = (DateTime.Now - date.Value).TotalDays;
+        return days switch
+        {
+            < 1    => "Today",
+            < 2    => "Yesterday",
+            < 7    => $"{(int)days} days ago",
+            < 14   => "Last week",
+            < 30   => $"{(int)(days / 7)} weeks ago",
+            _      => $"{(int)(days / 30)} month{((int)(days / 30) == 1 ? "" : "s")} ago"
+        };
+    }
+
+    private async Task GoToOverdueAsync()
+    {
+        if (!HasOverdue) return;
+        await Shell.Current.GoToAsync("//PrayersPage?filter=overdue");
     }
 }

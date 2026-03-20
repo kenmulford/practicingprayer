@@ -42,6 +42,20 @@ namespace PrayerApp.Helpers
             return Color.FromArgb(storedHex);
         }
 
+        /// <summary>
+        /// Returns the dark-mode hex variant for a given light hex, or null if not in the palette.
+        /// Used by TagDetailViewModel to pair user-saved colors with their dark variant.
+        /// </summary>
+        public static string? GetDarkVariant(string lightHex)
+        {
+            foreach (var (light, dark, _) in Swatches)
+            {
+                if (string.Equals(light, lightHex, StringComparison.OrdinalIgnoreCase))
+                    return dark;
+            }
+            return null;
+        }
+
         /// <summary>Returns White — all palette colors support white text.</summary>
         public static Color TextColor => Colors.White;
     }
