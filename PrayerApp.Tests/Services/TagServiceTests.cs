@@ -38,6 +38,25 @@ public class TagServiceTests
     }
 
     [Fact]
+    public async Task GetTagsAsync_SystemTagsSortedFirst()
+    {
+        var tags = new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Work" },
+            new() { Id = 2, Name = "Family" },
+            new() { Id = 3, Name = "Recently Notified", IsSystem = true }
+        };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(tags));
+
+        var result = await _service.GetTagsAsync();
+
+        Assert.Equal("Recently Notified", result[0].Name);
+        Assert.True(result[0].IsSystem);
+        Assert.Equal("Family", result[1].Name);
+        Assert.Equal("Work", result[2].Name);
+    }
+
+    [Fact]
     public async Task GetTagsAsync_SecondCall_UsesCacheNotDatabase()
     {
         _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>()));

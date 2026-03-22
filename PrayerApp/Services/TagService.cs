@@ -25,7 +25,10 @@ public class TagService : ITagService
             return _cache;
 
         var list = await PrayerTag.LoadAllAsync();
-        var sorted = list.OrderBy(t => t.Name).ToList();
+        var sorted = list
+            .OrderByDescending(t => t.IsSystem)  // system tags first
+            .ThenBy(t => t.Name)
+            .ToList();
 
         var readOnly = new ReadOnlyCollection<PrayerTag>(sorted);
         _cache = readOnly;
@@ -40,7 +43,8 @@ public class TagService : ITagService
         var tagIds = requestTags.Select(rt => rt.PrayerTagId).ToHashSet();
         var allTags = await GetTagsAsync();
 
-        var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
+        // allTags is pre-sorted (system first, then alpha); Where preserves order
+        var tags = allTags.Where(t => tagIds.Contains(t.Id)).ToList();
         return new ReadOnlyCollection<PrayerTag>(tags);
     }
 

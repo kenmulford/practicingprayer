@@ -30,6 +30,11 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        /// <summary>True when editing a system tag — name is read-only, delete is hidden.</summary>
+        public bool IsSystem { get; private set; }
+
+        public bool IsNameEditable => !IsSystem;
+
         public string SelectedColorHex
         {
             get => _selectedColorHex;
@@ -110,12 +115,15 @@ namespace PrayerApp.ViewModels
         private async Task LoadAsync(int id)
         {
             var result = await PrayerTag.LoadAsync(id);
-            if (result is null || result.IsSystem)
+            if (result is null)
             {
                 await Shell.Current.GoToAsync("..");
                 return;
             }
             _tag = result;
+            IsSystem = result.IsSystem;
+            OnPropertyChanged(nameof(IsSystem));
+            OnPropertyChanged(nameof(IsNameEditable));
             OnPropertyChanged(nameof(Name));
             SelectedColorHex = _tag.Color ?? TagColorPalette.Swatches[0].Light;
         }

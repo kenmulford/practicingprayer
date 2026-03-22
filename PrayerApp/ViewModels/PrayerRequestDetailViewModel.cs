@@ -19,6 +19,7 @@ namespace PrayerApp.ViewModels
         private Prayer _prayer;
         private readonly IPrayerService _prayerService;
         private readonly ITagService _tagService;
+        private readonly ICardService _cardService;
         private readonly IOnboardingService _onboardingService;
         private readonly INotificationService _notificationService;
         private List<PrayerTag> _allTags = new();
@@ -51,6 +52,7 @@ namespace PrayerApp.ViewModels
 
         private string _savedQueryKey = "saved";
         private string _deletedQueryKey = "deleted";
+        private int _originalCardId;
         public bool ReturnToCards { get; set; }
 
         private bool _isReadOnly;
@@ -192,6 +194,22 @@ namespace PrayerApp.ViewModels
             set => SetProperty(ref _cardTitle, value);
         }
 
+        public ObservableCollection<PrayerCard> AvailableCards { get; } = new();
+
+        private PrayerCard? _selectedCard;
+        public PrayerCard? SelectedCard
+        {
+            get => _selectedCard;
+            set
+            {
+                if (SetProperty(ref _selectedCard, value) && value is not null)
+                {
+                    PrayerCardId = value.Id;
+                    CardTitle = value.Title ?? string.Empty;
+                }
+            }
+        }
+
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
@@ -200,6 +218,7 @@ namespace PrayerApp.ViewModels
             _prayer = new Prayer();
             _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
             _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
+            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
             _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
             _notificationService = IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
@@ -251,7 +270,11 @@ namespace PrayerApp.ViewModels
                 // New prayers: stack is Cards→Edit (1 level back)
                 // Existing prayers: stack is Cards→View→Edit (2 levels back)
                 string route = isNew ? ".." : "../..";
-                await Shell.Current.GoToAsync($"{route}?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+                bool cardChanged = !isNew && _originalCardId != 0 && _originalCardId != PrayerCardId;
+                var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
+                if (cardChanged)
+                    queryParts += $"&oldCardId={_originalCardId}";
+                await Shell.Current.GoToAsync($"{route}?{queryParts}");
             }
             else
             {
@@ -308,7 +331,16 @@ namespace PrayerApp.ViewModels
             IsAnswered = true;
             await _notificationService.CancelAsync(_prayer.Id);
             await _prayerService.SavePrayerAsync(_prayer);
-            RefreshProperties();
+
+            // Navigate back so parent page (list or card accordion) picks up the change
+            if (ReturnToCards)
+            {
+                await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+            }
+            else
+            {
+                await Shell.Current.GoToAsync($"..?{_savedQueryKey}={Identifier}");
+            }
         }
 
         private async Task ShareAsync()
@@ -331,7 +363,7 @@ namespace PrayerApp.ViewModels
                     _deletedQueryKey = "prayerDeleted";
                     IsReadOnly = false;
                     RefreshProperties();
-                    LoadTagsAsync().SafeFireAndForget();
+                    InitNewPrayerAsync().SafeFireAndForget();
                 }
             }
             else if (query.ContainsKey("load"))
@@ -383,6 +415,7 @@ namespace PrayerApp.ViewModels
                     return;
                 }
                 _prayer = result;
+                _originalCardId = result.PrayerCardId;
             }
             catch (Exception e)
             {
@@ -390,12 +423,31 @@ namespace PrayerApp.ViewModels
                 return;
             }
             RefreshProperties();
+            await LoadCardsAsync();
             await LoadTagsAsync();
         }
 
         public void Reload()
         {
             LoadPrayerAsync(_prayer.Id).SafeFireAndForget();
+        }
+
+        private async Task InitNewPrayerAsync()
+        {
+            await LoadCardsAsync();
+            await LoadTagsAsync();
+        }
+
+        private async Task LoadCardsAsync()
+        {
+            var cards = await _cardService.GetCardsAsync();
+            AvailableCards.Clear();
+            foreach (var card in cards)
+                AvailableCards.Add(card);
+
+            // Set SelectedCard to the current prayer's card
+            _selectedCard = AvailableCards.FirstOrDefault(c => c.Id == _prayer.PrayerCardId);
+            OnPropertyChanged(nameof(SelectedCard));
         }
 
         private async Task LoadTagsAsync()
@@ -423,7 +475,7 @@ namespace PrayerApp.ViewModels
 
             var assignedIds = SelectedTags.Select(t => t.Id).ToHashSet();
             var filtered = _allTags
-                .Where(t => !assignedIds.Contains(t.Id) &&
+                .Where(t => !t.IsSystem && !assignedIds.Contains(t.Id) &&
                             (t.Name?.Contains(_tagSearchText, StringComparison.OrdinalIgnoreCase) ?? false))
                 .OrderBy(t => t.Name)
                 .Take(6);

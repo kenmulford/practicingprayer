@@ -89,7 +89,7 @@ namespace PrayerApp.ViewModels
             _tag = tag;
             _tagService = tagService;
             _parent = parent;
-            EditCommand = new AsyncRelayCommand(EditAsync, () => !_tag.IsSystem);
+            EditCommand = new AsyncRelayCommand(EditAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !_tag.IsSystem);
         }
 

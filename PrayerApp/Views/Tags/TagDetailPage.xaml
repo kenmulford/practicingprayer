@@ -10,6 +10,17 @@
     <ScrollView>
         <VerticalStackLayout Padding="24,20" Spacing="24">
 
+            <!-- System tag note -->
+            <Border IsVisible="{Binding IsSystem}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}"
+                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="12,10">
+                <Label Text="This is a system-managed tag. You can change its color, but not its name."
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+            </Border>
+
             <!-- Name field -->
             <VerticalStackLayout Spacing="6">
                 <Label Text="Name" Style="{StaticResource FormLabel}" />
@@ -17,6 +28,7 @@
                     <Entry
                         Text="{Binding Name}"
                         Placeholder="Tag name"
+                        IsReadOnly="{Binding IsSystem}"
                         ReturnType="Done" />
                 </Border>
             </VerticalStackLayout>

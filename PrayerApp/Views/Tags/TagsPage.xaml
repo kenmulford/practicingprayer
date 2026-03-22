@@ -59,7 +59,7 @@
 
                     <Grid
                         Padding="20,14"
-                        ColumnDefinitions="14, *, Auto"
+                        ColumnDefinitions="14, *, Auto, Auto"
                         ColumnSpacing="12">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding EditCommand}" />
@@ -81,9 +81,23 @@
                             FontSize="16"
                             VerticalOptions="Center" />
 
+                        <!-- System badge -->
+                        <Border
+                            Grid.Column="2"
+                            IsVisible="{Binding IsSystem}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="6,2"
+                            VerticalOptions="Center">
+                            <Label Text="System"
+                                   FontSize="11"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                        </Border>
+
                         <!-- Chevron hint -->
                         <Label
-                            Grid.Column="2"
+                            Grid.Column="3"
                             Text="›"
                             FontSize="18"
                             TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray500}}"

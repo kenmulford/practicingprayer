@@ -197,7 +197,19 @@ namespace PrayerApp.ViewModels
             var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
             if (matched != null)
             {
+                // Reload prayer from DB (single load) and update CardTitle
                 matched.Reload();
+                if (int.TryParse(id, out int prayerId))
+                {
+                    var freshPrayer = await Prayer.LoadAsync(prayerId);
+                    if (freshPrayer is not null)
+                    {
+                        // Refresh card lookup in case the prayer moved to a different card
+                        var cards = await _cardService.GetCardsAsync();
+                        _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
+                        matched.CardTitle = _cardTitleLookup.TryGetValue(freshPrayer.PrayerCardId, out var t) ? t : string.Empty;
+                    }
+                }
                 ApplyFilter();
             }
             else

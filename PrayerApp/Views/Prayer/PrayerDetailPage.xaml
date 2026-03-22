@@ -108,6 +108,18 @@
                     IsVisible="{Binding IsEditable}">
                 <VerticalStackLayout Spacing="12">
 
+                    <!-- Prayer Card -->
+                    <Label Text="Prayer Card"
+                           Style="{StaticResource FormLabel}" />
+                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                        <Picker Title="Select Card"
+                                ItemsSource="{Binding AvailableCards}"
+                                SelectedItem="{Binding SelectedCard}"
+                                ItemDisplayBinding="{Binding Title}"
+                                SemanticProperties.Hint="Which prayer card this request belongs to"
+                                HorizontalOptions="Fill" />
+                    </Border>
+
                     <!-- Title -->
                     <Label Text="Title"
                            Style="{StaticResource FormLabel}" />
