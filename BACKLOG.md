@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 17 — M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-10 fixed; BUG-31 tag color stale on view; BUG-32 iOS color picker; 81/81 tests; 0 warnings
-**Next up**: F-13 Phase 1 (iOS form styling) or F-15 (notification deep-link)
+**Last completed**: Session 18 — F-15 notification tap → Prayer Time via system "Recently Notified" tag; 93/93 tests; 0 warnings
+**Next up**: F-13 Phase 1 (iOS form styling)
 
 ---
 
@@ -26,41 +26,16 @@ Items are listed in work order. Start at the top, work down.
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
 | 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | 📋 **Plan ready** at `docs/plans/F13-ios-field-styling.md`. OnPlatform Entry/Editor bg, Gray400 placeholder, Focused VSM state. Styles.xaml only. |
-| 2 | F-15 | Notification tap → Prayer Time session with notified prayers | Ken | 📋 **Plan ready.** Tap notification → confirmation dialog → "Yes" enters Prayer Time scoped to recently-notified prayers. Adds "Recently Notified" scope option. No "I Prayed" button (replaced by this flow). |
-| 3 | F-16 | Manage user color palette — delete custom swatches | — | 📋 **Plan ready.** Long-press custom swatch → confirm → delete. 8 default colors protected. Add `IsDefault` column to `UserColor`. |
-| 4 | L-1/2 | Dead NavigatedTo handlers | Audit | ✅ **No plan needed** — trivial removal. Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. |
-| 5 | L-7 | Remove unused location privacy strings from Info.plist | Audit | ✅ **No plan needed** — trivial removal. `NSLocationWhenInUseUsageDescription` etc. App doesn't use location. |
-| 6 | TD-12 | Full-stack MVVM architecture audit | — | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`. |
-| 7 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
-| 8 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 9 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
-| 10 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
-| 11 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
+| 2 | TD-12 | Full-stack MVVM architecture audit | — | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`. |
+| 3 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
+| 4 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 5 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 6 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
+| 7 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
 
 ---
 
 ## Detailed Descriptions
-
-### F-15 Notification tap → Prayer Time session
-
-**Reporter:** Ken
-**Details:** When a user taps a prayer notification:
-1. App opens and shows a confirmation dialog: "Would you like to pray for your recently notified prayer requests now?"
-2. "Yes" → enters Prayer Time session scoped to recently-notified prayers (fired within last 24 hours)
-3. "No" → stays on home page
-4. Adds "Recently Notified" as a third scope option on the Prayer Time scope page (alongside "All" and "By Tag")
-**Requires:** Notification tap event wiring, notification delivery tracking (Preferences-based), new Prayer Time scope, navigation from dialog to Prayer Time with pre-set scope.
-
-### F-16 Manage user color palette — delete/reorder swatches
-
-**Reporter:** Internal (session 14)
-**Details:** `IUserColorService.DeleteColorAsync(int id)` exists in the service layer but has no UI surface. Users can add custom colors via the "+" button but cannot remove them.
-**To spec:**
-- How should delete be triggered? Long-press on a swatch? Edit mode toggle?
-- Should the 8 default palette colors be deletable, or only user-added ones?
-- Confirm dialog before delete?
-- Should there be a reorder capability?
-- Tags store their color as a raw hex string (`PrayerTag.Color`). Deleting a `UserColor` row does NOT affect existing tags — they keep their color. The swatch just won't appear in the picker. Should we warn if a color is in use?
 
 ### TD-8 Refactor ViewModels to constructor injection
 
@@ -177,7 +152,11 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | M-6 | Hardcoded `TextColor="White"` in XAML | — | All 9 instances across MainPage, PrayerTimePage, PrayerDetailPage, PrayerListPage, OnboardingBanner, popups, Styles.xaml replaced with `{StaticResource White}`. |
 | BUG-31 | Tag color stale on prayer detail view after tag edit | — | `PrayerDetailPage.OnAppearing` now calls `Reload()` on subsequent visits (not just first load), picking up tag color/name changes. |
 | BUG-32 | iOS color picker returns wrong/stale color on iOS 26 iPad | — | `NativeColorPicker.ColorPickerDelegate` now tracks every `DidSelectColor` selection. `DidFinish` and swipe-dismiss both use the tracked color instead of re-reading `SelectedColor`. |
+| L-1/2 | Dead NavigatedTo handlers | — | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage removed. |
+| L-7 | Remove unused location privacy strings from Info.plist | — | `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` removed. |
+| F-16 | Manage user color palette — delete custom swatches | — | Long-press custom swatch → confirm → delete. 8 default colors protected via `IsDefault` column. Tag cascade reassigns deleted color to first default. |
+| F-15 | Notification tap → Prayer Time via system tag | — | System-managed "Recently Notified" tag auto-assigned at notification schedule time. Tap notification → confirm dialog → Prayer Time scoped to tagged prayers. Tag removed after prayer is prayed. `IsSystem` flag protects system tags from user edit/delete. |
 
 ---
 
-*Last updated: 2026-03-20 (session 17 — M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-10 fixed; BUG-31/BUG-32 fixed; 81/81 tests; 0 warnings)*
+*Last updated: 2026-03-21 (session 18 — F-15 notification tap → Prayer Time; 93/93 tests; 0 warnings)*
