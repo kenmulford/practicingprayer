@@ -1,9 +1,13 @@
 # F-13 — iOS Native Field Styling
 
+**Status:** Completed (session 18)
+
 ## Context
-Entry and Editor fields use a single global style that was designed with Android in mind. On iOS, the result feels un-native — gray backgrounds on Editor, no focus feedback, placeholder colors that are too subtle. Goal: use `OnPlatform` to give iOS a native-feel transparent background, and add a `Focused` VSM state that uses the app's Primary/Secondary palette as subtle visual feedback on both platforms.
+Entry and Editor fields use a single global style that was designed with Android in mind. On iOS, the result feels un-native — gray backgrounds on Editor, no focus feedback, placeholder colors that are too subtle. Goal: add a `Focused` VSM state that uses the app's Primary/Secondary palette as subtle visual feedback on both platforms, and fix placeholder colors to be more readable.
 
 **All changes are in `Styles.xaml` only — no handler customization.**
+
+**Implementation notes:** OnPlatform backgrounds were skipped — all controls stay Transparent since `InputBorder` owns the visual container. Scope expanded to include SearchBar/SearchHandler placeholder consistency. Picker/DatePicker/TimePicker reviewed and confirmed consistent.
 
 ---
 

@@ -25,12 +25,12 @@ Items are listed in work order. Start at the top, work down.
 
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
-| 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
-| 2 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
-| 3 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Spec out full UX before implementing. |
-| 4 | L-1/2 | Dead NavigatedTo handlers | Audit | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. Remove. |
-| 5 | L-7 | Remove unused location privacy strings from Info.plist | Audit | `NSLocationWhenInUseUsageDescription` etc. — app doesn't use location. May confuse Apple reviewers. |
-| 6 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. |
+| 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | 📋 **Plan ready** at `docs/plans/F13-ios-field-styling.md`. OnPlatform Entry/Editor bg, Gray400 placeholder, Focused VSM state. Styles.xaml only. |
+| 2 | F-15 | Notification tap → Prayer Time session with notified prayers | Ken | 📋 **Plan ready.** Tap notification → confirmation dialog → "Yes" enters Prayer Time scoped to recently-notified prayers. Adds "Recently Notified" scope option. No "I Prayed" button (replaced by this flow). |
+| 3 | F-16 | Manage user color palette — delete custom swatches | — | 📋 **Plan ready.** Long-press custom swatch → confirm → delete. 8 default colors protected. Add `IsDefault` column to `UserColor`. |
+| 4 | L-1/2 | Dead NavigatedTo handlers | Audit | ✅ **No plan needed** — trivial removal. Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. |
+| 5 | L-7 | Remove unused location privacy strings from Info.plist | Audit | ✅ **No plan needed** — trivial removal. `NSLocationWhenInUseUsageDescription` etc. App doesn't use location. |
+| 6 | TD-12 | Full-stack MVVM architecture audit | — | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`. |
 | 7 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
 | 8 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
 | 9 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
@@ -41,13 +41,15 @@ Items are listed in work order. Start at the top, work down.
 
 ## Detailed Descriptions
 
-### F-15 Notification deep-link + ad hoc "I prayed" button
+### F-15 Notification tap → Prayer Time session
 
 **Reporter:** Ken
-**Details:** Two related changes:
-1. When user taps a notification, navigate to the specific prayer request's view page instead of the home page.
-2. Add an "I prayed for this" button on the prayer request view/detail page so users can log interactions without entering a full Prayer Time session.
-**Requires:** Deep-link routing from notification payload → Shell navigation to PrayerDetailPage with prayer ID.
+**Details:** When a user taps a prayer notification:
+1. App opens and shows a confirmation dialog: "Would you like to pray for your recently notified prayer requests now?"
+2. "Yes" → enters Prayer Time session scoped to recently-notified prayers (fired within last 24 hours)
+3. "No" → stays on home page
+4. Adds "Recently Notified" as a third scope option on the Prayer Time scope page (alongside "All" and "By Tag")
+**Requires:** Notification tap event wiring, notification delivery tracking (Preferences-based), new Prayer Time scope, navigation from dialog to Prayer Time with pre-set scope.
 
 ### F-16 Manage user color palette — delete/reorder swatches
 

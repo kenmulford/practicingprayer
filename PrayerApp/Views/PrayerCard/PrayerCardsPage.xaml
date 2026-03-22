@@ -4,7 +4,6 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
-             NavigatedTo="ContentPage_NavigatedTo"
              x:DataType="viewModels:PrayerCardsViewModel">
     <ContentPage.BindingContext>
         <viewModels:PrayerCardsViewModel />
