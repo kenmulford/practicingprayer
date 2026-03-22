@@ -36,6 +36,13 @@
 	<string></string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict/>
+	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app does not use your location. This entry is required by a third-party library.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
