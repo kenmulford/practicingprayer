@@ -16,6 +16,9 @@
 
 ### Improvements
 
+- **Smarter "Recently Notified" tagging** — The tag now reflects prayers that were actually notified recently, not just prayers with notifications enabled. Recalculated each time you open the app.
+- **Configurable overdue threshold** — Choose how many days without prayer before a request shows up as overdue. Adjustable in Settings (default: 30 days).
+- **Overdue guidance** — When you're all caught up, the home page explains what the overdue section is for and how to adjust it.
 - **Swipe through Prayer Time** — Swipe left and right to navigate between prayers with smooth card-to-card transitions.
 - **Mark Answered updates everywhere** — Marking a prayer as answered now immediately reflects on both the prayer list and card views.
 - **System tags** — The "Recently Notified" tag is clearly labeled as system-managed. You can personalize its color but not rename or delete it. It always appears at the top of your tag list.

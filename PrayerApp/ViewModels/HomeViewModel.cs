@@ -50,10 +50,20 @@ public class HomeViewModel : ObservableObject
 
     public string OverdueHeadline => OverdueCount switch
     {
-        0 => "You're all caught up",
+        0 => "You're all caught up!",
         1 => "1 Overdue",
         _ => $"{OverdueCount} Overdue"
     };
+
+    public string OverdueEmptyDescription
+    {
+        get
+        {
+            var days = Settings.OverdueDayThreshold;
+            var dayLabel = days == 1 ? "day" : "days";
+            return $"Requests not prayed for in {days} {dayLabel} will appear here. You can update this in Settings.";
+        }
+    }
 
     private string _lastPrayedDisplay = string.Empty;
     public string LastPrayedDisplay
@@ -77,8 +87,9 @@ public class HomeViewModel : ObservableObject
     {
         try
         {
-            var overdue = await _prayerService.GetOverduePrayersAsync(30);
+            var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
             OverdueCount = overdue.Count;
+            OnPropertyChanged(nameof(OverdueEmptyDescription));
 
             var cards = await _cardService.GetCardsAsync();
             var cardLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);

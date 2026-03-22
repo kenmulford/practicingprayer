@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -6,13 +7,11 @@ public class NotificationService : INotificationService
 {
     private readonly ILocalNotificationCenter _center;
     private readonly Func<bool> _isNotificationsAllowed;
-    private readonly ITagService _tagService;
 
-    public NotificationService(ILocalNotificationCenter center, Func<bool> isNotificationsAllowed, ITagService tagService)
+    public NotificationService(ILocalNotificationCenter center, Func<bool> isNotificationsAllowed)
     {
         _center = center;
         _isNotificationsAllowed = isNotificationsAllowed;
-        _tagService = tagService;
     }
 
     public Task<bool> RequestPermissionAsync() =>
@@ -38,7 +37,7 @@ public class NotificationService : INotificationService
         if (!_isNotificationsAllowed()) return;
 
         // Schedule at 9 AM; if today's 9 AM has passed, use tomorrow's.
-        var notifyTime = DateTime.Now.Date.AddHours(9);
+        var notifyTime = DateTime.Now.Date.AddHours(NotificationHelper.NotificationHour);
         if (notifyTime <= DateTime.Now)
             notifyTime = notifyTime.AddDays(1);
 
@@ -73,10 +72,5 @@ public class NotificationService : INotificationService
             notifyTime,
             repeatType,
             repeatInterval);
-
-        // Tag prayer as "Recently Notified" for Prayer Time scoping
-        var systemTag = await _tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
-        if (systemTag is not null)
-            await _tagService.AddTagToRequestAsync(prayer.Id, systemTag.Id);
     }
 }

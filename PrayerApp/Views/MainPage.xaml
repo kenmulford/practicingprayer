@@ -55,11 +55,18 @@
                                    VerticalOptions="Center" />
                         </Grid>
 
+                        <!-- Zero-state description — only shown when all caught up -->
+                        <Label Text="{Binding OverdueEmptyDescription}"
+                               IsVisible="{Binding HasOverdue, Converter={StaticResource InverseBool}}"
+                               Style="{StaticResource MutedText}"
+                               FontSize="13"
+                               Margin="0,8,0,0" />
+
                         <!-- List section — only shown when there are overdue requests -->
                         <VerticalStackLayout IsVisible="{Binding HasOverdue}" Spacing="0">
 
                             <BoxView Style="{StaticResource DividerLine}" Margin="0,12,0,8" />
-                            
+
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedPrayers}"
                                                  Spacing="0">
                                 <BindableLayout.ItemTemplate>

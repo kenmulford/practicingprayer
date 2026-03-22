@@ -30,6 +30,30 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Prayer Reminders -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label
+                        Text="Prayer Reminders"
+                        Style="{StaticResource SectionHeading}" />
+                    <Label
+                        Text="Prayers not prayed within this many days appear in your overdue list on the home page."
+                        Style="{StaticResource SectionDescription}" />
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Overdue after (days)"
+                               Style="{StaticResource FormLabel}" />
+                        <Border Style="{StaticResource InputBorder}" Padding="10,0">
+                            <Entry x:Name="entryOverdueThreshold"
+                                   Keyboard="Numeric"
+                                   ReturnType="Done"
+                                   Placeholder="30"
+                                   TextChanged="entryOverdueThreshold_TextChanged"
+                                   HorizontalOptions="Fill" />
+                        </Border>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
             <!-- Backup & Restore -->
             <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
                 <VerticalStackLayout Spacing="8">

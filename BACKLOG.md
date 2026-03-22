@@ -14,7 +14,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 19 — F-15 feedback, BUG-33, F-17, BUG-34; 94/94 tests; 0 warnings
+**Last completed**: Session 20 — F-15 tagging rework (launch-time calc), configurable overdue threshold, changelog/backlog update; 107/107 tests; 0 warnings
 **Next up**: F-13 Phase 1 (iOS form styling)
 
 ---
@@ -155,10 +155,11 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | L-1/2 | Dead NavigatedTo handlers | — | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage removed. |
 | L-7 | Remove unused location privacy strings from Info.plist | — | `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` removed. |
 | F-16 | Manage user color palette — delete custom swatches | — | Long-press custom swatch → confirm → delete. 8 default colors protected via `IsDefault` column. Tag cascade reassigns deleted color to first default. |
-| F-15 | Notification tap → Prayer Time via system tag | — | System-managed "Recently Notified" tag auto-assigned at notification schedule time. Tap notification → confirm dialog → Prayer Time scoped to tagged prayers. Tag removed after prayer is prayed. `IsSystem` flag on system tags: sorted first, color editable, name locked, delete blocked, "System" badge on TagsPage. |
+| F-15 | Notification tap → Prayer Time via system tag | — | System-managed "Recently Notified" tag calculated at app launch (not schedule time) based on prayer frequency + 24h window. Tap notification → confirm dialog → Prayer Time scoped to tagged prayers. Tag removed after prayer is prayed. `IsSystem` flag: sorted first, color editable, name locked, delete blocked, "System" badge on TagsPage. |
 | BUG-33 | Mark Answered doesn't propagate to list/card pages | — | `MarkAnsweredAsync` now navigates back with `prayerSaved` query param so parent page refreshes (was calling `RefreshProperties()` locally without navigation). |
 | F-17 | Reassign prayer request to different card | — | Card picker added to prayer edit form. `AvailableCards` loaded from `ICardService`. `oldCardId` query param handles card accordion move. List page refreshes `CardTitle` on save. System tags excluded from tag suggestions. |
 | BUG-34 | Prayer Time swipe not working | Tony | Replaced `SwipeGestureRecognizer` with `CarouselView` for native swipe-to-reveal transitions. Details area uses conditional vertical scroll with gradient fade indicator for long content. Interaction logging unified in `LogInteractionForIndex` helper, triggered on forward swipe or button press. |
+| UX-13 | Configurable overdue threshold + zero-state guidance | Ken | `Settings.OverdueDayThreshold` (default 30, min 1) with numeric Entry in Settings. Home page zero-state explains the feature with dynamic day count. Both `HomeViewModel` and `PrayerListViewModel` use the setting. |
 
 ---
 

@@ -96,14 +96,11 @@ public class TagService : ITagService
 
     public async Task DeleteTagAsync(int tagId)
     {
-        // Remove all junction rows first so no orphans remain
-        var junctionRows = await PrayerCardTag.LoadByTagIdAsync(tagId);
-        foreach (var row in junctionRows)
-            await row.DeleteAsync();
-
         var tag = await PrayerTag.LoadAsync(tagId);
-        if (tag is null) return;
-        if (tag.IsSystem) return; // System tags cannot be deleted
+        if (tag is null || tag.IsSystem) return; // System tags cannot be deleted
+
+        // Remove all junction rows first so no orphans remain
+        await ClearAllAssignmentsForTagAsync(tagId);
         await tag.DeleteAsync();
         InvalidateCache();
     }
@@ -119,6 +116,12 @@ public class TagService : ITagService
                 await tag.SaveAsync();
             }
         }
+        InvalidateCache();
+    }
+
+    public async Task ClearAllAssignmentsForTagAsync(int tagId)
+    {
+        await _dbService.DeleteByTagIdAsync(tagId);
         InvalidateCache();
     }
 

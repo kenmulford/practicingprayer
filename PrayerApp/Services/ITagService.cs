@@ -20,6 +20,8 @@ public interface ITagService
     /// <summary>Reassigns all tags using <paramref name="oldColorHex"/> to <paramref name="newColorHex"/>.</summary>
     Task ReassignColorAsync(string oldColorHex, string newColorHex);
 
+    /// <summary>Removes all tag assignments for the given tag (deletes PrayerCardTag rows).</summary>
+    Task ClearAllAssignmentsForTagAsync(int tagId);
     /// <summary>Creates system-managed tags (e.g., "Recently Notified") if they don't exist.</summary>
     Task SeedSystemTagsAsync();
     /// <summary>Returns a system tag by name, or null if not found.</summary>

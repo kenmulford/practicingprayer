@@ -21,6 +21,7 @@ public partial class Settings : ContentPage
     {
         base.OnAppearing();
         chkSettingsAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
+        entryOverdueThreshold.Text = PrayerApp.Services.Settings.OverdueDayThreshold.ToString();
 
         var logPath = _diagnosticLog.GetLogPath();
         diagnosticsSection.IsVisible = File.Exists(logPath) && new FileInfo(logPath).Length > 0;
@@ -29,6 +30,12 @@ public partial class Settings : ContentPage
     private void chkSettingsAllowNotifications_Toggled(object sender, ToggledEventArgs e)
     {
         PrayerApp.Services.Settings.AllowNotifications = e.Value;
+    }
+
+    private void entryOverdueThreshold_TextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (int.TryParse(e.NewTextValue, out var days) && days >= 1)
+            PrayerApp.Services.Settings.OverdueDayThreshold = days;
     }
 
     private async void btnBackup_Clicked(object sender, EventArgs e)

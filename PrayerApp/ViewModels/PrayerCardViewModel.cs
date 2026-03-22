@@ -245,7 +245,11 @@ namespace PrayerApp.ViewModels
             {
                 var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
                 Prayers.Clear();
-                foreach (var prayer in prayers.OrderBy(p => p.Title))
+                foreach (var prayer in prayers
+                                            .OrderBy(p => p.IsAnswered)
+                                            .ThenByDescending(p => p.AnsweredAt ?? DateTime.MinValue)
+                                            .ThenBy(p => p.Title)
+                )
                 {
                     var viewModel = new PrayerRequestDetailViewModel(prayer)
                     {

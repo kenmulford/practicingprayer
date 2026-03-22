@@ -20,7 +20,7 @@
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0.4</ApplicationDisplayVersion>
-		<ApplicationVersion>18</ApplicationVersion>
+		<ApplicationVersion>19</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -58,7 +58,7 @@
 	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
 	  <!-- Xcode 26.2 and 26.3 have identical SDKs; skip the version check until workloads catch up -->
 	  <ValidateXcodeVersion>false</ValidateXcodeVersion>
-	  <CodesignKey>iPhone Developer</CodesignKey>
+	  <CodesignKey>iPhone Distribution</CodesignKey>
 	  <CodesignProvision></CodesignProvision>
 	  <ProvisioningType>manual</ProvisioningType>
 	</PropertyGroup>

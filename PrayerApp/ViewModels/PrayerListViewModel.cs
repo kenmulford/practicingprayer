@@ -117,7 +117,7 @@ namespace PrayerApp.ViewModels
                 _requestTagIds = await BuildRequestTagLookupAsync();
 
                 // Build overdue set for Overdue filter
-                var overdue = await _prayerService.GetOverduePrayersAsync(30);
+                var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
                 _overdueIds = overdue.Select(p => p.Id).ToHashSet();
 
                 // Build prayer ViewModels

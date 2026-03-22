@@ -7,16 +7,14 @@ namespace PrayerApp.Tests.Services;
 public class NotificationServiceTests
 {
     private readonly ILocalNotificationCenter _center;
-    private readonly ITagService _tagService;
     private readonly NotificationService _service;
     private readonly NotificationService _serviceDisabled;
 
     public NotificationServiceTests()
     {
         _center = Substitute.For<ILocalNotificationCenter>();
-        _tagService = Substitute.For<ITagService>();
-        _service         = new NotificationService(_center, () => true, _tagService);
-        _serviceDisabled = new NotificationService(_center, () => false, _tagService);
+        _service         = new NotificationService(_center, () => true);
+        _serviceDisabled = new NotificationService(_center, () => false);
     }
 
     // ── Delegation — simple pass-through methods ───────────────────────────────
@@ -133,42 +131,6 @@ public class NotificationServiceTests
         await _center.Received(1).ShowAsync(
             5, "Practicing Prayer", "One Time",
             Arg.Any<DateTime>(), NotifyRepeat.No, null);
-    }
-
-    // ── ScheduleAsync — Recently Notified tag ────────────────────────────────
-
-    [Fact]
-    public async Task ScheduleAsync_AddsRecentlyNotifiedTag_WhenTagExists()
-    {
-        var systemTag = new PrayerTag { Id = 10, Name = TagService.RecentlyNotifiedTagName, IsSystem = true };
-        _tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName).Returns(Task.FromResult<PrayerTag?>(systemTag));
-        _tagService.AddTagToRequestAsync(Arg.Any<int>(), Arg.Any<int>()).Returns(Task.FromResult(1));
-        var prayer = new Prayer { Id = 7, Title = "Tagged", PrayerFrequency = PrayerFrequency.Daily };
-
-        await _service.ScheduleAsync(prayer);
-
-        await _tagService.Received(1).AddTagToRequestAsync(7, 10);
-    }
-
-    [Fact]
-    public async Task ScheduleAsync_DoesNotTag_WhenSystemTagMissing()
-    {
-        _tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName).Returns(Task.FromResult<PrayerTag?>(null));
-        var prayer = new Prayer { Id = 8, Title = "No Tag", PrayerFrequency = PrayerFrequency.Daily };
-
-        await _service.ScheduleAsync(prayer);
-
-        await _tagService.DidNotReceive().AddTagToRequestAsync(Arg.Any<int>(), Arg.Any<int>());
-    }
-
-    [Fact]
-    public async Task ScheduleAsync_DoesNotTag_WhenNotificationsDisabled()
-    {
-        var prayer = new Prayer { Id = 9, Title = "Disabled", PrayerFrequency = PrayerFrequency.Daily };
-
-        await _serviceDisabled.ScheduleAsync(prayer);
-
-        await _tagService.DidNotReceive().GetSystemTagAsync(Arg.Any<string>());
     }
 
     // ── ScheduleAsync — notification time ────────────────────────────────────

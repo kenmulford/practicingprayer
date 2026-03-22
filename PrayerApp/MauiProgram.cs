@@ -3,6 +3,7 @@ using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
 using PrayerApp.Views.Tags;
@@ -51,8 +52,7 @@ namespace PrayerApp
             builder.Services.AddSingleton<INotificationService>(sp =>
                 new NotificationService(
                     sp.GetRequiredService<ILocalNotificationCenter>(),
-                    () => PrayerApp.Services.Settings.AllowNotifications,
-                    sp.GetRequiredService<ITagService>()));
+                    () => PrayerApp.Services.Settings.AllowNotifications));
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
             // Register diagnostic log service
@@ -168,6 +168,26 @@ namespace PrayerApp
 
             var tagService = services.GetRequiredService<ITagService>();
             await tagService.SeedSystemTagsAsync();
+
+            // Tag prayers that were recently notified (within last 24h based on schedule)
+            try
+            {
+                var prayerService = services.GetRequiredService<IPrayerService>();
+                var activePrayers = await prayerService.GetAllActivePrayersAsync();
+                var recentIds = NotificationHelper.GetRecentlyNotifiedPrayerIds(activePrayers, DateTime.Now);
+
+                var systemTag = await tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+                if (systemTag is not null)
+                {
+                    await tagService.ClearAllAssignmentsForTagAsync(systemTag.Id);
+                    foreach (var prayerId in recentIds)
+                        await tagService.AddTagToRequestAsync(prayerId, systemTag.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Recently-notified tagging failed: {ex}");
+            }
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)

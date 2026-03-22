@@ -31,6 +31,13 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(AutoModeIntervalSeconds), value);
         }
 
+        /// <summary>Number of days without prayer before a request appears in the "overdue" list. Default 30.</summary>
+        public static int OverdueDayThreshold
+        {
+            get => Preferences.Get(nameof(OverdueDayThreshold), 30);
+            set => Preferences.Set(nameof(OverdueDayThreshold), Math.Max(1, value));
+        }
+
         public static bool OnboardingComplete
         {
             get => Preferences.Get(nameof(OnboardingComplete), false);
