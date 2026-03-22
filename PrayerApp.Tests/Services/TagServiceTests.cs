@@ -244,6 +244,77 @@ public class TagServiceTests
         Assert.Contains(42, result);
     }
 
+    // ── SeedSystemTagsAsync ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task SeedSystemTagsAsync_CreatesRecentlyNotifiedTag_WhenMissing()
+    {
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>()));
+        _db.InsertAsync(Arg.Any<PrayerTag>()).Returns(Task.FromResult(1));
+
+        await _service.SeedSystemTagsAsync();
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerTag>(t =>
+            t.Name == TagService.RecentlyNotifiedTagName && t.IsSystem == true));
+    }
+
+    [Fact]
+    public async Task SeedSystemTagsAsync_SkipsInsert_WhenTagAlreadyExists()
+    {
+        var existing = new PrayerTag { Id = 1, Name = TagService.RecentlyNotifiedTagName, IsSystem = true };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag> { existing }));
+
+        await _service.SeedSystemTagsAsync();
+
+        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerTag>());
+    }
+
+    // ── GetSystemTagAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetSystemTagAsync_ReturnsTag_WhenExists()
+    {
+        var systemTag = new PrayerTag { Id = 5, Name = TagService.RecentlyNotifiedTagName, IsSystem = true };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Work" },
+            systemTag
+        }));
+
+        var result = await _service.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+
+        Assert.NotNull(result);
+        Assert.Equal(5, result!.Id);
+        Assert.True(result.IsSystem);
+    }
+
+    [Fact]
+    public async Task GetSystemTagAsync_ReturnsNull_WhenNotFound()
+    {
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Work" }
+        }));
+
+        var result = await _service.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+
+        Assert.Null(result);
+    }
+
+    // ── DeleteTagAsync — system tag protection ────────────────────────────
+
+    [Fact]
+    public async Task DeleteTagAsync_SystemTag_RefusesToDelete()
+    {
+        var systemTag = new PrayerTag { Id = 1, Name = TagService.RecentlyNotifiedTagName, IsSystem = true };
+        _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>()));
+        _db.GetByIdAsync<PrayerTag>(1).Returns(Task.FromResult(systemTag));
+
+        await _service.DeleteTagAsync(1);
+
+        await _db.DidNotReceive().DeleteAsync(Arg.Any<PrayerTag>());
+    }
+
     // ── ReassignColorAsync ──────────────────────────────────────────────
 
     [Fact]

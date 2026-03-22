@@ -12,6 +12,9 @@ public interface ILocalNotificationCenter
     Task ShowAsync(int notificationId, string title, string description,
                    DateTime notifyTime, NotifyRepeat repeat, TimeSpan? repeatInterval);
     void Cancel(params int[] notificationIds);
+
+    /// <summary>Raised when the user taps a notification. The int argument is the notification ID (= prayer ID).</summary>
+    event EventHandler<int>? NotificationTapped;
 }
 
 /// <summary>

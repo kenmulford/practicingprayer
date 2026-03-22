@@ -51,7 +51,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<INotificationService>(sp =>
                 new NotificationService(
                     sp.GetRequiredService<ILocalNotificationCenter>(),
-                    () => PrayerApp.Services.Settings.AllowNotifications));
+                    () => PrayerApp.Services.Settings.AllowNotifications,
+                    sp.GetRequiredService<ITagService>()));
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
             // Register diagnostic log service
@@ -81,6 +82,32 @@ namespace PrayerApp
 
             PrayerApp.Services.Settings.ConfigureNotificationService(
                 app.Services.GetRequiredService<INotificationService>());
+
+            // Wire notification tap → confirmation → Prayer Time navigation
+            var notificationCenter = app.Services.GetRequiredService<ILocalNotificationCenter>();
+            var tagServiceForNotification = app.Services.GetRequiredService<ITagService>();
+            notificationCenter.NotificationTapped += async (_, notificationId) =>
+            {
+                await App.InitTask; // Ensure DB is ready
+
+                var systemTag = await tagServiceForNotification.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+                if (systemTag is null) return;
+
+                // Must run on UI thread for dialog and navigation
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    var confirmed = await Shell.Current.DisplayAlertAsync(
+                        "Prayer Time",
+                        "Would you like to pray for your recently notified prayer requests now?",
+                        "Yes", "No");
+
+                    if (confirmed)
+                    {
+                        await Shell.Current.GoToAsync(
+                            $"{nameof(PrayerApp.Views.PrayerTime.PrayerTimePage)}?scope=tags&tagIds={systemTag.Id}");
+                    }
+                });
+            };
 
             // Set DB service for the necessary models (synchronous — just stores a reference).
             var myDBService = app.Services.GetRequiredService<IDBService>();
@@ -138,6 +165,9 @@ namespace PrayerApp
 
             var userColorService = services.GetRequiredService<IUserColorService>();
             await userColorService.SeedDefaultsAsync();
+
+            var tagService = services.GetRequiredService<ITagService>();
+            await tagService.SeedSystemTagsAsync();
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)

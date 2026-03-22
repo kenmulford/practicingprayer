@@ -79,6 +79,7 @@ namespace PrayerApp.ViewModels
 
         public int Id => _tag.Id;
         public string Name => _tag.Name;
+        public bool IsSystem => _tag.IsSystem;
         public Color DotColor => TagColorPalette.Resolve(_tag.Color);
         public ICommand EditCommand { get; }
         public ICommand DeleteCommand { get; }
@@ -88,8 +89,8 @@ namespace PrayerApp.ViewModels
             _tag = tag;
             _tagService = tagService;
             _parent = parent;
-            EditCommand = new AsyncRelayCommand(EditAsync);
-            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
+            EditCommand = new AsyncRelayCommand(EditAsync, () => !_tag.IsSystem);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !_tag.IsSystem);
         }
 
         private async Task EditAsync() =>

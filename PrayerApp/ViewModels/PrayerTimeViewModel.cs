@@ -17,6 +17,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly IPrayerInteractionService _interactionService;
     private readonly IOnboardingService _onboardingService;
     private CancellationTokenSource _loadCts = new();
+    private int? _recentlyNotifiedTagId;
 
     // Auto-mode
     private static readonly int[] _intervalOptions = { 30, 60, 120 };
@@ -178,6 +179,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         HasCompleted = false;
         try
         {
+            // Cache "Recently Notified" tag ID for cleanup after prayers are prayed
+            var systemTag = await _tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+            _recentlyNotifiedTagId = systemTag?.Id;
+
             var allActive = await _prayerService.GetAllActivePrayersAsync();
             token.ThrowIfCancellationRequested();
 
@@ -242,6 +247,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             try
             {
                 await _interactionService.LogInteractionAsync(CurrentEntry.PrayerId);
+
+                // Remove "Recently Notified" tag from prayed prayer
+                if (_recentlyNotifiedTagId.HasValue)
+                    await _tagService.RemoveTagFromRequestAsync(CurrentEntry.PrayerId, _recentlyNotifiedTagId.Value);
             }
             catch (Exception ex)
             {

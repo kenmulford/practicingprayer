@@ -128,6 +128,13 @@ namespace PrayerApp.Services
             }
             catch { /* Column already exists */ }
 
+            // Add IsSystem column to PrayerTag for system-managed tags
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerTag ADD COLUMN IsSystem INTEGER DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+
             try
             {
                 // Mark the 8 original seed colors as defaults (by hex value)

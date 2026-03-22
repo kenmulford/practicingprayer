@@ -6,11 +6,13 @@ public class NotificationService : INotificationService
 {
     private readonly ILocalNotificationCenter _center;
     private readonly Func<bool> _isNotificationsAllowed;
+    private readonly ITagService _tagService;
 
-    public NotificationService(ILocalNotificationCenter center, Func<bool> isNotificationsAllowed)
+    public NotificationService(ILocalNotificationCenter center, Func<bool> isNotificationsAllowed, ITagService tagService)
     {
         _center = center;
         _isNotificationsAllowed = isNotificationsAllowed;
+        _tagService = tagService;
     }
 
     public Task<bool> RequestPermissionAsync() =>
@@ -71,5 +73,10 @@ public class NotificationService : INotificationService
             notifyTime,
             repeatType,
             repeatInterval);
+
+        // Tag prayer as "Recently Notified" for Prayer Time scoping
+        var systemTag = await _tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+        if (systemTag is not null)
+            await _tagService.AddTagToRequestAsync(prayer.Id, systemTag.Id);
     }
 }

@@ -110,7 +110,7 @@ namespace PrayerApp.ViewModels
         private async Task LoadAsync(int id)
         {
             var result = await PrayerTag.LoadAsync(id);
-            if (result is null)
+            if (result is null || result.IsSystem)
             {
                 await Shell.Current.GoToAsync("..");
                 return;

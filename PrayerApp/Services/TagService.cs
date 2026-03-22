@@ -8,6 +8,9 @@ namespace PrayerApp.Services;
 
 public class TagService : ITagService
 {
+    internal const string RecentlyNotifiedTagName = "Recently Notified";
+    private const string RecentlyNotifiedTagColor = "#505050";
+
     private IReadOnlyList<PrayerTag>? _cache;
     private readonly IDBService _dbService;
 
@@ -96,6 +99,7 @@ public class TagService : ITagService
 
         var tag = await PrayerTag.LoadAsync(tagId);
         if (tag is null) return;
+        if (tag.IsSystem) return; // System tags cannot be deleted
         await tag.DeleteAsync();
         InvalidateCache();
     }
@@ -112,6 +116,31 @@ public class TagService : ITagService
             }
         }
         InvalidateCache();
+    }
+
+    public async Task SeedSystemTagsAsync()
+    {
+        var allTags = await PrayerTag.LoadAllAsync();
+        var exists = allTags.Any(t =>
+            string.Equals(t.Name, RecentlyNotifiedTagName, StringComparison.OrdinalIgnoreCase));
+
+        if (exists) return;
+
+        var tag = new PrayerTag
+        {
+            Name = RecentlyNotifiedTagName,
+            IsSystem = true,
+            Color = RecentlyNotifiedTagColor
+        };
+        await tag.SaveAsync();
+        InvalidateCache();
+    }
+
+    public async Task<PrayerTag?> GetSystemTagAsync(string name)
+    {
+        var allTags = await GetTagsAsync();
+        return allTags.FirstOrDefault(t =>
+            t.IsSystem && string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
     private void InvalidateCache()

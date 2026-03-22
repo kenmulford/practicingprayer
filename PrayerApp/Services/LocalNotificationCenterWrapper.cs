@@ -9,6 +9,20 @@ namespace PrayerApp.Services;
 /// </summary>
 public class LocalNotificationCenterWrapper : ILocalNotificationCenter
 {
+    public event EventHandler<int>? NotificationTapped;
+
+    public LocalNotificationCenterWrapper()
+    {
+        LocalNotificationCenter.Current.NotificationActionTapped += OnNotificationActionTapped;
+    }
+
+    private void OnNotificationActionTapped(Plugin.LocalNotification.EventArgs.NotificationActionEventArgs e)
+    {
+        var notificationId = e.Request?.NotificationId ?? 0;
+        if (notificationId > 0)
+            NotificationTapped?.Invoke(this, notificationId);
+    }
+
     public Task<bool> RequestNotificationPermission() =>
         LocalNotificationCenter.Current.RequestNotificationPermission();
 

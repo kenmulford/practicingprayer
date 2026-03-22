@@ -24,6 +24,10 @@ namespace PrayerApp.Models
         [Column("Color"), MaxLength(9)]
         public string? Color { get; set; } // Hex color code (e.g., "#FF5733")
 
+        /// <summary>True for system-managed tags (e.g., "Recently Notified") — protected from user rename/delete.</summary>
+        [Column("IsSystem")]
+        public bool IsSystem { get; set; }
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
