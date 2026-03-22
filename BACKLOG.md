@@ -14,7 +14,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 19 — F-15 feedback (system tag UX), BUG-33 mark-answered propagation, F-17 card reassignment; 94/94 tests; 0 warnings
+**Last completed**: Session 19 — F-15 feedback, BUG-33, F-17, BUG-34; 94/94 tests; 0 warnings
 **Next up**: F-13 Phase 1 (iOS form styling)
 
 ---
@@ -158,7 +158,8 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | F-15 | Notification tap → Prayer Time via system tag | — | System-managed "Recently Notified" tag auto-assigned at notification schedule time. Tap notification → confirm dialog → Prayer Time scoped to tagged prayers. Tag removed after prayer is prayed. `IsSystem` flag on system tags: sorted first, color editable, name locked, delete blocked, "System" badge on TagsPage. |
 | BUG-33 | Mark Answered doesn't propagate to list/card pages | — | `MarkAnsweredAsync` now navigates back with `prayerSaved` query param so parent page refreshes (was calling `RefreshProperties()` locally without navigation). |
 | F-17 | Reassign prayer request to different card | — | Card picker added to prayer edit form. `AvailableCards` loaded from `ICardService`. `oldCardId` query param handles card accordion move. List page refreshes `CardTitle` on save. System tags excluded from tag suggestions. |
+| BUG-34 | Prayer Time swipe not working | Tony | `SwipeGestureRecognizer` was on inner Grid competing with `ScrollView` for touch events. Moved to page-level Grid and lowered `Threshold` to 40 for reliable recognition. |
 
 ---
 
-*Last updated: 2026-03-22 (session 19 — F-15 feedback, BUG-33, F-17; 94/94 tests; 0 warnings)*
+*Last updated: 2026-03-22 (session 19 — F-15 feedback, BUG-33, F-17, BUG-34; 94/94 tests; 0 warnings)*

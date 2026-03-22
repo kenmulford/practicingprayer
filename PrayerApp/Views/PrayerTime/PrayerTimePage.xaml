@@ -12,6 +12,10 @@
     </ContentPage.BindingContext>
 
     <Grid RowDefinitions="Auto, *, Auto, Auto" Padding="20,12,20,8">
+        <Grid.GestureRecognizers>
+            <SwipeGestureRecognizer Direction="Left" Threshold="40" Command="{Binding NextCommand}" />
+            <SwipeGestureRecognizer Direction="Right" Threshold="40" Command="{Binding PreviousCommand}" />
+        </Grid.GestureRecognizers>
 
         <!-- Row 0: Progress | [⏸/▶] [interval/countdown] — hidden when session completes -->
         <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8"
@@ -73,10 +77,6 @@
             <!-- Main prayer content -->
             <Grid RowDefinitions="Auto, Auto, Auto, *"
                   IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
-                <Grid.GestureRecognizers>
-                    <SwipeGestureRecognizer Direction="Left" Command="{Binding NextCommand}" />
-                    <SwipeGestureRecognizer Direction="Right" Command="{Binding PreviousCommand}" />
-                </Grid.GestureRecognizers>
 
                 <!-- Card title (small muted header) -->
                 <Label Text="{Binding CurrentEntry.CardTitle, FallbackValue=''}"
