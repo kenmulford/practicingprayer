@@ -20,7 +20,7 @@
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0.4</ApplicationDisplayVersion>
-		<ApplicationVersion>21</ApplicationVersion>
+		<ApplicationVersion>22</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -32,7 +32,6 @@
 	  <AdditionalArgs>ValidateXcodeVersion=false</AdditionalArgs>
 	  <CodesignKey>Apple Development: Created via API (MXJG78A3AF)</CodesignKey>
 	  <CodesignProvision>VS: com.multithreadedllc.prayercards Development</CodesignProvision>
-	  <MtouchDebug>True</MtouchDebug>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-ios|AnyCPU'">
@@ -41,7 +40,6 @@
 	  <CodesignKey>Apple Distribution: Kenneth Mulford (6GV6UL86RM)</CodesignKey>
 	  <CodesignProvision>Practicing Prayer</CodesignProvision>
 	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
-	  <MtouchDebug>True</MtouchDebug>
 	</PropertyGroup>
 
 	<!--
