@@ -100,6 +100,20 @@ public class TagService : ITagService
         InvalidateCache();
     }
 
+    public async Task ReassignColorAsync(string oldColorHex, string newColorHex)
+    {
+        var allTags = await GetTagsAsync();
+        foreach (var tag in allTags)
+        {
+            if (string.Equals(tag.Color, oldColorHex, StringComparison.OrdinalIgnoreCase))
+            {
+                tag.Color = newColorHex;
+                await tag.SaveAsync();
+            }
+        }
+        InvalidateCache();
+    }
+
     private void InvalidateCache()
     {
         _cache = null;

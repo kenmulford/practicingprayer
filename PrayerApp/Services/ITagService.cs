@@ -17,4 +17,6 @@ public interface ITagService
 
     Task<PrayerTag> SaveTagAsync(PrayerTag tag);
     Task DeleteTagAsync(int tagId);
+    /// <summary>Reassigns all tags using <paramref name="oldColorHex"/> to <paramref name="newColorHex"/>.</summary>
+    Task ReassignColorAsync(string oldColorHex, string newColorHex);
 }

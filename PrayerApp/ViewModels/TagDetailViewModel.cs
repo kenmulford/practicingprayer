@@ -15,6 +15,7 @@ namespace PrayerApp.ViewModels
         private readonly IColorPickerService _colorPickerService;
         private PrayerTag _tag = new();
         private string _selectedColorHex = TagColorPalette.Swatches[0].Light;
+        private string _firstDefaultHex = string.Empty;
 
         public string Name
         {
@@ -53,6 +54,7 @@ namespace PrayerApp.ViewModels
             _tagService = tagService ?? throw new ArgumentNullException(nameof(tagService));
             _userColorService = userColorService ?? throw new ArgumentNullException(nameof(userColorService));
             _colorPickerService = colorPickerService ?? throw new ArgumentNullException(nameof(colorPickerService));
+            _firstDefaultHex = _userColorService.GetFirstDefaultHex();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             AddColorCommand = new AsyncRelayCommand(AddColorAsync);
 
@@ -76,8 +78,33 @@ namespace PrayerApp.ViewModels
             foreach (var uc in userColors)
             {
                 var darkHex = TagColorPalette.GetDarkVariant(uc.HexValue) ?? uc.HexValue;
-                Swatches.Add(new ColorSwatchViewModel(uc.HexValue, darkHex, string.Empty, this));
+                Swatches.Add(new ColorSwatchViewModel(
+                    uc.HexValue, darkHex, string.Empty, this,
+                    userColorId: uc.Id, isDefault: uc.IsDefault));
             }
+        }
+
+        /// <summary>Called by ColorSwatchViewModel when user confirms delete.</summary>
+        internal async Task RequestDeleteSwatchAsync(ColorSwatchViewModel swatch)
+        {
+            if (swatch.IsDefault) return;
+
+            var confirm = await Shell.Current.DisplayAlertAsync(
+                "Delete Color", "Remove this color from your palette?", "Delete", "Cancel");
+            if (!confirm) return;
+
+            // Delete the UserColor
+            await _userColorService.DeleteColorAsync(swatch.UserColorId);
+
+            // Reassign any tags using this color to the first default
+            await _tagService.ReassignColorAsync(swatch.LightHex, _firstDefaultHex);
+
+            // If the deleted color was selected, switch to the default
+            if (string.Equals(SelectedColorHex, swatch.LightHex, StringComparison.OrdinalIgnoreCase))
+                SelectedColorHex = _firstDefaultHex;
+
+            // Rebuild swatches
+            await LoadSwatchesAsync();
         }
 
         private async Task LoadAsync(int id)
@@ -113,14 +140,16 @@ namespace PrayerApp.ViewModels
 
             hex = hex.ToUpperInvariant();
 
-            // Save to the user's palette
-            await _userColorService.SaveColorAsync(hex);
+            // Save to the user's palette (returns existing if duplicate)
+            var saved = await _userColorService.SaveColorAsync(hex);
 
             // Add swatch if not already present
             if (!Swatches.Any(s => string.Equals(s.LightHex, hex, StringComparison.OrdinalIgnoreCase)))
             {
                 var darkHex = TagColorPalette.GetDarkVariant(hex) ?? hex;
-                Swatches.Add(new ColorSwatchViewModel(hex, darkHex, string.Empty, this));
+                Swatches.Add(new ColorSwatchViewModel(
+                    hex, darkHex, string.Empty, this,
+                    userColorId: saved.Id, isDefault: false));
             }
 
             // Auto-select the new color
@@ -136,6 +165,8 @@ namespace PrayerApp.ViewModels
 
         public string LightHex => _lightHex;
         public string Label { get; }
+        public bool IsDefault { get; }
+        public int UserColorId { get; }
         public Color SwatchColor =>
             Application.Current?.RequestedTheme == AppTheme.Dark
                 ? Color.FromArgb(_darkHex)
@@ -144,19 +175,30 @@ namespace PrayerApp.ViewModels
         public bool IsSelected => string.Equals(_parent.SelectedColorHex, _lightHex, StringComparison.OrdinalIgnoreCase);
 
         public ICommand SelectCommand { get; }
+        public ICommand DeleteCommand { get; }
 
-        public ColorSwatchViewModel(string lightHex, string darkHex, string label, TagDetailViewModel parent)
+        public ColorSwatchViewModel(string lightHex, string darkHex, string label,
+            TagDetailViewModel parent, int userColorId = 0, bool isDefault = false)
         {
             _lightHex = lightHex;
             _darkHex = darkHex;
             Label = label;
             _parent = parent;
+            UserColorId = userColorId;
+            IsDefault = isDefault;
             SelectCommand = new RelayCommand(Select);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsDefault);
         }
 
         private void Select()
         {
             _parent.SelectedColorHex = _lightHex;
+        }
+
+        private async Task DeleteAsync()
+        {
+            if (IsDefault) return;
+            await _parent.RequestDeleteSwatchAsync(this);
         }
 
         public void NotifySelectionChanged() => OnPropertyChanged(nameof(IsSelected));

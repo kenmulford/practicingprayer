@@ -10,5 +10,9 @@ public class UserColor
 
     public string HexValue { get; set; } = string.Empty;
 
+    /// <summary>True for the 8 seeded palette colors — protected from deletion.</summary>
+    [Column("IsDefault")]
+    public bool IsDefault { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

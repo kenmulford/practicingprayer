@@ -120,6 +120,32 @@ namespace PrayerApp.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[UpdateSchema] Orphan PrayerCardTag cleanup: {ex.Message}");
             }
+
+            // Add IsDefault column to UserColor and backfill existing seed colors
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE UserColor ADD COLUMN IsDefault INTEGER DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+
+            try
+            {
+                // Mark the 8 original seed colors as defaults (by hex value)
+                var seedHexValues = new[] {
+                    "#B84040", "#B35A20", "#7A4020", "#1E7870",
+                    "#2E5A9A", "#663C8C", "#8C3860", "#505050"
+                };
+                foreach (var hex in seedHexValues)
+                {
+                    await _db.ExecuteAsync(
+                        "UPDATE UserColor SET IsDefault = 1 WHERE UPPER(HexValue) = ?",
+                        hex.ToUpperInvariant());
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateSchema] UserColor IsDefault backfill: {ex.Message}");
+            }
         }
 
         public async Task CloseAsync()

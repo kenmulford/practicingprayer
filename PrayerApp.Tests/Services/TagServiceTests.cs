@@ -244,4 +244,34 @@ public class TagServiceTests
         Assert.Contains(42, result);
     }
 
+    // ── ReassignColorAsync ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task ReassignColorAsync_UpdatesMatchingTags()
+    {
+        var tag1 = new PrayerTag { Id = 1, Name = "Work", Color = "#FF5500" };
+        var tag2 = new PrayerTag { Id = 2, Name = "Family", Color = "#00FF00" };
+        var tag3 = new PrayerTag { Id = 3, Name = "Urgent", Color = "#FF5500" };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag> { tag1, tag2, tag3 }));
+        _db.UpdateAsync(Arg.Any<PrayerTag>()).Returns(Task.FromResult(1));
+
+        await _service.ReassignColorAsync("#FF5500", "#B84040");
+
+        Assert.Equal("#B84040", tag1.Color);
+        Assert.Equal("#00FF00", tag2.Color); // unchanged
+        Assert.Equal("#B84040", tag3.Color);
+        await _db.Received(2).UpdateAsync(Arg.Any<PrayerTag>());
+    }
+
+    [Fact]
+    public async Task ReassignColorAsync_NoMatches_DoesNotUpdate()
+    {
+        var tag = new PrayerTag { Id = 1, Name = "Work", Color = "#00FF00" };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag> { tag }));
+
+        await _service.ReassignColorAsync("#FF5500", "#B84040");
+
+        Assert.Equal("#00FF00", tag.Color);
+        await _db.DidNotReceive().UpdateAsync(Arg.Any<PrayerTag>());
+    }
 }
