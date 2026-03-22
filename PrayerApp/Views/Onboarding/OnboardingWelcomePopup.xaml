@@ -15,10 +15,6 @@
 
         <VerticalStackLayout Padding="28,32" Spacing="16">
 
-            <Label Text="🙏"
-                   FontSize="48"
-                   HorizontalOptions="Center" />
-
             <Label Text="Welcome to Practicing Prayer"
                    FontSize="22"
                    FontAttributes="Bold"
@@ -35,7 +31,7 @@
             <Button x:Name="BtnGetStarted"
                     Text="Get Started"
                     BackgroundColor="{StaticResource Primary}"
-                    TextColor="White"
+                    TextColor="{StaticResource White}"
                     Margin="0,8,0,0" />
 
             <Label x:Name="LblSkip"

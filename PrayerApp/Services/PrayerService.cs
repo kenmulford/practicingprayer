@@ -55,6 +55,8 @@ public class PrayerService : IPrayerService
 
     public async Task DeletePrayerAsync(Prayer prayer)
     {
+        await _dbService.DeleteInteractionsByPrayerIdAsync(prayer.Id);
+        await _dbService.DeleteJunctionRowsByRequestIdAsync(prayer.Id);
         await prayer.DeleteAsync();
         _cardCache = null;
         _allCache = null;
@@ -63,11 +65,8 @@ public class PrayerService : IPrayerService
     public async Task<IReadOnlyList<Prayer>> GetOverduePrayersAsync(int dayThreshold = 30)
     {
         var allActive = await GetAllActivePrayersAsync();
-        var allInteractions = await _dbService.GetAllAsync<PrayerInteraction>();
-
-        var latestByPrayer = allInteractions
-            .GroupBy(i => i.PrayerId)
-            .ToDictionary(g => g.Key, g => g.Max(i => i.InteractionAt));
+        var latestInteractions = await _dbService.GetLatestInteractionByPrayerAsync();
+        var latestByPrayer = latestInteractions.ToDictionary(r => r.PrayerId, r => r.LatestInteractionAt);
 
         var cutoff = DateTime.Now.AddDays(-dayThreshold);
 
@@ -80,9 +79,7 @@ public class PrayerService : IPrayerService
 
     public async Task<DateTime?> GetLastInteractionDateAsync()
     {
-        var all = await _dbService.GetAllAsync<PrayerInteraction>();
-        if (all.Count == 0) return null;
-        return all.Max(i => i.InteractionAt);
+        return await _dbService.GetMaxInteractionDateAsync();
     }
 
     public void InvalidateCache()

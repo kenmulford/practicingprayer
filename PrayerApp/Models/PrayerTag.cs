@@ -21,7 +21,7 @@ namespace PrayerApp.Models
             set => _name = value ?? "Unnamed Tag";
         }
 
-        [Column("Color"), MaxLength(7)]
+        [Column("Color"), MaxLength(9)]
         public string? Color { get; set; } // Hex color code (e.g., "#FF5733")
 
         [Column("CreatedAt")]

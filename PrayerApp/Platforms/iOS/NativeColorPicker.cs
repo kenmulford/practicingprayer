@@ -33,9 +33,10 @@ public static class NativeColorPicker
 
         picker.PresentationController!.Delegate = new DismissDelegate(() =>
         {
-            // Cancelled by swiping down without picking
+            // Sheet was swiped down. Use the last selected color if the user
+            // made a selection, or null if they never touched a color.
             if (!tcs.Task.IsCompleted)
-                tcs.TrySetResult(null);
+                tcs.TrySetResult(del.LastSelectedColor);
             handle.Free();
         });
 
@@ -62,6 +63,11 @@ public static class NativeColorPicker
     {
         private readonly TaskCompletionSource<Color?> _tcs;
 
+        // Track the last-selected color so we can return it on dismiss.
+        // On iOS 26, DidFinish may not fire or may report a stale SelectedColor.
+        // DidSelectColor(continuously: false) is the reliable final-selection signal.
+        private Color? _lastSelectedColor;
+
         public ColorPickerDelegate(TaskCompletionSource<Color?> tcs)
         {
             _tcs = tcs;
@@ -69,18 +75,25 @@ public static class NativeColorPicker
 
         public override void DidSelectColor(UIColorPickerViewController viewController, UIColor color, bool continuously)
         {
-            // Only capture the final selection (not continuous updates)
-            if (continuously) return;
+            // Capture every selection (continuous and final) so we always have the
+            // most recent color when the picker is dismissed.
+            color.GetRGBA(out var r, out var g, out var b, out _);
+            var hex = $"#{(int)(r * 255):X2}{(int)(g * 255):X2}{(int)(b * 255):X2}";
+            _lastSelectedColor = Color.FromArgb(hex);
         }
 
         public override void DidFinish(UIColorPickerViewController viewController)
         {
-            var uiColor = viewController.SelectedColor;
-            uiColor.GetRGBA(out var r, out var g, out var b, out _);
-            var hex = $"#{(int)(r * 255):X2}{(int)(g * 255):X2}{(int)(b * 255):X2}";
-            _tcs.TrySetResult(Color.FromArgb(hex));
+            // Use the tracked selection — more reliable than re-reading SelectedColor
+            _tcs.TrySetResult(_lastSelectedColor);
             viewController.DismissViewController(true, null);
         }
+
+        /// <summary>
+        /// Called by the dismiss delegate when the sheet is swiped down.
+        /// Returns the last selected color (if any), treating swipe-down as confirm.
+        /// </summary>
+        public Color? LastSelectedColor => _lastSelectedColor;
     }
 
     private class DismissDelegate : UIAdaptivePresentationControllerDelegate

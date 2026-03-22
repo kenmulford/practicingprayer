@@ -13,6 +13,7 @@ namespace PrayerApp.Services
     class DBService : IDBService
     {
         private SQLiteAsyncConnection? _db;
+        private readonly Task _initTask;
 
         public DBService(string dbPath)
         {
@@ -21,12 +22,20 @@ namespace PrayerApp.Services
             RunStartupRecovery(dbPath);
 
             _db = new SQLiteAsyncConnection(dbPath);
-            _db.CreateTableAsync<PrayerCard>().Wait();
-            _db.CreateTableAsync<Prayer>().Wait();
-            _db.CreateTableAsync<PrayerTag>().Wait();
-            _db.CreateTableAsync<PrayerCardTag>().Wait();
-            _db.CreateTableAsync<PrayerInteraction>().Wait();
-            _db.CreateTableAsync<UserColor>().Wait();
+
+            // Start table creation + schema migration asynchronously.
+            // All public DB methods await _initTask before proceeding,
+            // so callers never hit an uninitialized database.
+            _initTask = UpdateSchema();
+        }
+
+        /// <summary>
+        /// Awaits the initial table creation and schema migration.
+        /// Completes instantly after the first call since Task caches its result.
+        /// </summary>
+        private async Task EnsureInitializedAsync()
+        {
+            await _initTask;
         }
 
         private static void RunStartupRecovery(string dbPath)
@@ -88,10 +97,34 @@ namespace PrayerApp.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[UpdateSchema] PrayerRequestTag migration: {ex.Message}");
             }
+
+            // One-time cleanup: remove orphaned PrayerInteraction and PrayerCardTag rows
+            // left behind by prior deletions that didn't cascade.
+            try
+            {
+                await _db.ExecuteAsync(
+                    "DELETE FROM PrayerInteraction WHERE PrayerId NOT IN (SELECT Id FROM PrayerRequest)");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateSchema] Orphan PrayerInteraction cleanup: {ex.Message}");
+            }
+
+            try
+            {
+                // PrayerRequestId == 0 rows are legacy card-level rows handled by BUG-21 migration
+                await _db.ExecuteAsync(
+                    "DELETE FROM PrayerCardTag WHERE PrayerRequestId > 0 AND PrayerRequestId NOT IN (SELECT Id FROM PrayerRequest)");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateSchema] Orphan PrayerCardTag cleanup: {ex.Message}");
+            }
         }
 
         public async Task CloseAsync()
         {
+            await EnsureInitializedAsync();
             if (_db == null) return;
             // ExecuteScalarAsync handles the result set PRAGMA wal_checkpoint returns
             // (busy, log, checkpointed columns). ExecuteAsync calls ExecuteNonQuery
@@ -109,50 +142,49 @@ namespace PrayerApp.Services
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<T>().ToListAsync();
         }
 
         public async Task<T> GetByIdAsync<T>(int id) where T : new()
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.FindAsync<T>(id);
         }
 
         public async Task<int> InsertAsync<T>(T item)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.InsertAsync(item);
         }
 
         public async Task<int> UpdateAsync<T>(T item)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.UpdateAsync(item);
         }
 
         public async Task<int> DeleteAsync<T>(T item)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.DeleteAsync(item);
         }
 
         public async Task<int> DropTableAsync<T>() where T : new()
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.DropTableAsync<T>();
         }
 
-        public async Task<List<PrayerCardTag>> GetByCardIdAsync(int prayerCardId)
-        {
-            if (_db == null) throw new InvalidOperationException("Database is not available.");
-            return await _db.Table<PrayerCardTag>()
-                .Where(pct => pct.PrayerCardId == prayerCardId)
-                .ToListAsync();
-        }
-
         public async Task<List<PrayerCardTag>> GetByRequestIdAsync(int prayerRequestId)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<PrayerCardTag>()
                 .Where(pct => pct.PrayerRequestId == prayerRequestId)
@@ -161,23 +193,16 @@ namespace PrayerApp.Services
 
         public async Task<List<PrayerCardTag>> GetByTagIdAsync(int prayerTagId)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<PrayerCardTag>()
                 .Where(pct => pct.PrayerTagId == prayerTagId)
                 .ToListAsync();
         }
 
-        public async Task<int> DeleteByCardIdAsync(int prayerCardId)
-        {
-            if (_db == null) throw new InvalidOperationException("Database is not available.");
-            return await _db.ExecuteAsync(
-                "DELETE FROM PrayerCardTag WHERE PrayerCardId = ?",
-                prayerCardId
-            );
-        }
-
         public async Task<int> DeleteByTagIdAsync(int prayerTagId)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.ExecuteAsync(
                 "DELETE FROM PrayerCardTag WHERE PrayerTagId = ?",
@@ -185,8 +210,44 @@ namespace PrayerApp.Services
             );
         }
 
+        public async Task<int> DeleteJunctionRowsByRequestIdAsync(int prayerRequestId)
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            return await _db.ExecuteAsync(
+                "DELETE FROM PrayerCardTag WHERE PrayerRequestId = ?",
+                prayerRequestId
+            );
+        }
+
+        public async Task<List<LatestInteractionResult>> GetLatestInteractionByPrayerAsync()
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            return await _db.QueryAsync<LatestInteractionResult>(
+                "SELECT PrayerId, MAX(InteractionAt) AS LatestInteractionAt FROM PrayerInteraction GROUP BY PrayerId");
+        }
+
+        public async Task<DateTime?> GetMaxInteractionDateAsync()
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            var result = await _db.ExecuteScalarAsync<string>(
+                "SELECT MAX(InteractionAt) FROM PrayerInteraction");
+            return result is not null ? DateTime.Parse(result) : null;
+        }
+
+        public async Task<int> DeleteInteractionsByPrayerIdAsync(int prayerId)
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            return await _db.ExecuteAsync(
+                "DELETE FROM PrayerInteraction WHERE PrayerId = ?", prayerId);
+        }
+
         public async Task SeedDataAsync()
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             var cardCount = await _db.Table<PrayerCard>().CountAsync();
             if (cardCount > 0) return;
@@ -247,6 +308,7 @@ namespace PrayerApp.Services
 
         public async Task<List<Prayer>> GetPrayersByCardIdAsync(int prayerCardId)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<Prayer>()
                 .Where(prayer => prayer.PrayerCardId == prayerCardId)
@@ -255,6 +317,7 @@ namespace PrayerApp.Services
 
         public async Task<List<PrayerInteraction>> GetInteractionsByPrayerIdAsync(int prayerId)
         {
+            await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             return await _db.Table<PrayerInteraction>()
                 .Where(i => i.PrayerId == prayerId)

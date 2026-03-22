@@ -7,6 +7,7 @@ using AndroidX.Core.View;
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Extensions;
 using CommunityToolkit.Maui.Views;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.Views.Onboarding;
@@ -55,15 +56,20 @@ namespace PrayerApp
             {
                 if (onboardingService.CurrentStep != OnboardingStep.Complete) return;
 
-                MainThread.BeginInvokeOnMainThread(async () =>
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    var page = Shell.Current?.CurrentPage;
-                    if (page is not null)
-                        await page.ShowPopupAsync(new OnboardingCompletePopup(),
-                            new PopupOptions { CanBeDismissedByTappingOutsideOfPopup = false },
-                            CancellationToken.None);
+                    ShowOnboardingCompletePopupAsync().SafeFireAndForget();
                 });
             };
+        }
+
+        private static async Task ShowOnboardingCompletePopupAsync()
+        {
+            var page = Shell.Current?.CurrentPage;
+            if (page is not null)
+                await page.ShowPopupAsync(new OnboardingCompletePopup(),
+                    new PopupOptions { CanBeDismissedByTappingOutsideOfPopup = false },
+                    CancellationToken.None);
         }
     }
 }

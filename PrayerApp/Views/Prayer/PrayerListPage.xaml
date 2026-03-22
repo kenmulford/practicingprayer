@@ -31,7 +31,7 @@
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="True">
                             <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor"       Value="White" />
+                            <Setter Property="TextColor"       Value="{StaticResource White}" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="False">
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
@@ -48,7 +48,7 @@
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="True">
                             <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor"       Value="White" />
+                            <Setter Property="TextColor"       Value="{StaticResource White}" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="False">
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
@@ -65,7 +65,7 @@
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="True">
                             <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor"       Value="White" />
+                            <Setter Property="TextColor"       Value="{StaticResource White}" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="False">
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
@@ -79,7 +79,7 @@
             <!-- Search bar -->
             <SearchBar Text="{Binding SearchText}"
                        Placeholder="Search prayers..."
-                       BackgroundColor="Transparent" />
+                       BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
 
             <!-- Tag chip row — only shown when tags exist -->
             <ScrollView Orientation="Horizontal"
@@ -114,7 +114,7 @@
                                        VerticalOptions="Center">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
-                                            <Setter Property="TextColor" Value="White" />
+                                            <Setter Property="TextColor" Value="{StaticResource White}" />
                                         </DataTrigger>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="False">
                                             <Setter Property="TextColor" Value="{StaticResource Primary}" />
@@ -128,6 +128,14 @@
             </ScrollView>
 
         </VerticalStackLayout>
+
+        <!-- Loading indicator -->
+        <ActivityIndicator Grid.Row="1"
+                           IsRunning="{Binding IsLoading}"
+                           IsVisible="{Binding IsLoading}"
+                           Color="{StaticResource Primary}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
 
         <!-- Prayer list -->
         <CollectionView

@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -20,6 +21,13 @@ namespace PrayerApp.ViewModels
         private readonly ICardService _cardService;
         private readonly ITagService _tagService;
         private Dictionary<int, string> _cardTitleLookup = new();
+
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
         // requestId → set of tagIds assigned to that request (for chip filter)
         private Dictionary<int, HashSet<int>> _requestTagIds = new();
@@ -95,37 +103,45 @@ namespace PrayerApp.ViewModels
 
         public async Task LoadAsync()
         {
-            // Build card title lookup
-            var cards = await _cardService.GetCardsAsync();
-            _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
-
-            // Load all prayers
-            _prayerList = (await _prayerService.GetAllPrayersAsync()).ToList();
-
-            // Build tag→request lookup for chip filter
-            _requestTagIds = await BuildRequestTagLookupAsync();
-
-            // Build overdue set for Overdue filter
-            var overdue = await _prayerService.GetOverduePrayersAsync(30);
-            _overdueIds = overdue.Select(p => p.Id).ToHashSet();
-
-            // Build prayer ViewModels
-            AllPrayers.Clear();
-            foreach (var p in _prayerList)
+            IsLoading = true;
+            try
             {
-                var vm = BuildViewModel(p);
-                AllPrayers.Add(vm);
+                // Build card title lookup
+                var cards = await _cardService.GetCardsAsync();
+                _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
+
+                // Load all prayers
+                _prayerList = (await _prayerService.GetAllPrayersAsync()).ToList();
+
+                // Build tag→request lookup for chip filter
+                _requestTagIds = await BuildRequestTagLookupAsync();
+
+                // Build overdue set for Overdue filter
+                var overdue = await _prayerService.GetOverduePrayersAsync(30);
+                _overdueIds = overdue.Select(p => p.Id).ToHashSet();
+
+                // Build prayer ViewModels
+                AllPrayers.Clear();
+                foreach (var p in _prayerList)
+                {
+                    var vm = BuildViewModel(p);
+                    AllPrayers.Add(vm);
+                }
+
+                // Load tag chips
+                var allTags = (await _tagService.GetTagsAsync()).ToList();
+                AvailableTags.Clear();
+                foreach (var tag in allTags)
+                    AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
+                OnPropertyChanged(nameof(HasTags));
+
+                // Initial filtered view
+                ApplyFilter();
             }
-
-            // Load tag chips
-            var allTags = (await _tagService.GetTagsAsync()).ToList();
-            AvailableTags.Clear();
-            foreach (var tag in allTags)
-                AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
-            OnPropertyChanged(nameof(HasTags));
-
-            // Initial filtered view
-            ApplyFilter();
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         #region IQueryAttributable
@@ -150,7 +166,7 @@ namespace PrayerApp.ViewModels
             }
             else if (query.ContainsKey("saved"))
             {
-                _ = HandleSavedAsync(query["saved"].ToString());
+                HandleSavedAsync(query["saved"].ToString()).SafeFireAndForget();
             }
         }
 
@@ -262,6 +278,7 @@ namespace PrayerApp.ViewModels
             try
             {
                 var p = await Prayer.LoadAsync(int.Parse(prayerIdString ?? "0"));
+                if (p is null) return;
                 var vm = BuildViewModel(p);
                 AllPrayers.Add(vm); // CollectionChanged → ApplyFilter
             }
@@ -314,7 +331,7 @@ namespace PrayerApp.ViewModels
             };
         }
 
-        public void Reload() => _ = LoadPrayersAsync();
+        public void Reload() => LoadPrayersAsync().SafeFireAndForget();
 
         /// <summary>
         /// Lightweight refresh for cross-tab consistency. Rebuilds the tag lookup

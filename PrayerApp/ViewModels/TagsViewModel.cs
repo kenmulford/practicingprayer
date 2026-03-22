@@ -13,6 +13,13 @@ namespace PrayerApp.ViewModels
     {
         private readonly ITagService _tagService;
 
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
+
         public ObservableCollection<TagItemViewModel> Tags { get; } = new();
         public ICommand AddCommand { get; }
 
@@ -24,9 +31,37 @@ namespace PrayerApp.ViewModels
 
         public async Task LoadAsync()
         {
+            IsLoading = true;
+            try
+            {
+                var tags = await _tagService.GetTagsAsync();
+                Tags.Clear();
+                foreach (var tag in tags)
+                    Tags.Add(new TagItemViewModel(tag, _tagService, this));
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        /// <summary>
+        /// Lightweight refresh for cross-tab consistency. Detects new/deleted tags
+        /// without clearing the entire collection (avoids flicker).
+        /// </summary>
+        public async Task RefreshAsync()
+        {
             var tags = await _tagService.GetTagsAsync();
-            Tags.Clear();
-            foreach (var tag in tags)
+            var freshIds = tags.Select(t => t.Id).ToHashSet();
+            var currentIds = Tags.Select(t => t.Id).ToHashSet();
+
+            // Remove deleted tags
+            var toRemove = Tags.Where(t => !freshIds.Contains(t.Id)).ToList();
+            foreach (var vm in toRemove)
+                Tags.Remove(vm);
+
+            // Add new tags
+            foreach (var tag in tags.Where(t => !currentIds.Contains(t.Id)))
                 Tags.Add(new TagItemViewModel(tag, _tagService, this));
         }
 

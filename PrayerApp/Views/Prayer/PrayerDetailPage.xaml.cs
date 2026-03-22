@@ -4,6 +4,8 @@ namespace PrayerApp.Views.Prayer;
 
 public partial class PrayerDetailPage : ContentPage
 {
+    private bool _initialLoadComplete;
+
     public PrayerDetailPage()
     {
         InitializeComponent();
@@ -13,11 +15,22 @@ public partial class PrayerDetailPage : ContentPage
     {
         base.OnAppearing();
 
-        if (BindingContext is PrayerRequestDetailViewModel vm
-            && vm.IsEditable
-            && string.IsNullOrEmpty(vm.Title))
+        if (BindingContext is PrayerRequestDetailViewModel vm)
         {
-            Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+            if (_initialLoadComplete)
+            {
+                // Returning from a child page (e.g. tag edit) — reload to pick up changes
+                vm.Reload();
+            }
+            else
+            {
+                _initialLoadComplete = true;
+            }
+
+            if (vm.IsEditable && string.IsNullOrEmpty(vm.Title))
+            {
+                Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Collections.ObjectModel;
@@ -37,7 +38,7 @@ public class QuickAddViewModel : ObservableObject
         _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
-        _ = LoadCardsAsync();
+        LoadCardsAsync().SafeFireAndForget();
     }
 
     private async Task LoadCardsAsync()

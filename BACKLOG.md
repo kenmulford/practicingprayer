@@ -1,7 +1,7 @@
 # Prayer App — Backlog
 
 > **Session start checklist:**
-> 1. Read `CONTEXT.md` (architecture, conventions, gotchas)
+> 1. Read `CLAUDE.md` (vision, architecture, conventions, gotchas)
 > 2. Read the **Currently In Progress** section below
 > 3. Pick up the next `[ ]` item in the Priority Queue
 >
@@ -14,8 +14,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 14 — F-14 done (color picker + tests); 77/77 tests; 0 warnings
-**Next up**: F-13 Phase 1 (iOS form styling)
+**Last completed**: Session 17 — M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-10 fixed; BUG-31 tag color stale on view; BUG-32 iOS color picker; 81/81 tests; 0 warnings
+**Next up**: F-13 Phase 1 (iOS form styling) or F-15 (notification deep-link)
 
 ---
 
@@ -27,11 +27,15 @@ Items are listed in work order. Start at the top, work down.
 |---|-----|------|--------|-------|
 | 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | Remove nested border effect on iOS: transparent InputBorder + no-stroke PrayerCardBorder on iOS. Fix placeholder color (Gray200→Gray400). Android unchanged. Phase 2 (button layout) deferred. |
 | 2 | F-15 | Notification tap opens prayer request + ad hoc "I prayed" button | Ken | Currently notification opens to home page with no context. Should deep-link to the prayer request view page. Add standalone "I prayed for this" button so users can record interactions outside Prayer Time. |
-| 3 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Need: long-press or edit mode on color swatches to delete custom colors; confirm dialog; ensure deleted swatch doesn't affect existing tags (tags store hex independently). Spec out full UX before implementing. |
-| 4 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. Standardize initialization patterns using modern best practices. |
-| 5 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
-| 6 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
-| 7 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Also tried `Xamarin.Google.Android.Play.Core 1.10.3` — only targets `net6.0-android31.0`. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 3 | F-16 | Manage user color palette — delete/reorder swatches | — | `DeleteColorAsync` exists in `IUserColorService` but has no UI. Spec out full UX before implementing. |
+| 4 | L-1/2 | Dead NavigatedTo handlers | Audit | Empty `ContentPage_NavigatedTo` in PrayerCardsPage + no-op SelectedItem=null in PrayerListPage. Remove. |
+| 5 | L-7 | Remove unused location privacy strings from Info.plist | Audit | `NSLocationWhenInUseUsageDescription` etc. — app doesn't use location. May confuse Apple reviewers. |
+| 6 | TD-12 | Full ViewModel ObservableCollection audit | — | Review all ObservableCollections across all ViewModels for blocking calls, inconsistencies, and data flow issues. |
+| 7 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
+| 8 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
+| 9 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
+| 10 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
+| 11 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
 
 ---
 
@@ -152,7 +156,26 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | UX-7 | Home page unified overdue card + Last Prayed stat | — | Merged two disconnected boxes into one `PrayerCardBorder` card: bold count header (tappable → Prayers filtered to Overdue) + inline needs-attention list. Added "Last prayed: X" stat label. Added `FilterStatus.Overdue` to PrayerListViewModel + `?filter=overdue` navigation. |
 | UX-10 | Prayer card form styling — match request form | — | Applied `PrayerCardBorder` style, removed redundant "Prayer Card" title label, restructured to Grid layout with pinned onboarding banner, added DividerLine above buttons. |
 | F-14 | Tag color palette: user-defined colors + native picker | — | New `UserColor` model + `IUserColorService` (CRUD + seed 8 defaults). iOS: native `UIColorPickerViewController`. Android: visual HSV color picker popup (saturation/value 2D area + hue slider + hex display). TagDetailPage swatches in FlexLayout wrap grid with "+" button. Decoupled `UserColorService` from MAUI for testability. 11 new unit tests (77/77 total). Tag deletion does not cascade to UserColors. |
+| H-1 | Fire-and-forget async error handling | — | `IDiagnosticLog` + `DiagnosticLog` singleton (append-only file, 100-entry trim). `TaskExtensions.SafeFireAndForget()` extension. All 19 `_ = X()` sites replaced. "Send Diagnostic Info" button in Settings (OS share sheet). 9 new tests (86/86 total). |
+| H-2 | iOS AppDelegate missing `e.SetObserved()` | — | Added `e.SetObserved()`. Handler code extracted to `MauiProgram.RegisterGlobalExceptionHandlers()` (shared iOS/Android). Switched from `Preferences.Set("LastCrash")` to `IDiagnosticLog` with console fallback. |
+| H-3 | PrayerCardViewModel.Reload() race condition | — | Removed redundant synchronous `RefreshProperties()` from `Reload()` and `ApplyQueryAttributes`. `LoadPrayerCardAsync` `finally` block is the single notification point. |
+| H-4 | Null checks on `LoadAsync` return values | — | 6 call sites guarded. Page-load methods navigate back on null; in-list operations return silently. `PrayerRequestDetailViewModel.LoadPrayerAsync` restructured to avoid `finally` on null. |
+| H-6 | PrayerTag.Color MaxLength(7) too short | — | `MaxLength(7)` → `MaxLength(9)` to support `#AARRGGBB`. No DB migration needed. |
+| H-5 | PrayerInteraction table unbounded growth | — | `GetOverduePrayersAsync` and `GetLastInteractionDateAsync` rewritten to use SQL GROUP BY / MAX queries via `GetLatestInteractionByPrayerAsync` and `GetMaxInteractionDateAsync`. No longer loads all rows into memory. |
+| M-8 | Card delete orphans PrayerCardTag junction rows | — | `DeleteJunctionRowsByRequestIdAsync` added to IDBService/DBService. Called in `PrayerService.DeletePrayerAsync` cascade. |
+| M-9 | Prayer delete orphans PrayerInteraction rows | — | `DeleteInteractionsByPrayerIdAsync` added to IDBService/DBService. Called in `PrayerService.DeletePrayerAsync` cascade. One-time orphan cleanup migration in `DBService.UpdateSchema()`. |
+| L-4 | Remove deprecated card-level ITagService methods | — | 4 `[Obsolete]` card-level methods removed from `ITagService`, `TagService`, `IDBService`, `DBService`, `PrayerCardTag`. Associated tests removed. |
+| M-4 | Loading indicators on list pages | — | `IsLoading` property + `ActivityIndicator` added to PrayerCardsPage, PrayerListPage, TagsPage. Spinner shown during async load. |
+| M-7 | Accessibility on SwipeView actions | — | `SemanticProperties.Description` added to all 7 SwipeItems across PrayerCardsPage and TagsPage. |
+| M-5 | Hardcoded SwipeItem colors in TagsPage | — | `LightSteelBlue` → `{StaticResource Primary}`, `IndianRed` → `{StaticResource DangerRed}`. |
+| M-10 | Custom colors no dark mode adjustment | — | `TagColorPalette.Resolve()` now lightens custom (non-palette) colors 25% in dark mode via `Lighten()` helper. |
+| M-1 | OnboardingBanner StepChanged event leak | — | Added unsubscribe-before-subscribe guard in `OnHandlerChanged` to prevent double-subscribe on re-parent. |
+| M-2 | AppShell StepChanged lambda no try/catch | — | Extracted `ShowOnboardingCompletePopupAsync()` and routed through `SafeFireAndForget()` for error logging. |
+| M-3 | TagsPage full reload every OnAppearing | — | Added `_loaded` guard + `RefreshAsync()` with differential add/remove (no flicker from clear+rebuild). |
+| M-6 | Hardcoded `TextColor="White"` in XAML | — | All 9 instances across MainPage, PrayerTimePage, PrayerDetailPage, PrayerListPage, OnboardingBanner, popups, Styles.xaml replaced with `{StaticResource White}`. |
+| BUG-31 | Tag color stale on prayer detail view after tag edit | — | `PrayerDetailPage.OnAppearing` now calls `Reload()` on subsequent visits (not just first load), picking up tag color/name changes. |
+| BUG-32 | iOS color picker returns wrong/stale color on iOS 26 iPad | — | `NativeColorPicker.ColorPickerDelegate` now tracks every `DidSelectColor` selection. `DidFinish` and swipe-dismiss both use the tracked color instead of re-reading `SelectedColor`. |
 
 ---
 
-*Last updated: 2026-03-20 (session 14 — F-14 completed; 77/77 tests; 0 warnings)*
+*Last updated: 2026-03-20 (session 17 — M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-10 fixed; BUG-31/BUG-32 fixed; 81/81 tests; 0 warnings)*

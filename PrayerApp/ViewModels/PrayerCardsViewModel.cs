@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.Views.PrayerCard;
@@ -11,13 +12,20 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerCardsViewModel : IQueryAttributable
+    internal class PrayerCardsViewModel : ObservableObject, IQueryAttributable
     {
         private List<PrayerCard> _prayerCards;
         private readonly ICardService _cardService;
         private readonly IOnboardingService _onboardingService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
         private bool _isSorting;
+
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
         public ICommand NewCommand { get; }
 
@@ -75,7 +83,7 @@ namespace PrayerApp.ViewModels
                 // If card isn't found, it's new; add it.
                 else
                 {
-                    _ = AddNewCardAsync(PrayerCardString);
+                    AddNewCardAsync(PrayerCardString).SafeFireAndForget();
                 }
             }
             else if (query.ContainsKey("prayerSaved") && query.ContainsKey("parentCardId"))
@@ -86,7 +94,7 @@ namespace PrayerApp.ViewModels
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     if (matched != null)
                     {
-                        _ = matched.AddOrUpdatePrayerAsync(prayerId);
+                        matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
                     }
                 }
             }
@@ -110,6 +118,7 @@ namespace PrayerApp.ViewModels
             try
             {
                 var card = await PrayerCard.LoadAsync(int.Parse(cardIdString ?? "0"));
+                if (card is null) return;
                 var newCard = new PrayerCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
@@ -123,6 +132,7 @@ namespace PrayerApp.ViewModels
 
         public async Task LoadAsync()
         {
+            IsLoading = true;
             try
             {
                 _cardService.InvalidateCache();
@@ -146,6 +156,10 @@ namespace PrayerApp.ViewModels
             catch (Exception e)
             {
                 await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+            }
+            finally
+            {
+                IsLoading = false;
             }
         }
 
@@ -200,7 +214,7 @@ namespace PrayerApp.ViewModels
 
         public void Reload()
         {
-            _ = LoadAsync();
+            LoadAsync().SafeFireAndForget();
         }
 
         /// <summary>

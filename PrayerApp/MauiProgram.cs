@@ -54,6 +54,8 @@ namespace PrayerApp
                     () => PrayerApp.Services.Settings.AllowNotifications));
             // Register onboarding service as singleton
             builder.Services.AddSingleton<IOnboardingService, OnboardingService>();
+            // Register diagnostic log service
+            builder.Services.AddSingleton<IDiagnosticLog>(s => new DiagnosticLog(FileSystem.AppDataDirectory));
             // Register backup service
             builder.Services.AddSingleton<IBackupService, BackupService>();
             // Register user color service
@@ -73,39 +75,78 @@ namespace PrayerApp
             builder.Services.AddTransient<TagDetailViewModel>();
             builder.Services.AddTransient<TagDetailPage>();
 
+            RegisterGlobalExceptionHandlers();
+
             var app = builder.Build();
 
             PrayerApp.Services.Settings.ConfigureNotificationService(
                 app.Services.GetRequiredService<INotificationService>());
 
-            // get the new DB Service
-            using var scope = app.Services.CreateScope();
-            var myDBService = scope.ServiceProvider.GetRequiredService<IDBService>();
-
-            // set DB service for the necessary models
+            // Set DB service for the necessary models (synchronous — just stores a reference).
+            var myDBService = app.Services.GetRequiredService<IDBService>();
             PrayerCard.SetDBService(myDBService);
             PrayerTag.SetDBService(myDBService);
             PrayerCardTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
             PrayerInteraction.SetDBService(myDBService);
 
-            // ensure the schema is updated
-            Task.Run(async () => await myDBService.UpdateSchema()).Wait();
+            // Kick off seeding asynchronously — no blocking on the startup thread.
+            // DBService internally awaits its own schema init before any query runs,
+            // so seeding will wait for tables to exist automatically.
+            // Pages await App.InitTask before loading data.
+            App.InitTask = SeedAsync(app.Services);
 
-            // Seed default color palette (no-op after first run)
-            var userColorService = app.Services.GetRequiredService<IUserColorService>();
-            Task.Run(async () => await userColorService.SeedDefaultsAsync()).Wait();
+            return app;
+        }
+
+        /// <summary>
+        /// Registers global exception handlers that log to <see cref="IDiagnosticLog"/>
+        /// with a console fallback (DI may not be built yet during startup).
+        /// Called once from CreateMauiApp — shared by both iOS and Android.
+        /// </summary>
+        private static void RegisterGlobalExceptionHandlers()
+        {
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                var ex = e.ExceptionObject as Exception;
+                var log = IPlatformApplication.Current?.Services?.GetService<IDiagnosticLog>();
+                if (log != null && ex != null)
+                    log.Log("UnhandledException", ex);
+                else
+                    Console.Error.WriteLine(ex?.ToString() ?? e.ExceptionObject?.ToString());
+            };
+
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                var log = IPlatformApplication.Current?.Services?.GetService<IDiagnosticLog>();
+                if (log != null)
+                    log.Log("UnobservedTaskException", e.Exception);
+                else
+                    Console.Error.WriteLine(e.Exception.ToString());
+                e.SetObserved();
+            };
+        }
+
+        /// <summary>
+        /// Runs post-schema seed work asynchronously. Awaited by App.InitTask
+        /// before the first page loads data.
+        /// </summary>
+        private static async Task SeedAsync(IServiceProvider services)
+        {
+            // Trim the diagnostic log on startup (non-blocking — runs inside InitTask)
+            services.GetRequiredService<IDiagnosticLog>().Trim();
+
+            var userColorService = services.GetRequiredService<IUserColorService>();
+            await userColorService.SeedDefaultsAsync();
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)
             {
-                // seed initial data for development/testing only — never runs in Release builds
-                Task.Run(async () => await myDBService.SeedDataAsync()).Wait();
+                var dbService = services.GetRequiredService<IDBService>();
+                await dbService.SeedDataAsync();
                 PrayerApp.Services.Settings.FirstRun = false;
             }
 #endif
-
-            return app;
         }
     }
 }

@@ -15,6 +15,14 @@
 
     <Grid RowDefinitions="*,Auto,Auto">
 
+        <!-- Loading indicator -->
+        <ActivityIndicator Grid.Row="0"
+                           IsRunning="{Binding IsLoading}"
+                           IsVisible="{Binding IsLoading}"
+                           Color="{StaticResource Primary}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+
         <CollectionView
             Grid.Row="0"
             x:Name="cardCollection"
@@ -34,10 +42,12 @@
                             <SwipeItem
                                 BackgroundColor="{StaticResource WarmGold}"
                                 Command="{Binding ToggleFavoriteCommand}"
+                                SemanticProperties.Description="Toggle favorite"
                                 Text="★" />
                             <SwipeItem
                                 BackgroundColor="{StaticResource Primary}"
                                 Command="{Binding SelectCardCommand}"
+                                SemanticProperties.Description="Edit card"
                                 Text="Edit" />
                         </SwipeItems>
                     </SwipeView.LeftItems>
@@ -47,6 +57,7 @@
                                 BackgroundColor="{StaticResource DangerRed}"
                                 IconImageSource="trash_can_solid_full.png"
                                 Command="{Binding DeleteCommand}"
+                                SemanticProperties.Description="Delete card"
                                 Text="Delete" />
                         </SwipeItems>
                     </SwipeView.RightItems>
@@ -98,6 +109,7 @@
                                                         <SwipeItem
                                                             BackgroundColor="{StaticResource Primary}"
                                                             Command="{Binding EditPrayerCommand}"
+                                                            SemanticProperties.Description="Edit prayer"
                                                             Text="Edit" />
                                                     </SwipeItems>
                                                 </SwipeView.LeftItems>
@@ -106,6 +118,7 @@
                                                         <SwipeItem
                                                             BackgroundColor="{StaticResource DangerRed}"
                                                             Command="{Binding DeleteCommand}"
+                                                            SemanticProperties.Description="Delete prayer"
                                                             Text="Delete" />
                                                     </SwipeItems>
                                                 </SwipeView.RightItems>

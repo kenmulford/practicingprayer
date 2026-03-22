@@ -43,7 +43,11 @@
     <Compile Include="../PrayerApp/Models/OnboardingStep.cs" />
     <Compile Include="../PrayerApp/Models/UserColor.cs" />
 
+    <!-- Helpers -->
+    <Compile Include="../PrayerApp/Helpers/TaskExtensions.cs" />
+
     <!-- Service interfaces -->
+    <Compile Include="../PrayerApp/Services/IDiagnosticLog.cs" />
     <Compile Include="../PrayerApp/Services/IDBService.cs" />
     <Compile Include="../PrayerApp/Services/IUserColorService.cs" />
     <Compile Include="../PrayerApp/Services/ICardService.cs" />
@@ -55,6 +59,7 @@
     <Compile Include="../PrayerApp/Services/ILocalNotificationCenter.cs" />
 
     <!-- Service implementations (no MAUI dependencies) -->
+    <Compile Include="../PrayerApp/Services/DiagnosticLog.cs" />
     <Compile Include="../PrayerApp/Services/CardService.cs" />
     <Compile Include="../PrayerApp/Services/PrayerService.cs" />
     <Compile Include="../PrayerApp/Services/TagService.cs" />

@@ -56,7 +56,7 @@ namespace PrayerApp.ViewModels
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             AddColorCommand = new AsyncRelayCommand(AddColorAsync);
 
-            _ = LoadSwatchesAsync();
+            LoadSwatchesAsync().SafeFireAndForget();
         }
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
@@ -64,7 +64,7 @@ namespace PrayerApp.ViewModels
             if (query.TryGetValue("load", out var loadVal) &&
                 int.TryParse(loadVal?.ToString(), out int id))
             {
-                _ = LoadAsync(id);
+                LoadAsync(id).SafeFireAndForget();
             }
         }
 
@@ -82,7 +82,13 @@ namespace PrayerApp.ViewModels
 
         private async Task LoadAsync(int id)
         {
-            _tag = await PrayerTag.LoadAsync(id);
+            var result = await PrayerTag.LoadAsync(id);
+            if (result is null)
+            {
+                await Shell.Current.GoToAsync("..");
+                return;
+            }
+            _tag = result;
             OnPropertyChanged(nameof(Name));
             SelectedColorHex = _tag.Color ?? TagColorPalette.Swatches[0].Light;
         }

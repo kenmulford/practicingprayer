@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using PrayerApp.Helpers;
 using Plugin.LocalNotification;
 
 namespace PrayerApp.Services
@@ -44,7 +45,7 @@ namespace PrayerApp.Services
                 if (_notificationService is null)
                     return;
 
-                _ = UpdateAllowNotificationsAsync(value);
+                UpdateAllowNotificationsAsync(value).SafeFireAndForget();
             }
         }
 
@@ -75,7 +76,7 @@ namespace PrayerApp.Services
         public static void EnsureNotificationPermissionRequested()
         {
             if (AllowNotifications && _notificationService != null)
-                _ = _notificationService.RequestPermissionAsync();
+                _notificationService.RequestPermissionAsync().SafeFireAndForget();
         }
 
         public static void ClearSettings()

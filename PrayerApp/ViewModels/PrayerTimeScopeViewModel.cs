@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.Views.PrayerTime;
@@ -33,7 +34,7 @@ public class PrayerTimeScopeViewModel : ObservableObject
         _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
         StartCommand = new AsyncRelayCommand(StartAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
-        _ = LoadTagsAsync();
+        LoadTagsAsync().SafeFireAndForget();
     }
 
     private async Task LoadTagsAsync()
