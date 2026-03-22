@@ -114,9 +114,19 @@ Views (XAML)
 
 ---
 
+## Changelog
+
+- **File:** `docs/CHANGELOG.md` — app store release notes, updated continuously
+- After every commit that adds user-facing changes (features, improvements, bug fixes), update `docs/CHANGELOG.md` with a concise, user-friendly summary
+- Write for end users, not developers — no code references, backlog IDs, or technical jargon
+- When Ken tags a new version/build, reset the changelog: update the baseline tag, clear the entries, and start fresh
+
+---
+
 ## Key Files
 
 - `BACKLOG.md` — prioritized work queue (update every session)
+- `docs/CHANGELOG.md` — app store release notes (update every session with user-facing changes)
 - `docs/plans/` — active feature implementation plans (F-10, F-13)
 - `docs/research/` — investigation notes
 - `docs/tester-feedback/feedback-log.md` — verbatim tester feedback
