@@ -37,20 +37,35 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         }
     }
 
-    public IReadOnlyList<PrayerTimeEntry> Entries { get; private set; } = Array.Empty<PrayerTimeEntry>();
+    private IReadOnlyList<PrayerTimeEntry> _entries = Array.Empty<PrayerTimeEntry>();
+    public IReadOnlyList<PrayerTimeEntry> Entries
+    {
+        get => _entries;
+        private set => SetProperty(ref _entries, value);
+    }
 
     private int _currentIndex;
+    /// <summary>
+    /// Two-way bound to CarouselView.Position. The setter is public so the
+    /// CarouselView can update it on swipe. When the value changes forward,
+    /// interaction logging fires for the prayer that was just left.
+    /// </summary>
     public int CurrentIndex
     {
         get => _currentIndex;
-        private set
+        set
         {
+            var previous = _currentIndex;
             if (SetProperty(ref _currentIndex, value))
             {
                 OnPropertyChanged(nameof(CurrentEntry));
                 OnPropertyChanged(nameof(ProgressDisplay));
                 OnPropertyChanged(nameof(HasPrevious));
                 OnPropertyChanged(nameof(HasNext));
+
+                // Log interaction for the prayer we just swiped away from (forward only)
+                if (value > previous && previous < Entries.Count)
+                    LogInteractionForIndex(previous).SafeFireAndForget();
             }
         }
     }
@@ -242,24 +257,9 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     {
         if (HasCompleted) return;
 
-        if (CurrentEntry is not null)
-        {
-            try
-            {
-                await _interactionService.LogInteractionAsync(CurrentEntry.PrayerId);
-
-                // Remove "Recently Notified" tag from prayed prayer
-                if (_recentlyNotifiedTagId.HasValue)
-                    await _tagService.RemoveTagFromRequestAsync(CurrentEntry.PrayerId, _recentlyNotifiedTagId.Value);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to log interaction: {ex.Message}");
-            }
-        }
-
         if (HasNext)
         {
+            // CurrentIndex setter handles interaction logging for the leaving prayer
             CurrentIndex++;
             // Reset countdown so user gets full interval on the new card
             if (IsAutoMode)
@@ -267,8 +267,26 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         }
         else
         {
+            // Log the final prayer before completing
+            await LogInteractionForIndex(CurrentIndex);
             HasCompleted = true;
             StopAutoMode();
+        }
+    }
+
+    private async Task LogInteractionForIndex(int index)
+    {
+        if (index < 0 || index >= Entries.Count) return;
+        var entry = Entries[index];
+        try
+        {
+            await _interactionService.LogInteractionAsync(entry.PrayerId);
+            if (_recentlyNotifiedTagId.HasValue)
+                await _tagService.RemoveTagFromRequestAsync(entry.PrayerId, _recentlyNotifiedTagId.Value);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to log interaction: {ex.Message}");
         }
     }
 

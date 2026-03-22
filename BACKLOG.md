@@ -158,7 +158,7 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | F-15 | Notification tap → Prayer Time via system tag | — | System-managed "Recently Notified" tag auto-assigned at notification schedule time. Tap notification → confirm dialog → Prayer Time scoped to tagged prayers. Tag removed after prayer is prayed. `IsSystem` flag on system tags: sorted first, color editable, name locked, delete blocked, "System" badge on TagsPage. |
 | BUG-33 | Mark Answered doesn't propagate to list/card pages | — | `MarkAnsweredAsync` now navigates back with `prayerSaved` query param so parent page refreshes (was calling `RefreshProperties()` locally without navigation). |
 | F-17 | Reassign prayer request to different card | — | Card picker added to prayer edit form. `AvailableCards` loaded from `ICardService`. `oldCardId` query param handles card accordion move. List page refreshes `CardTitle` on save. System tags excluded from tag suggestions. |
-| BUG-34 | Prayer Time swipe not working | Tony | `SwipeGestureRecognizer` was on inner Grid competing with `ScrollView` for touch events. Moved to page-level Grid and lowered `Threshold` to 40 for reliable recognition. |
+| BUG-34 | Prayer Time swipe not working | Tony | Replaced `SwipeGestureRecognizer` with `CarouselView` for native swipe-to-reveal transitions. Details area uses conditional vertical scroll with gradient fade indicator for long content. Interaction logging unified in `LogInteractionForIndex` helper, triggered on forward swipe or button press. |
 
 ---
 
