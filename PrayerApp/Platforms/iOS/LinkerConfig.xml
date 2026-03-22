@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
   Linker preservation rules for iOS AOT builds.
-  Prevents the trimmer from stripping SQLite-net and SQLitePCLRaw internals,
-  which causes "Failed to load AOT module 'SQLite-net'" at runtime.
+  Prevents the trimmer from stripping assemblies that use reflection
+  or are loaded dynamically at runtime in AOT-only mode.
 -->
 <linker>
   <!-- Preserve all sqlite-net-pcl types used via reflection (TableMapping, column accessors, etc.) -->
@@ -13,4 +13,12 @@
 
   <!-- Note: SQLitePCLRaw.provider.e_sqlite3 is a native lib, not a .NET assembly —
        no linker entry needed for it. -->
+
+  <!-- Preserve MAUI XAML — required for runtime XAML page loading in AOT mode.
+       Without this, release builds crash: "failed to load AOT module
+       microsoft.maui.controls.xaml" -->
+  <assembly fullname="Microsoft.Maui.Controls.Xaml" preserve="all" />
+
+  <!-- Preserve Plugin.LocalNotification — uses reflection for iOS notification dispatch -->
+  <assembly fullname="Plugin.LocalNotification" preserve="all" />
 </linker>

@@ -32,6 +32,7 @@ Items are listed in work order. Start at the top, work down.
 | 5 | INV-4 | In-app update notification — Android Play Core | — | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships. |
 | 6 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
 | 7 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
+| 8 | F-18 | Widget support for prayer cards | Ken | Investigate iOS/Android home-screen widgets for prayer cards. Needs fleshing out — scope, widget types (daily card, overdue count, quick-add?), platform APIs (WidgetKit on iOS, App Widgets on Android). |
 
 ---
 
