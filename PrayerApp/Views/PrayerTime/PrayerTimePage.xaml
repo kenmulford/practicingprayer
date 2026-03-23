@@ -76,7 +76,7 @@
                           IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
                           Loop="False"
                           IsSwipeEnabled="True"
-                          IsBounceEnabled="True"
+                          IsBounceEnabled="False"
                           HorizontalScrollBarVisibility="Never"
                           VerticalScrollBarVisibility="Never">
                 <CarouselView.ItemTemplate>

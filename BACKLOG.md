@@ -13,8 +13,8 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Idle
-**Last completed**: Session 20 — F-15 tagging rework (launch-time calc), configurable overdue threshold, changelog/backlog update; 107/107 tests; 0 warnings
+**Status**: Active — Session 22
+**Last completed**: Session 22 — BUG-41 through BUG-45, UX-14, UX-15; 107/107 tests; 0 warnings
 **Next up**: F-13 Phase 1 (iOS form styling)
 
 ---
@@ -161,7 +161,20 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 | F-17 | Reassign prayer request to different card | — | Card picker added to prayer edit form. `AvailableCards` loaded from `ICardService`. `oldCardId` query param handles card accordion move. List page refreshes `CardTitle` on save. System tags excluded from tag suggestions. |
 | BUG-34 | Prayer Time swipe not working | Tony | Replaced `SwipeGestureRecognizer` with `CarouselView` for native swipe-to-reveal transitions. Details area uses conditional vertical scroll with gradient fade indicator for long content. Interaction logging unified in `LogInteractionForIndex` helper, triggered on forward swipe or button press. |
 | UX-13 | Configurable overdue threshold + zero-state guidance | Ken | `Settings.OverdueDayThreshold` (default 30, min 1) with numeric Entry in Settings. Home page zero-state explains the feature with dynamic day count. Both `HomeViewModel` and `PrayerListViewModel` use the setting. |
+| BUG-35 | Prayer Time swipe locks at first card boundary (iOS) | Ken | `IsBounceEnabled="False"` on CarouselView — bounce animation was locking gesture recognizer on iOS. |
+| BUG-36 | Long-press to delete tag color not working on iOS | Ken | Consolidated `TapGestureRecognizer` + `TouchBehavior` into single `TouchBehavior` with `Command` + `LongPressCommand`. Gesture conflict resolved. |
+| BUG-37 | Tag name update doesn't refresh TagsPage | Ken | `TagsViewModel.RefreshAsync()` now updates existing `TagItemViewModel` instances (name/color), not just adds/removes. |
+| BUG-38 | Settings notification switch wrong styling on load | Ken | Removed base `ThumbColor` setter; `Normal` visual state now sets Off-state thumb color so initial render is correct. |
+| BUG-39 | Tag suggestion list hard to see and tap | Ken | Added background color, stronger border, larger tap targets, `MaximumHeightRequest` with inner ScrollView. |
+| BUG-40 | iOS keyboard covers Save on prayer form | Ken | `ReturnType="Done"` + `Completed` handler unfocuses entry to dismiss keyboard. |
+| BUG-41 | Android crash on prayer detail — `ScrollBarVisibility.Auto` not found | Ken | `VerticalScrollBarVisibility="Auto"` → `"Never"` in suggestion list ScrollView. `Auto` is not a valid enum value. |
+| BUG-42 | Tag color tap-to-select broken on Android (BUG-36 regression) | Ken | Interim fix: restored `TapGestureRecognizer` + `TouchBehavior(LongPressCommand only)` + `InputTransparent="True"` — but broke long-press. Superseded by BUG-44. |
+| BUG-43 | Cannot swipe past final prayer to reach Done screen | Ken | Appended completion sentinel (`PrayerId=-1`) to entries list. `CurrentIndex` setter detects sentinel position and sets `HasCompleted = true`. ProgressDisplay excludes sentinel from count. |
+| BUG-44 | Long-press to delete tag color still broken after BUG-42 (both platforms) | Ken | Root cause: `TapGestureRecognizer` + `TouchBehavior` on same element — tap recognizer cancels touch stream before long-press duration. Fix: `TouchBehavior(Command + LongPressCommand)` exclusively, `InputTransparent="True"` on Ellipses. |
+| BUG-45 | Tag suggestion tap not registering after BUG-39 (both platforms) | Ken | Root cause: `ScrollView` added in BUG-39 intercepts touches before `TapGestureRecognizer` fires. Fix: replaced with `TouchBehavior.Command + CommandParameter`; `InputTransparent="True"` on Label; added `toolkit` namespace to PrayerDetailPage.xaml. |
+| UX-14 | Exclude never-prayed prayers from overdue | Ken | `GetOverduePrayersAsync` now requires at least one interaction before counting as overdue. |
+| UX-15 | Active prayer count badge on collapsed cards | Ken | `ActivePrayerCount` property + circular badge in card header. Shows count (including 0) when collapsed, hidden when expanded. |
 
 ---
 
-*Last updated: 2026-03-22 (session 19 — F-15 feedback, BUG-33, F-17, BUG-34; 94/94 tests; 0 warnings)*
+*Last updated: 2026-03-23 (session 22 — BUG-41–45, UX-14, UX-15; 107/107 tests; 0 warnings)*

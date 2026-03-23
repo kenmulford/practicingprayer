@@ -67,10 +67,10 @@
 
                         <VerticalStackLayout Spacing="0">
 
-                            <!-- Card header: title + favorite star -->
+                            <!-- Card header: title + badge + favorite star -->
                             <Grid
                                 Padding="12,10"
-                                ColumnDefinitions="*,Auto">
+                                ColumnDefinitions="*,Auto,Auto">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding ToggleExpandedCommand}" />
                                 </Grid.GestureRecognizers>
@@ -79,8 +79,29 @@
                                     Style="{StaticResource CardTitle}"
                                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
                                     VerticalOptions="Center" />
-                                <Label
+                                <!-- Active prayer count badge (collapsed only) -->
+                                <Border
                                     Grid.Column="1"
+                                    IsVisible="{Binding ShowBadge}"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                    StrokeShape="RoundRectangle 10"
+                                    Stroke="Transparent"
+                                    Padding="6,2"
+                                    HeightRequest="20"
+                                    MinimumWidthRequest="20"
+                                    VerticalOptions="Center"
+                                    HorizontalOptions="End"
+                                    Margin="0,0,8,0">
+                                    <Label
+                                        Text="{Binding ActivePrayerCount}"
+                                        FontSize="11"
+                                        FontAttributes="Bold"
+                                        TextColor="{StaticResource White}"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                                </Border>
+                                <Label
+                                    Grid.Column="2"
                                     Text="★"
                                     FontSize="16"
                                     TextColor="{StaticResource WarmGold}"

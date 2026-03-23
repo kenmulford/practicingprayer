@@ -209,7 +209,7 @@ public class PrayerServiceTests
     // ── GetOverduePrayersAsync ────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetOverduePrayersAsync_NeverPrayed_IsIncluded()
+    public async Task GetOverduePrayersAsync_NeverPrayed_IsExcluded()
     {
         var prayer = new Prayer { Id = 1, IsAnswered = false };
         _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer> { prayer }));
@@ -217,8 +217,7 @@ public class PrayerServiceTests
 
         var result = await _service.GetOverduePrayersAsync();
 
-        Assert.Single(result);
-        Assert.Equal(1, result[0].Id);
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -264,7 +263,7 @@ public class PrayerServiceTests
     }
 
     [Fact]
-    public async Task GetOverduePrayersAsync_OrderedOldestFirst_NeverPrayedAtFront()
+    public async Task GetOverduePrayersAsync_OrderedOldestFirst()
     {
         var pNever = new Prayer { Id = 1, IsAnswered = false };
         var pOld   = new Prayer { Id = 2, IsAnswered = false };
@@ -278,10 +277,9 @@ public class PrayerServiceTests
 
         var result = await _service.GetOverduePrayersAsync(dayThreshold: 30);
 
-        Assert.Equal(3, result.Count);
-        Assert.Equal(1, result[0].Id); // never prayed → DateTime.MinValue sorts first
-        Assert.Equal(3, result[1].Id); // oldest prayed next
-        Assert.Equal(2, result[2].Id); // least old last
+        Assert.Equal(2, result.Count);   // never-prayed (Id=1) excluded
+        Assert.Equal(3, result[0].Id);   // oldest prayed first
+        Assert.Equal(2, result[1].Id);   // least old last
     }
 
     [Fact]

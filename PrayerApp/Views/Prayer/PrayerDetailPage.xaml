@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="PrayerApp.Views.Prayer.PrayerDetailPage"
              x:DataType="viewModels:PrayerRequestDetailViewModel"
              xmlns:models="clr-namespace:PrayerApp.Models"
@@ -208,33 +209,41 @@
 
                     <!-- Tag search entry -->
                     <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Entry Text="{Binding TagSearchText}"
+                        <Entry x:Name="tagEntry"
+                               Text="{Binding TagSearchText}"
                                Placeholder="Add tags..."
                                ReturnCommand="{Binding SubmitTagEntryCommand}"
+                               ReturnType="Done"
+                               Completed="OnTagEntryCompleted"
                                HorizontalOptions="Fill" />
                     </Border>
 
                     <!-- Suggestions list -->
                     <Border IsVisible="{Binding HasSuggestions}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
                             StrokeShape="RoundRectangle 6"
-                            Padding="0">
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedTags}"
-                                             Spacing="0">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="models:PrayerTag">
-                                    <Grid Padding="12,10"
-                                          BackgroundColor="Transparent">
-                                        <Grid.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}}"
-                                                CommandParameter="{Binding Id}" />
-                                        </Grid.GestureRecognizers>
-                                        <Label Text="{Binding Name}" FontSize="14" />
-                                    </Grid>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
+                            Padding="0"
+                            MaximumHeightRequest="180">
+                        <ScrollView VerticalScrollBarVisibility="Never">
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedTags}"
+                                                 Spacing="0">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PrayerTag">
+                                        <Grid Padding="14,12"
+                                              BackgroundColor="Transparent">
+                                            <Grid.Behaviors>
+                                                <toolkit:TouchBehavior
+                                                    Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}}"
+                                                    CommandParameter="{Binding Id}" />
+                                            </Grid.Behaviors>
+                                            <Label Text="{Binding Name}" FontSize="15"
+                                                   InputTransparent="True" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </ScrollView>
                     </Border>
 
                     <!-- Divider before action buttons -->

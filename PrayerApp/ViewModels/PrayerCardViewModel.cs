@@ -81,6 +81,7 @@ namespace PrayerApp.ViewModels
                 {
                     _isExpanded = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(ShowBadge));
                 }
             }
         }
@@ -97,6 +98,16 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
+
+        private int _activePrayerCount;
+        public int ActivePrayerCount
+        {
+            get => _activePrayerCount;
+            set => SetProperty(ref _activePrayerCount, value);
+        }
+
+        /// <summary>Show the count badge when the card is collapsed.</summary>
+        public bool ShowBadge => !IsExpanded;
 
         public ObservableCollection<PrayerRequestDetailViewModel> Prayers { get; }
 
@@ -125,6 +136,16 @@ namespace PrayerApp.ViewModels
         public PrayerCardViewModel(PrayerCard pc) : this()
         {
             _prayerCard = pc;
+            LoadActivePrayerCountAsync().SafeFireAndForget();
+        }
+
+        private async Task LoadActivePrayerCountAsync()
+        {
+            // When prayers are already loaded locally, derive count without a service call
+            if (_prayersLoaded)
+                ActivePrayerCount = Prayers.Count(p => !p.IsAnswered);
+            else
+                ActivePrayerCount = await _prayerService.GetActivePrayerCountByCardAsync(_prayerCard.Id);
         }
 
         #endregion
@@ -297,6 +318,7 @@ namespace PrayerApp.ViewModels
                 .Count();
             Prayers.Insert(insertIndex, viewModel);
             OnPropertyChanged(nameof(HasPrayers));
+            LoadActivePrayerCountAsync().SafeFireAndForget();
         }
 
         public void RemovePrayer(int prayerId)
@@ -311,6 +333,7 @@ namespace PrayerApp.ViewModels
             {
                 Prayers.Remove(existing);
                 OnPropertyChanged(nameof(HasPrayers));
+                LoadActivePrayerCountAsync().SafeFireAndForget();
             }
         }
 

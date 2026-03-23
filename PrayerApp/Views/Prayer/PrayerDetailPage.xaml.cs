@@ -11,6 +11,12 @@ public partial class PrayerDetailPage : ContentPage
         InitializeComponent();
     }
 
+    private void OnTagEntryCompleted(object? sender, EventArgs e)
+    {
+        // Dismiss keyboard after tag submission so Save button is accessible
+        tagEntry.Unfocus();
+    }
+
     protected override void OnAppearing()
     {
         base.OnAppearing();
