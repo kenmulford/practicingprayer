@@ -33,6 +33,8 @@ Items are listed in work order. Start at the top, work down.
 | 6 | UX-12 | Replace emoji glyphs with SVG icons | Ken | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨). |
 | 7 | UX-11 | Page transition animations | Ken | Custom slide/swipe animations on Shell navigation. Requires platform-specific handlers (iOS + Android). Evaluate Lottie for loading animations when implementing M-4. |
 | 8 | F-18 | Widget support for prayer cards | Ken | Investigate iOS/Android home-screen widgets for prayer cards. Needs fleshing out — scope, widget types (daily card, overdue count, quick-add?), platform APIs (WidgetKit on iOS, App Widgets on Android). |
+| 9 | BUG-46 | Home Screen > Quick Add: Fails if no cards exist | Ken | Quick Add form crashes or fails when user has no prayer cards yet. Needs guard + create-first-card flow. |
+| 10 | UX-16 | Prayer Requests > Scheduled notifications — more control | Ken | Add granular scheduling: monthly (day of month), weekly (day of week), time of day (time picker). Settings > Notifications should have default time of day for weekly/monthly. |
 
 ---
 
