@@ -26,6 +26,7 @@ Items are listed in work order. Start at the top, work down.
 | # | ID | Item | Source | Notes |
 |---|-----|------|--------|-------|
 | 1 | F-13 | iOS native form design pass — Phase 1 (field + container styling) | Ken | 📋 **Plan ready** at `docs/plans/F13-ios-field-styling.md`. OnPlatform Entry/Editor bg, Gray400 placeholder, Focused VSM state. Styles.xaml only. |
+| 1a | UX-16 | Simplify form field styling — remove redundant InputBorder wrapper | Ken | Tag entry (and likely other inputs) has double-framed look: `Border(InputBorder)` wrapping a native Entry that already has OS-provided styling. Remove the `InputBorder` wrapper and let the native control render naturally. Less custom styling = more platform-consistent UX. Audit all `InputBorder` uses across edit pages. Pairs well with F-13. |
 | 2 | TD-12 | Full-stack MVVM architecture audit | — | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`. |
 | 3 | TD-8 | Refactor ViewModels to constructor injection | — | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. |
 | 4 | F-10 | Deep-link share — create card/request via tapped link | — | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md` |
@@ -177,4 +178,4 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 
 ---
 
-*Last updated: 2026-03-23 (session 22 — BUG-41–45, UX-14, UX-15; 107/107 tests; 0 warnings)*
+*Last updated: 2026-03-23 (session 22 — BUG-35–45, UX-13–15; build 24 tagged; 107/107 tests; 0 warnings)*
