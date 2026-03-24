@@ -19,15 +19,15 @@
 
 ## Tech Stack
 
-| Package | Version | Notes |
-|---------|---------|-------|
-| .NET MAUI | 10 | `net10.0-android`, `net10.0-ios` |
-| CommunityToolkit.Mvvm | 8.4.0 | `[ObservableProperty]`, `[RelayCommand]`, `ObservableObject` |
-| CommunityToolkit.Maui | 14.0.1 | Requires `Microsoft.Maui.Controls >= 10.0.41` — do not downgrade |
-| sqlite-net-pcl | 1.9.172 | Active Record model pattern |
-| Plugin.LocalNotification | 13.0.0 | Local push notifications |
-| xUnit | 2.9.2 | Unit tests |
-| NSubstitute | 5.3.0 | Test mocking |
+| Package                  | Version | Notes                                                            |
+| ------------------------ | ------- | ---------------------------------------------------------------- |
+| .NET MAUI                | 10      | `net10.0-android`, `net10.0-ios`                                 |
+| CommunityToolkit.Mvvm    | 8.4.0   | `[ObservableProperty]`, `[RelayCommand]`, `ObservableObject`     |
+| CommunityToolkit.Maui    | 14.0.1  | Requires `Microsoft.Maui.Controls >= 10.0.41` — do not downgrade |
+| sqlite-net-pcl           | 1.9.172 | Active Record model pattern                                      |
+| Plugin.LocalNotification | 13.0.0  | Local push notifications                                         |
+| xUnit                    | 2.9.2   | Unit tests                                                       |
+| NSubstitute              | 5.3.0   | Test mocking                                                     |
 
 ---
 
@@ -50,13 +50,13 @@ Views (XAML)
 
 ## Database Schema
 
-| Table | Key columns |
-|-------|-------------|
-| `PrayerCard` | Id, Title, CanNotify, PrayerFrequency, IsAnswered, IsFavorite, CreatedAt, UpdatedAt |
-| `PrayerRequest` | Id, PrayerCardId (FK), Title, Details, CanNotify, PrayerFrequency, IsAnswered, AnsweredAt, CreatedAt, UpdatedAt |
-| `PrayerTag` | Id, Name, Color (hex, nullable) |
-| `PrayerCardTag` | Id, PrayerCardId (FK), PrayerTagId (FK), PrayerRequestId (FK), CreatedAt |
-| `PrayerInteraction` | Id, PrayerId (FK), InteractionType, InteractionAt |
+| Table               | Key columns                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `PrayerCard`        | Id, Title, CanNotify, PrayerFrequency, IsAnswered, IsFavorite, CreatedAt, UpdatedAt                             |
+| `PrayerRequest`     | Id, PrayerCardId (FK), Title, Details, CanNotify, PrayerFrequency, IsAnswered, AnsweredAt, CreatedAt, UpdatedAt |
+| `PrayerTag`         | Id, Name, Color (hex, nullable)                                                                                 |
+| `PrayerCardTag`     | Id, PrayerCardId (FK), PrayerTagId (FK), PrayerRequestId (FK), CreatedAt                                        |
+| `PrayerInteraction` | Id, PrayerId (FK), InteractionType, InteractionAt                                                               |
 
 - The `Prayer` model uses `[Table("PrayerRequest")]` — the SQLite table is `PrayerRequest`, not `Prayer`
 - Schema migrations live in `DBService.UpdateSchema()`
@@ -66,16 +66,20 @@ Views (XAML)
 ## Conventions
 
 ### Git
+
 - Feature branches off `dev`, PRs target `dev`, `master` updated at release milestones
 - Branch naming: `feature/<short-name>` (e.g., `feature/f7-home-personalization`)
 
 ### Styling
+
 - Full light and dark mode support via `AppThemeBinding` — never hardcode hex in XAML or C#
 - Use `StaticResource` color tokens from `Resources/Styles/Colors.xaml`
 - Card borders: `Style="{StaticResource PrayerCardBorder}"` on every card-wrapping `Border`
 - Named styles for reusable patterns in `Resources/Styles/Styles.xaml`
+- Any time a new style is defined in code, always verify the key exists in Styles.xaml or Colors.xaml.
 
 ### Forms
+
 - Label above field, both full-width (`VerticalStackLayout` with `FormLabel` above input)
 - Never use side-by-side label+field layout
 
@@ -93,15 +97,15 @@ Views (XAML)
 
 ## Known Gotchas
 
-| Gotcha | Detail |
-|--------|--------|
-| `Shell.PushModalAsync` removed | Use `Shell.Current.Navigation.PushModalAsync(page)` |
-| `DisplayAlert` deprecated | Use `DisplayAlertAsync` instead |
-| Timers must use `IDispatcherTimer` | Not `System.Timers.Timer` — MAUI requires UI thread timers |
-| Package version lock | `CommunityToolkit.Maui 14.0.1` requires `Microsoft.Maui.Controls >= 10.0.41` |
-| Prayer table name mismatch | `Prayer` model → `[Table("PrayerRequest")]` SQLite table |
-| SQLite page size warning | XA0141 re: Android 16 16KB pages — third-party issue, no action needed |
-| PAT scope for CI | Pushing `.github/workflows/` requires `workflow` scope on GitHub PAT |
+| Gotcha                             | Detail                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| `Shell.PushModalAsync` removed     | Use `Shell.Current.Navigation.PushModalAsync(page)`                          |
+| `DisplayAlert` deprecated          | Use `DisplayAlertAsync` instead                                              |
+| Timers must use `IDispatcherTimer` | Not `System.Timers.Timer` — MAUI requires UI thread timers                   |
+| Package version lock               | `CommunityToolkit.Maui 14.0.1` requires `Microsoft.Maui.Controls >= 10.0.41` |
+| Prayer table name mismatch         | `Prayer` model → `[Table("PrayerRequest")]` SQLite table                     |
+| SQLite page size warning           | XA0141 re: Android 16 16KB pages — third-party issue, no action needed       |
+| PAT scope for CI                   | Pushing `.github/workflows/` requires `workflow` scope on GitHub PAT         |
 
 ---
 
