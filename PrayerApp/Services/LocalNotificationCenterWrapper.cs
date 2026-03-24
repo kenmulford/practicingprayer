@@ -41,14 +41,15 @@ public class LocalNotificationCenterWrapper : ILocalNotificationCenter
 
     public void CancelMonthly(int notificationId)
     {
+        // Always cancel legacy Plugin one-shots (IDs notificationId*100+0 through +11)
+        // so existing users don't get duplicates after the native scheduling migration.
+        Cancel(Enumerable.Range(0, 12).Select(i => notificationId * 100 + i).ToArray());
+
 #if IOS
-        // Cancel the single repeating native iOS notification
+        // Also cancel the native repeating notification
         var identifier = $"monthly_{notificationId}";
         System.Diagnostics.Debug.WriteLine($"[Notify] CancelMonthly (iOS native): removing identifier={identifier}");
         UNUserNotificationCenter.Current.RemovePendingNotificationRequests(new[] { identifier });
-#else
-        // Android: cancel the 12 one-shot Plugin notifications
-        Cancel(Enumerable.Range(0, 12).Select(i => notificationId * 100 + i).ToArray());
 #endif
     }
 
