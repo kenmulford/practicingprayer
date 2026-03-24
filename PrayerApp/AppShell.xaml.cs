@@ -48,6 +48,9 @@ namespace PrayerApp
             Routing.RegisterRoute(nameof(PrayerTimePage), typeof(PrayerTimePage));
             Routing.RegisterRoute(nameof(TagDetailPage), typeof(TagDetailPage));
 
+            // Subtle crossfade when switching tabs
+            this.Navigated += OnShellNavigated;
+
             // Subscribe to onboarding step changes to show the closing popup
             var onboardingService = IPlatformApplication.Current!.Services
                 .GetRequiredService<IOnboardingService>();
@@ -61,6 +64,37 @@ namespace PrayerApp
                     ShowOnboardingCompletePopupAsync().SafeFireAndForget();
                 });
             };
+        }
+
+        private async void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
+        {
+            var page = CurrentPage;
+            if (page is null) return;
+
+            switch (e.Source)
+            {
+                case ShellNavigationSource.ShellSectionChanged:
+                    // Tab switch — subtle crossfade
+                    page.Opacity = 0;
+                    await page.FadeTo(1, 150, Easing.CubicOut);
+                    break;
+
+                case ShellNavigationSource.Push:
+                    // Detail page push — slide in from right
+                    page.Opacity = 0;
+                    page.TranslationX = 60;
+                    await Task.WhenAll(
+                        page.FadeTo(1, 250, Easing.CubicOut),
+                        page.TranslateTo(0, 0, 250, Easing.CubicOut));
+                    break;
+
+                case ShellNavigationSource.Pop:
+                case ShellNavigationSource.PopToRoot:
+                    // Back navigation — quick fade-in on revealed page
+                    page.Opacity = 0;
+                    await page.FadeTo(1, 150, Easing.CubicOut);
+                    break;
+            }
         }
 
         private static async Task ShowOnboardingCompletePopupAsync()

@@ -38,6 +38,12 @@ public class NotificationService : INotificationService
     {
         if (!_isNotificationsAllowed()) return;
 
+        // Cancel any existing notification for this prayer before rescheduling.
+        // Cancel both monthly and non-monthly variants since we don't know the
+        // previous frequency — the prayer may have changed from Daily to Monthly.
+        _center.Cancel(prayer.Id);
+        _center.CancelMonthly(prayer.Id);
+
         var hour = prayer.NotifyHour;
         var minute = prayer.NotifyMinute;
 

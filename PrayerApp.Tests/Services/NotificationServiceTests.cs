@@ -219,6 +219,40 @@ public class NotificationServiceTests
         _center.Received(1).Cancel(42);
     }
 
+    // ── ScheduleAsync — cancel-before-reschedule ─────────────────────────────
+
+    [Fact]
+    public async Task ScheduleAsync_CancelsBothVariantsBeforeScheduling()
+    {
+        var prayer = new Prayer
+        {
+            Id = 10, Title = "Reschedule", PrayerFrequency = PrayerFrequency.Daily
+        };
+
+        await _service.ScheduleAsync(prayer);
+
+        // Should cancel both non-monthly and monthly variants before scheduling
+        _center.Received(1).Cancel(10);
+        _center.Received(1).CancelMonthly(10);
+    }
+
+    [Fact]
+    public async Task ScheduleAsync_Monthly_CancelsBothVariantsBeforeScheduling()
+    {
+        var prayer = new Prayer
+        {
+            Id = 11, Title = "Monthly Reschedule", PrayerFrequency = PrayerFrequency.Monthly,
+            NotifyDayOfMonth = 15, NotifyHour = 8, NotifyMinute = 0
+        };
+
+        await _service.ScheduleAsync(prayer);
+
+        // Should cancel both variants before scheduling monthly
+        _center.Received(1).Cancel(11);
+        _center.Received(1).CancelMonthly(11);
+        await _center.Received(1).ScheduleMonthlyAsync(11, "Practicing Prayer", "Monthly Reschedule", 15, 8, 0);
+    }
+
     // ── GetNextDayOfWeek ────────────────────────────────────────────────────
 
     [Fact]

@@ -142,6 +142,7 @@
             x:Name="prayerCollection"
             Grid.Row="1"
             ItemsSource="{Binding FilteredPrayers}"
+            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
             Margin="20,0"
             SelectionMode="None">
 
