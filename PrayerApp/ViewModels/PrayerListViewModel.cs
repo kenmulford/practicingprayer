@@ -22,7 +22,7 @@ namespace PrayerApp.ViewModels
         private readonly ITagService _tagService;
         private Dictionary<int, string> _cardTitleLookup = new();
 
-        private bool _isLoading;
+        private bool _isLoading = true;
         public bool IsLoading
         {
             get => _isLoading;
@@ -197,8 +197,6 @@ namespace PrayerApp.ViewModels
             var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
             if (matched != null)
             {
-                // Reload prayer from DB (single load) and update CardTitle
-                matched.Reload();
                 if (int.TryParse(id, out int prayerId))
                 {
                     var freshPrayer = await Prayer.LoadAsync(prayerId);
@@ -207,6 +205,11 @@ namespace PrayerApp.ViewModels
                         // Refresh card lookup in case the prayer moved to a different card
                         var cards = await _cardService.GetCardsAsync();
                         _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
+
+                        // Update all list-visible properties from the awaited DB load
+                        // (replaces fire-and-forget Reload which raced with ApplyFilter)
+                        matched.Title = freshPrayer.Title;
+                        matched.IsAnswered = freshPrayer.IsAnswered;
                         matched.CardTitle = _cardTitleLookup.TryGetValue(freshPrayer.PrayerCardId, out var t) ? t : string.Empty;
                     }
                 }
@@ -302,7 +305,7 @@ namespace PrayerApp.ViewModels
 
         private async Task NewPrayerAsync()
         {
-            await Shell.Current.GoToAsync(nameof(Views.Prayer.PrayerDetailPage));
+            await Shell.Current.GoToAsync($"{nameof(Views.Prayer.PrayerDetailPage)}?new=true");
         }
 
         private async Task LoadPrayersAsync()
@@ -364,10 +367,23 @@ namespace PrayerApp.ViewModels
             foreach (var vm in toRemove)
                 AllPrayers.Remove(vm);
 
-            // Add new prayers (e.g. from QuickAdd)
+            // Refresh card lookup
             var cards = await _cardService.GetCardsAsync();
             _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
 
+            // Update existing prayers with fresh data from DB
+            var prayerLookup = prayers.ToDictionary(p => p.Id);
+            foreach (var vm in AllPrayers)
+            {
+                if (prayerLookup.TryGetValue(vm.Id, out var fresh))
+                {
+                    vm.Title = fresh.Title;
+                    vm.IsAnswered = fresh.IsAnswered;
+                    vm.CardTitle = _cardTitleLookup.TryGetValue(fresh.PrayerCardId, out var t) ? t : string.Empty;
+                }
+            }
+
+            // Add new prayers (e.g. from QuickAdd)
             foreach (var p in prayers.Where(p => !currentIds.Contains(p.Id)))
             {
                 _prayerList.Add(p);

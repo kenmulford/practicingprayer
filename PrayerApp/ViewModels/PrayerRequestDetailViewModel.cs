@@ -159,6 +159,13 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged(nameof(PrayerFrequencyDisplay));
                     OnPropertyChanged(nameof(ShowDayOfWeek));
                     OnPropertyChanged(nameof(ShowDayOfMonth));
+
+                    // Materialize defaults so the displayed Picker value matches
+                    // what actually gets saved (avoids -1 sentinel persisting).
+                    if (value == PrayerFrequency.Weekly && _prayer.NotifyDayOfWeek < 0)
+                        SelectedDayOfWeek = DaysOfWeek[(int)DateTime.Now.DayOfWeek];
+                    if (value == PrayerFrequency.Monthly && _prayer.NotifyDayOfMonth <= 0)
+                        SelectedDayOfMonth = DateTime.Now.Day;
                 }
             }
         }
@@ -446,6 +453,18 @@ namespace PrayerApp.ViewModels
                     RefreshProperties();
                     InitNewPrayerAsync().SafeFireAndForget();
                 }
+            }
+            else if (query.ContainsKey("new"))
+            {
+                // New prayer from the prayer list (no card pre-selected)
+                _prayer = new Prayer
+                {
+                    NotifyHour = Services.Settings.DefaultNotifyHour,
+                    NotifyMinute = Services.Settings.DefaultNotifyMinute
+                };
+                IsReadOnly = false;
+                RefreshProperties();
+                InitNewPrayerAsync().SafeFireAndForget();
             }
             else if (query.ContainsKey("load"))
             {

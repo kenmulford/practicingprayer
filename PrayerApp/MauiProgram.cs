@@ -2,6 +2,7 @@ using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
 using PrayerApp.Models;
+using Plugin.LocalNotification;
 using PrayerApp.Services;
 using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
@@ -30,6 +31,27 @@ namespace PrayerApp
 
             builder.UseMauiCommunityToolkit();
 
+            builder.UseLocalNotification(config =>
+            {
+#if ANDROID
+                config.AddAndroid(android =>
+                {
+                    android.AddChannel(new Plugin.LocalNotification.AndroidOption.NotificationChannelRequest
+                    {
+                        Id = "prayer_reminders",
+                        Name = "Prayer Reminders",
+                        Description = "Scheduled prayer reminder notifications",
+                        Importance = Plugin.LocalNotification.AndroidOption.AndroidImportance.High,
+                        EnableSound = true,
+                        EnableVibration = true
+                    });
+                });
+#endif
+            });
+
+#if ANDROID
+            PrayerApp.Platforms.Android.Handlers.TextInputTimePickerHandler.Configure();
+#endif
 
 #if DEBUG
             builder.Logging.AddDebug();

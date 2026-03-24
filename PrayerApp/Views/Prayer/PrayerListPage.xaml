@@ -129,29 +129,28 @@
 
         </VerticalStackLayout>
 
-        <!-- Loading indicator -->
-        <ActivityIndicator Grid.Row="1"
-                           IsRunning="{Binding IsLoading}"
-                           IsVisible="{Binding IsLoading}"
-                           Color="{StaticResource Primary}"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
-
         <!-- Prayer list -->
         <CollectionView
             x:Name="prayerCollection"
             Grid.Row="1"
             ItemsSource="{Binding FilteredPrayers}"
-            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
             Margin="20,0"
             SelectionMode="None">
 
             <CollectionView.EmptyView>
-                <Label Text="No prayers match your filters."
-                       Style="{StaticResource MutedText}"
-                       HorizontalOptions="Center"
-                       HorizontalTextAlignment="Center"
-                       Margin="0,32" />
+                <VerticalStackLayout HorizontalOptions="Center" Margin="0,32">
+                    <!-- Spinner while loading -->
+                    <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                       IsVisible="{Binding IsLoading}"
+                                       Color="{StaticResource Primary}"
+                                       HorizontalOptions="Center" />
+                    <!-- Empty message after load -->
+                    <Label Text="No prayers match your filters."
+                           Style="{StaticResource MutedText}"
+                           IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
             </CollectionView.EmptyView>
 
             <CollectionView.ItemsLayout>

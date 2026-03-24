@@ -68,33 +68,19 @@ namespace PrayerApp
 
         private async void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
         {
+            // Only animate Push (new pages). Pop and tab-switch pages already
+            // have visible content; hiding them to fade back in causes a flash
+            // when OnAppearing triggers a data refresh.
+            if (e.Source != ShellNavigationSource.Push) return;
+
             var page = CurrentPage;
             if (page is null) return;
 
-            switch (e.Source)
-            {
-                case ShellNavigationSource.ShellSectionChanged:
-                    // Tab switch — subtle crossfade
-                    page.Opacity = 0;
-                    await page.FadeTo(1, 150, Easing.CubicOut);
-                    break;
-
-                case ShellNavigationSource.Push:
-                    // Detail page push — slide in from right
-                    page.Opacity = 0;
-                    page.TranslationX = 60;
-                    await Task.WhenAll(
-                        page.FadeTo(1, 250, Easing.CubicOut),
-                        page.TranslateTo(0, 0, 250, Easing.CubicOut));
-                    break;
-
-                case ShellNavigationSource.Pop:
-                case ShellNavigationSource.PopToRoot:
-                    // Back navigation — quick fade-in on revealed page
-                    page.Opacity = 0;
-                    await page.FadeTo(1, 150, Easing.CubicOut);
-                    break;
-            }
+            page.Opacity = 0;
+            page.TranslationX = 60;
+            await Task.WhenAll(
+                page.FadeTo(1, 250, Easing.CubicOut),
+                page.TranslateTo(0, 0, 250, Easing.CubicOut));
         }
 
         private static async Task ShowOnboardingCompletePopupAsync()

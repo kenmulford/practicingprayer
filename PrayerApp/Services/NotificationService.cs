@@ -36,13 +36,23 @@ public class NotificationService : INotificationService
 
     public async Task ScheduleAsync(Prayer prayer)
     {
-        if (!_isNotificationsAllowed()) return;
+        if (!_isNotificationsAllowed())
+        {
+            System.Diagnostics.Debug.WriteLine($"[Notify] ScheduleAsync SKIPPED — notifications not allowed");
+            return;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"[Notify] ScheduleAsync: id={prayer.Id}, freq={prayer.PrayerFrequency}, " +
+            $"hour={prayer.NotifyHour}, min={prayer.NotifyMinute}, " +
+            $"dayOfWeek={prayer.NotifyDayOfWeek}, dayOfMonth={prayer.NotifyDayOfMonth}, " +
+            $"canNotify={prayer.CanNotify}");
 
         // Cancel any existing notification for this prayer before rescheduling.
         // Cancel both monthly and non-monthly variants since we don't know the
         // previous frequency — the prayer may have changed from Daily to Monthly.
         _center.Cancel(prayer.Id);
         _center.CancelMonthly(prayer.Id);
+        System.Diagnostics.Debug.WriteLine($"[Notify] Cancelled existing notifications for id={prayer.Id}");
 
         var hour = prayer.NotifyHour;
         var minute = prayer.NotifyMinute;
@@ -53,6 +63,7 @@ public class NotificationService : INotificationService
             var dayOfMonth = prayer.NotifyDayOfMonth > 0
                 ? prayer.NotifyDayOfMonth
                 : prayer.CreatedAt.Day;
+            System.Diagnostics.Debug.WriteLine($"[Notify] Monthly: dayOfMonth={dayOfMonth} (raw={prayer.NotifyDayOfMonth}, createdAt={prayer.CreatedAt.Day})");
             await _center.ScheduleMonthlyAsync(
                 prayer.Id, "Practicing Prayer", prayer.Title,
                 dayOfMonth, hour, minute);
