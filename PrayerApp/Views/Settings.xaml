@@ -27,6 +27,14 @@
                             SemanticProperties.Description="Allow the app to send prayer reminder notifications"
                             Toggled="chkSettingsAllowNotifications_Toggled" />
                     </Grid>
+                    <VerticalStackLayout Spacing="4"
+                                         IsVisible="{Binding Source={x:Reference chkSettingsAllowNotifications}, Path=IsToggled}">
+                        <Label Text="Default Reminder Time"
+                               Style="{StaticResource FormLabel}" />
+                        <TimePicker x:Name="timePickerDefaultNotify"
+                                    PropertyChanged="timePickerDefaultNotify_PropertyChanged"
+                                    SemanticProperties.Description="Default time of day for prayer reminders" />
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
@@ -42,14 +50,12 @@
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Overdue after (days)"
                                Style="{StaticResource FormLabel}" />
-                        <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                            <Entry x:Name="entryOverdueThreshold"
-                                   Keyboard="Numeric"
-                                   ReturnType="Done"
-                                   Placeholder="30"
-                                   TextChanged="entryOverdueThreshold_TextChanged"
-                                   HorizontalOptions="Fill" />
-                        </Border>
+                        <Entry x:Name="entryOverdueThreshold"
+                               Keyboard="Numeric"
+                               ReturnType="Done"
+                               Placeholder="30"
+                               TextChanged="entryOverdueThreshold_TextChanged"
+                               HorizontalOptions="Fill" />
                     </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>

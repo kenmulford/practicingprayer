@@ -21,11 +21,12 @@ public static class NotificationHelper
             if (!prayer.CanNotify || prayer.IsAnswered)
                 continue;
 
-            var firstFire = GetFirstFireTime(prayer.CreatedAt);
+            var firstFire = GetFirstFireTime(prayer.CreatedAt, prayer.NotifyHour, prayer.NotifyMinute);
             if (firstFire > now)
                 continue;
 
-            var mostRecent = GetMostRecentFireTime(firstFire, prayer.PrayerFrequency, now);
+            var mostRecent = GetMostRecentFireTime(firstFire, prayer.PrayerFrequency, now,
+                                                    prayer.NotifyHour, prayer.NotifyMinute);
             if (mostRecent.HasValue && (now - mostRecent.Value) <= _recentWindow)
                 result.Add(prayer.Id);
         }
@@ -34,20 +35,21 @@ public static class NotificationHelper
     }
 
     /// <summary>
-    /// The first notification fires at 9 AM on the day after creation.
-    /// If created before 9 AM, it fires at 9 AM the same day.
+    /// The first notification fires at the prayer's notify time on the day after creation.
+    /// If created before that time, it fires on the same day.
     /// </summary>
-    internal static DateTime GetFirstFireTime(DateTime createdAt)
+    internal static DateTime GetFirstFireTime(DateTime createdAt, int hour = NotificationHour, int minute = 0)
     {
-        var sameDay9AM = createdAt.Date.AddHours(NotificationHour);
-        return createdAt < sameDay9AM ? sameDay9AM : sameDay9AM.AddDays(1);
+        var sameDayTime = createdAt.Date.AddHours(hour).AddMinutes(minute);
+        return createdAt < sameDayTime ? sameDayTime : sameDayTime.AddDays(1);
     }
 
     /// <summary>
     /// Computes the most recent notification fire time at or before <paramref name="now"/>.
     /// </summary>
     internal static DateTime? GetMostRecentFireTime(
-        DateTime firstFire, PrayerFrequency frequency, DateTime now)
+        DateTime firstFire, PrayerFrequency frequency, DateTime now,
+        int hour = NotificationHour, int minute = 0)
     {
         if (firstFire > now)
             return null;
@@ -56,15 +58,15 @@ public static class NotificationHelper
         {
             case PrayerFrequency.Daily:
             {
-                var today9AM = now.Date.AddHours(NotificationHour);
-                return now >= today9AM ? today9AM : today9AM.AddDays(-1);
+                var todayTime = now.Date.AddHours(hour).AddMinutes(minute);
+                return now >= todayTime ? todayTime : todayTime.AddDays(-1);
             }
 
             case PrayerFrequency.Weekly:
                 return MostRecentByInterval(firstFire, TimeSpan.FromDays(7), now);
 
             case PrayerFrequency.Monthly:
-                return MostRecentByInterval(firstFire, TimeSpan.FromDays(30), now);
+                return MostRecentMonthly(firstFire, now, hour, minute);
 
             case PrayerFrequency.Yearly:
                 return MostRecentByInterval(firstFire, TimeSpan.FromDays(365), now);
@@ -88,5 +90,23 @@ public static class NotificationHelper
             candidate -= interval;
 
         return candidate;
+    }
+
+    /// <summary>
+    /// For monthly notifications, find the most recent fire on the same day-of-month.
+    /// </summary>
+    private static DateTime? MostRecentMonthly(DateTime firstFire, DateTime now, int hour, int minute)
+    {
+        var dayOfMonth = firstFire.Day;
+        // Check this month and last month
+        for (int offset = 0; offset >= -1; offset--)
+        {
+            var candidate = now.AddMonths(offset);
+            var day = Math.Min(dayOfMonth, DateTime.DaysInMonth(candidate.Year, candidate.Month));
+            var fireTime = new DateTime(candidate.Year, candidate.Month, day, hour, minute, 0);
+            if (fireTime >= firstFire && fireTime <= now)
+                return fireTime;
+        }
+        return null;
     }
 }

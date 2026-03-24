@@ -1,4 +1,3 @@
-using PrayerApp.Helpers;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -26,9 +25,12 @@ public class NotificationService : INotificationService
         return Task.CompletedTask;
     }
 
-    public Task CancelAsync(int notificationId)
+    public Task CancelAsync(int notificationId, PrayerFrequency frequency = PrayerFrequency.OneTime)
     {
-        _center.Cancel(notificationId);
+        if (frequency == PrayerFrequency.Monthly)
+            _center.CancelMonthly(notificationId);
+        else
+            _center.Cancel(notificationId);
         return Task.CompletedTask;
     }
 
@@ -36,10 +38,33 @@ public class NotificationService : INotificationService
     {
         if (!_isNotificationsAllowed()) return;
 
-        // Schedule at 9 AM; if today's 9 AM has passed, use tomorrow's.
-        var notifyTime = DateTime.Now.Date.AddHours(NotificationHelper.NotificationHour);
-        if (notifyTime <= DateTime.Now)
-            notifyTime = notifyTime.AddDays(1);
+        var hour = prayer.NotifyHour;
+        var minute = prayer.NotifyMinute;
+
+        // Monthly uses native calendar-based scheduling
+        if (prayer.PrayerFrequency == PrayerFrequency.Monthly)
+        {
+            var dayOfMonth = prayer.NotifyDayOfMonth > 0
+                ? prayer.NotifyDayOfMonth
+                : prayer.CreatedAt.Day;
+            await _center.ScheduleMonthlyAsync(
+                prayer.Id, "Practicing Prayer", prayer.Title,
+                dayOfMonth, hour, minute);
+            return;
+        }
+
+        // Daily/Weekly/OneTime/Yearly — use existing plugin path
+        DateTime notifyTime;
+        if (prayer.PrayerFrequency == PrayerFrequency.Weekly && prayer.NotifyDayOfWeek >= 0)
+        {
+            notifyTime = GetNextDayOfWeek((DayOfWeek)prayer.NotifyDayOfWeek, hour, minute);
+        }
+        else
+        {
+            notifyTime = DateTime.Now.Date.AddHours(hour).AddMinutes(minute);
+            if (notifyTime <= DateTime.Now)
+                notifyTime = notifyTime.AddDays(1);
+        }
 
         NotifyRepeat repeatType;
         TimeSpan? repeatInterval = null;
@@ -51,10 +76,6 @@ public class NotificationService : INotificationService
                 break;
             case PrayerFrequency.Weekly:
                 repeatType = NotifyRepeat.Weekly;
-                break;
-            case PrayerFrequency.Monthly:
-                repeatType = NotifyRepeat.TimeInterval;
-                repeatInterval = TimeSpan.FromDays(30);
                 break;
             case PrayerFrequency.Yearly:
                 repeatType = NotifyRepeat.TimeInterval;
@@ -72,5 +93,15 @@ public class NotificationService : INotificationService
             notifyTime,
             repeatType,
             repeatInterval);
+    }
+
+    internal static DateTime GetNextDayOfWeek(DayOfWeek targetDay, int hour, int minute)
+    {
+        var now = DateTime.Now;
+        var today = now.Date.AddHours(hour).AddMinutes(minute);
+        var daysUntil = ((int)targetDay - (int)now.DayOfWeek + 7) % 7;
+        if (daysUntil == 0 && today <= now)
+            daysUntil = 7;
+        return today.AddDays(daysUntil);
     }
 }

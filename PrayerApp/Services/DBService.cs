@@ -142,6 +142,12 @@ namespace PrayerApp.Services
             }
             catch { /* Column already exists */ }
 
+            // Add notification scheduling columns to PrayerRequest
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyHour INTEGER DEFAULT 9"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyMinute INTEGER DEFAULT 0"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyDayOfWeek INTEGER DEFAULT -1"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyDayOfMonth INTEGER DEFAULT -1"); } catch { }
+
             try
             {
                 // Mark the 8 original seed colors as defaults (by hex value)

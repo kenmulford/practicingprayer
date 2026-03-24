@@ -98,15 +98,34 @@ public class NotificationServiceTests
     }
 
     [Fact]
-    public async Task ScheduleAsync_MonthlyFrequency_SchedulesWithTimeInterval30Days()
+    public async Task ScheduleAsync_MonthlyFrequency_CallsScheduleMonthlyAsync()
     {
-        var prayer = new Prayer { Id = 3, Title = "Monthly", PrayerFrequency = PrayerFrequency.Monthly };
+        var prayer = new Prayer
+        {
+            Id = 3, Title = "Monthly", PrayerFrequency = PrayerFrequency.Monthly,
+            NotifyDayOfMonth = 15, NotifyHour = 8, NotifyMinute = 0
+        };
 
         await _service.ScheduleAsync(prayer);
 
-        await _center.Received(1).ShowAsync(
-            3, "Practicing Prayer", "Monthly",
-            Arg.Any<DateTime>(), NotifyRepeat.TimeInterval, TimeSpan.FromDays(30));
+        await _center.Received(1).ScheduleMonthlyAsync(3, "Practicing Prayer", "Monthly", 15, 8, 0);
+        await _center.DidNotReceive().ShowAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<DateTime>(), Arg.Any<NotifyRepeat>(), Arg.Any<TimeSpan?>());
+    }
+
+    [Fact]
+    public async Task ScheduleAsync_Monthly_DefaultDayOfMonth_UsesCreatedAtDay()
+    {
+        var prayer = new Prayer
+        {
+            Id = 4, Title = "Monthly", PrayerFrequency = PrayerFrequency.Monthly,
+            NotifyDayOfMonth = -1, CreatedAt = new DateTime(2026, 3, 20)
+        };
+
+        await _service.ScheduleAsync(prayer);
+
+        await _center.Received(1).ScheduleMonthlyAsync(4, "Practicing Prayer", "Monthly", 20, 9, 0);
     }
 
     [Fact]
@@ -136,7 +155,7 @@ public class NotificationServiceTests
     // ── ScheduleAsync — notification time ────────────────────────────────────
 
     [Fact]
-    public async Task ScheduleAsync_SchedulesAt9AM_TodayOrTomorrow()
+    public async Task ScheduleAsync_UsesDefaultTime_WhenNotCustomized()
     {
         var prayer = new Prayer { Id = 6, Title = "Time Test", PrayerFrequency = PrayerFrequency.Daily };
 
@@ -146,5 +165,84 @@ public class NotificationServiceTests
             Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
             Arg.Is<DateTime>(d => d.Hour == 9 && d.Minute == 0 && d > DateTime.Now),
             Arg.Any<NotifyRepeat>(), Arg.Any<TimeSpan?>());
+    }
+
+    [Fact]
+    public async Task ScheduleAsync_UsesPerRequestTime()
+    {
+        var prayer = new Prayer
+        {
+            Id = 7, Title = "Custom Time", PrayerFrequency = PrayerFrequency.Daily,
+            NotifyHour = 14, NotifyMinute = 30
+        };
+
+        await _service.ScheduleAsync(prayer);
+
+        await _center.Received(1).ShowAsync(
+            7, "Practicing Prayer", "Custom Time",
+            Arg.Is<DateTime>(d => d.Hour == 14 && d.Minute == 30),
+            NotifyRepeat.Daily, null);
+    }
+
+    [Fact]
+    public async Task ScheduleAsync_Weekly_WithDayOfWeek_SchedulesCorrectDay()
+    {
+        var prayer = new Prayer
+        {
+            Id = 8, Title = "Tuesday Prayer", PrayerFrequency = PrayerFrequency.Weekly,
+            NotifyDayOfWeek = 2, NotifyHour = 7, NotifyMinute = 30
+        };
+
+        await _service.ScheduleAsync(prayer);
+
+        await _center.Received(1).ShowAsync(
+            8, "Practicing Prayer", "Tuesday Prayer",
+            Arg.Is<DateTime>(d => d.DayOfWeek == DayOfWeek.Tuesday && d.Hour == 7 && d.Minute == 30),
+            NotifyRepeat.Weekly, null);
+    }
+
+    // ── CancelAsync — frequency routing ─────────────────────────────────────
+
+    [Fact]
+    public async Task CancelAsync_Monthly_CallsCancelMonthly()
+    {
+        await _service.CancelAsync(42, PrayerFrequency.Monthly);
+
+        _center.Received(1).CancelMonthly(42);
+    }
+
+    [Fact]
+    public async Task CancelAsync_NonMonthly_CallsCancel()
+    {
+        await _service.CancelAsync(42, PrayerFrequency.Daily);
+
+        _center.Received(1).Cancel(42);
+    }
+
+    // ── GetNextDayOfWeek ────────────────────────────────────────────────────
+
+    [Fact]
+    public void GetNextDayOfWeek_ReturnsCorrectDayAndTime()
+    {
+        // Target: next Tuesday at 7:30
+        var result = NotificationService.GetNextDayOfWeek(DayOfWeek.Tuesday, 7, 30);
+
+        Assert.Equal(DayOfWeek.Tuesday, result.DayOfWeek);
+        Assert.Equal(7, result.Hour);
+        Assert.Equal(30, result.Minute);
+        Assert.True(result > DateTime.Now);
+    }
+
+    [Fact]
+    public void GetNextDayOfWeek_SameDayFutureTime_ReturnsSameDay()
+    {
+        var today = DateTime.Now.DayOfWeek;
+        // Use 23:59 to guarantee it's in the future
+        var result = NotificationService.GetNextDayOfWeek(today, 23, 59);
+
+        // If current time is already past 23:59 (unlikely), it'll be next week
+        Assert.Equal(today, result.DayOfWeek);
+        Assert.Equal(23, result.Hour);
+        Assert.Equal(59, result.Minute);
     }
 }

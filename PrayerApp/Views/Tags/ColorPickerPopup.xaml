@@ -27,14 +27,12 @@
 
             <!-- Hex display + color preview -->
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Padding="0,4,0,0">
-                <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                    <Entry x:Name="HexEntry"
-                           Placeholder="#RRGGBB"
-                           MaxLength="7"
-                           Keyboard="Text"
-                           TextChanged="OnHexTextChanged"
-                           HorizontalOptions="Fill" />
-                </Border>
+                <Entry x:Name="HexEntry"
+                       Placeholder="#RRGGBB"
+                       MaxLength="7"
+                       Keyboard="Text"
+                       TextChanged="OnHexTextChanged"
+                       HorizontalOptions="Fill" />
                 <Border Grid.Column="1"
                         StrokeShape="RoundRectangle 4"
                         Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"

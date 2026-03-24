@@ -23,13 +23,11 @@
             <!-- Name field -->
             <VerticalStackLayout Spacing="6">
                 <Label Text="Name" Style="{StaticResource FormLabel}" />
-                <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                    <Entry
-                        Text="{Binding Name}"
-                        Placeholder="Tag name"
-                        IsReadOnly="{Binding IsSystem}"
-                        ReturnType="Done" />
-                </Border>
+                <Entry
+                    Text="{Binding Name}"
+                    Placeholder="Tag name"
+                    IsReadOnly="{Binding IsSystem}"
+                    ReturnType="Done" />
             </VerticalStackLayout>
 
             <!-- Color picker -->

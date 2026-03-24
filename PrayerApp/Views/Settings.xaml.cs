@@ -22,9 +22,22 @@ public partial class Settings : ContentPage
         base.OnAppearing();
         chkSettingsAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
         entryOverdueThreshold.Text = PrayerApp.Services.Settings.OverdueDayThreshold.ToString();
+        timePickerDefaultNotify.Time = new TimeSpan(
+            PrayerApp.Services.Settings.DefaultNotifyHour,
+            PrayerApp.Services.Settings.DefaultNotifyMinute, 0);
 
         var logPath = _diagnosticLog.GetLogPath();
         diagnosticsSection.IsVisible = File.Exists(logPath) && new FileInfo(logPath).Length > 0;
+    }
+
+    private void timePickerDefaultNotify_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TimePicker.Time))
+        {
+            if (timePickerDefaultNotify.Time is not { } time) return;
+            PrayerApp.Services.Settings.DefaultNotifyHour = time.Hours;
+            PrayerApp.Services.Settings.DefaultNotifyMinute = time.Minutes;
+        }
     }
 
     private void chkSettingsAllowNotifications_Toggled(object sender, ToggledEventArgs e)

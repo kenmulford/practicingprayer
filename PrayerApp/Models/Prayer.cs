@@ -36,6 +36,18 @@ namespace PrayerApp.Models
         [Column("PrayerFrequency")]
         public PrayerFrequency PrayerFrequency { get; set; } = PrayerFrequency.Weekly;
 
+        [Column("NotifyHour")]
+        public int NotifyHour { get; set; } = 9;
+
+        [Column("NotifyMinute")]
+        public int NotifyMinute { get; set; } = 0;
+
+        [Column("NotifyDayOfWeek")]
+        public int NotifyDayOfWeek { get; set; } = -1;  // 0=Sun..6=Sat, -1=use creation day
+
+        [Column("NotifyDayOfMonth")]
+        public int NotifyDayOfMonth { get; set; } = -1;  // 1-31, -1=use creation day
+
         [Column("IsAnswered")]
         public bool IsAnswered { get; set; } = false;
 

@@ -44,6 +44,18 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(OnboardingComplete), value);
         }
 
+        public static int DefaultNotifyHour
+        {
+            get => Preferences.Get(nameof(DefaultNotifyHour), 9);
+            set => Preferences.Set(nameof(DefaultNotifyHour), Math.Clamp(value, 0, 23));
+        }
+
+        public static int DefaultNotifyMinute
+        {
+            get => Preferences.Get(nameof(DefaultNotifyMinute), 0);
+            set => Preferences.Set(nameof(DefaultNotifyMinute), Math.Clamp(value, 0, 59));
+        }
+
         public static bool AllowNotifications
         {
             get => Preferences.Get(nameof(AllowNotifications), true);

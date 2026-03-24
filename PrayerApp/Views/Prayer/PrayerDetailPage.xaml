@@ -111,48 +111,40 @@
                     <!-- Prayer Card -->
                     <Label Text="Prayer Card"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Picker Title="Select Card"
-                                ItemsSource="{Binding AvailableCards}"
-                                SelectedItem="{Binding SelectedCard}"
-                                ItemDisplayBinding="{Binding Title}"
-                                SemanticProperties.Hint="Which prayer card this request belongs to"
-                                HorizontalOptions="Fill" />
-                    </Border>
+                    <Picker Title="Select Card"
+                            ItemsSource="{Binding AvailableCards}"
+                            SelectedItem="{Binding SelectedCard}"
+                            ItemDisplayBinding="{Binding Title}"
+                            SemanticProperties.Hint="Which prayer card this request belongs to"
+                            HorizontalOptions="Fill" />
 
                     <!-- Title -->
                     <Label Text="Title"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Entry x:Name="TitleEntry"
-                               Text="{Binding Title}"
-                               Placeholder="Prayer title"
-                               SemanticProperties.Hint="Prayer request title"
-                               HorizontalOptions="Fill" />
-                    </Border>
+                    <Entry x:Name="TitleEntry"
+                           Text="{Binding Title}"
+                           Placeholder="Prayer title"
+                           SemanticProperties.Hint="Prayer request title"
+                           HorizontalOptions="Fill" />
 
                     <!-- Details -->
                     <Label Text="Details"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,4">
-                        <Editor Text="{Binding Details}"
-                                Placeholder="Add details..."
-                                SemanticProperties.Hint="Prayer request details or Scripture reference"
-                                HeightRequest="100"
-                                HorizontalOptions="Fill" />
-                    </Border>
+                    <Editor Text="{Binding Details}"
+                            Placeholder="Add details..."
+                            SemanticProperties.Hint="Prayer request details or Scripture reference"
+                            HeightRequest="100"
+                            HorizontalOptions="Fill" />
 
                     <!-- Frequency -->
                     <Label Text="Frequency"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Picker Title="Select Frequency"
-                                ItemsSource="{Binding FrequencyOptions}"
-                                ItemDisplayBinding="{Binding .}"
-                                SelectedItem="{Binding PrayerFrequency}"
-                                SemanticProperties.Hint="How often to be reminded"
-                                HorizontalOptions="Fill" />
-                    </Border>
+                    <Picker Title="Select Frequency"
+                            ItemsSource="{Binding FrequencyOptions}"
+                            ItemDisplayBinding="{Binding .}"
+                            SelectedItem="{Binding PrayerFrequency}"
+                            SemanticProperties.Hint="How often to be reminded"
+                            HorizontalOptions="Fill" />
 
                     <!-- Notifications Switch -->
                     <HorizontalStackLayout Spacing="10">
@@ -162,6 +154,28 @@
                                 SemanticProperties.Description="Enable reminders for this request"
                                 VerticalOptions="Center" />
                     </HorizontalStackLayout>
+
+                    <!-- Reminder Time (visible when notifications enabled) -->
+                    <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
+                        <Label Text="Reminder Time" Style="{StaticResource FormLabel}" />
+                        <TimePicker Time="{Binding NotifyTime}" />
+                    </VerticalStackLayout>
+
+                    <!-- Day of Week (Weekly only) -->
+                    <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfWeek}">
+                        <Label Text="Day of Week" Style="{StaticResource FormLabel}" />
+                        <Picker ItemsSource="{Binding DaysOfWeek}"
+                                SelectedItem="{Binding SelectedDayOfWeek}"
+                                Title="Select Day" />
+                    </VerticalStackLayout>
+
+                    <!-- Day of Month (Monthly only) -->
+                    <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfMonth}">
+                        <Label Text="Day of Month" Style="{StaticResource FormLabel}" />
+                        <Picker ItemsSource="{Binding DaysOfMonth}"
+                                SelectedItem="{Binding SelectedDayOfMonth}"
+                                Title="Select Day" />
+                    </VerticalStackLayout>
 
                     <!-- Answered Switch -->
                     <HorizontalStackLayout Spacing="10">
@@ -207,15 +221,13 @@
                     </FlexLayout>
 
                     <!-- Tag search entry -->
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Entry x:Name="tagEntry"
-                               Text="{Binding TagSearchText}"
-                               Placeholder="Add tags..."
-                               ReturnCommand="{Binding SubmitTagEntryCommand}"
-                               ReturnType="Done"
-                               Completed="OnTagEntryCompleted"
-                               HorizontalOptions="Fill" />
-                    </Border>
+                    <Entry x:Name="tagEntry"
+                           Text="{Binding TagSearchText}"
+                           Placeholder="Add tags..."
+                           ReturnCommand="{Binding SubmitTagEntryCommand}"
+                           ReturnType="Done"
+                           Completed="OnTagEntryCompleted"
+                           HorizontalOptions="Fill" />
 
                     <!-- Suggestions list — CollectionView provides both tap (via
                          SelectionChanged) and scrolling. HeightRequest gives iOS

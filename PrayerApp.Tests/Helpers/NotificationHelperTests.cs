@@ -132,9 +132,9 @@ public class NotificationHelperTests
     public void Monthly_IncludedOnFireDay()
     {
         // Created Jan 1 at 10 AM. First fire = Jan 2 at 9 AM.
-        // 30-day intervals: Jan 2, Feb 1, Mar 3. Now = Feb 1 at 10 AM → fired 1h ago.
+        // Monthly fires on the 2nd each month. Now = Feb 2 at 10 AM → fired 1h ago.
         var created = new DateTime(2026, 1, 1, 10, 0, 0);
-        var now = new DateTime(2026, 2, 1, 10, 0, 0);
+        var now = new DateTime(2026, 2, 2, 10, 0, 0);
         var prayer = MakePrayer(1, PrayerFrequency.Monthly, created);
 
         var result = NotificationHelper.GetRecentlyNotifiedPrayerIds(new[] { prayer }, now);

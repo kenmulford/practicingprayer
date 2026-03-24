@@ -452,20 +452,6 @@
         </Setter>
     </Style>
 
-    <!-- InputBorder: per-field wrapper for Entry, Editor, Picker.
-         The inner control must be Transparent so the border owns the fill.
-         Set Padding="10,0" inline at each usage site (Editor: "10,4"). -->
-    <Style x:Key="InputBorder" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="8" />
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <!-- ── Base styles for BasedOn (compiled XAML does not support {x:Type} as a resource key) ── -->
 
     <!-- ButtonBase mirrors the implicit Button style so named variants can BasedOn it. -->

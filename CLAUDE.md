@@ -115,6 +115,42 @@ Views (XAML)
 - **Feature-completeness**: Finish what you start. Don't leave partial implementations or TODO stubs.
 - **Ask first, assume never**: When requirements are ambiguous, ask clarifying questions before writing code.
 - **Before every git commit**: Run `/simplify` to review changed code for reuse, quality, and efficiency. Fix any issues found before committing.
+- **Parallel agents**: Allowed for this project — override the global single-agent rule. Use parallel agents for independent tasks to maximize efficiency.
+
+---
+
+## Skills
+
+A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically detects MAUI-related keywords in each message and injects the relevant skill names as `additionalContext`. When skills are injected, invoke them via the `Skill` tool before implementing.
+
+**Always invoke for any MAUI/XAML implementation work:**
+- `maui-skills:maui-current-apis` — guardrail against deprecated/removed APIs
+
+**Triggered automatically by keyword detection:**
+
+| Topic | Skill |
+| ----- | ----- |
+| Animations, transitions | `maui-skills:maui-animations` |
+| Local notifications | `maui-skills:maui-local-notifications` |
+| Accessibility / screen readers | `maui-skills:maui-accessibility` |
+| CollectionView, lists, scrolling | `maui-skills:maui-collectionview` |
+| Shell, navigation, tabs, modals, routes | `maui-skills:maui-shell-navigation` |
+| SQLite, database, migrations | `maui-skills:maui-sqlite-database` |
+| Data binding, MVVM, ViewModels | `maui-skills:maui-data-binding` |
+| Runtime permissions | `maui-skills:maui-permissions` |
+| Theming, dark/light mode | `maui-skills:maui-theming` |
+| Gestures (swipe, drag, pinch) | `maui-skills:maui-gestures` |
+| Safe area, insets, edge-to-edge | `maui-skills:maui-safe-area` |
+| Secure storage | `maui-skills:maui-secure-storage` |
+| Unit testing, xUnit, NSubstitute | `maui-skills:maui-unit-testing` |
+| Performance, optimization | `maui-skills:maui-performance` |
+| Custom handlers, native views | `maui-skills:maui-custom-handlers` |
+| App lifecycle, background/foreground | `maui-skills:maui-app-lifecycle` |
+| App icons, splash screens | `maui-skills:maui-app-icons-splash` |
+| File picker, file system | `maui-skills:maui-file-handling` |
+| Dependency injection, service registration | `maui-skills:maui-dependency-injection` |
+
+**Not applicable to this project** (privacy-first, offline): `maui-authentication`, `maui-rest-api`, `maui-push-notifications`, `maui-maps`, `maui-geolocation`, `maui-aspire`, xamarin-* migration skills.
 
 ---
 

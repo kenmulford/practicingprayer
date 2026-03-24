@@ -19,14 +19,12 @@
                     <VerticalStackLayout Spacing="12">
 
                         <Label Text="Title" Style="{StaticResource FormLabel}" />
-                        <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                            <Entry x:Name="TitleEntry"
-                                   Text="{Binding Title}"
-                                   IsReadOnly="{Binding IsSystem}"
-                                   HorizontalOptions="Fill"
-                                   Placeholder="Card title"
-                                   SemanticProperties.Hint="Name or topic for this prayer card" />
-                        </Border>
+                        <Entry x:Name="TitleEntry"
+                               Text="{Binding Title}"
+                               IsReadOnly="{Binding IsSystem}"
+                               HorizontalOptions="Fill"
+                               Placeholder="Card title"
+                               SemanticProperties.Hint="Name or topic for this prayer card" />
 
                         <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 

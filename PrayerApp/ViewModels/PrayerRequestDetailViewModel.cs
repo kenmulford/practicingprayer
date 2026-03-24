@@ -137,6 +137,9 @@ namespace PrayerApp.ViewModels
                 {
                     _prayer.CanNotify = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(ShowNotifyTime));
+                    OnPropertyChanged(nameof(ShowDayOfWeek));
+                    OnPropertyChanged(nameof(ShowDayOfMonth));
                     // Request OS permission immediately when user enables notifications here
                     // (e.g. during tutorial) rather than waiting for Settings page visit.
                     if (value) Services.Settings.EnsureNotificationPermissionRequested();
@@ -154,11 +157,84 @@ namespace PrayerApp.ViewModels
                     _prayer.PrayerFrequency = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+                    OnPropertyChanged(nameof(ShowDayOfWeek));
+                    OnPropertyChanged(nameof(ShowDayOfMonth));
                 }
             }
         }
 
-        public string PrayerFrequencyDisplay => PrayerFrequency.ToString();
+        public string PrayerFrequencyDisplay
+        {
+            get
+            {
+                var time = new TimeSpan(_prayer.NotifyHour, _prayer.NotifyMinute, 0);
+                var timeStr = DateTime.Today.Add(time).ToString("h:mm tt");
+                return PrayerFrequency switch
+                {
+                    PrayerFrequency.Daily => $"Daily at {timeStr}",
+                    PrayerFrequency.Weekly when _prayer.NotifyDayOfWeek >= 0 =>
+                        $"Weekly on {DaysOfWeek[_prayer.NotifyDayOfWeek]} at {timeStr}",
+                    PrayerFrequency.Weekly => $"Weekly at {timeStr}",
+                    PrayerFrequency.Monthly when _prayer.NotifyDayOfMonth > 0 =>
+                        $"Monthly on the {OrdinalSuffix(_prayer.NotifyDayOfMonth)} at {timeStr}",
+                    PrayerFrequency.Monthly => $"Monthly at {timeStr}",
+                    PrayerFrequency.Yearly => $"Yearly at {timeStr}",
+                    PrayerFrequency.OneTime => $"Once at {timeStr}",
+                    _ => PrayerFrequency.ToString()
+                };
+            }
+        }
+
+        public TimeSpan NotifyTime
+        {
+            get => new TimeSpan(_prayer.NotifyHour, _prayer.NotifyMinute, 0);
+            set
+            {
+                _prayer.NotifyHour = value.Hours;
+                _prayer.NotifyMinute = value.Minutes;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            }
+        }
+
+        public bool ShowNotifyTime => CanNotify;
+        public bool ShowDayOfWeek => CanNotify && PrayerFrequency == PrayerFrequency.Weekly;
+        public bool ShowDayOfMonth => CanNotify && PrayerFrequency == PrayerFrequency.Monthly;
+
+        public List<string> DaysOfWeek { get; } =
+            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        public string? SelectedDayOfWeek
+        {
+            get => _prayer.NotifyDayOfWeek >= 0 ? DaysOfWeek[_prayer.NotifyDayOfWeek] : null;
+            set
+            {
+                _prayer.NotifyDayOfWeek = value != null ? DaysOfWeek.IndexOf(value) : -1;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            }
+        }
+
+        public IReadOnlyList<int> DaysOfMonth { get; } = Enumerable.Range(1, 31).ToList();
+
+        public int SelectedDayOfMonth
+        {
+            get => _prayer.NotifyDayOfMonth > 0 ? _prayer.NotifyDayOfMonth : DateTime.Now.Day;
+            set
+            {
+                _prayer.NotifyDayOfMonth = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            }
+        }
+
+        private static string OrdinalSuffix(int day) => day switch
+        {
+            1 or 21 or 31 => $"{day}st",
+            2 or 22 => $"{day}nd",
+            3 or 23 => $"{day}rd",
+            _ => $"{day}th"
+        };
 
         public bool IsAnswered
         {
@@ -262,7 +338,7 @@ namespace PrayerApp.ViewModels
             if (_prayer.CanNotify)
                 await _notificationService.ScheduleAsync(_prayer);
             else
-                await _notificationService.CancelAsync(_prayer.Id);
+                await _notificationService.CancelAsync(_prayer.Id, _prayer.PrayerFrequency);
             if (isNew)
                 _onboardingService.Advance(); // NameRequest → PrayerTime
             if (ReturnToCards)
@@ -357,7 +433,12 @@ namespace PrayerApp.ViewModels
             {
                 if (int.TryParse(query["newForCard"].ToString(), out int cardId))
                 {
-                    _prayer = new Prayer { PrayerCardId = cardId };
+                    _prayer = new Prayer
+                    {
+                        PrayerCardId = cardId,
+                        NotifyHour = Services.Settings.DefaultNotifyHour,
+                        NotifyMinute = Services.Settings.DefaultNotifyMinute
+                    };
                     ReturnToCards = true;
                     _savedQueryKey = "prayerSaved";
                     _deletedQueryKey = "prayerDeleted";
@@ -551,6 +632,12 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Identifier));
             OnPropertyChanged(nameof(PrayerFrequency));
             OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            OnPropertyChanged(nameof(NotifyTime));
+            OnPropertyChanged(nameof(ShowNotifyTime));
+            OnPropertyChanged(nameof(ShowDayOfWeek));
+            OnPropertyChanged(nameof(ShowDayOfMonth));
+            OnPropertyChanged(nameof(SelectedDayOfWeek));
+            OnPropertyChanged(nameof(SelectedDayOfMonth));
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(IsEditable));
             OnPropertyChanged(nameof(IsNotAnswered));

@@ -7,5 +7,5 @@ public interface INotificationService
     Task<bool> AreNotificationsEnabledAsync();
     Task ClearAllAsync();
     Task ScheduleAsync(Prayer prayer);
-    Task CancelAsync(int notificationId);
+    Task CancelAsync(int notificationId, PrayerFrequency frequency = PrayerFrequency.OneTime);
 }
