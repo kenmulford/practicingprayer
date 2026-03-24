@@ -136,46 +136,53 @@
                             HeightRequest="100"
                             HorizontalOptions="Fill" />
 
-                    <!-- Frequency -->
-                    <Label Text="Frequency"
-                           Style="{StaticResource FormLabel}" />
-                    <Picker Title="Select Frequency"
-                            ItemsSource="{Binding FrequencyOptions}"
-                            ItemDisplayBinding="{Binding .}"
-                            SelectedItem="{Binding PrayerFrequency}"
-                            SemanticProperties.Hint="How often to be reminded"
-                            HorizontalOptions="Fill" />
+                    <!-- Scheduling group -->
+                    <Border Style="{StaticResource PrayerCardBorder}" Padding="16" Margin="0,-4,0,0">
+                        <VerticalStackLayout Spacing="10">
+                            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                                <Label Text="Reminders"
+                                       Style="{StaticResource SectionHeading}"
+                                       VerticalOptions="Center" />
+                                <Switch Grid.Column="1"
+                                        IsToggled="{Binding CanNotify}"
+                                        SemanticProperties.Description="Enable reminders for this request"
+                                        VerticalOptions="Center" />
+                            </Grid>
 
-                    <!-- Notifications Switch -->
-                    <HorizontalStackLayout Spacing="10">
-                        <Label Text="Notifications"
-                               VerticalOptions="Center" />
-                        <Switch IsToggled="{Binding CanNotify}"
-                                SemanticProperties.Description="Enable reminders for this request"
-                                VerticalOptions="Center" />
-                    </HorizontalStackLayout>
+                            <!-- Frequency (visible when notifications enabled) -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
+                                <Label Text="Frequency" Style="{StaticResource FormLabel}" />
+                                <Picker Title="Select Frequency"
+                                        ItemsSource="{Binding FrequencyOptions}"
+                                        ItemDisplayBinding="{Binding .}"
+                                        SelectedItem="{Binding PrayerFrequency}"
+                                        SemanticProperties.Hint="How often to be reminded"
+                                        HorizontalOptions="Fill" />
+                            </VerticalStackLayout>
 
-                    <!-- Reminder Time (visible when notifications enabled) -->
-                    <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
-                        <Label Text="Reminder Time" Style="{StaticResource FormLabel}" />
-                        <TimePicker Time="{Binding NotifyTime}" />
-                    </VerticalStackLayout>
+                            <!-- Reminder Time -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
+                                <Label Text="Reminder Time" Style="{StaticResource FormLabel}" />
+                                <TimePicker Time="{Binding NotifyTime}" />
+                            </VerticalStackLayout>
 
-                    <!-- Day of Week (Weekly only) -->
-                    <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfWeek}">
-                        <Label Text="Day of Week" Style="{StaticResource FormLabel}" />
-                        <Picker ItemsSource="{Binding DaysOfWeek}"
-                                SelectedItem="{Binding SelectedDayOfWeek}"
-                                Title="Select Day" />
-                    </VerticalStackLayout>
+                            <!-- Day of Week (Weekly only) -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfWeek}">
+                                <Label Text="Day of Week" Style="{StaticResource FormLabel}" />
+                                <Picker ItemsSource="{Binding DaysOfWeek}"
+                                        SelectedItem="{Binding SelectedDayOfWeek}"
+                                        Title="Select Day" />
+                            </VerticalStackLayout>
 
-                    <!-- Day of Month (Monthly only) -->
-                    <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfMonth}">
-                        <Label Text="Day of Month" Style="{StaticResource FormLabel}" />
-                        <Picker ItemsSource="{Binding DaysOfMonth}"
-                                SelectedItem="{Binding SelectedDayOfMonth}"
-                                Title="Select Day" />
-                    </VerticalStackLayout>
+                            <!-- Day of Month (Monthly only) -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfMonth}">
+                                <Label Text="Day of Month" Style="{StaticResource FormLabel}" />
+                                <Picker ItemsSource="{Binding DaysOfMonth}"
+                                        SelectedItem="{Binding SelectedDayOfMonth}"
+                                        Title="Select Day" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
 
                     <!-- Answered Switch -->
                     <HorizontalStackLayout Spacing="10">
