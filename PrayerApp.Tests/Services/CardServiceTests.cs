@@ -128,6 +128,47 @@ public class CardServiceTests
         await _db.Received(2).GetAllAsync<PrayerCard>();
     }
 
+    // ── GetOrCreateQuickAddCardAsync ──────────────────────────────────────────
+
+    [Fact]
+    public async Task GetOrCreateQuickAddCardAsync_NoCardsExist_CreatesSystemCard()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        var result = await _service.GetOrCreateQuickAddCardAsync();
+
+        Assert.Equal("Quick Add", result.Title);
+        Assert.True(result.IsSystem);
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.IsSystem && c.Title == "Quick Add"));
+    }
+
+    [Fact]
+    public async Task GetOrCreateQuickAddCardAsync_SystemCardExists_ReturnsExisting()
+    {
+        var existing = new PrayerCard { Id = 42, Title = "Quick Add", IsSystem = true };
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard> { existing }));
+
+        var result = await _service.GetOrCreateQuickAddCardAsync();
+
+        Assert.Equal(42, result.Id);
+        Assert.True(result.IsSystem);
+        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
+    }
+
+    [Fact]
+    public async Task GetOrCreateQuickAddCardAsync_OtherCardsExist_CreatesSystemCard()
+    {
+        var userCard = new PrayerCard { Id = 1, Title = "Family" };
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard> { userCard }));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        var result = await _service.GetOrCreateQuickAddCardAsync();
+
+        Assert.True(result.IsSystem);
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.IsSystem));
+    }
+
     // ── InvalidateCache ───────────────────────────────────────────────────────
 
     [Fact]

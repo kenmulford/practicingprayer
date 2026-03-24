@@ -22,6 +22,7 @@
                         <Border Style="{StaticResource InputBorder}" Padding="10,0">
                             <Entry x:Name="TitleEntry"
                                    Text="{Binding Title}"
+                                   IsReadOnly="{Binding IsSystem}"
                                    HorizontalOptions="Fill"
                                    Placeholder="Card title"
                                    SemanticProperties.Hint="Name or topic for this prayer card" />
@@ -34,10 +35,12 @@
                                     Text="Delete"
                                     Style="{StaticResource DangerButton}"
                                     Command="{Binding DeleteCommand}"
+                                    IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                     HorizontalOptions="Fill" />
                             <Button Grid.Column="1"
                                     Text="Save"
                                     Command="{Binding SaveCommand}"
+                                    IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                     HorizontalOptions="Fill" />
                         </Grid>
 

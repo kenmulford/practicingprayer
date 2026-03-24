@@ -178,7 +178,8 @@ namespace PrayerApp.ViewModels
             try
             {
                 var sorted = AllPrayerCards
-                    .OrderByDescending(pc => pc.IsFavorite)
+                    .OrderByDescending(pc => pc.IsSystem)
+                    .ThenByDescending(pc => pc.IsFavorite)
                     .ThenBy(pc => pc.Title)
                     .ToList();
 

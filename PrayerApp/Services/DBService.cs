@@ -121,6 +121,13 @@ namespace PrayerApp.Services
                 System.Diagnostics.Debug.WriteLine($"[UpdateSchema] Orphan PrayerCardTag cleanup: {ex.Message}");
             }
 
+            // Add IsSystem column to PrayerCard for system-managed cards (e.g., Quick Add)
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsSystem INTEGER DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+
             // Add IsDefault column to UserColor and backfill existing seed colors
             try
             {

@@ -41,11 +41,13 @@
                             <SwipeItem
                                 BackgroundColor="{StaticResource WarmGold}"
                                 Command="{Binding ToggleFavoriteCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Toggle favorite"
                                 Text="★" />
                             <SwipeItem
                                 BackgroundColor="{StaticResource Primary}"
                                 Command="{Binding SelectCardCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Edit card"
                                 Text="Edit" />
                         </SwipeItems>
@@ -56,6 +58,7 @@
                                 BackgroundColor="{StaticResource DangerRed}"
                                 IconImageSource="trash_can_solid_full.png"
                                 Command="{Binding DeleteCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Delete card"
                                 Text="Delete" />
                         </SwipeItems>

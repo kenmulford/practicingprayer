@@ -169,6 +169,10 @@ namespace PrayerApp
             var tagService = services.GetRequiredService<ITagService>();
             await tagService.SeedSystemTagsAsync();
 
+            // Ensure the system "Quick Add" card exists
+            var cardService = services.GetRequiredService<ICardService>();
+            await cardService.GetOrCreateQuickAddCardAsync();
+
             // Tag prayers that were recently notified (within last 24h based on schedule)
             try
             {

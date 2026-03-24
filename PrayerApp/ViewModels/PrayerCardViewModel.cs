@@ -86,6 +86,8 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        public bool IsSystem => _prayerCard.IsSystem;
+
         public bool IsAnswered
         {
             get => _prayerCard.IsAnswered;
@@ -163,6 +165,8 @@ namespace PrayerApp.ViewModels
 
         private async Task DeleteAsync()
         {
+            if (_prayerCard.IsSystem) return;
+
             int prayerCount = Prayers.Count;
             string detail = prayerCount > 0
                 ? $"Delete \"{Title}\"? This will also delete {prayerCount} prayer request{(prayerCount == 1 ? "" : "s")}."
@@ -182,6 +186,7 @@ namespace PrayerApp.ViewModels
 
         private async Task SelectPrayerCardAsync()
         {
+            if (_prayerCard.IsSystem) return;
             await Shell.Current.GoToAsync($"{nameof(PrayerCardPage)}?load={Identifier}");
         }
 
@@ -256,6 +261,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Id));
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
+            OnPropertyChanged(nameof(IsSystem));
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
         }
