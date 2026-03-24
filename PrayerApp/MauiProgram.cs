@@ -8,6 +8,7 @@ using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
 using PrayerApp.Views.Tags;
+using System.Globalization;
 
 namespace PrayerApp
 {
@@ -15,6 +16,13 @@ namespace PrayerApp
     {
         public static MauiApp CreateMauiApp()
         {
+            // Force English locale for all formatting (dates, AM/PM, numbers)
+            var culture = new CultureInfo("en-US");
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            Thread.CurrentThread.CurrentCulture = culture;
+            Thread.CurrentThread.CurrentUICulture = culture;
+
             SQLitePCL.Batteries_V2.Init();
 
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");

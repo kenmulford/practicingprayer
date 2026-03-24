@@ -36,6 +36,12 @@
 	<string></string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app does not use your location. This entry is required by a third-party library.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
