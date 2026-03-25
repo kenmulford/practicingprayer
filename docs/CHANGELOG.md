@@ -12,6 +12,8 @@
 - Quick Add now saves directly without choosing a card — simpler and faster
 - iOS home screen name shortened to "Prayer" to prevent truncation
 - Tag color swatches and "add color" button now align consistently
+- Search keyboard now dismisses when tapping search button, elsewhere on screen, or navigating away
+- Prayer card picker now shows a clearer label and dropdown indicator
 
 ### Accessibility Improvements
 - Improved color contrast throughout the app for better readability
