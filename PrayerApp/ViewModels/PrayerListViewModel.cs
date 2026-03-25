@@ -38,6 +38,9 @@ namespace PrayerApp.ViewModels
         // Suppress screen reader announcements during bulk loads
         private bool _suppressAnnounce;
 
+        // Pre-selected tag from tag detail navigation (F6)
+        private int _preselectedTagId;
+
         // Full unfiltered backing store — manipulated by IQueryAttributable
         public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; } = new();
 
@@ -139,6 +142,9 @@ namespace PrayerApp.ViewModels
                     AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
                 OnPropertyChanged(nameof(HasTags));
 
+                // Apply pre-selected tag if navigated from tag detail
+                ApplyPreselectedTag();
+
                 // Initial filtered view
                 ApplyFilter();
             }
@@ -153,7 +159,16 @@ namespace PrayerApp.ViewModels
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.ContainsKey("filter"))
+            if (query.ContainsKey("tagId"))
+            {
+                if (int.TryParse(query["tagId"].ToString(), out int tagId))
+                {
+                    _preselectedTagId = tagId;
+                    ApplyPreselectedTag();
+                    ApplyFilter();
+                }
+            }
+            else if (query.ContainsKey("filter"))
             {
                 var filter = query["filter"].ToString();
                 StatusFilter = filter switch
@@ -224,6 +239,34 @@ namespace PrayerApp.ViewModels
             {
                 await AddNewPrayerAsync(id);
             }
+        }
+
+        private void ApplyPreselectedTag()
+        {
+            if (_preselectedTagId <= 0) return;
+
+            // Deselect all chips first
+            foreach (var chip in AvailableTags)
+                chip.IsSelected = false;
+
+            var target = AvailableTags.FirstOrDefault(c => c.Tag.Id == _preselectedTagId);
+            if (target is not null)
+            {
+                target.IsSelected = true;
+                // Bypass setter to avoid premature ApplyFilter — caller runs it once
+                if (_statusFilter != FilterStatus.All)
+                {
+                    _statusFilter = FilterStatus.All;
+                    OnPropertyChanged(nameof(StatusFilter));
+                    OnPropertyChanged(nameof(IsActiveSelected));
+                    OnPropertyChanged(nameof(IsAnsweredSelected));
+                    OnPropertyChanged(nameof(IsAllSelected));
+                    OnPropertyChanged(nameof(IsOverdueSelected));
+                }
+                SemanticScreenReader.Announce($"Filtered by {target.Tag.Name}");
+            }
+
+            _preselectedTagId = 0;
         }
 
         private PrayerRequestDetailViewModel BuildViewModel(Prayer p)
@@ -419,6 +462,7 @@ namespace PrayerApp.ViewModels
                 AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
 
             OnPropertyChanged(nameof(HasTags));
+            ApplyPreselectedTag();
             ApplyFilter();
         }
 
