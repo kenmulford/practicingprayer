@@ -59,7 +59,20 @@ namespace PrayerApp
 
 #if ANDROID
             PrayerApp.Platforms.Android.Handlers.TextInputTimePickerHandler.Configure();
+#elif IOS
+            PrayerApp.Platforms.iOS.Handlers.EnglishLocaleTimePickerHandler.Configure();
 #endif
+
+            // Fix Switch thumb color not syncing on initial load when IsToggled is already true.
+            // The VisualStateManager "On" state doesn't fire until user interaction.
+            Microsoft.Maui.Handlers.SwitchHandler.Mapper.AppendToMapping("SyncInitialThumbColor", (handler, view) =>
+            {
+                if (view is Switch sw && sw.IsToggled)
+                {
+                    // Force the On VisualState so thumb color matches the style
+                    VisualStateManager.GoToState(sw, "On");
+                }
+            });
 
 #if DEBUG
             builder.Logging.AddDebug();
