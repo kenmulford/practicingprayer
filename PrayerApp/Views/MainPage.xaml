@@ -52,6 +52,7 @@
                                    Text="›"
                                    FontSize="22"
                                    IsVisible="{Binding HasOverdue}"
+                                   AutomationProperties.IsInAccessibleTree="false"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                    VerticalOptions="Center" />
                         </Grid>

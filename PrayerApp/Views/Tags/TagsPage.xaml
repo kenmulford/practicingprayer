@@ -27,8 +27,7 @@
             <Label
                 Text="Tags"
                 Style="{StaticResource Headline}"
-                Margin="20,20,20,10"
-                SemanticProperties.HeadingLevel="Level1" />
+                Margin="20,20,20,10" />
         </CollectionView.Header>
 
         <CollectionView.ItemsLayout>
@@ -74,7 +73,8 @@
                             HeightRequest="14"
                             CornerRadius="7"
                             BackgroundColor="{Binding DotColor}"
-                            VerticalOptions="Center" />
+                            VerticalOptions="Center"
+                            AutomationProperties.IsInAccessibleTree="false" />
 
                         <!-- Tag name -->
                         <Label
@@ -103,7 +103,8 @@
                             Grid.Column="3"
                             Text="›"
                             FontSize="18"
-                            TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}"
+                            AutomationProperties.IsInAccessibleTree="false"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                             VerticalOptions="Center" />
                     </Grid>
                 </SwipeView>

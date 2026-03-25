@@ -27,6 +27,7 @@
                     <Label Text="{Binding Title}"
                            FontSize="22"
                            FontAttributes="Bold"
+                           SemanticProperties.HeadingLevel="Level1"
                            TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
@@ -206,6 +207,7 @@
                                                FontSize="12"
                                                VerticalOptions="Center" />
                                         <Label Text="×"
+                                               SemanticProperties.Description="Remove tag"
                                                TextColor="{StaticResource White}"
                                                FontSize="14"
                                                VerticalOptions="Center">

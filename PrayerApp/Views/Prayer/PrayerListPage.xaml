@@ -18,8 +18,7 @@
         <VerticalStackLayout Grid.Row="0" Margin="20,16,20,0" Spacing="8">
 
             <Label Text="Prayer Requests"
-                   Style="{StaticResource Headline}"
-                   SemanticProperties.HeadingLevel="Level1" />
+                   Style="{StaticResource Headline}" />
 
             <!-- 3-way status toggle -->
             <Grid ColumnDefinitions="*, *, *" ColumnSpacing="4">

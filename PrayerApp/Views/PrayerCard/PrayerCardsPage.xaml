@@ -94,9 +94,11 @@
                                     MinimumWidthRequest="20"
                                     VerticalOptions="Center"
                                     HorizontalOptions="End"
-                                    Margin="0,0,8,0">
+                                    Margin="0,0,8,0"
+                                    AutomationProperties.IsInAccessibleTree="false">
                                     <Label
                                         Text="{Binding ActivePrayerCount}"
+                                        SemanticProperties.Hint="active prayers"
                                         FontSize="11"
                                         FontAttributes="Bold"
                                         TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
@@ -107,6 +109,7 @@
                                     Grid.Column="2"
                                     Text="★"
                                     FontSize="16"
+                                    SemanticProperties.Description="Favorited"
                                     TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
                                     IsVisible="{Binding IsFavorite}"
                                     VerticalOptions="Center"

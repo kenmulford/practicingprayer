@@ -40,7 +40,7 @@
                 <Label x:Name="SkipLabel"
                        Grid.Column="1"
                        Text="Skip tour"
-                       TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TextMutedDark}}"
                        FontSize="12"
                        VerticalOptions="End">
                     <Label.GestureRecognizers>

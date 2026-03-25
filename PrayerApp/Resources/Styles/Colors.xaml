@@ -35,7 +35,7 @@
     <Color x:Key="PrimaryBtnDark">#7d8e6c</Color>
     <Color x:Key="TextPrimaryDark">#dce0d5</Color>
     <Color x:Key="TextSecondaryDark">#9a9e92</Color>
-    <Color x:Key="TextMutedDark">#6b6f64</Color>
+    <Color x:Key="TextMutedDark">#858981</Color>
     <Color x:Key="TabUnselectedDark">#4a4d46</Color>
     <Color x:Key="OverdueLight">#FFF8E7</Color>
     <Color x:Key="OverdueDark">#1a1810</Color>

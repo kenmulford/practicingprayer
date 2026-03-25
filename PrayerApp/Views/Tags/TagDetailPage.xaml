@@ -62,11 +62,13 @@
                                     HeightRequest="36"
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center"
-                                    InputTransparent="True" />
+                                    InputTransparent="True"
+                                    AutomationProperties.IsInAccessibleTree="false" />
                                 <!-- Selected ring -->
                                 <Ellipse
                                     Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
                                     StrokeThickness="2"
+                                    AutomationProperties.IsInAccessibleTree="false"
                                     Fill="Transparent"
                                     WidthRequest="40"
                                     HeightRequest="40"

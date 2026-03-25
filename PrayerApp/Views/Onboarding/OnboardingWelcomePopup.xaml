@@ -19,6 +19,7 @@
                    FontSize="22"
                    FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                   SemanticProperties.HeadingLevel="Level1"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
@@ -35,7 +36,7 @@
             <Label x:Name="LblSkip"
                    Text="Skip tour"
                    FontSize="13"
-                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                    HorizontalOptions="Center">
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer x:Name="SkipTap" />

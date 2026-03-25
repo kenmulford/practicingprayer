@@ -116,7 +116,8 @@
                                 <!-- Gradient fade at bottom — hints at scrollable content -->
                                 <BoxView HeightRequest="36"
                                          VerticalOptions="End"
-                                         InputTransparent="True">
+                                         InputTransparent="True"
+                                         AutomationProperties.IsInAccessibleTree="false">
                                     <BoxView.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                             <GradientStop Color="Transparent" Offset="0.0" />
@@ -147,6 +148,7 @@
                     FontSize="11" />
             <Button Grid.Column="2"
                     Text="←"
+                    SemanticProperties.Description="Previous prayer"
                     Command="{Binding PreviousCommand}"
                     IsEnabled="{Binding HasPrevious}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
@@ -154,6 +156,7 @@
                     Style="{StaticResource CircleNavButton}" />
             <Button Grid.Column="3"
                     Text="→"
+                    SemanticProperties.Description="Next prayer"
                     Command="{Binding NextCommand}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                     TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"

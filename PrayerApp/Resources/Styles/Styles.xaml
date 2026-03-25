@@ -196,6 +196,7 @@
         <Setter Property="FontSize" Value="32" />
         <Setter Property="HorizontalOptions" Value="Center" />
         <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="SemanticProperties.HeadingLevel" Value="Level1" />
     </Style>
 
     <Style TargetType="Label" x:Key="SubHeadline">
@@ -209,6 +210,7 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="FontSize" Value="18" />
         <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="SemanticProperties.HeadingLevel" Value="Level2" />
     </Style>
 
     <Style TargetType="Label" x:Key="SectionDescription">
@@ -519,7 +521,7 @@
          Dark value uses TextMutedDark (#6b6f64) — subdued olive tone that reads as
          "muted" on the dark PageDark (#0d0e0c) background. -->
     <Style x:Key="MutedText" TargetType="Label" BasedOn="{StaticResource LabelBase}">
-        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
     </Style>
 
     <!-- SuccessBadge: answered-date display (small, green) -->
@@ -550,6 +552,7 @@
         <Setter Property="Opacity" Value="0.4" />
         <Setter Property="HeightRequest" Value="1" />
         <Setter Property="HorizontalOptions" Value="Fill" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
     </Style>
 
     <Style TargetType="Page" ApplyToDerivedTypes="True">
