@@ -83,8 +83,8 @@
                     </BindableLayout.ItemTemplate>
                 </FlexLayout>
 
-                <!-- Add custom color button -->
-                <Grid WidthRequest="48" HeightRequest="48" Margin="4,0,0,0"
+                <!-- Add custom color button — outside FlexLayout (BindableLayout clears static children) -->
+                <Grid WidthRequest="48" HeightRequest="48" Margin="4"
                       HorizontalOptions="Start"
                       SemanticProperties.Description="Add custom color"
                       SemanticProperties.Hint="Double tap to open color picker">

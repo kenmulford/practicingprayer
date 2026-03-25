@@ -8,6 +8,11 @@
 
 ## What's New (since 1.0.5 build 29)
 
+### Improvements
+- Quick Add now saves directly without choosing a card — simpler and faster
+- iOS home screen name shortened to "Prayer" to prevent truncation
+- Tag color swatches and "add color" button now align consistently
+
 ### Accessibility Improvements
 - Improved color contrast throughout the app for better readability
 - Screen readers now navigate pages using heading structure
