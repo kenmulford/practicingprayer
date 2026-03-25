@@ -28,7 +28,7 @@
                             Toggled="chkSettingsAllowNotifications_Toggled" />
                     </Grid>
                     <VerticalStackLayout Spacing="4"
-                                         IsVisible="{Binding Source={x:Reference chkSettingsAllowNotifications}, Path=IsToggled}">
+                                         IsVisible="{Binding Source={x:Reference chkSettingsAllowNotifications}, Path=IsToggled, x:DataType=Switch}">
                         <Label Text="Default Reminder Time"
                                Style="{StaticResource FormLabel}" />
                         <TimePicker x:Name="timePickerDefaultNotify"

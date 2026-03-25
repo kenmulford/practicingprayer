@@ -106,7 +106,7 @@
                     <Picker Title="Select Card"
                             ItemsSource="{Binding AvailableCards}"
                             SelectedItem="{Binding SelectedCard}"
-                            ItemDisplayBinding="{Binding Title}"
+                            ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
                             SemanticProperties.Hint="Which prayer card this request belongs to"
                             HorizontalOptions="Fill" />
 
@@ -146,7 +146,7 @@
                                 <Label Text="Frequency" Style="{StaticResource FormLabel}" />
                                 <Picker Title="Select Frequency"
                                         ItemsSource="{Binding FrequencyOptions}"
-                                        ItemDisplayBinding="{Binding .}"
+                                        ItemDisplayBinding="{Binding ., x:DataType=x:String}"
                                         SelectedItem="{Binding PrayerFrequency}"
                                         SemanticProperties.Hint="How often to be reminded"
                                         HorizontalOptions="Fill" />

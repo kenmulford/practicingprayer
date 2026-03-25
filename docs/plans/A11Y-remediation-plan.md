@@ -25,7 +25,7 @@ Update `Colors.xaml` color tokens to meet WCAG AA 4.5:1 minimum:
 |-------|---------|--------|--------|
 | MutedText light fg | Gray400 `#919191` | Gray500 `#6E6E6E` or darker | Bump to ≥4.5:1 on White |
 | SectionDescription light fg | Gray500 `#6E6E6E` on Secondary `#E8EDE3` | Darker gray or adjust Secondary | Currently 3.4:1 |
-| SuccessGreen / SuccessBadge | `#4CAF50` on White | Darken to `#2E7D32` or similar | Currently 3.0:1 |
+| ~~SuccessGreen / SuccessBadge~~ | ~~`#4CAF50` on White~~ | ~~Darken to `#2E7D32`~~ | **Done** — darkened to `#2E7D32` in style refresh (build 27) |
 | OnboardingBanner skip link | Gray300 on Tertiary | Gray200 `#C8C8C8` or White | Currently 3.5:1 |
 | TagGray chip text | White on `#505050` | Darken tag bg to `#404040` or lighten text | Currently 4.2:1 |
 | WelcomePopup/CompletePopup sub-text | Gray500 on Secondary | Same fix as SectionDescription | Currently 3.4:1 |

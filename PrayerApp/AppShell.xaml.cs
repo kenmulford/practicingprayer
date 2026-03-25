@@ -79,8 +79,8 @@ namespace PrayerApp
             page.Opacity = 0;
             page.TranslationX = 60;
             await Task.WhenAll(
-                page.FadeTo(1, 250, Easing.CubicOut),
-                page.TranslateTo(0, 0, 250, Easing.CubicOut));
+                page.FadeToAsync(1, 250, Easing.CubicOut),
+                page.TranslateToAsync(0, 0, 250, Easing.CubicOut));
         }
 
         private static async Task ShowOnboardingCompletePopupAsync()
