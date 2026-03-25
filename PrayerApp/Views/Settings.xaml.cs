@@ -91,4 +91,10 @@ public partial class Settings : ContentPage
         // On success the app navigates to //MainPage; only re-enable on failure
         if (!success) btnRestore.IsEnabled = true;
     }
+
+    private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+    {
+        if (entryOverdueThreshold.IsFocused)
+            entryOverdueThreshold.Unfocus();
+    }
 }

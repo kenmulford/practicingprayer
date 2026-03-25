@@ -21,6 +21,9 @@
 
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Padding="12,8" Spacing="16">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+                </VerticalStackLayout.GestureRecognizers>
 
                 <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
                     <VerticalStackLayout Spacing="12">

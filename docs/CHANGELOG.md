@@ -14,7 +14,7 @@
 - iOS home screen icon no longer truncates the app name
 - Editing a prayer, card, or tag warns you before discarding unsaved changes
 - Delete button is hidden when creating new things
-- Keyboard dismisses easier. Especially on prayer searching.
+- Keyboard dismisses when tapping outside input fields on all pages
 - Card picker on prayer detail now clearly looks like a drop down list
 - Tag detail page lets you view all prayers with that tag in one tap
 - Color swatch alignment fixed on the tag editor

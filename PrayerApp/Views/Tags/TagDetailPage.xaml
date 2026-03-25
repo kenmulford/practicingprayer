@@ -15,6 +15,9 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="24,20" Spacing="24">
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+            </VerticalStackLayout.GestureRecognizers>
 
             <!-- System tag note -->
             <Border IsVisible="{Binding IsSystem}"
@@ -30,7 +33,7 @@
             <!-- Name field -->
             <VerticalStackLayout Spacing="6">
                 <Label Text="Name" Style="{StaticResource FormLabel}" />
-                <Entry
+                <Entry x:Name="NameEntry"
                     Text="{Binding Name}"
                     AutomationId="TagDetail_Entry_Name"
                     Placeholder="Tag name"

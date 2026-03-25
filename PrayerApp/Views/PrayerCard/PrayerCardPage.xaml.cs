@@ -6,4 +6,11 @@ public partial class PrayerCardPage : ContentPage
     {
         InitializeComponent();
     }
+
+    private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+    {
+        // Dismiss keyboard when tapping outside input fields (iOS)
+        if (TitleEntry.IsFocused)
+            TitleEntry.Unfocus();
+    }
 }

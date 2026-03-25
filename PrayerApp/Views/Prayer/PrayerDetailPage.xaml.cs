@@ -85,4 +85,11 @@ public partial class PrayerDetailPage : ContentPage
         ToolbarItems.Clear();
         ToolbarItems.Add(vm.IsReadOnly ? _editToolbarItem : _saveToolbarItem);
     }
+
+    private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+    {
+        if (TitleEntry.IsFocused) TitleEntry.Unfocus();
+        else if (DetailsEditor.IsFocused) DetailsEditor.Unfocus();
+        else if (tagEntry.IsFocused) tagEntry.Unfocus();
+    }
 }

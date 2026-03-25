@@ -7,6 +7,9 @@
         <VerticalStackLayout
             Padding="20,16"
             Spacing="16">
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+            </VerticalStackLayout.GestureRecognizers>
 
             <!-- Notifications -->
             <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
