@@ -6,6 +6,12 @@
              x:DataType="viewModels:TagDetailViewModel"
              Title="Tag">
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save"
+                     Command="{Binding SaveCommand}"
+                     x:DataType="viewModels:TagDetailViewModel" />
+    </ContentPage.ToolbarItems>
+
     <ScrollView>
         <VerticalStackLayout Padding="24,20" Spacing="24">
 
@@ -95,13 +101,6 @@
                            VerticalOptions="Center" />
                 </Grid>
             </VerticalStackLayout>
-
-            <!-- Save button -->
-            <Button
-                Text="Save"
-                Command="{Binding SaveCommand}"
-                HorizontalOptions="Fill"
-                Margin="0,8,0,0" />
 
         </VerticalStackLayout>
     </ScrollView>

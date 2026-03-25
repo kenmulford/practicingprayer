@@ -10,6 +10,12 @@
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save"
+                     Command="{Binding SaveCommand}"
+                     x:DataType="viewModels:PrayerCardViewModel" />
+    </ContentPage.ToolbarItems>
+
     <Grid RowDefinitions="*,Auto">
 
         <ScrollView Grid.Row="0">
@@ -28,19 +34,12 @@
 
                         <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
-                            <Button Grid.Column="0"
-                                    Text="Delete"
-                                    Style="{StaticResource DangerButton}"
-                                    Command="{Binding DeleteCommand}"
-                                    IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                    HorizontalOptions="Fill" />
-                            <Button Grid.Column="1"
-                                    Text="Save"
-                                    Command="{Binding SaveCommand}"
-                                    IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                    HorizontalOptions="Fill" />
-                        </Grid>
+                        <!-- Delete Button — Save is in the navbar -->
+                        <Button Text="Delete"
+                                Style="{StaticResource DangerButton}"
+                                Command="{Binding DeleteCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                HorizontalOptions="Fill" />
 
                     </VerticalStackLayout>
                 </Border>

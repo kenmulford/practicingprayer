@@ -60,7 +60,9 @@
                     <Grid
                         Padding="20,14"
                         ColumnDefinitions="14, *, Auto, Auto"
-                        ColumnSpacing="12">
+                        ColumnSpacing="12"
+                        MinimumHeightRequest="48"
+                        HorizontalOptions="Fill">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding EditCommand}" />
                         </Grid.GestureRecognizers>
@@ -79,6 +81,7 @@
                             Grid.Column="1"
                             Text="{Binding Name}"
                             FontSize="16"
+                            LineBreakMode="TailTruncation"
                             VerticalOptions="Center" />
 
                         <!-- System badge -->

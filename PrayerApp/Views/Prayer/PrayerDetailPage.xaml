@@ -11,6 +11,7 @@
     <ContentPage.BindingContext>
         <viewModels:PrayerRequestDetailViewModel />
     </ContentPage.BindingContext>
+
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
         <VerticalStackLayout Padding="12,8" Spacing="16">
@@ -75,23 +76,13 @@
                     </FlexLayout>
 
                     <!-- Action Buttons -->
-                    <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="8" RowSpacing="8">
-                        <Button Grid.Row="0" Grid.Column="0"
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                        <Button Grid.Column="0"
                                 Text="Share"
                                 Style="{StaticResource SmallActionButton}"
                                 Command="{Binding ShareCommand}"
                                 HorizontalOptions="Fill" />
-                        <Button Grid.Row="0" Grid.Column="1"
-                                Text="Edit"
-                                Style="{StaticResource SmallActionButton}"
-                                Command="{Binding EditPrayerCommand}"
-                                HorizontalOptions="Fill" />
-                        <Button Grid.Row="1" Grid.Column="0"
-                                Text="Delete"
-                                Style="{StaticResource DangerButton}"
-                                Command="{Binding DeleteCommand}"
-                                HorizontalOptions="Fill" />
-                        <Button Grid.Row="1" Grid.Column="1"
+                        <Button Grid.Column="1"
                                 Text="Mark Answered"
                                 Style="{StaticResource AnsweredButton}"
                                 Command="{Binding MarkAnsweredCommand}"
@@ -262,18 +253,11 @@
                     <!-- Divider before action buttons -->
                     <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
-                    <!-- Save / Delete Buttons -->
-                    <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
-                        <Button Grid.Column="0"
-                                Text="Delete"
-                                Command="{Binding DeleteCommand}"
-                                Style="{StaticResource DangerButton}"
-                                HorizontalOptions="Fill" />
-                        <Button Grid.Column="1"
-                                Text="Save"
-                                Command="{Binding SaveCommand}"
-                                HorizontalOptions="Fill" />
-                    </Grid>
+                    <!-- Delete Button — Save is in the navbar -->
+                    <Button Text="Delete"
+                            Command="{Binding DeleteCommand}"
+                            Style="{StaticResource DangerButton}"
+                            HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>
             </Border>

@@ -11,16 +11,19 @@
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Padding="20,16" Spacing="16">
 
-                <!-- Action buttons -->
-                <Button x:Name="BtnQuickAdd"
-                        Text="Quick Add"
-                        SemanticProperties.Hint="Add a prayer request"
-                        HorizontalOptions="Fill" />
-
-                <Button x:Name="BtnPrayerTime"
-                        Text="Prayer Time"
-                        SemanticProperties.Hint="Start a prayer session"
-                        HorizontalOptions="Fill" />
+                <!-- Action buttons — side by side -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button x:Name="BtnQuickAdd"
+                            Grid.Column="0"
+                            Text="Quick Add"
+                            SemanticProperties.Hint="Add a prayer request"
+                            HorizontalOptions="Fill" />
+                    <Button x:Name="BtnPrayerTime"
+                            Grid.Column="1"
+                            Text="Prayer Time"
+                            SemanticProperties.Hint="Start a prayer session"
+                            HorizontalOptions="Fill" />
+                </Grid>
 
                 <!-- Last prayed stat -->
                 <Label Text="{Binding LastPrayedDisplay, StringFormat='Last prayed: {0}'}"

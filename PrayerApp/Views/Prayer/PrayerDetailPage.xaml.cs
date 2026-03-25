@@ -6,10 +6,18 @@ namespace PrayerApp.Views.Prayer;
 public partial class PrayerDetailPage : ContentPage
 {
     private bool _initialLoadComplete;
+    private readonly ToolbarItem _editToolbarItem;
+    private readonly ToolbarItem _saveToolbarItem;
 
     public PrayerDetailPage()
     {
         InitializeComponent();
+
+        _editToolbarItem = new ToolbarItem { Text = "Edit" };
+        _editToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.EditPrayerCommand));
+
+        _saveToolbarItem = new ToolbarItem { Text = "Save" };
+        _saveToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveCommand));
     }
 
     private void OnTagEntryCompleted(object? sender, EventArgs e)
@@ -51,12 +59,30 @@ public partial class PrayerDetailPage : ContentPage
             else
             {
                 _initialLoadComplete = true;
+                vm.PropertyChanged += OnViewModelPropertyChanged;
             }
+
+            UpdateToolbarItems(vm);
 
             if (vm.IsEditable && string.IsNullOrEmpty(vm.Title))
             {
                 Dispatcher.DispatchAsync(() => TitleEntry.Focus());
             }
         }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PrayerRequestDetailViewModel.IsReadOnly) &&
+            sender is PrayerRequestDetailViewModel vm)
+        {
+            UpdateToolbarItems(vm);
+        }
+    }
+
+    private void UpdateToolbarItems(PrayerRequestDetailViewModel vm)
+    {
+        ToolbarItems.Clear();
+        ToolbarItems.Add(vm.IsReadOnly ? _editToolbarItem : _saveToolbarItem);
     }
 }
