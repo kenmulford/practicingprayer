@@ -110,6 +110,7 @@
                                 </Border.Triggers>
                                 <Label Text="{Binding Tag.Name}"
                                        FontSize="12"
+                                       SemanticProperties.Hint="Double tap to toggle filter"
                                        VerticalOptions="Center">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
@@ -177,6 +178,7 @@
                             <Label Grid.Column="0"
                                    Text="{Binding Title}"
                                    FontSize="17"
+                                   SemanticProperties.Hint="Double tap to view details"
                                    TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                    TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
                                    VerticalOptions="Center" />

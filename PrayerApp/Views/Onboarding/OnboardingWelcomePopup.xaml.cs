@@ -20,7 +20,7 @@ public partial class OnboardingWelcomePopup : Popup
             await Shell.Current.GoToAsync("//CardsPage");
         };
 
-        SkipTap.Tapped += async (_, _) =>
+        SkipButton.Clicked += async (_, _) =>
         {
             await CloseAsync(CancellationToken.None);
             _onboardingService.Skip();

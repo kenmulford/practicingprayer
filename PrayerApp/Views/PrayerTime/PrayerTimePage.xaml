@@ -23,26 +23,27 @@
                    Style="{StaticResource MutedText}"
                    FontSize="13" />
             <!-- Pause/resume button — only visible while auto-mode is active -->
-            <Label Grid.Column="1"
-                   Text="{Binding PauseButtonText}"
-                   IsVisible="{Binding IsAutoMode}"
-                   VerticalOptions="Center"
-                   Style="{StaticResource MutedText}"
-                   FontSize="16">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding TogglePauseCommand}" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button Grid.Column="1"
+                    Text="{Binding PauseButtonText}"
+                    Command="{Binding TogglePauseCommand}"
+                    IsVisible="{Binding IsAutoMode}"
+                    VerticalOptions="Center"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    FontSize="16"
+                    Padding="4,0"
+                    BorderWidth="0" />
             <!-- Countdown (auto-mode) or configured interval (manual mode); tap to cycle -->
-            <Label Grid.Column="2"
-                   Text="{Binding CountdownDisplay}"
-                   VerticalOptions="Center"
-                   Style="{StaticResource MutedText}"
-                   FontSize="13">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding CycleIntervalCommand}" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button Grid.Column="2"
+                    Text="{Binding CountdownDisplay}"
+                    Command="{Binding CycleIntervalCommand}"
+                    SemanticProperties.Hint="Tap to change auto-advance interval"
+                    VerticalOptions="Center"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    FontSize="13"
+                    Padding="4,0"
+                    BorderWidth="0" />
         </Grid>
 
         <!-- Row 1: Prayer content — CarouselView for swipeable cards -->

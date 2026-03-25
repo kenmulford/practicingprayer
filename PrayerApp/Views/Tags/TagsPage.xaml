@@ -81,6 +81,7 @@
                             Grid.Column="1"
                             Text="{Binding Name}"
                             FontSize="16"
+                            SemanticProperties.Hint="Double tap to edit. Swipe left to delete, right to edit"
                             LineBreakMode="TailTruncation"
                             VerticalOptions="Center" />
 

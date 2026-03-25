@@ -1,6 +1,6 @@
 # A11Y-1: Accessibility Remediation Plan
 
-**Status:** Phase 1 complete (2026-03-25), Phase 2 next
+**Status:** Phase 1 + 2 complete (2026-03-25), Phase 3 next
 **Source:** Accessibility audit (2026-03-24) at `docs/research/accessibility-audit.md`
 **Skill:** `maui-skills:maui-accessibility`
 **Standard:** WCAG 2.1 AA, VoiceOver (iOS), TalkBack (Android)
@@ -64,7 +64,7 @@ Add `AutomationProperties.IsInAccessibleTree="false"` to:
 
 ---
 
-## Phase 2: Interactive Element Accessibility (1–2 sessions)
+## Phase 2: Interactive Element Accessibility (1–2 sessions) — ✅ DONE (2026-03-25)
 
 Replace inaccessible tap-gesture patterns and add dynamic announcements.
 

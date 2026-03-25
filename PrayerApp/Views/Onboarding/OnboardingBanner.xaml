@@ -37,16 +37,15 @@
                        FontSize="13"
                        LineBreakMode="WordWrap" />
 
-                <Label x:Name="SkipLabel"
-                       Grid.Column="1"
-                       Text="Skip tour"
-                       TextColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TextMutedDark}}"
-                       FontSize="12"
-                       VerticalOptions="End">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer x:Name="SkipTap" />
-                    </Label.GestureRecognizers>
-                </Label>
+                <Button x:Name="SkipButton"
+                        Grid.Column="1"
+                        Text="Skip tour"
+                        TextColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TextMutedDark}}"
+                        BackgroundColor="Transparent"
+                        FontSize="12"
+                        Padding="0"
+                        BorderWidth="0"
+                        VerticalOptions="End" />
             </Grid>
         </Grid>
     </Border>

@@ -120,6 +120,7 @@ namespace PrayerApp.ViewModels
             if (!confirmed) return;
 
             await _tagService.DeleteTagAsync(Id);
+            SemanticScreenReader.Announce("Tag deleted");
             _parent.RemoveTag(this);
         }
     }

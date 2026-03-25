@@ -286,6 +286,8 @@ namespace PrayerApp.ViewModels
             FilteredPrayers.Clear();
             foreach (var p in sorted)
                 FilteredPrayers.Add(p);
+
+            SemanticScreenReader.Announce($"Showing {FilteredPrayers.Count} prayers");
         }
 
         private async Task AddNewPrayerAsync(string? prayerIdString)

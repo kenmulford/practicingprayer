@@ -160,6 +160,7 @@ namespace PrayerApp.ViewModels
             await _cardService.SaveCardAsync(_prayerCard);
             if (isNew)
                 _onboardingService.Advance(); // NameCard → AddRequest
+            SemanticScreenReader.Announce("Card saved");
             await Shell.Current.GoToAsync($"..?saved={Identifier}");
         }
 
@@ -181,6 +182,7 @@ namespace PrayerApp.ViewModels
             foreach (var prayer in prayers)
                 await _prayerService.DeletePrayerAsync(prayer);
             await _cardService.DeleteCardAsync(_prayerCard);
+            SemanticScreenReader.Announce("Card deleted");
             await Shell.Current.GoToAsync($"..?deleted={Identifier}");
         }
 

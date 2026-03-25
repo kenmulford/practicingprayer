@@ -51,7 +51,9 @@
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
                             <Grid WidthRequest="48" HeightRequest="48" Margin="4"
-                                  Loaded="OnSwatchLoaded">
+                                  Loaded="OnSwatchLoaded"
+                                  SemanticProperties.Description="{Binding LightHex}"
+                                  SemanticProperties.Hint="Double tap to select, long press to delete">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SelectCommand}" />
                                 </Grid.GestureRecognizers>
@@ -83,7 +85,9 @@
 
                 <!-- Add custom color button -->
                 <Grid WidthRequest="48" HeightRequest="48" Margin="4,0,0,0"
-                      HorizontalOptions="Start">
+                      HorizontalOptions="Start"
+                      SemanticProperties.Description="Add custom color"
+                      SemanticProperties.Hint="Double tap to open color picker">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding AddColorCommand}" />
                     </Grid.GestureRecognizers>
@@ -95,10 +99,12 @@
                         WidthRequest="36"
                         HeightRequest="36"
                         HorizontalOptions="Center"
-                        VerticalOptions="Center" />
+                        VerticalOptions="Center"
+                        AutomationProperties.IsInAccessibleTree="false" />
                     <Label Text="+"
                            FontSize="20"
                            FontAttributes="Bold"
+                           AutomationProperties.IsInAccessibleTree="false"
                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />

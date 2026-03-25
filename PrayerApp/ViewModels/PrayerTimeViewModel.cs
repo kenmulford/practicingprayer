@@ -297,6 +297,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             await LogInteractionForIndex(CurrentIndex);
             HasCompleted = true;
             StopAutoMode();
+            SemanticScreenReader.Announce("Prayer session complete");
         }
     }
 
