@@ -15,8 +15,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 2026-03-25 — A11Y Phases 1–3 (full WCAG 2.1 AA), FB-29 iOS tester feedback (7 fixes), keyboard dismiss on all input pages, NuGet upgrades (MAUI 10.0.50, LocalNotification 14.0.0)
-**Next up**: TD-12 (MVVM architecture audit)
+**Last completed**: TD-12 Phases 1+2+4 (DI refactor, ISettings, child VM cleanup). Phase 3 (VM tests) deferred — needs INavigationService abstraction.
+**Next up**: TD-13 (INavigationService abstraction) → TD-12 Phase 3 (VM tests)
 
 ---
 
@@ -26,8 +26,8 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | TD-12 | Full-stack MVVM architecture audit                                 | —      | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`.                                                                           |
-| 2   | TD-8  | Refactor ViewModels to constructor injection                       | —      | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. Unlocks full ViewModel test coverage.                                                                                                        |
+| 1   | TD-13 | INavigationService abstraction                                     | —      | Abstract `Shell.Current.GoToAsync`, `DisplayAlertAsync`, `SemanticScreenReader.Announce` behind injectable interface. Unlocks VM test compilation in net10.0 test project. Prerequisite for TD-12 Phase 3. |
+| 2   | TD-12p3 | VM test coverage (~55 tests)                                    | —      | **Blocked on TD-13.** Write xUnit tests for HomeVM, PrayerCardsVM, PrayerListVM, PrayerRequestDetailVM, QuickAddVM, PrayerTimeVM business logic. |
 | 3   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
 | 4   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
 | 5   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
@@ -41,6 +41,8 @@ Items are listed in work order. Start at the top, work down.
 | A11Y-1 | Accessibility Phase 1          | 2026-03-25 |
 | A11Y-2 | Accessibility Phase 2          | 2026-03-25 |
 | A11Y-3 | Accessibility Phase 3          | 2026-03-25 |
+| TD-12  | MVVM architecture audit (Phases 1+2+4) | 2026-03-25 |
+| TD-8   | ViewModel constructor injection | 2026-03-25 |
 | FB-29  | iOS tester feedback (build 29) | 2026-03-25 |
 
 ---
