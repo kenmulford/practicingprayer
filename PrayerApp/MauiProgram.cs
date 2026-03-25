@@ -107,6 +107,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<IBackupService, BackupService>();
             // Register user color service
             builder.Services.AddSingleton<IUserColorService, UserColorService>();
+            // Register settings wrapper (delegates to static Settings, enables VM testing)
+            builder.Services.AddSingleton<ISettings, SettingsService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();

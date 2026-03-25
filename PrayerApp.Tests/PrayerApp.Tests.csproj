@@ -51,6 +51,7 @@
     <Compile Include="../PrayerApp/ViewModels/IEditGuard.cs" />
 
     <!-- Service interfaces -->
+    <Compile Include="../PrayerApp/Services/ISettings.cs" />
     <Compile Include="../PrayerApp/Services/IDiagnosticLog.cs" />
     <Compile Include="../PrayerApp/Services/IDBService.cs" />
     <Compile Include="../PrayerApp/Services/IUserColorService.cs" />
