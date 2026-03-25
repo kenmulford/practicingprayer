@@ -9,6 +9,12 @@ public partial class OnboardingCompletePopup : Popup
     public OnboardingCompletePopup()
     {
         InitializeComponent();
+
+        Opened += async (_, _) =>
+        {
+            await Task.Delay(100);
+            BtnDone.SetSemanticFocus();
+        };
         BtnDone.Clicked += async (_, _) =>
         {
             PrayerApp.Services.Settings.OnboardingComplete = true;

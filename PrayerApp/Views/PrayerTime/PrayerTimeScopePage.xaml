@@ -45,10 +45,12 @@
             <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                 <Button Grid.Column="0"
                         Text="Cancel"
+                        AutomationId="Scope_Btn_Cancel"
                         Command="{Binding CancelCommand}"
                         HorizontalOptions="Fill" />
                 <Button Grid.Column="1"
                         Text="Start"
+                        AutomationId="Scope_Btn_Start"
                         Command="{Binding StartCommand}"
                         HorizontalOptions="Fill" />
             </Grid>

@@ -25,6 +25,7 @@
             <!-- Pause/resume button — only visible while auto-mode is active -->
             <Button Grid.Column="1"
                     Text="{Binding PauseButtonText}"
+                    AutomationId="PrayerTime_Btn_Pause"
                     Command="{Binding TogglePauseCommand}"
                     IsVisible="{Binding IsAutoMode}"
                     VerticalOptions="Center"
@@ -36,6 +37,7 @@
             <!-- Countdown (auto-mode) or configured interval (manual mode); tap to cycle -->
             <Button Grid.Column="2"
                     Text="{Binding CountdownDisplay}"
+                    AutomationId="PrayerTime_Btn_CycleInterval"
                     Command="{Binding CycleIntervalCommand}"
                     SemanticProperties.Hint="Tap to change auto-advance interval"
                     VerticalOptions="Center"
@@ -68,12 +70,14 @@
                        HorizontalOptions="Center"
                        HorizontalTextAlignment="Center" />
                 <Button Text="Finish"
+                        AutomationId="PrayerTime_Btn_Finish"
                         Command="{Binding EndSessionCommand}"
                         HorizontalOptions="Center" />
             </VerticalStackLayout>
 
             <!-- Swipeable prayer cards -->
-            <CarouselView ItemsSource="{Binding Entries}"
+            <CarouselView AutomationId="PrayerTime_List_Carousel"
+                          ItemsSource="{Binding Entries}"
                           Position="{Binding CurrentIndex, Mode=TwoWay}"
                           IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
                           Loop="False"
@@ -142,6 +146,7 @@
 
             <Button Grid.Column="0"
                     Text="I'm done"
+                    AutomationId="PrayerTime_Btn_Done"
                     Command="{Binding EndSessionCommand}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
@@ -149,6 +154,7 @@
                     FontSize="11" />
             <Button Grid.Column="2"
                     Text="←"
+                    AutomationId="PrayerTime_Btn_Previous"
                     SemanticProperties.Description="Previous prayer"
                     Command="{Binding PreviousCommand}"
                     IsEnabled="{Binding HasPrevious}"
@@ -157,6 +163,7 @@
                     Style="{StaticResource CircleNavButton}" />
             <Button Grid.Column="3"
                     Text="→"
+                    AutomationId="PrayerTime_Btn_Next"
                     SemanticProperties.Description="Next prayer"
                     Command="{Binding NextCommand}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
@@ -165,6 +172,7 @@
                     Margin="16,0,0,0" />
             <Button Grid.Column="5"
                     Text="{Binding AutoModeButtonText}"
+                    AutomationId="PrayerTime_Btn_AutoMode"
                     Command="{Binding ToggleAutoModeCommand}"
                     IsEnabled="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"

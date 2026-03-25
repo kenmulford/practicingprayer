@@ -19,6 +19,7 @@
                        VerticalOptions="Center" />
 
     <CollectionView
+        AutomationId="Tags_List_Tags"
         ItemsSource="{Binding Tags}"
         SelectionMode="None"
         Margin="10">

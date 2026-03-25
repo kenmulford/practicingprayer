@@ -16,11 +16,13 @@
                     <Button x:Name="BtnQuickAdd"
                             Grid.Column="0"
                             Text="Quick Add"
+                            AutomationId="Home_Btn_QuickAdd"
                             SemanticProperties.Hint="Add a prayer request"
                             HorizontalOptions="Fill" />
                     <Button x:Name="BtnPrayerTime"
                             Grid.Column="1"
                             Text="Prayer Time"
+                            AutomationId="Home_Btn_PrayerTime"
                             SemanticProperties.Hint="Start a prayer session"
                             HorizontalOptions="Fill" />
                 </Grid>

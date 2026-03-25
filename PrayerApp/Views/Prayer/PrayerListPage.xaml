@@ -24,6 +24,7 @@
             <Grid ColumnDefinitions="*, *, *" ColumnSpacing="4">
 
                 <Button Text="Active"
+                        AutomationId="List_Filter_Active"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="Active"
                         FontSize="13">
@@ -41,6 +42,7 @@
 
                 <Button Grid.Column="1"
                         Text="Answered"
+                        AutomationId="List_Filter_Answered"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="Answered"
                         FontSize="13">
@@ -58,6 +60,7 @@
 
                 <Button Grid.Column="2"
                         Text="All"
+                        AutomationId="List_Filter_All"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="All"
                         FontSize="13">
@@ -77,6 +80,7 @@
 
             <!-- Search bar -->
             <SearchBar Text="{Binding SearchText}"
+                       AutomationId="List_Search_Prayers"
                        Placeholder="Search prayers..."
                        BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
 
@@ -132,6 +136,7 @@
         <!-- Prayer list -->
         <CollectionView
             x:Name="prayerCollection"
+            AutomationId="List_List_Prayers"
             Grid.Row="1"
             ItemsSource="{Binding FilteredPrayers}"
             Margin="20,0"

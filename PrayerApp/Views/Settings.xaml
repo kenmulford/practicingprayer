@@ -24,6 +24,7 @@
                         <Switch
                             x:Name="chkSettingsAllowNotifications"
                             Grid.Column="1"
+                            AutomationId="Settings_Switch_Notifications"
                             SemanticProperties.Description="Allow the app to send prayer reminder notifications"
                             Toggled="chkSettingsAllowNotifications_Toggled" />
                     </Grid>
@@ -32,6 +33,7 @@
                         <Label Text="Default Reminder Time"
                                Style="{StaticResource FormLabel}" />
                         <TimePicker x:Name="timePickerDefaultNotify"
+                                    AutomationId="Settings_Picker_ReminderTime"
                                     PropertyChanged="timePickerDefaultNotify_PropertyChanged"
                                     SemanticProperties.Description="Default time of day for prayer reminders" />
                     </VerticalStackLayout>
@@ -51,6 +53,7 @@
                         <Label Text="Overdue after (days)"
                                Style="{StaticResource FormLabel}" />
                         <Entry x:Name="entryOverdueThreshold"
+                               AutomationId="Settings_Entry_OverdueThreshold"
                                Keyboard="Numeric"
                                ReturnType="Done"
                                Placeholder="30"
@@ -72,12 +75,14 @@
                     <Button
                         x:Name="btnBackup"
                         Text="Back Up Now"
+                        AutomationId="Settings_Btn_Backup"
                         Clicked="btnBackup_Clicked"
                         HorizontalOptions="Fill"
                         Margin="0,4,0,0" />
                     <Button
                         x:Name="btnRestore"
                         Text="Restore from Backup"
+                        AutomationId="Settings_Btn_Restore"
                         Clicked="btnRestore_Clicked"
                         HorizontalOptions="Fill" />
                 </VerticalStackLayout>
@@ -98,6 +103,7 @@
                     <Button
                         x:Name="btnSendDiagnostics"
                         Text="Send Diagnostic Info"
+                        AutomationId="Settings_Btn_Diagnostics"
                         Clicked="btnSendDiagnostics_Clicked"
                         HorizontalOptions="Fill"
                         Margin="0,4,0,0" />
@@ -107,6 +113,7 @@
             <!-- Privacy Policy -->
             <Button x:Name="BtnPrivacyPolicy"
                     Text="Privacy Policy"
+                    AutomationId="Settings_Btn_PrivacyPolicy"
                     TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                     BackgroundColor="Transparent"
                     FontSize="14"

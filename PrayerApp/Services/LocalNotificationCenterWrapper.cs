@@ -1,4 +1,6 @@
 using Plugin.LocalNotification;
+using Plugin.LocalNotification.Core.Models;
+using Plugin.LocalNotification.Core.Models.AndroidOption;
 #if IOS
 using Foundation;
 using UserNotifications;
@@ -13,6 +15,8 @@ namespace PrayerApp.Services;
 /// </summary>
 public class LocalNotificationCenterWrapper : ILocalNotificationCenter
 {
+    public const string PrayerRemindersChannelId = "prayer_reminders";
+
     public event EventHandler<int>? NotificationTapped;
 
     public LocalNotificationCenterWrapper()
@@ -148,16 +152,16 @@ public class LocalNotificationCenterWrapper : ILocalNotificationCenter
                 },
                 NotifyRepeatInterval = repeatInterval,
 #if ANDROID
-                Android = new Plugin.LocalNotification.AndroidOption.AndroidScheduleOptions
+                Android = new AndroidScheduleOptions
                 {
-                    AlarmType = Plugin.LocalNotification.AndroidOption.AndroidAlarmType.RtcWakeup
+                    AlarmType = AndroidAlarmType.RtcWakeup
                 }
 #endif
             },
 #if ANDROID
-            Android = new Plugin.LocalNotification.AndroidOption.AndroidOptions
+            Android = new AndroidOptions
             {
-                ChannelId = "prayer_reminders"
+                ChannelId = PrayerRemindersChannelId
             }
 #endif
         };

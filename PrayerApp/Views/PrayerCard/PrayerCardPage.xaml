@@ -28,6 +28,7 @@
                         <Label Text="Title" Style="{StaticResource FormLabel}" />
                         <Entry x:Name="TitleEntry"
                                Text="{Binding Title}"
+                               AutomationId="Card_Entry_Title"
                                IsReadOnly="{Binding IsSystem}"
                                HorizontalOptions="Fill"
                                Placeholder="Card title"
@@ -37,6 +38,7 @@
 
                         <!-- Delete Button — Save is in the navbar -->
                         <Button Text="Delete"
+                                AutomationId="Card_Btn_Delete"
                                 Style="{StaticResource DangerButton}"
                                 Command="{Binding DeleteCommand}"
                                 IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"

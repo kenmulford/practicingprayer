@@ -24,7 +24,11 @@ namespace PrayerApp.ViewModels
         public bool IsLoading
         {
             get => _isLoading;
-            set => SetProperty(ref _isLoading, value);
+            set
+            {
+                if (SetProperty(ref _isLoading, value))
+                    SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
+            }
         }
 
         public ICommand NewCommand { get; }

@@ -32,6 +32,7 @@
                 <Label Text="Name" Style="{StaticResource FormLabel}" />
                 <Entry
                     Text="{Binding Name}"
+                    AutomationId="TagDetail_Entry_Name"
                     Placeholder="Tag name"
                     IsReadOnly="{Binding IsSystem}"
                     ReturnType="Done" />

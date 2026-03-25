@@ -68,6 +68,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                 OnPropertyChanged(nameof(HasPrevious));
                 OnPropertyChanged(nameof(HasNext));
 
+                // Announce current prayer for screen readers
+                if (!string.IsNullOrEmpty(ProgressDisplay) && CurrentEntry is { } entry && !entry.IsSentinel)
+                    SemanticScreenReader.Announce($"Prayer {ProgressDisplay}: {entry.PrayerTitle}");
+
                 // Log interaction for the prayer we just swiped away from (forward only)
                 if (value > previous && previous < Entries.Count)
                     LogInteractionForIndex(previous).SafeFireAndForget();
@@ -108,7 +112,11 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     public bool IsLoading
     {
         get => _isLoading;
-        private set => SetProperty(ref _isLoading, value);
+        private set
+        {
+            if (SetProperty(ref _isLoading, value))
+                SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
+        }
     }
 
     private bool _isAutoMode;

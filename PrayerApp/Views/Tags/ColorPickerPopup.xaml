@@ -11,10 +11,15 @@
             Padding="16">
         <VerticalStackLayout Spacing="12">
 
+            <Label Text="Choose a custom color"
+                   SemanticProperties.HeadingLevel="Level1"
+                   Style="{StaticResource FormLabel}" />
+
             <!-- Saturation / Value picker area -->
             <GraphicsView x:Name="SvPicker"
                           HeightRequest="200"
                           HorizontalOptions="Fill"
+                          SemanticProperties.Description="Color brightness and saturation picker. Drag to adjust."
                           StartInteraction="OnSvStartInteraction"
                           DragInteraction="OnSvDragInteraction" />
 
@@ -22,15 +27,23 @@
             <GraphicsView x:Name="HueBar"
                           HeightRequest="28"
                           HorizontalOptions="Fill"
+                          SemanticProperties.Description="Hue spectrum bar. Drag to choose a base color."
                           StartInteraction="OnHueStartInteraction"
                           DragInteraction="OnHueDragInteraction" />
+
+            <!-- Live color name for screen readers -->
+            <Label x:Name="ColorAnnouncement"
+                   IsVisible="False"
+                   SemanticProperties.Description="Currently selected color" />
 
             <!-- Hex display + color preview -->
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Padding="0,4,0,0">
                 <Entry x:Name="HexEntry"
+                       AutomationId="ColorPicker_Entry_Hex"
                        Placeholder="#RRGGBB"
                        MaxLength="7"
                        Keyboard="Text"
+                       SemanticProperties.Hint="Enter a hex color code like #FF5500"
                        TextChanged="OnHexTextChanged"
                        HorizontalOptions="Fill" />
                 <Border Grid.Column="1"
@@ -38,11 +51,14 @@
                         Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                         WidthRequest="44"
                         HeightRequest="44"
-                        Padding="0">
+                        Padding="0"
+                        SemanticProperties.Description="Color preview"
+                        SemanticProperties.Hint="Shows the currently selected color">
                     <BoxView x:Name="PreviewBox"
                              Color="Green"
                              WidthRequest="44"
-                             HeightRequest="44" />
+                             HeightRequest="44"
+                             AutomationProperties.IsInAccessibleTree="False" />
                 </Border>
             </Grid>
 
@@ -50,11 +66,13 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Padding="0,4,0,0">
                 <Button Grid.Column="0"
                         Text="Cancel"
+                        AutomationId="ColorPicker_Btn_Cancel"
                         Style="{StaticResource GhostButton}"
                         Clicked="OnCancel"
                         HorizontalOptions="Fill" />
                 <Button Grid.Column="1"
                         Text="Add"
+                        AutomationId="ColorPicker_Btn_Add"
                         Clicked="OnAccept"
                         HorizontalOptions="Fill" />
             </Grid>

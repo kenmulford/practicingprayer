@@ -20,12 +20,14 @@
                     <Label Text="Prayer Title"
                            Style="{StaticResource FormLabel}" />
                     <Entry Text="{Binding Title}"
+                           AutomationId="QuickAdd_Entry_Title"
                            Placeholder="Enter prayer title"
                            HorizontalOptions="Fill" />
 
                     <Label Text="Add to Card"
                            Style="{StaticResource FormLabel}" />
                     <Picker ItemsSource="{Binding Cards}"
+                            AutomationId="QuickAdd_Picker_Card"
                             SelectedItem="{Binding SelectedCard}"
                             ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
                             Title="Select a card"
@@ -38,11 +40,13 @@
             <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                 <Button Grid.Column="0"
                         Text="Cancel"
+                        AutomationId="QuickAdd_Btn_Cancel"
                         Style="{StaticResource GhostButton}"
                         Command="{Binding CancelCommand}"
                         HorizontalOptions="Fill" />
                 <Button Grid.Column="1"
                         Text="Add"
+                        AutomationId="QuickAdd_Btn_Add"
                         Command="{Binding SaveCommand}"
                         HorizontalOptions="Fill" />
             </Grid>

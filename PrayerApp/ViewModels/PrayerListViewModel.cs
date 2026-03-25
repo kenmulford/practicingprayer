@@ -26,7 +26,11 @@ namespace PrayerApp.ViewModels
         public bool IsLoading
         {
             get => _isLoading;
-            set => SetProperty(ref _isLoading, value);
+            set
+            {
+                if (SetProperty(ref _isLoading, value))
+                    SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
+            }
         }
 
         // requestId → set of tagIds assigned to that request (for chip filter)
@@ -144,8 +148,10 @@ namespace PrayerApp.ViewModels
             }
             finally
             {
-                IsLoading = false;
                 _suppressAnnounce = false;
+                IsLoading = false;
+                // The specific "Showing N prayers" announce fires via ApplyFilter
+                // when the user changes filters (not suppressed at that point).
             }
         }
 

@@ -25,6 +25,7 @@
         <CollectionView
             Grid.Row="0"
             x:Name="cardCollection"
+            AutomationId="Cards_List_Cards"
             ItemsSource="{Binding AllPrayerCards}"
             Margin="12,8"
             SelectionMode="None">

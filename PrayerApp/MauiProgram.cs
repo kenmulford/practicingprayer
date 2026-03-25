@@ -44,12 +44,12 @@ namespace PrayerApp
 #if ANDROID
                 config.AddAndroid(android =>
                 {
-                    android.AddChannel(new Plugin.LocalNotification.AndroidOption.NotificationChannelRequest
+                    android.AddChannel(new Plugin.LocalNotification.Core.Models.AndroidOption.AndroidNotificationChannelRequest
                     {
-                        Id = "prayer_reminders",
+                        Id = LocalNotificationCenterWrapper.PrayerRemindersChannelId,
                         Name = "Prayer Reminders",
                         Description = "Scheduled prayer reminder notifications",
-                        Importance = Plugin.LocalNotification.AndroidOption.AndroidImportance.High,
+                        Importance = Plugin.LocalNotification.Core.Models.AndroidOption.AndroidImportance.High,
                         EnableSound = true,
                         EnableVibration = true
                     });
