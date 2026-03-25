@@ -4,7 +4,7 @@
              x:Class="PrayerApp.Views.Onboarding.OnboardingBanner"
              IsVisible="False">
 
-    <Border BackgroundColor="{StaticResource Tertiary}"
+    <Border BackgroundColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource SurfaceDark}}"
             StrokeThickness="0">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="12,12,0,0" />
@@ -15,7 +15,7 @@
             <!-- Step indicator -->
             <Label x:Name="StepLabel"
                    Grid.Row="0"
-                   TextColor="{StaticResource WarmGold}"
+                   TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
                    FontSize="11"
                    FontAttributes="Bold"
                    CharacterSpacing="1" />
@@ -23,7 +23,7 @@
             <!-- Headline -->
             <Label x:Name="HeadlineLabel"
                    Grid.Row="1"
-                   TextColor="{StaticResource White}"
+                   TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource TextPrimaryDark}}"
                    FontSize="15"
                    FontAttributes="Bold"
                    LineBreakMode="WordWrap" />
@@ -33,14 +33,14 @@
 
                 <Label x:Name="SubLabel"
                        Grid.Column="0"
-                       TextColor="{StaticResource Gray200}"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TextSecondaryDark}}"
                        FontSize="13"
                        LineBreakMode="WordWrap" />
 
                 <Label x:Name="SkipLabel"
                        Grid.Column="1"
                        Text="Skip tour"
-                       TextColor="{StaticResource Gray300}"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}"
                        FontSize="12"
                        VerticalOptions="End">
                     <Label.GestureRecognizers>

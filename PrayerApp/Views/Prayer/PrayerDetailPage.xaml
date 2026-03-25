@@ -25,14 +25,14 @@
                     <Label Text="{Binding Title}"
                            FontSize="22"
                            FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Details -->
                     <Label Text="{Binding Details, FallbackValue='No details added.'}"
                            FontSize="15"
-                           TextColor="{AppThemeBinding Light={StaticResource OffBlack}, Dark={StaticResource White}}" />
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
 
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
@@ -241,8 +241,8 @@
                          a definite frame; without it, CollectionView reports zero
                          intrinsic height inside a page-level ScrollView. -->
                     <Border IsVisible="{Binding HasSuggestions}"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                             StrokeShape="RoundRectangle 6"
                             Padding="0">
                         <CollectionView ItemsSource="{Binding SuggestedTags}"

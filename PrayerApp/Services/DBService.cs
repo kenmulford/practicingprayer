@@ -278,9 +278,9 @@ namespace PrayerApp.Services
         {
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
-            var result = await _db.ExecuteScalarAsync<string>(
+            var result = await _db.ExecuteScalarAsync<long?>(
                 "SELECT MAX(InteractionAt) FROM PrayerInteraction");
-            return result is not null ? DateTime.Parse(result) : null;
+            return result.HasValue ? new DateTime(result.Value) : null;
         }
 
         public async Task<int> DeleteInteractionsByPrayerIdAsync(int prayerId)

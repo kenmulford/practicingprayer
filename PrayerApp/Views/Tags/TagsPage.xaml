@@ -14,7 +14,7 @@
     <!-- Loading indicator -->
     <ActivityIndicator IsRunning="{Binding IsLoading}"
                        IsVisible="{Binding IsLoading}"
-                       Color="{StaticResource Primary}"
+                       Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                        HorizontalOptions="Center"
                        VerticalOptions="Center" />
 
@@ -41,7 +41,7 @@
                     <SwipeView.LeftItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="{StaticResource Primary}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                                 Command="{Binding EditCommand}"
                                 SemanticProperties.Description="Edit tag"
                                 Text="Edit" />
@@ -50,7 +50,7 @@
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="{StaticResource DangerRed}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
                                 Command="{Binding DeleteCommand}"
                                 SemanticProperties.Description="Delete tag"
                                 Text="Delete" />
@@ -85,14 +85,14 @@
                         <Border
                             Grid.Column="2"
                             IsVisible="{Binding IsSystem}"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                             StrokeShape="RoundRectangle 8"
                             Padding="6,2"
                             VerticalOptions="Center">
                             <Label Text="System"
                                    FontSize="11"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </Border>
 
                         <!-- Chevron hint -->
@@ -100,7 +100,7 @@
                             Grid.Column="3"
                             Text="›"
                             FontSize="18"
-                            TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray500}}"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}"
                             VerticalOptions="Center" />
                     </Grid>
                 </SwipeView>
@@ -113,7 +113,7 @@
                 HorizontalOptions="Center"
                 HorizontalTextAlignment="Center"
                 Margin="40,40"
-                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
         </CollectionView.EmptyView>
     </CollectionView>
 

@@ -30,12 +30,12 @@
                         FontSize="13">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="True">
-                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor"       Value="{StaticResource White}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="False">
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
-                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                         </DataTrigger>
                     </Button.Triggers>
                 </Button>
@@ -47,12 +47,12 @@
                         FontSize="13">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="True">
-                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor"       Value="{StaticResource White}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="False">
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
-                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                         </DataTrigger>
                     </Button.Triggers>
                 </Button>
@@ -64,12 +64,12 @@
                         FontSize="13">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="True">
-                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor"       Value="{StaticResource White}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
                         </DataTrigger>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="False">
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}" />
-                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}" />
+                            <Setter Property="TextColor"       Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                         </DataTrigger>
                     </Button.Triggers>
                 </Button>
@@ -101,12 +101,12 @@
                                 </Border.GestureRecognizers>
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                                        <Setter Property="Stroke"          Value="{StaticResource Primary}" />
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                        <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
                                     </DataTrigger>
                                     <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
-                                        <Setter Property="BackgroundColor" Value="Transparent" />
-                                        <Setter Property="Stroke"          Value="{StaticResource Primary}" />
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
+                                        <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
                                     </DataTrigger>
                                 </Border.Triggers>
                                 <Label Text="{Binding Tag.Name}"
@@ -114,10 +114,10 @@
                                        VerticalOptions="Center">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
-                                            <Setter Property="TextColor" Value="{StaticResource White}" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
                                         </DataTrigger>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="False">
-                                            <Setter Property="TextColor" Value="{StaticResource Primary}" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
                                         </DataTrigger>
                                     </Label.Triggers>
                                 </Label>
@@ -142,7 +142,7 @@
                     <!-- Spinner while loading -->
                     <ActivityIndicator IsRunning="{Binding IsLoading}"
                                        IsVisible="{Binding IsLoading}"
-                                       Color="{StaticResource Primary}"
+                                       Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                                        HorizontalOptions="Center" />
                     <!-- Empty message after load -->
                     <Label Text="No prayers match your filters."

@@ -19,8 +19,6 @@
 
                 <Button x:Name="BtnPrayerTime"
                         Text="Prayer Time"
-                        BackgroundColor="{StaticResource Primary}"
-                        TextColor="{StaticResource White}"
                         SemanticProperties.Hint="Start a prayer session"
                         HorizontalOptions="Fill" />
 
@@ -43,7 +41,7 @@
                             <Label Text="{Binding OverdueHeadline}"
                                    FontSize="18"
                                    FontAttributes="Bold"
-                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                    VerticalOptions="Center" />
 
                             <!-- Chevron only visible when there are overdue items -->
@@ -86,7 +84,7 @@
                                                    Text="{Binding PrayerTitle}"
                                                    FontSize="14"
                                                    FontAttributes="Bold"
-                                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                                    VerticalOptions="Center" />
                                         </Grid>
                                     </DataTemplate>

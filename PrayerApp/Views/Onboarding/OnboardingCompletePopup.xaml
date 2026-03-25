@@ -5,8 +5,8 @@
                x:Class="PrayerApp.Views.Onboarding.OnboardingCompletePopup"
                CanBeDismissedByTappingOutsideOfPopup="False">
 
-    <Border BackgroundColor="{StaticResource Secondary}"
-            Stroke="{StaticResource Primary}"
+    <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}"
             StrokeThickness="1"
             Margin="24,0">
         <Border.StrokeShape>
@@ -18,20 +18,18 @@
             <Label Text="You're all set!"
                    FontSize="22"
                    FontAttributes="Bold"
-                   TextColor="{StaticResource Tertiary}"
+                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
             <Label Text="Enjoy the app!"
                    FontSize="15"
-                   TextColor="{StaticResource Gray500}"
+                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
             <Button x:Name="BtnDone"
                     Text="Done"
-                    BackgroundColor="{StaticResource Primary}"
-                    TextColor="{StaticResource White}"
                     Margin="0,8,0,0" />
 
         </VerticalStackLayout>

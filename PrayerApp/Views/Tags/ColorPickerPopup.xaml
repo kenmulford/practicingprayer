@@ -5,8 +5,8 @@
                x:Class="PrayerApp.Views.Tags.ColorPickerPopup">
 
     <Border StrokeShape="RoundRectangle 12"
-            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
-            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+            BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
             WidthRequest="320"
             Padding="16">
         <VerticalStackLayout Spacing="12">
@@ -35,7 +35,7 @@
                        HorizontalOptions="Fill" />
                 <Border Grid.Column="1"
                         StrokeShape="RoundRectangle 4"
-                        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+                        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                         WidthRequest="44"
                         HeightRequest="44"
                         Padding="0">
