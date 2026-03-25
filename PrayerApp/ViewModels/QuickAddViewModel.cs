@@ -4,6 +4,7 @@ using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels;
@@ -49,8 +50,10 @@ public class QuickAddViewModel : ObservableObject
             Cards.Clear();
             foreach (var card in cards)
                 Cards.Add(card);
+
+            // Prefer the system "Quick Add" card as default selection
             if (Cards.Count > 0)
-                SelectedCard = Cards[0];
+                SelectedCard = Cards.FirstOrDefault(c => c.IsSystem) ?? Cards[0];
         }
         catch (Exception ex)
         {
@@ -79,6 +82,7 @@ public class QuickAddViewModel : ObservableObject
         };
         await _prayerService.SavePrayerAsync(prayer);
         _prayerService.InvalidateCache();
+        SemanticScreenReader.Announce("Prayer saved");
         await Shell.Current.Navigation.PopModalAsync();
     }
 

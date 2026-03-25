@@ -7,10 +7,12 @@
              xmlns:models="clr-namespace:PrayerApp.Models"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Name="page"
-             Title="Prayer Request">
+             Title="Prayer Request"
+             SafeAreaEdges="Container">
     <ContentPage.BindingContext>
         <viewModels:PrayerRequestDetailViewModel />
     </ContentPage.BindingContext>
+
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
         <VerticalStackLayout Padding="12,8" Spacing="16">
@@ -25,14 +27,15 @@
                     <Label Text="{Binding Title}"
                            FontSize="22"
                            FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                           SemanticProperties.HeadingLevel="Level1"
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Details -->
                     <Label Text="{Binding Details, FallbackValue='No details added.'}"
                            FontSize="15"
-                           TextColor="{AppThemeBinding Light={StaticResource OffBlack}, Dark={StaticResource White}}" />
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
 
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
@@ -75,23 +78,13 @@
                     </FlexLayout>
 
                     <!-- Action Buttons -->
-                    <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="8" RowSpacing="8">
-                        <Button Grid.Row="0" Grid.Column="0"
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                        <Button Grid.Column="0"
                                 Text="Share"
                                 Style="{StaticResource SmallActionButton}"
                                 Command="{Binding ShareCommand}"
                                 HorizontalOptions="Fill" />
-                        <Button Grid.Row="0" Grid.Column="1"
-                                Text="Edit"
-                                Style="{StaticResource SmallActionButton}"
-                                Command="{Binding EditPrayerCommand}"
-                                HorizontalOptions="Fill" />
-                        <Button Grid.Row="1" Grid.Column="0"
-                                Text="Delete"
-                                Style="{StaticResource DangerButton}"
-                                Command="{Binding DeleteCommand}"
-                                HorizontalOptions="Fill" />
-                        <Button Grid.Row="1" Grid.Column="1"
+                        <Button Grid.Column="1"
                                 Text="Mark Answered"
                                 Style="{StaticResource AnsweredButton}"
                                 Command="{Binding MarkAnsweredCommand}"
@@ -108,48 +101,81 @@
                     IsVisible="{Binding IsEditable}">
                 <VerticalStackLayout Spacing="12">
 
+                    <!-- Prayer Card -->
+                    <Label Text="Prayer Card"
+                           Style="{StaticResource FormLabel}" />
+                    <Picker Title="Select Card"
+                            ItemsSource="{Binding AvailableCards}"
+                            SelectedItem="{Binding SelectedCard}"
+                            ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
+                            SemanticProperties.Hint="Which prayer card this request belongs to"
+                            HorizontalOptions="Fill" />
+
                     <!-- Title -->
                     <Label Text="Title"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Entry x:Name="TitleEntry"
-                               Text="{Binding Title}"
-                               Placeholder="Prayer title"
-                               SemanticProperties.Hint="Prayer request title"
-                               HorizontalOptions="Fill" />
-                    </Border>
+                    <Entry x:Name="TitleEntry"
+                           Text="{Binding Title}"
+                           Placeholder="Prayer title"
+                           SemanticProperties.Hint="Prayer request title"
+                           HorizontalOptions="Fill" />
 
                     <!-- Details -->
                     <Label Text="Details"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,4">
-                        <Editor Text="{Binding Details}"
-                                Placeholder="Add details..."
-                                SemanticProperties.Hint="Prayer request details or Scripture reference"
-                                HeightRequest="100"
-                                HorizontalOptions="Fill" />
-                    </Border>
+                    <Editor Text="{Binding Details}"
+                            Placeholder="Add details..."
+                            SemanticProperties.Hint="Prayer request details or Scripture reference"
+                            HeightRequest="100"
+                            HorizontalOptions="Fill" />
 
-                    <!-- Frequency -->
-                    <Label Text="Frequency"
-                           Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Picker Title="Select Frequency"
-                                ItemsSource="{Binding FrequencyOptions}"
-                                ItemDisplayBinding="{Binding .}"
-                                SelectedItem="{Binding PrayerFrequency}"
-                                SemanticProperties.Hint="How often to be reminded"
-                                HorizontalOptions="Fill" />
-                    </Border>
+                    <!-- Scheduling group -->
+                    <Border Style="{StaticResource PrayerCardBorder}" Padding="16" Margin="0,-4,0,0">
+                        <VerticalStackLayout Spacing="10">
+                            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                                <Label Text="Reminders"
+                                       Style="{StaticResource SectionHeading}"
+                                       VerticalOptions="Center" />
+                                <Switch Grid.Column="1"
+                                        IsToggled="{Binding CanNotify}"
+                                        SemanticProperties.Description="Enable reminders for this request"
+                                        VerticalOptions="Center" />
+                            </Grid>
 
-                    <!-- Notifications Switch -->
-                    <HorizontalStackLayout Spacing="10">
-                        <Label Text="Notifications"
-                               VerticalOptions="Center" />
-                        <Switch IsToggled="{Binding CanNotify}"
-                                SemanticProperties.Description="Enable reminders for this request"
-                                VerticalOptions="Center" />
-                    </HorizontalStackLayout>
+                            <!-- Frequency (visible when notifications enabled) -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
+                                <Label Text="Frequency" Style="{StaticResource FormLabel}" />
+                                <Picker Title="Select Frequency"
+                                        ItemsSource="{Binding FrequencyOptions}"
+                                        ItemDisplayBinding="{Binding ., x:DataType=x:String}"
+                                        SelectedItem="{Binding PrayerFrequency}"
+                                        SemanticProperties.Hint="How often to be reminded"
+                                        HorizontalOptions="Fill" />
+                            </VerticalStackLayout>
+
+                            <!-- Reminder Time -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
+                                <Label Text="Reminder Time" Style="{StaticResource FormLabel}" />
+                                <TimePicker Time="{Binding NotifyTime}" />
+                            </VerticalStackLayout>
+
+                            <!-- Day of Week (Weekly only) -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfWeek}">
+                                <Label Text="Day of Week" Style="{StaticResource FormLabel}" />
+                                <Picker ItemsSource="{Binding DaysOfWeek}"
+                                        SelectedItem="{Binding SelectedDayOfWeek}"
+                                        Title="Select Day" />
+                            </VerticalStackLayout>
+
+                            <!-- Day of Month (Monthly only) -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfMonth}">
+                                <Label Text="Day of Month" Style="{StaticResource FormLabel}" />
+                                <Picker ItemsSource="{Binding DaysOfMonth}"
+                                        SelectedItem="{Binding SelectedDayOfMonth}"
+                                        Title="Select Day" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
 
                     <!-- Answered Switch -->
                     <HorizontalStackLayout Spacing="10">
@@ -180,14 +206,17 @@
                                                TextColor="{StaticResource White}"
                                                FontSize="12"
                                                VerticalOptions="Center" />
-                                        <Label Text="×"
-                                               TextColor="{StaticResource White}"
-                                               FontSize="14"
-                                               VerticalOptions="Center">
-                                            <Label.GestureRecognizers>
-                                                <TapGestureRecognizer Command="{Binding RemoveCommand}" />
-                                            </Label.GestureRecognizers>
-                                        </Label>
+                                        <Button Text="×"
+                                                SemanticProperties.Description="Remove tag"
+                                                Command="{Binding RemoveCommand}"
+                                                TextColor="{StaticResource White}"
+                                                BackgroundColor="Transparent"
+                                                FontSize="14"
+                                                Padding="2,0"
+                                                BorderWidth="0"
+                                                MinimumWidthRequest="24"
+                                                MinimumHeightRequest="24"
+                                                VerticalOptions="Center" />
                                     </HorizontalStackLayout>
                                 </Border>
                             </DataTemplate>
@@ -195,51 +224,45 @@
                     </FlexLayout>
 
                     <!-- Tag search entry -->
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Entry Text="{Binding TagSearchText}"
-                               Placeholder="Add tags..."
-                               ReturnCommand="{Binding SubmitTagEntryCommand}"
-                               HorizontalOptions="Fill" />
-                    </Border>
+                    <Entry x:Name="tagEntry"
+                           Text="{Binding TagSearchText}"
+                           Placeholder="Add tags..."
+                           ReturnCommand="{Binding SubmitTagEntryCommand}"
+                           ReturnType="Done"
+                           Completed="OnTagEntryCompleted"
+                           HorizontalOptions="Fill" />
 
-                    <!-- Suggestions list -->
+                    <!-- Suggestions list — CollectionView provides both tap (via
+                         SelectionChanged) and scrolling. HeightRequest gives iOS
+                         a definite frame; without it, CollectionView reports zero
+                         intrinsic height inside a page-level ScrollView. -->
                     <Border IsVisible="{Binding HasSuggestions}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                             StrokeShape="RoundRectangle 6"
                             Padding="0">
-                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedTags}"
-                                             Spacing="0">
-                            <BindableLayout.ItemTemplate>
+                        <CollectionView ItemsSource="{Binding SuggestedTags}"
+                                        SelectionMode="Single"
+                                        SelectionChanged="OnSuggestionSelected"
+                                        HeightRequest="180">
+                            <CollectionView.ItemTemplate>
                                 <DataTemplate x:DataType="models:PrayerTag">
-                                    <Grid Padding="12,10"
-                                          BackgroundColor="Transparent">
-                                        <Grid.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}}"
-                                                CommandParameter="{Binding Id}" />
-                                        </Grid.GestureRecognizers>
-                                        <Label Text="{Binding Name}" FontSize="14" />
+                                    <Grid Padding="14,12">
+                                        <Label Text="{Binding Name}" FontSize="15" />
                                     </Grid>
                                 </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
                     </Border>
 
                     <!-- Divider before action buttons -->
                     <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
-                    <!-- Save / Delete Buttons -->
-                    <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
-                        <Button Grid.Column="0"
-                                Text="Delete"
-                                Command="{Binding DeleteCommand}"
-                                Style="{StaticResource DangerButton}"
-                                HorizontalOptions="Fill" />
-                        <Button Grid.Column="1"
-                                Text="Save"
-                                Command="{Binding SaveCommand}"
-                                HorizontalOptions="Fill" />
-                    </Grid>
+                    <!-- Delete Button — Save is in the navbar -->
+                    <Button Text="Delete"
+                            Command="{Binding DeleteCommand}"
+                            Style="{StaticResource DangerButton}"
+                            HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>
             </Border>

@@ -19,6 +19,7 @@ namespace PrayerApp.ViewModels
         private Prayer _prayer;
         private readonly IPrayerService _prayerService;
         private readonly ITagService _tagService;
+        private readonly ICardService _cardService;
         private readonly IOnboardingService _onboardingService;
         private readonly INotificationService _notificationService;
         private List<PrayerTag> _allTags = new();
@@ -51,6 +52,7 @@ namespace PrayerApp.ViewModels
 
         private string _savedQueryKey = "saved";
         private string _deletedQueryKey = "deleted";
+        private int _originalCardId;
         public bool ReturnToCards { get; set; }
 
         private bool _isReadOnly;
@@ -135,6 +137,9 @@ namespace PrayerApp.ViewModels
                 {
                     _prayer.CanNotify = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(ShowNotifyTime));
+                    OnPropertyChanged(nameof(ShowDayOfWeek));
+                    OnPropertyChanged(nameof(ShowDayOfMonth));
                     // Request OS permission immediately when user enables notifications here
                     // (e.g. during tutorial) rather than waiting for Settings page visit.
                     if (value) Services.Settings.EnsureNotificationPermissionRequested();
@@ -152,11 +157,91 @@ namespace PrayerApp.ViewModels
                     _prayer.PrayerFrequency = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+                    OnPropertyChanged(nameof(ShowDayOfWeek));
+                    OnPropertyChanged(nameof(ShowDayOfMonth));
+
+                    // Materialize defaults so the displayed Picker value matches
+                    // what actually gets saved (avoids -1 sentinel persisting).
+                    if (value == PrayerFrequency.Weekly && _prayer.NotifyDayOfWeek < 0)
+                        SelectedDayOfWeek = DaysOfWeek[(int)DateTime.Now.DayOfWeek];
+                    if (value == PrayerFrequency.Monthly && _prayer.NotifyDayOfMonth <= 0)
+                        SelectedDayOfMonth = DateTime.Now.Day;
                 }
             }
         }
 
-        public string PrayerFrequencyDisplay => PrayerFrequency.ToString();
+        public string PrayerFrequencyDisplay
+        {
+            get
+            {
+                var time = new TimeSpan(_prayer.NotifyHour, _prayer.NotifyMinute, 0);
+                var timeStr = DateTime.Today.Add(time).ToString("h:mm tt");
+                return PrayerFrequency switch
+                {
+                    PrayerFrequency.Daily => $"Daily at {timeStr}",
+                    PrayerFrequency.Weekly when _prayer.NotifyDayOfWeek >= 0 =>
+                        $"Weekly on {DaysOfWeek[_prayer.NotifyDayOfWeek]} at {timeStr}",
+                    PrayerFrequency.Weekly => $"Weekly at {timeStr}",
+                    PrayerFrequency.Monthly when _prayer.NotifyDayOfMonth > 0 =>
+                        $"Monthly on the {OrdinalSuffix(_prayer.NotifyDayOfMonth)} at {timeStr}",
+                    PrayerFrequency.Monthly => $"Monthly at {timeStr}",
+                    PrayerFrequency.Yearly => $"Yearly at {timeStr}",
+                    PrayerFrequency.OneTime => $"Once at {timeStr}",
+                    _ => PrayerFrequency.ToString()
+                };
+            }
+        }
+
+        public TimeSpan NotifyTime
+        {
+            get => new TimeSpan(_prayer.NotifyHour, _prayer.NotifyMinute, 0);
+            set
+            {
+                _prayer.NotifyHour = value.Hours;
+                _prayer.NotifyMinute = value.Minutes;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            }
+        }
+
+        public bool ShowNotifyTime => CanNotify;
+        public bool ShowDayOfWeek => CanNotify && PrayerFrequency == PrayerFrequency.Weekly;
+        public bool ShowDayOfMonth => CanNotify && PrayerFrequency == PrayerFrequency.Monthly;
+
+        public List<string> DaysOfWeek { get; } =
+            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        public string? SelectedDayOfWeek
+        {
+            get => _prayer.NotifyDayOfWeek >= 0 ? DaysOfWeek[_prayer.NotifyDayOfWeek] : null;
+            set
+            {
+                _prayer.NotifyDayOfWeek = value != null ? DaysOfWeek.IndexOf(value) : -1;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            }
+        }
+
+        public IReadOnlyList<int> DaysOfMonth { get; } = Enumerable.Range(1, 31).ToList();
+
+        public int SelectedDayOfMonth
+        {
+            get => _prayer.NotifyDayOfMonth > 0 ? _prayer.NotifyDayOfMonth : DateTime.Now.Day;
+            set
+            {
+                _prayer.NotifyDayOfMonth = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            }
+        }
+
+        private static string OrdinalSuffix(int day) => day switch
+        {
+            1 or 21 or 31 => $"{day}st",
+            2 or 22 => $"{day}nd",
+            3 or 23 => $"{day}rd",
+            _ => $"{day}th"
+        };
 
         public bool IsAnswered
         {
@@ -192,6 +277,22 @@ namespace PrayerApp.ViewModels
             set => SetProperty(ref _cardTitle, value);
         }
 
+        public ObservableCollection<PrayerCard> AvailableCards { get; } = new();
+
+        private PrayerCard? _selectedCard;
+        public PrayerCard? SelectedCard
+        {
+            get => _selectedCard;
+            set
+            {
+                if (SetProperty(ref _selectedCard, value) && value is not null)
+                {
+                    PrayerCardId = value.Id;
+                    CardTitle = value.Title ?? string.Empty;
+                }
+            }
+        }
+
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
@@ -200,6 +301,7 @@ namespace PrayerApp.ViewModels
             _prayer = new Prayer();
             _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
             _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
+            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
             _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
             _notificationService = IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
@@ -243,15 +345,20 @@ namespace PrayerApp.ViewModels
             if (_prayer.CanNotify)
                 await _notificationService.ScheduleAsync(_prayer);
             else
-                await _notificationService.CancelAsync(_prayer.Id);
+                await _notificationService.CancelAsync(_prayer.Id, _prayer.PrayerFrequency);
             if (isNew)
                 _onboardingService.Advance(); // NameRequest → PrayerTime
+            SemanticScreenReader.Announce("Prayer saved");
             if (ReturnToCards)
             {
                 // New prayers: stack is Cards→Edit (1 level back)
                 // Existing prayers: stack is Cards→View→Edit (2 levels back)
                 string route = isNew ? ".." : "../..";
-                await Shell.Current.GoToAsync($"{route}?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+                bool cardChanged = !isNew && _originalCardId != 0 && _originalCardId != PrayerCardId;
+                var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
+                if (cardChanged)
+                    queryParts += $"&oldCardId={_originalCardId}";
+                await Shell.Current.GoToAsync($"{route}?{queryParts}");
             }
             else
             {
@@ -269,6 +376,7 @@ namespace PrayerApp.ViewModels
             if (!confirmed) return;
 
             await _prayerService.DeletePrayerAsync(_prayer);
+            SemanticScreenReader.Announce("Prayer deleted");
             if (ReturnToCards)
             {
                 await Shell.Current.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");
@@ -308,7 +416,16 @@ namespace PrayerApp.ViewModels
             IsAnswered = true;
             await _notificationService.CancelAsync(_prayer.Id);
             await _prayerService.SavePrayerAsync(_prayer);
-            RefreshProperties();
+
+            // Navigate back so parent page (list or card accordion) picks up the change
+            if (ReturnToCards)
+            {
+                await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+            }
+            else
+            {
+                await Shell.Current.GoToAsync($"..?{_savedQueryKey}={Identifier}");
+            }
         }
 
         private async Task ShareAsync()
@@ -325,14 +442,31 @@ namespace PrayerApp.ViewModels
             {
                 if (int.TryParse(query["newForCard"].ToString(), out int cardId))
                 {
-                    _prayer = new Prayer { PrayerCardId = cardId };
+                    _prayer = new Prayer
+                    {
+                        PrayerCardId = cardId,
+                        NotifyHour = Services.Settings.DefaultNotifyHour,
+                        NotifyMinute = Services.Settings.DefaultNotifyMinute
+                    };
                     ReturnToCards = true;
                     _savedQueryKey = "prayerSaved";
                     _deletedQueryKey = "prayerDeleted";
                     IsReadOnly = false;
                     RefreshProperties();
-                    LoadTagsAsync().SafeFireAndForget();
+                    InitNewPrayerAsync().SafeFireAndForget();
                 }
+            }
+            else if (query.ContainsKey("new"))
+            {
+                // New prayer from the prayer list (no card pre-selected)
+                _prayer = new Prayer
+                {
+                    NotifyHour = Services.Settings.DefaultNotifyHour,
+                    NotifyMinute = Services.Settings.DefaultNotifyMinute
+                };
+                IsReadOnly = false;
+                RefreshProperties();
+                InitNewPrayerAsync().SafeFireAndForget();
             }
             else if (query.ContainsKey("load"))
             {
@@ -383,6 +517,7 @@ namespace PrayerApp.ViewModels
                     return;
                 }
                 _prayer = result;
+                _originalCardId = result.PrayerCardId;
             }
             catch (Exception e)
             {
@@ -390,12 +525,31 @@ namespace PrayerApp.ViewModels
                 return;
             }
             RefreshProperties();
+            await LoadCardsAsync();
             await LoadTagsAsync();
         }
 
         public void Reload()
         {
             LoadPrayerAsync(_prayer.Id).SafeFireAndForget();
+        }
+
+        private async Task InitNewPrayerAsync()
+        {
+            await LoadCardsAsync();
+            await LoadTagsAsync();
+        }
+
+        private async Task LoadCardsAsync()
+        {
+            var cards = await _cardService.GetCardsAsync();
+            AvailableCards.Clear();
+            foreach (var card in cards)
+                AvailableCards.Add(card);
+
+            // Set SelectedCard to the current prayer's card
+            _selectedCard = AvailableCards.FirstOrDefault(c => c.Id == _prayer.PrayerCardId);
+            OnPropertyChanged(nameof(SelectedCard));
         }
 
         private async Task LoadTagsAsync()
@@ -423,7 +577,7 @@ namespace PrayerApp.ViewModels
 
             var assignedIds = SelectedTags.Select(t => t.Id).ToHashSet();
             var filtered = _allTags
-                .Where(t => !assignedIds.Contains(t.Id) &&
+                .Where(t => !t.IsSystem && !assignedIds.Contains(t.Id) &&
                             (t.Name?.Contains(_tagSearchText, StringComparison.OrdinalIgnoreCase) ?? false))
                 .OrderBy(t => t.Name)
                 .Take(6);
@@ -499,6 +653,12 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Identifier));
             OnPropertyChanged(nameof(PrayerFrequency));
             OnPropertyChanged(nameof(PrayerFrequencyDisplay));
+            OnPropertyChanged(nameof(NotifyTime));
+            OnPropertyChanged(nameof(ShowNotifyTime));
+            OnPropertyChanged(nameof(ShowDayOfWeek));
+            OnPropertyChanged(nameof(ShowDayOfMonth));
+            OnPropertyChanged(nameof(SelectedDayOfWeek));
+            OnPropertyChanged(nameof(SelectedDayOfMonth));
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(IsEditable));
             OnPropertyChanged(nameof(IsNotAnswered));

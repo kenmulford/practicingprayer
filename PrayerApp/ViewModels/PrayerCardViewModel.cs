@@ -81,9 +81,12 @@ namespace PrayerApp.ViewModels
                 {
                     _isExpanded = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(ShowBadge));
                 }
             }
         }
+
+        public bool IsSystem => _prayerCard.IsSystem;
 
         public bool IsAnswered
         {
@@ -97,6 +100,16 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
+
+        private int _activePrayerCount;
+        public int ActivePrayerCount
+        {
+            get => _activePrayerCount;
+            set => SetProperty(ref _activePrayerCount, value);
+        }
+
+        /// <summary>Show the count badge when the card is collapsed.</summary>
+        public bool ShowBadge => !IsExpanded;
 
         public ObservableCollection<PrayerRequestDetailViewModel> Prayers { get; }
 
@@ -125,6 +138,16 @@ namespace PrayerApp.ViewModels
         public PrayerCardViewModel(PrayerCard pc) : this()
         {
             _prayerCard = pc;
+            LoadActivePrayerCountAsync().SafeFireAndForget();
+        }
+
+        private async Task LoadActivePrayerCountAsync()
+        {
+            // When prayers are already loaded locally, derive count without a service call
+            if (_prayersLoaded)
+                ActivePrayerCount = Prayers.Count(p => !p.IsAnswered);
+            else
+                ActivePrayerCount = await _prayerService.GetActivePrayerCountByCardAsync(_prayerCard.Id);
         }
 
         #endregion
@@ -137,11 +160,14 @@ namespace PrayerApp.ViewModels
             await _cardService.SaveCardAsync(_prayerCard);
             if (isNew)
                 _onboardingService.Advance(); // NameCard → AddRequest
+            SemanticScreenReader.Announce("Card saved");
             await Shell.Current.GoToAsync($"..?saved={Identifier}");
         }
 
         private async Task DeleteAsync()
         {
+            if (_prayerCard.IsSystem) return;
+
             int prayerCount = Prayers.Count;
             string detail = prayerCount > 0
                 ? $"Delete \"{Title}\"? This will also delete {prayerCount} prayer request{(prayerCount == 1 ? "" : "s")}."
@@ -156,11 +182,13 @@ namespace PrayerApp.ViewModels
             foreach (var prayer in prayers)
                 await _prayerService.DeletePrayerAsync(prayer);
             await _cardService.DeleteCardAsync(_prayerCard);
+            SemanticScreenReader.Announce("Card deleted");
             await Shell.Current.GoToAsync($"..?deleted={Identifier}");
         }
 
         private async Task SelectPrayerCardAsync()
         {
+            if (_prayerCard.IsSystem) return;
             await Shell.Current.GoToAsync($"{nameof(PrayerCardPage)}?load={Identifier}");
         }
 
@@ -235,6 +263,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Id));
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
+            OnPropertyChanged(nameof(IsSystem));
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
         }
@@ -245,7 +274,11 @@ namespace PrayerApp.ViewModels
             {
                 var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
                 Prayers.Clear();
-                foreach (var prayer in prayers.OrderBy(p => p.Title))
+                foreach (var prayer in prayers
+                                            .OrderBy(p => p.IsAnswered)
+                                            .ThenByDescending(p => p.AnsweredAt ?? DateTime.MinValue)
+                                            .ThenBy(p => p.Title)
+                )
                 {
                     var viewModel = new PrayerRequestDetailViewModel(prayer)
                     {
@@ -293,6 +326,7 @@ namespace PrayerApp.ViewModels
                 .Count();
             Prayers.Insert(insertIndex, viewModel);
             OnPropertyChanged(nameof(HasPrayers));
+            LoadActivePrayerCountAsync().SafeFireAndForget();
         }
 
         public void RemovePrayer(int prayerId)
@@ -307,6 +341,7 @@ namespace PrayerApp.ViewModels
             {
                 Prayers.Remove(existing);
                 OnPropertyChanged(nameof(HasPrayers));
+                LoadActivePrayerCountAsync().SafeFireAndForget();
             }
         }
 

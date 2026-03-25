@@ -38,6 +38,25 @@ public class TagServiceTests
     }
 
     [Fact]
+    public async Task GetTagsAsync_SystemTagsSortedFirst()
+    {
+        var tags = new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Work" },
+            new() { Id = 2, Name = "Family" },
+            new() { Id = 3, Name = "Recently Notified", IsSystem = true }
+        };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(tags));
+
+        var result = await _service.GetTagsAsync();
+
+        Assert.Equal("Recently Notified", result[0].Name);
+        Assert.True(result[0].IsSystem);
+        Assert.Equal("Family", result[1].Name);
+        Assert.Equal("Work", result[2].Name);
+    }
+
+    [Fact]
     public async Task GetTagsAsync_SecondCall_UsesCacheNotDatabase()
     {
         _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>()));
@@ -244,4 +263,105 @@ public class TagServiceTests
         Assert.Contains(42, result);
     }
 
+    // ── SeedSystemTagsAsync ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task SeedSystemTagsAsync_CreatesRecentlyNotifiedTag_WhenMissing()
+    {
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>()));
+        _db.InsertAsync(Arg.Any<PrayerTag>()).Returns(Task.FromResult(1));
+
+        await _service.SeedSystemTagsAsync();
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerTag>(t =>
+            t.Name == TagService.RecentlyNotifiedTagName && t.IsSystem == true));
+    }
+
+    [Fact]
+    public async Task SeedSystemTagsAsync_SkipsInsert_WhenTagAlreadyExists()
+    {
+        var existing = new PrayerTag { Id = 1, Name = TagService.RecentlyNotifiedTagName, IsSystem = true };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag> { existing }));
+
+        await _service.SeedSystemTagsAsync();
+
+        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerTag>());
+    }
+
+    // ── GetSystemTagAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetSystemTagAsync_ReturnsTag_WhenExists()
+    {
+        var systemTag = new PrayerTag { Id = 5, Name = TagService.RecentlyNotifiedTagName, IsSystem = true };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Work" },
+            systemTag
+        }));
+
+        var result = await _service.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+
+        Assert.NotNull(result);
+        Assert.Equal(5, result!.Id);
+        Assert.True(result.IsSystem);
+    }
+
+    [Fact]
+    public async Task GetSystemTagAsync_ReturnsNull_WhenNotFound()
+    {
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Work" }
+        }));
+
+        var result = await _service.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+
+        Assert.Null(result);
+    }
+
+    // ── DeleteTagAsync — system tag protection ────────────────────────────
+
+    [Fact]
+    public async Task DeleteTagAsync_SystemTag_RefusesToDelete()
+    {
+        var systemTag = new PrayerTag { Id = 1, Name = TagService.RecentlyNotifiedTagName, IsSystem = true };
+        _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>()));
+        _db.GetByIdAsync<PrayerTag>(1).Returns(Task.FromResult(systemTag));
+
+        await _service.DeleteTagAsync(1);
+
+        await _db.DidNotReceive().DeleteAsync(Arg.Any<PrayerTag>());
+    }
+
+    // ── ReassignColorAsync ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task ReassignColorAsync_UpdatesMatchingTags()
+    {
+        var tag1 = new PrayerTag { Id = 1, Name = "Work", Color = "#FF5500" };
+        var tag2 = new PrayerTag { Id = 2, Name = "Family", Color = "#00FF00" };
+        var tag3 = new PrayerTag { Id = 3, Name = "Urgent", Color = "#FF5500" };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag> { tag1, tag2, tag3 }));
+        _db.UpdateAsync(Arg.Any<PrayerTag>()).Returns(Task.FromResult(1));
+
+        await _service.ReassignColorAsync("#FF5500", "#B84040");
+
+        Assert.Equal("#B84040", tag1.Color);
+        Assert.Equal("#00FF00", tag2.Color); // unchanged
+        Assert.Equal("#B84040", tag3.Color);
+        await _db.Received(2).UpdateAsync(Arg.Any<PrayerTag>());
+    }
+
+    [Fact]
+    public async Task ReassignColorAsync_NoMatches_DoesNotUpdate()
+    {
+        var tag = new PrayerTag { Id = 1, Name = "Work", Color = "#00FF00" };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag> { tag }));
+
+        await _service.ReassignColorAsync("#FF5500", "#B84040");
+
+        Assert.Equal("#00FF00", tag.Color);
+        await _db.DidNotReceive().UpdateAsync(Arg.Any<PrayerTag>());
+    }
 }

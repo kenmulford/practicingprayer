@@ -4,20 +4,37 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Tags.TagDetailPage"
              x:DataType="viewModels:TagDetailViewModel"
-             Title="Tag">
+             Title="Tag"
+             SafeAreaEdges="Container">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save"
+                     Command="{Binding SaveCommand}"
+                     x:DataType="viewModels:TagDetailViewModel" />
+    </ContentPage.ToolbarItems>
 
     <ScrollView>
         <VerticalStackLayout Padding="24,20" Spacing="24">
 
+            <!-- System tag note -->
+            <Border IsVisible="{Binding IsSystem}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceDark}}"
+                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="12,10">
+                <Label Text="This is a system-managed tag. You can change its color, but not its name."
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource TextSecondaryDark}}" />
+            </Border>
+
             <!-- Name field -->
             <VerticalStackLayout Spacing="6">
                 <Label Text="Name" Style="{StaticResource FormLabel}" />
-                <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                    <Entry
-                        Text="{Binding Name}"
-                        Placeholder="Tag name"
-                        ReturnType="Done" />
-                </Border>
+                <Entry
+                    Text="{Binding Name}"
+                    Placeholder="Tag name"
+                    IsReadOnly="{Binding IsSystem}"
+                    ReturnType="Done" />
             </VerticalStackLayout>
 
             <!-- Color picker -->
@@ -33,7 +50,10 @@
                     </BindableLayout.ItemsSource>
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
-                            <Grid WidthRequest="48" HeightRequest="48" Margin="4">
+                            <Grid WidthRequest="48" HeightRequest="48" Margin="4"
+                                  Loaded="OnSwatchLoaded"
+                                  SemanticProperties.Description="{Binding LightHex}"
+                                  SemanticProperties.Hint="Double tap to select, long press to delete">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SelectCommand}" />
                                 </Grid.GestureRecognizers>
@@ -43,17 +63,21 @@
                                     WidthRequest="36"
                                     HeightRequest="36"
                                     HorizontalOptions="Center"
-                                    VerticalOptions="Center" />
+                                    VerticalOptions="Center"
+                                    InputTransparent="True"
+                                    AutomationProperties.IsInAccessibleTree="false" />
                                 <!-- Selected ring -->
                                 <Ellipse
-                                    Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
+                                    Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
                                     StrokeThickness="2"
+                                    AutomationProperties.IsInAccessibleTree="false"
                                     Fill="Transparent"
                                     WidthRequest="40"
                                     HeightRequest="40"
                                     IsVisible="{Binding IsSelected}"
                                     HorizontalOptions="Center"
-                                    VerticalOptions="Center" />
+                                    VerticalOptions="Center"
+                                    InputTransparent="True" />
                             </Grid>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
@@ -61,34 +85,31 @@
 
                 <!-- Add custom color button -->
                 <Grid WidthRequest="48" HeightRequest="48" Margin="4,0,0,0"
-                      HorizontalOptions="Start">
+                      HorizontalOptions="Start"
+                      SemanticProperties.Description="Add custom color"
+                      SemanticProperties.Hint="Double tap to open color picker">
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding AddColorCommand}" />
                     </Grid.GestureRecognizers>
                     <Ellipse
-                        Stroke="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
+                        Stroke="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
                         StrokeThickness="1.5"
                         StrokeDashArray="4,3"
                         Fill="Transparent"
                         WidthRequest="36"
                         HeightRequest="36"
                         HorizontalOptions="Center"
-                        VerticalOptions="Center" />
+                        VerticalOptions="Center"
+                        AutomationProperties.IsInAccessibleTree="false" />
                     <Label Text="+"
                            FontSize="20"
                            FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                           AutomationProperties.IsInAccessibleTree="false"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
                 </Grid>
             </VerticalStackLayout>
-
-            <!-- Save button -->
-            <Button
-                Text="Save"
-                Command="{Binding SaveCommand}"
-                HorizontalOptions="Fill"
-                Margin="0,8,0,0" />
 
         </VerticalStackLayout>
     </ScrollView>

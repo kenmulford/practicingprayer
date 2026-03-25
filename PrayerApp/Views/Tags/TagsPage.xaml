@@ -14,7 +14,7 @@
     <!-- Loading indicator -->
     <ActivityIndicator IsRunning="{Binding IsLoading}"
                        IsVisible="{Binding IsLoading}"
-                       Color="{StaticResource Primary}"
+                       Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                        HorizontalOptions="Center"
                        VerticalOptions="Center" />
 
@@ -27,8 +27,7 @@
             <Label
                 Text="Tags"
                 Style="{StaticResource Headline}"
-                Margin="20,20,20,10"
-                SemanticProperties.HeadingLevel="Level1" />
+                Margin="20,20,20,10" />
         </CollectionView.Header>
 
         <CollectionView.ItemsLayout>
@@ -41,7 +40,7 @@
                     <SwipeView.LeftItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="{StaticResource Primary}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                                 Command="{Binding EditCommand}"
                                 SemanticProperties.Description="Edit tag"
                                 Text="Edit" />
@@ -50,7 +49,7 @@
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="{StaticResource DangerRed}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
                                 Command="{Binding DeleteCommand}"
                                 SemanticProperties.Description="Delete tag"
                                 Text="Delete" />
@@ -59,8 +58,10 @@
 
                     <Grid
                         Padding="20,14"
-                        ColumnDefinitions="14, *, Auto"
-                        ColumnSpacing="12">
+                        ColumnDefinitions="14, *, Auto, Auto"
+                        ColumnSpacing="12"
+                        MinimumHeightRequest="48"
+                        HorizontalOptions="Fill">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding EditCommand}" />
                         </Grid.GestureRecognizers>
@@ -72,21 +73,39 @@
                             HeightRequest="14"
                             CornerRadius="7"
                             BackgroundColor="{Binding DotColor}"
-                            VerticalOptions="Center" />
+                            VerticalOptions="Center"
+                            AutomationProperties.IsInAccessibleTree="false" />
 
                         <!-- Tag name -->
                         <Label
                             Grid.Column="1"
                             Text="{Binding Name}"
                             FontSize="16"
+                            SemanticProperties.Hint="Double tap to edit. Swipe left to delete, right to edit"
+                            LineBreakMode="TailTruncation"
                             VerticalOptions="Center" />
+
+                        <!-- System badge -->
+                        <Border
+                            Grid.Column="2"
+                            IsVisible="{Binding IsSystem}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="6,2"
+                            VerticalOptions="Center">
+                            <Label Text="System"
+                                   FontSize="11"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                        </Border>
 
                         <!-- Chevron hint -->
                         <Label
-                            Grid.Column="2"
+                            Grid.Column="3"
                             Text="›"
                             FontSize="18"
-                            TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray500}}"
+                            AutomationProperties.IsInAccessibleTree="false"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                             VerticalOptions="Center" />
                     </Grid>
                 </SwipeView>
@@ -99,7 +118,7 @@
                 HorizontalOptions="Center"
                 HorizontalTextAlignment="Center"
                 Margin="40,40"
-                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
         </CollectionView.EmptyView>
     </CollectionView>
 

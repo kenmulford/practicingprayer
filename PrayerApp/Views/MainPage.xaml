@@ -11,18 +11,19 @@
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Padding="20,16" Spacing="16">
 
-                <!-- Action buttons -->
-                <Button x:Name="BtnQuickAdd"
-                        Text="Quick Add"
-                        SemanticProperties.Hint="Add a prayer request"
-                        HorizontalOptions="Fill" />
-
-                <Button x:Name="BtnPrayerTime"
-                        Text="Prayer Time"
-                        BackgroundColor="{StaticResource Primary}"
-                        TextColor="{StaticResource White}"
-                        SemanticProperties.Hint="Start a prayer session"
-                        HorizontalOptions="Fill" />
+                <!-- Action buttons — side by side -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button x:Name="BtnQuickAdd"
+                            Grid.Column="0"
+                            Text="Quick Add"
+                            SemanticProperties.Hint="Add a prayer request"
+                            HorizontalOptions="Fill" />
+                    <Button x:Name="BtnPrayerTime"
+                            Grid.Column="1"
+                            Text="Prayer Time"
+                            SemanticProperties.Hint="Start a prayer session"
+                            HorizontalOptions="Fill" />
+                </Grid>
 
                 <!-- Last prayed stat -->
                 <Label Text="{Binding LastPrayedDisplay, StringFormat='Last prayed: {0}'}"
@@ -43,7 +44,9 @@
                             <Label Text="{Binding OverdueHeadline}"
                                    FontSize="18"
                                    FontAttributes="Bold"
-                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                                   SemanticProperties.HeadingLevel="Level1"
+                                   SemanticProperties.Hint="Double tap to view overdue prayers"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                    VerticalOptions="Center" />
 
                             <!-- Chevron only visible when there are overdue items -->
@@ -51,15 +54,23 @@
                                    Text="›"
                                    FontSize="22"
                                    IsVisible="{Binding HasOverdue}"
+                                   AutomationProperties.IsInAccessibleTree="false"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                    VerticalOptions="Center" />
                         </Grid>
+
+                        <!-- Zero-state description — only shown when all caught up -->
+                        <Label Text="{Binding OverdueEmptyDescription}"
+                               IsVisible="{Binding HasOverdue, Converter={StaticResource InverseBool}}"
+                               Style="{StaticResource MutedText}"
+                               FontSize="13"
+                               Margin="0,8,0,0" />
 
                         <!-- List section — only shown when there are overdue requests -->
                         <VerticalStackLayout IsVisible="{Binding HasOverdue}" Spacing="0">
 
                             <BoxView Style="{StaticResource DividerLine}" Margin="0,12,0,8" />
-                            
+
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedPrayers}"
                                                  Spacing="0">
                                 <BindableLayout.ItemTemplate>
@@ -79,7 +90,8 @@
                                                    Text="{Binding PrayerTitle}"
                                                    FontSize="14"
                                                    FontAttributes="Bold"
-                                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                                                   SemanticProperties.Hint="Double tap to view"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                                    VerticalOptions="Center" />
                                         </Grid>
                                     </DataTemplate>

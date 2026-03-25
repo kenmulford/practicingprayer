@@ -4,7 +4,6 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
-             NavigatedTo="ContentPage_NavigatedTo"
              x:DataType="viewModels:PrayerCardsViewModel">
     <ContentPage.BindingContext>
         <viewModels:PrayerCardsViewModel />
@@ -19,7 +18,7 @@
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsLoading}"
                            IsVisible="{Binding IsLoading}"
-                           Color="{StaticResource Primary}"
+                           Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
 
@@ -40,13 +39,15 @@
                     <SwipeView.LeftItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="{StaticResource WarmGold}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
                                 Command="{Binding ToggleFavoriteCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Toggle favorite"
                                 Text="★" />
                             <SwipeItem
-                                BackgroundColor="{StaticResource Primary}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                                 Command="{Binding SelectCardCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Edit card"
                                 Text="Edit" />
                         </SwipeItems>
@@ -54,9 +55,10 @@
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
-                                BackgroundColor="{StaticResource DangerRed}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
                                 IconImageSource="trash_can_solid_full.png"
                                 Command="{Binding DeleteCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Delete card"
                                 Text="Delete" />
                         </SwipeItems>
@@ -68,23 +70,47 @@
 
                         <VerticalStackLayout Spacing="0">
 
-                            <!-- Card header: title + favorite star -->
+                            <!-- Card header: title + badge + favorite star -->
                             <Grid
                                 Padding="12,10"
-                                ColumnDefinitions="*,Auto">
+                                ColumnDefinitions="*,Auto,Auto">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding ToggleExpandedCommand}" />
                                 </Grid.GestureRecognizers>
                                 <Label
                                     Text="{Binding Title}"
                                     Style="{StaticResource CardTitle}"
-                                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                                    SemanticProperties.Hint="Double tap to expand or collapse. Swipe left to delete, right to edit or favorite"
+                                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                     VerticalOptions="Center" />
-                                <Label
+                                <!-- Active prayer count badge (collapsed only) -->
+                                <Border
                                     Grid.Column="1"
+                                    IsVisible="{Binding ShowBadge}"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                    StrokeShape="RoundRectangle 10"
+                                    Stroke="Transparent"
+                                    Padding="6,2"
+                                    HeightRequest="20"
+                                    MinimumWidthRequest="20"
+                                    VerticalOptions="Center"
+                                    HorizontalOptions="End"
+                                    Margin="0,0,8,0"
+                                    AutomationProperties.IsInAccessibleTree="false">
+                                    <Label
+                                        Text="{Binding ActivePrayerCount}"
+                                        FontSize="11"
+                                        FontAttributes="Bold"
+                                        TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center" />
+                                </Border>
+                                <Label
+                                    Grid.Column="2"
                                     Text="★"
                                     FontSize="16"
-                                    TextColor="{StaticResource WarmGold}"
+                                    SemanticProperties.Description="Favorited"
+                                    TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
                                     IsVisible="{Binding IsFavorite}"
                                     VerticalOptions="Center"
                                     Margin="8,0,0,0" />
@@ -107,7 +133,7 @@
                                                 <SwipeView.LeftItems>
                                                     <SwipeItems Mode="Reveal">
                                                         <SwipeItem
-                                                            BackgroundColor="{StaticResource Primary}"
+                                                            BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                                                             Command="{Binding EditPrayerCommand}"
                                                             SemanticProperties.Description="Edit prayer"
                                                             Text="Edit" />
@@ -116,7 +142,7 @@
                                                 <SwipeView.RightItems>
                                                     <SwipeItems Mode="Reveal">
                                                         <SwipeItem
-                                                            BackgroundColor="{StaticResource DangerRed}"
+                                                            BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
                                                             Command="{Binding DeleteCommand}"
                                                             SemanticProperties.Description="Delete prayer"
                                                             Text="Delete" />
@@ -133,6 +159,7 @@
                                                     <Label
                                                         Text="{Binding Title}"
                                                         FontSize="15"
+                                                        SemanticProperties.Hint="Double tap to view. Swipe left to delete, right to edit"
                                                         TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                                         TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
                                                         VerticalOptions="Center" />
@@ -152,18 +179,17 @@
                             </VerticalStackLayout>
 
                             <!-- + Add prayer row (only shown when expanded) -->
-                            <Grid
+                            <Button
+                                Text="+ Add prayer"
+                                Command="{Binding AddPrayerCommand}"
+                                IsVisible="{Binding IsExpanded}"
+                                FontSize="14"
+                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                BackgroundColor="Transparent"
+                                FontAttributes="Italic"
                                 Padding="16,8,12,10"
-                                IsVisible="{Binding IsExpanded}">
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding AddPrayerCommand}" />
-                                </Grid.GestureRecognizers>
-                                <Label
-                                    Text="+ Add prayer"
-                                    FontSize="14"
-                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                                    FontAttributes="Italic" />
-                            </Grid>
+                                BorderWidth="0"
+                                HorizontalOptions="Start" />
 
                         </VerticalStackLayout>
                     </Border>

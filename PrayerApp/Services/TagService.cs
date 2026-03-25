@@ -8,6 +8,9 @@ namespace PrayerApp.Services;
 
 public class TagService : ITagService
 {
+    internal const string RecentlyNotifiedTagName = "Recently Notified";
+    private const string RecentlyNotifiedTagColor = "#505050";
+
     private IReadOnlyList<PrayerTag>? _cache;
     private readonly IDBService _dbService;
 
@@ -22,7 +25,10 @@ public class TagService : ITagService
             return _cache;
 
         var list = await PrayerTag.LoadAllAsync();
-        var sorted = list.OrderBy(t => t.Name).ToList();
+        var sorted = list
+            .OrderByDescending(t => t.IsSystem)  // system tags first
+            .ThenBy(t => t.Name)
+            .ToList();
 
         var readOnly = new ReadOnlyCollection<PrayerTag>(sorted);
         _cache = readOnly;
@@ -37,7 +43,8 @@ public class TagService : ITagService
         var tagIds = requestTags.Select(rt => rt.PrayerTagId).ToHashSet();
         var allTags = await GetTagsAsync();
 
-        var tags = allTags.Where(t => tagIds.Contains(t.Id)).OrderBy(t => t.Name).ToList();
+        // allTags is pre-sorted (system first, then alpha); Where preserves order
+        var tags = allTags.Where(t => tagIds.Contains(t.Id)).ToList();
         return new ReadOnlyCollection<PrayerTag>(tags);
     }
 
@@ -89,15 +96,58 @@ public class TagService : ITagService
 
     public async Task DeleteTagAsync(int tagId)
     {
-        // Remove all junction rows first so no orphans remain
-        var junctionRows = await PrayerCardTag.LoadByTagIdAsync(tagId);
-        foreach (var row in junctionRows)
-            await row.DeleteAsync();
-
         var tag = await PrayerTag.LoadAsync(tagId);
-        if (tag is null) return;
+        if (tag is null || tag.IsSystem) return; // System tags cannot be deleted
+
+        // Remove all junction rows first so no orphans remain
+        await ClearAllAssignmentsForTagAsync(tagId);
         await tag.DeleteAsync();
         InvalidateCache();
+    }
+
+    public async Task ReassignColorAsync(string oldColorHex, string newColorHex)
+    {
+        var allTags = await GetTagsAsync();
+        foreach (var tag in allTags)
+        {
+            if (string.Equals(tag.Color, oldColorHex, StringComparison.OrdinalIgnoreCase))
+            {
+                tag.Color = newColorHex;
+                await tag.SaveAsync();
+            }
+        }
+        InvalidateCache();
+    }
+
+    public async Task ClearAllAssignmentsForTagAsync(int tagId)
+    {
+        await _dbService.DeleteByTagIdAsync(tagId);
+        InvalidateCache();
+    }
+
+    public async Task SeedSystemTagsAsync()
+    {
+        var allTags = await PrayerTag.LoadAllAsync();
+        var exists = allTags.Any(t =>
+            string.Equals(t.Name, RecentlyNotifiedTagName, StringComparison.OrdinalIgnoreCase));
+
+        if (exists) return;
+
+        var tag = new PrayerTag
+        {
+            Name = RecentlyNotifiedTagName,
+            IsSystem = true,
+            Color = RecentlyNotifiedTagColor
+        };
+        await tag.SaveAsync();
+        InvalidateCache();
+    }
+
+    public async Task<PrayerTag?> GetSystemTagAsync(string name)
+    {
+        var allTags = await GetTagsAsync();
+        return allTags.FirstOrDefault(t =>
+            t.IsSystem && string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
     private void InvalidateCache()

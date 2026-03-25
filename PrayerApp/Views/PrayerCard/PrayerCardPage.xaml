@@ -5,10 +5,17 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:DataType="viewModels:PrayerCardViewModel"
-             Title="Prayer Card">
+             Title="Prayer Card"
+             SafeAreaEdges="Container">
     <ContentPage.BindingContext>
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save"
+                     Command="{Binding SaveCommand}"
+                     x:DataType="viewModels:PrayerCardViewModel" />
+    </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="*,Auto">
 
@@ -19,27 +26,21 @@
                     <VerticalStackLayout Spacing="12">
 
                         <Label Text="Title" Style="{StaticResource FormLabel}" />
-                        <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                            <Entry x:Name="TitleEntry"
-                                   Text="{Binding Title}"
-                                   HorizontalOptions="Fill"
-                                   Placeholder="Card title"
-                                   SemanticProperties.Hint="Name or topic for this prayer card" />
-                        </Border>
+                        <Entry x:Name="TitleEntry"
+                               Text="{Binding Title}"
+                               IsReadOnly="{Binding IsSystem}"
+                               HorizontalOptions="Fill"
+                               Placeholder="Card title"
+                               SemanticProperties.Hint="Name or topic for this prayer card" />
 
                         <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
-                            <Button Grid.Column="0"
-                                    Text="Delete"
-                                    Style="{StaticResource DangerButton}"
-                                    Command="{Binding DeleteCommand}"
-                                    HorizontalOptions="Fill" />
-                            <Button Grid.Column="1"
-                                    Text="Save"
-                                    Command="{Binding SaveCommand}"
-                                    HorizontalOptions="Fill" />
-                        </Grid>
+                        <!-- Delete Button — Save is in the navbar -->
+                        <Button Text="Delete"
+                                Style="{StaticResource DangerButton}"
+                                Command="{Binding DeleteCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                HorizontalOptions="Fill" />
 
                     </VerticalStackLayout>
                 </Border>

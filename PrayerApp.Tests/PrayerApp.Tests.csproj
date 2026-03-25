@@ -45,6 +45,7 @@
 
     <!-- Helpers -->
     <Compile Include="../PrayerApp/Helpers/TaskExtensions.cs" />
+    <Compile Include="../PrayerApp/Helpers/NotificationHelper.cs" />
 
     <!-- Service interfaces -->
     <Compile Include="../PrayerApp/Services/IDiagnosticLog.cs" />

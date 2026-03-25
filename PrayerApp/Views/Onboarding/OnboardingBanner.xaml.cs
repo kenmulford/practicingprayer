@@ -48,7 +48,7 @@ public partial class OnboardingBanner : ContentView
     public OnboardingBanner()
     {
         InitializeComponent();
-        SkipTap.Tapped += (_, _) => _onboardingService?.Skip();
+        SkipButton.Clicked += (_, _) => _onboardingService?.Skip();
     }
 
     // Subscribe when handler is attached (unsubscribe first to prevent double-subscribe on re-parent)

@@ -27,6 +27,36 @@
                             SemanticProperties.Description="Allow the app to send prayer reminder notifications"
                             Toggled="chkSettingsAllowNotifications_Toggled" />
                     </Grid>
+                    <VerticalStackLayout Spacing="4"
+                                         IsVisible="{Binding Source={x:Reference chkSettingsAllowNotifications}, Path=IsToggled, x:DataType=Switch}">
+                        <Label Text="Default Reminder Time"
+                               Style="{StaticResource FormLabel}" />
+                        <TimePicker x:Name="timePickerDefaultNotify"
+                                    PropertyChanged="timePickerDefaultNotify_PropertyChanged"
+                                    SemanticProperties.Description="Default time of day for prayer reminders" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Prayer Reminders -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label
+                        Text="Prayer Reminders"
+                        Style="{StaticResource SectionHeading}" />
+                    <Label
+                        Text="Prayers not prayed within this many days appear in your overdue list on the home page."
+                        Style="{StaticResource SectionDescription}" />
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Overdue after (days)"
+                               Style="{StaticResource FormLabel}" />
+                        <Entry x:Name="entryOverdueThreshold"
+                               Keyboard="Numeric"
+                               ReturnType="Done"
+                               Placeholder="30"
+                               TextChanged="entryOverdueThreshold_TextChanged"
+                               HorizontalOptions="Fill" />
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
@@ -75,17 +105,15 @@
             </Border>
 
             <!-- Privacy Policy -->
-            <Label x:Name="LblPrivacyPolicy"
-                   Text="Privacy Policy"
-                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                   TextDecorations="Underline"
-                   FontSize="14"
-                   Margin="0,4,0,0"
-                   HorizontalOptions="Start">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer x:Name="TapPrivacyPolicy" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button x:Name="BtnPrivacyPolicy"
+                    Text="Privacy Policy"
+                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                    BackgroundColor="Transparent"
+                    FontSize="14"
+                    Padding="0"
+                    BorderWidth="0"
+                    Margin="0,4,0,0"
+                    HorizontalOptions="Start" />
 
         </VerticalStackLayout>
 

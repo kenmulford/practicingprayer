@@ -5,8 +5,8 @@
                x:Class="PrayerApp.Views.Tags.ColorPickerPopup">
 
     <Border StrokeShape="RoundRectangle 12"
-            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}"
-            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+            BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
             WidthRequest="320"
             Padding="16">
         <VerticalStackLayout Spacing="12">
@@ -27,17 +27,15 @@
 
             <!-- Hex display + color preview -->
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Padding="0,4,0,0">
-                <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                    <Entry x:Name="HexEntry"
-                           Placeholder="#RRGGBB"
-                           MaxLength="7"
-                           Keyboard="Text"
-                           TextChanged="OnHexTextChanged"
-                           HorizontalOptions="Fill" />
-                </Border>
+                <Entry x:Name="HexEntry"
+                       Placeholder="#RRGGBB"
+                       MaxLength="7"
+                       Keyboard="Text"
+                       TextChanged="OnHexTextChanged"
+                       HorizontalOptions="Fill" />
                 <Border Grid.Column="1"
                         StrokeShape="RoundRectangle 4"
-                        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+                        Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                         WidthRequest="44"
                         HeightRequest="44"
                         Padding="0">

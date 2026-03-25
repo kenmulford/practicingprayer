@@ -71,10 +71,16 @@ public class PrayerService : IPrayerService
         var cutoff = DateTime.Now.AddDays(-dayThreshold);
 
         return allActive
-            .Where(p => !latestByPrayer.TryGetValue(p.Id, out var latest) || latest < cutoff)
+            .Where(p => latestByPrayer.TryGetValue(p.Id, out var latest) && latest < cutoff)
             .OrderBy(p => latestByPrayer.TryGetValue(p.Id, out var latest) ? latest : DateTime.MinValue)
             .ToList()
             .AsReadOnly();
+    }
+
+    public async Task<int> GetActivePrayerCountByCardAsync(int cardId)
+    {
+        var prayers = await GetPrayersByCardAsync(cardId);
+        return prayers.Count(p => !p.IsAnswered);
     }
 
     public async Task<DateTime?> GetLastInteractionDateAsync()

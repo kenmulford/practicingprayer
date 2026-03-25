@@ -22,7 +22,7 @@ namespace PrayerApp.ViewModels
         private readonly ITagService _tagService;
         private Dictionary<int, string> _cardTitleLookup = new();
 
-        private bool _isLoading;
+        private bool _isLoading = true;
         public bool IsLoading
         {
             get => _isLoading;
@@ -34,6 +34,9 @@ namespace PrayerApp.ViewModels
 
         // prayer IDs considered overdue (not prayed in 30+ days)
         private HashSet<int> _overdueIds = new();
+
+        // Suppress screen reader announcements during bulk loads
+        private bool _suppressAnnounce;
 
         // Full unfiltered backing store — manipulated by IQueryAttributable
         public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; } = new();
@@ -104,6 +107,7 @@ namespace PrayerApp.ViewModels
         public async Task LoadAsync()
         {
             IsLoading = true;
+            _suppressAnnounce = true;
             try
             {
                 // Build card title lookup
@@ -117,7 +121,7 @@ namespace PrayerApp.ViewModels
                 _requestTagIds = await BuildRequestTagLookupAsync();
 
                 // Build overdue set for Overdue filter
-                var overdue = await _prayerService.GetOverduePrayersAsync(30);
+                var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
                 _overdueIds = overdue.Select(p => p.Id).ToHashSet();
 
                 // Build prayer ViewModels
@@ -141,6 +145,7 @@ namespace PrayerApp.ViewModels
             finally
             {
                 IsLoading = false;
+                _suppressAnnounce = false;
             }
         }
 
@@ -197,7 +202,22 @@ namespace PrayerApp.ViewModels
             var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
             if (matched != null)
             {
-                matched.Reload();
+                if (int.TryParse(id, out int prayerId))
+                {
+                    var freshPrayer = await Prayer.LoadAsync(prayerId);
+                    if (freshPrayer is not null)
+                    {
+                        // Refresh card lookup in case the prayer moved to a different card
+                        var cards = await _cardService.GetCardsAsync();
+                        _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
+
+                        // Update all list-visible properties from the awaited DB load
+                        // (replaces fire-and-forget Reload which raced with ApplyFilter)
+                        matched.Title = freshPrayer.Title;
+                        matched.IsAnswered = freshPrayer.IsAnswered;
+                        matched.CardTitle = _cardTitleLookup.TryGetValue(freshPrayer.PrayerCardId, out var t) ? t : string.Empty;
+                    }
+                }
                 ApplyFilter();
             }
             else
@@ -271,6 +291,9 @@ namespace PrayerApp.ViewModels
             FilteredPrayers.Clear();
             foreach (var p in sorted)
                 FilteredPrayers.Add(p);
+
+            if (!_suppressAnnounce)
+                SemanticScreenReader.Announce($"Showing {FilteredPrayers.Count} prayers");
         }
 
         private async Task AddNewPrayerAsync(string? prayerIdString)
@@ -290,11 +313,12 @@ namespace PrayerApp.ViewModels
 
         private async Task NewPrayerAsync()
         {
-            await Shell.Current.GoToAsync(nameof(Views.Prayer.PrayerDetailPage));
+            await Shell.Current.GoToAsync($"{nameof(Views.Prayer.PrayerDetailPage)}?new=true");
         }
 
         private async Task LoadPrayersAsync()
         {
+            _suppressAnnounce = true;
             try
             {
                 _prayerService.InvalidateCache();
@@ -318,6 +342,10 @@ namespace PrayerApp.ViewModels
             catch (Exception e)
             {
                 await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
+            }
+            finally
+            {
+                _suppressAnnounce = false;
             }
         }
 
@@ -352,10 +380,23 @@ namespace PrayerApp.ViewModels
             foreach (var vm in toRemove)
                 AllPrayers.Remove(vm);
 
-            // Add new prayers (e.g. from QuickAdd)
+            // Refresh card lookup
             var cards = await _cardService.GetCardsAsync();
             _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
 
+            // Update existing prayers with fresh data from DB
+            var prayerLookup = prayers.ToDictionary(p => p.Id);
+            foreach (var vm in AllPrayers)
+            {
+                if (prayerLookup.TryGetValue(vm.Id, out var fresh))
+                {
+                    vm.Title = fresh.Title;
+                    vm.IsAnswered = fresh.IsAnswered;
+                    vm.CardTitle = _cardTitleLookup.TryGetValue(fresh.PrayerCardId, out var t) ? t : string.Empty;
+                }
+            }
+
+            // Add new prayers (e.g. from QuickAdd)
             foreach (var p in prayers.Where(p => !currentIds.Contains(p.Id)))
             {
                 _prayerList.Add(p);

@@ -2,10 +2,13 @@ using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
 using PrayerApp.Models;
+using Plugin.LocalNotification;
 using PrayerApp.Services;
+using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
 using PrayerApp.Views.Tags;
+using System.Globalization;
 
 namespace PrayerApp
 {
@@ -13,6 +16,13 @@ namespace PrayerApp
     {
         public static MauiApp CreateMauiApp()
         {
+            // Force English locale for all formatting (dates, AM/PM, numbers)
+            var culture = new CultureInfo("en-US");
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            Thread.CurrentThread.CurrentCulture = culture;
+            Thread.CurrentThread.CurrentUICulture = culture;
+
             SQLitePCL.Batteries_V2.Init();
 
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");
@@ -29,6 +39,40 @@ namespace PrayerApp
 
             builder.UseMauiCommunityToolkit();
 
+            builder.UseLocalNotification(config =>
+            {
+#if ANDROID
+                config.AddAndroid(android =>
+                {
+                    android.AddChannel(new Plugin.LocalNotification.AndroidOption.NotificationChannelRequest
+                    {
+                        Id = "prayer_reminders",
+                        Name = "Prayer Reminders",
+                        Description = "Scheduled prayer reminder notifications",
+                        Importance = Plugin.LocalNotification.AndroidOption.AndroidImportance.High,
+                        EnableSound = true,
+                        EnableVibration = true
+                    });
+                });
+#endif
+            });
+
+#if ANDROID
+            PrayerApp.Platforms.Android.Handlers.TextInputTimePickerHandler.Configure();
+#elif IOS
+            PrayerApp.Platforms.iOS.Handlers.EnglishLocaleTimePickerHandler.Configure();
+#endif
+
+            // Fix Switch thumb color not syncing on initial load when IsToggled is already true.
+            // The VisualStateManager "On" state doesn't fire until user interaction.
+            Microsoft.Maui.Handlers.SwitchHandler.Mapper.AppendToMapping("SyncInitialThumbColor", (handler, view) =>
+            {
+                if (view is Switch sw && sw.IsToggled)
+                {
+                    // Force the On VisualState so thumb color matches the style
+                    VisualStateManager.GoToState(sw, "On");
+                }
+            });
 
 #if DEBUG
             builder.Logging.AddDebug();
@@ -81,6 +125,32 @@ namespace PrayerApp
 
             PrayerApp.Services.Settings.ConfigureNotificationService(
                 app.Services.GetRequiredService<INotificationService>());
+
+            // Wire notification tap → confirmation → Prayer Time navigation
+            var notificationCenter = app.Services.GetRequiredService<ILocalNotificationCenter>();
+            var tagServiceForNotification = app.Services.GetRequiredService<ITagService>();
+            notificationCenter.NotificationTapped += async (_, notificationId) =>
+            {
+                await App.InitTask; // Ensure DB is ready
+
+                var systemTag = await tagServiceForNotification.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+                if (systemTag is null) return;
+
+                // Must run on UI thread for dialog and navigation
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    var confirmed = await Shell.Current.DisplayAlertAsync(
+                        "Prayer Time",
+                        "Would you like to pray for your recently notified prayer requests now?",
+                        "Yes", "No");
+
+                    if (confirmed)
+                    {
+                        await Shell.Current.GoToAsync(
+                            $"{nameof(PrayerApp.Views.PrayerTime.PrayerTimePage)}?scope=tags&tagIds={systemTag.Id}");
+                    }
+                });
+            };
 
             // Set DB service for the necessary models (synchronous — just stores a reference).
             var myDBService = app.Services.GetRequiredService<IDBService>();
@@ -138,6 +208,33 @@ namespace PrayerApp
 
             var userColorService = services.GetRequiredService<IUserColorService>();
             await userColorService.SeedDefaultsAsync();
+
+            var tagService = services.GetRequiredService<ITagService>();
+            await tagService.SeedSystemTagsAsync();
+
+            // Ensure the system "Quick Add" card exists
+            var cardService = services.GetRequiredService<ICardService>();
+            await cardService.GetOrCreateQuickAddCardAsync();
+
+            // Tag prayers that were recently notified (within last 24h based on schedule)
+            try
+            {
+                var prayerService = services.GetRequiredService<IPrayerService>();
+                var activePrayers = await prayerService.GetAllActivePrayersAsync();
+                var recentIds = NotificationHelper.GetRecentlyNotifiedPrayerIds(activePrayers, DateTime.Now);
+
+                var systemTag = await tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+                if (systemTag is not null)
+                {
+                    await tagService.ClearAllAssignmentsForTagAsync(systemTag.Id);
+                    foreach (var prayerId in recentIds)
+                        await tagService.AddTagToRequestAsync(prayerId, systemTag.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Recently-notified tagging failed: {ex}");
+            }
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)

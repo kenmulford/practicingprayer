@@ -63,6 +63,13 @@ namespace PrayerApp.ViewModels
             // Add new tags
             foreach (var tag in tags.Where(t => !currentIds.Contains(t.Id)))
                 Tags.Add(new TagItemViewModel(tag, _tagService, this));
+
+            // Update existing tags with fresh data (name/color changes)
+            foreach (var tag in tags)
+            {
+                var existing = Tags.FirstOrDefault(t => t.Id == tag.Id);
+                existing?.Update(tag);
+            }
         }
 
         public void RemoveTag(TagItemViewModel item) => Tags.Remove(item);
@@ -79,6 +86,7 @@ namespace PrayerApp.ViewModels
 
         public int Id => _tag.Id;
         public string Name => _tag.Name;
+        public bool IsSystem => _tag.IsSystem;
         public Color DotColor => TagColorPalette.Resolve(_tag.Color);
         public ICommand EditCommand { get; }
         public ICommand DeleteCommand { get; }
@@ -89,7 +97,14 @@ namespace PrayerApp.ViewModels
             _tagService = tagService;
             _parent = parent;
             EditCommand = new AsyncRelayCommand(EditAsync);
-            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !_tag.IsSystem);
+        }
+
+        public void Update(PrayerTag tag)
+        {
+            _tag = tag;
+            OnPropertyChanged(nameof(Name));
+            OnPropertyChanged(nameof(DotColor));
         }
 
         private async Task EditAsync() =>
@@ -105,6 +120,7 @@ namespace PrayerApp.ViewModels
             if (!confirmed) return;
 
             await _tagService.DeleteTagAsync(Id);
+            SemanticScreenReader.Announce("Tag deleted");
             _parent.RemoveTag(this);
         }
     }

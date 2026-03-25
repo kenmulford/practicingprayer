@@ -5,8 +5,8 @@
                x:Class="PrayerApp.Views.Onboarding.OnboardingWelcomePopup"
                CanBeDismissedByTappingOutsideOfPopup="False">
 
-    <Border BackgroundColor="{StaticResource Secondary}"
-            Stroke="{StaticResource Primary}"
+    <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}"
             StrokeThickness="1"
             Margin="24,0">
         <Border.StrokeShape>
@@ -18,31 +18,29 @@
             <Label Text="Welcome to Practicing Prayer"
                    FontSize="22"
                    FontAttributes="Bold"
-                   TextColor="{StaticResource Tertiary}"
+                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                   SemanticProperties.HeadingLevel="Level1"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
             <Label Text="Let's set up your first prayer card."
                    FontSize="15"
-                   TextColor="{StaticResource Gray500}"
+                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
             <Button x:Name="BtnGetStarted"
                     Text="Get Started"
-                    BackgroundColor="{StaticResource Primary}"
-                    TextColor="{StaticResource White}"
                     Margin="0,8,0,0" />
 
-            <Label x:Name="LblSkip"
-                   Text="Skip tour"
-                   FontSize="13"
-                   TextColor="{StaticResource Gray400}"
-                   HorizontalOptions="Center">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer x:Name="SkipTap" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button x:Name="SkipButton"
+                    Text="Skip tour"
+                    FontSize="13"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    Padding="0"
+                    BorderWidth="0"
+                    HorizontalOptions="Center" />
 
         </VerticalStackLayout>
     </Border>

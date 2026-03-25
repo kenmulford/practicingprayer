@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept 1: Organic Calm - Practicing Prayer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #f0f0f0; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
+
+  .controls { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center; }
+  .controls button { padding: 8px 20px; border: 2px solid #6B7D5A; background: white; color: #6B7D5A; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+  .controls button.active, .controls button:hover { background: #6B7D5A; color: white; }
+  .controls .separator { width: 1px; background: #ccc; margin: 0 4px; }
+
+  h1 { font-size: 22px; color: #3F4A34; margin-bottom: 4px; font-weight: 700; }
+  .subtitle { color: #6B7D5A; font-size: 14px; margin-bottom: 20px; }
+
+  .phone-frame {
+    width: 375px; height: 812px; border-radius: 44px; overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.2), 0 0 0 2px #333, inset 0 0 0 2px #555;
+    position: relative; flex-shrink: 0;
+  }
+  .phone-screen {
+    width: 100%; height: 100%; overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---- LIGHT THEME ---- */
+  .light .phone-screen { background: #FAFBF8; }
+  .light .status-bar { background: #FAFBF8; color: #3F4A34; }
+  .light .nav-bar { background: #FAFBF8; border-bottom: 1px solid rgba(107,125,90,0.1); }
+  .light .nav-title { color: #3F4A34; }
+  .light .page-content { color: #3F4A34; }
+  .light .card { background: linear-gradient(135deg, #f2f5ee 0%, #E8EDE3 100%); border: 1px solid rgba(107,125,90,0.15); }
+  .light .card-title { color: #3F4A34; }
+  .light .muted { color: #919191; }
+  .light .tab-bar { background: #FAFBF8; border-top: 1px solid rgba(107,125,90,0.1); }
+  .light .tab-item { color: #C8C8C8; }
+  .light .tab-item.active { color: #C4A052; }
+  .light .divider { background: rgba(107,125,90,0.15); }
+  .light .btn-primary { background: linear-gradient(135deg, #6B7D5A 0%, #7A8C68 100%); color: white; }
+  .light .btn-secondary { background: #E8EDE3; color: #3F4A34; }
+  .light .chip { background: rgba(107,125,90,0.12); color: #6B7D5A; border: 1px solid rgba(107,125,90,0.2); }
+  .light .chip.active { background: #6B7D5A; color: white; border-color: #6B7D5A; }
+  .light .search-bar { background: #EFF2EB; border: 1px solid rgba(107,125,90,0.12); color: #3F4A34; }
+  .light .badge { background: #6B7D5A; color: white; }
+  .light .prayer-time-bg { background: linear-gradient(180deg, #E8EDE3 0%, #FAFBF8 40%, #FAFBF8 100%); }
+  .light .overdue-card { background: linear-gradient(135deg, #FFF8E7 0%, #FFF3D6 100%); border: 1px solid rgba(196,160,82,0.25); }
+  .light .section-label { color: #6B7D5A; }
+
+  /* ---- DARK THEME ---- */
+  .dark .phone-screen { background: #1a1d17; }
+  .dark .status-bar { background: #1a1d17; color: #E8EDE3; }
+  .dark .nav-bar { background: #1a1d17; border-bottom: 1px solid rgba(168,184,150,0.08); }
+  .dark .nav-title { color: #E8EDE3; }
+  .dark .page-content { color: #E8EDE3; }
+  .dark .card { background: linear-gradient(135deg, #2D3428 0%, #252b20 100%); border: 1px solid rgba(168,184,150,0.12); }
+  .dark .card-title { color: #E8EDE3; }
+  .dark .muted { color: #ACACAC; }
+  .dark .tab-bar { background: #141414; border-top: 1px solid rgba(168,184,150,0.08); }
+  .dark .tab-item { color: #6E6E6E; }
+  .dark .tab-item.active { color: #E8EDE3; }
+  .dark .divider { background: rgba(168,184,150,0.1); }
+  .dark .btn-primary { background: linear-gradient(135deg, #A8B896 0%, #8FA47C 100%); color: #1C2415; }
+  .dark .btn-secondary { background: #2D3428; color: #E8EDE3; }
+  .dark .chip { background: rgba(168,184,150,0.1); color: #A8B896; border: 1px solid rgba(168,184,150,0.2); }
+  .dark .chip.active { background: #A8B896; color: #1C2415; border-color: #A8B896; }
+  .dark .search-bar { background: #252b20; border: 1px solid rgba(168,184,150,0.1); color: #E8EDE3; }
+  .dark .badge { background: #A8B896; color: #1C2415; }
+  .dark .prayer-time-bg { background: linear-gradient(180deg, #2D3428 0%, #1a1d17 40%, #1a1d17 100%); }
+  .dark .overdue-card { background: linear-gradient(135deg, #3a3520 0%, #332e1c 100%); border: 1px solid rgba(196,160,82,0.2); }
+  .dark .section-label { color: #A8B896; }
+
+  /* ---- Shared component styles ---- */
+  .status-bar { height: 54px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; font-size: 12px; font-weight: 600; }
+  .nav-bar { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+  .nav-title { font-size: 17px; font-weight: 600; }
+  .nav-action { color: #6B7D5A; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .dark .nav-action { color: #A8B896; }
+
+  .page-content { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
+  .page-content::-webkit-scrollbar { display: none; }
+
+  .card {
+    border-radius: 16px; padding: 18px; margin-bottom: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+  }
+  .card-title { font-size: 16px; font-weight: 600; }
+
+  .tab-bar {
+    height: 82px; display: flex; align-items: flex-start; justify-content: space-around;
+    padding-top: 10px; flex-shrink: 0;
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 500; cursor: pointer; }
+  .tab-icon { font-size: 20px; }
+
+  .divider { height: 1px; width: 100%; margin: 8px 0; }
+
+  .btn-primary {
+    padding: 14px 24px; border-radius: 14px; text-align: center;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(107,125,90,0.2);
+  }
+  .btn-secondary { padding: 14px 24px; border-radius: 14px; text-align: center; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+  .chip {
+    display: inline-block; padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+  }
+
+  .search-bar {
+    padding: 12px 16px; border-radius: 12px; font-size: 14px; width: 100%;
+    outline: none; margin: 10px 0;
+  }
+  .search-bar::placeholder { opacity: 0.5; }
+
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; border-radius: 11px;
+    font-size: 11px; font-weight: 700; padding: 0 6px;
+  }
+
+  .star { color: #C4A052; }
+  .answered-badge { color: #4CAF50; font-size: 10px; font-weight: 600; }
+  .dark .answered-badge { color: #66BB6A; }
+  .danger { color: #CD5C5C; }
+
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; margin-top: 8px; }
+
+  /* Page-specific */
+  .prayer-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+  .prayer-row-title { font-size: 15px; font-weight: 500; }
+  .prayer-row-card { font-size: 11px; }
+
+  .tag-chip-sm { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; color: white; margin: 2px; }
+
+  /* Carousel-style prayer time card */
+  .pt-card-content { text-align: left; }
+  .pt-card-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .pt-card-title { font-size: 26px; font-weight: 700; line-height: 1.2; margin-bottom: 12px; }
+  .pt-card-details { font-size: 16px; line-height: 1.6; opacity: 0.85; }
+  .pt-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; }
+  .pt-btn { width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+  .pt-btn-label { font-size: 12px; font-weight: 500; cursor: pointer; padding: 10px 16px; border-radius: 12px; }
+
+  /* Decorative leaf accent */
+  .leaf-accent { position: absolute; opacity: 0.04; font-size: 200px; pointer-events: none; }
+  .light .leaf-accent { color: #6B7D5A; }
+  .dark .leaf-accent { color: #A8B896; }
+
+  .screen { display: none; flex-direction: column; height: 100%; }
+  .screen.active { display: flex; }
+
+  .ios .status-bar::after { content: '9:41'; }
+  .android .status-bar::after { content: '9:41'; }
+  .ios .phone-frame { border-radius: 44px; }
+  .android .phone-frame { border-radius: 20px; }
+  .android .nav-bar { height: 56px; }
+  .android .card { border-radius: 12px; }
+  .android .btn-primary, .android .btn-secondary { border-radius: 12px; }
+
+  .flex-row { display: flex; align-items: center; gap: 8px; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .flex-1 { flex: 1; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mb-4 { margin-bottom: 4px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .gap-8 { gap: 8px; }
+  .gap-6 { gap: 6px; }
+  .text-sm { font-size: 13px; }
+  .text-xs { font-size: 11px; }
+  .fw-600 { font-weight: 600; }
+  .fw-700 { font-weight: 700; }
+
+  /* Gradient header for pages */
+  .page-header-gradient {
+    padding: 4px 20px 16px;
+    position: relative;
+  }
+  .light .page-header-gradient { background: linear-gradient(180deg, rgba(232,237,227,0.5) 0%, transparent 100%); }
+  .dark .page-header-gradient { background: linear-gradient(180deg, rgba(45,52,40,0.5) 0%, transparent 100%); }
+
+  .page-headline { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .light .page-headline { color: #3F4A34; }
+  .dark .page-headline { color: #E8EDE3; }
+
+  .greeting-sub { font-size: 14px; margin-top: 2px; }
+  .light .greeting-sub { color: #919191; }
+  .dark .greeting-sub { color: #ACACAC; }
+</style>
+</head>
+<body>
+
+<h1>Concept 1: Organic Calm</h1>
+<p class="subtitle">Soft gradients, rounded cards, generous whitespace, nature-inspired warmth</p>
+
+<div class="controls">
+  <button class="active" onclick="setTheme('light')">Light Mode</button>
+  <button onclick="setTheme('dark')">Dark Mode</button>
+  <div class="separator"></div>
+  <button class="active" onclick="setPlatform('ios')">iOS</button>
+  <button onclick="setPlatform('android')">Android</button>
+  <div class="separator"></div>
+  <button class="active" data-screen="home" onclick="showScreen('home')">Home</button>
+  <button data-screen="cards" onclick="showScreen('cards')">Cards</button>
+  <button data-screen="prayers" onclick="showScreen('prayers')">Prayers</button>
+  <button data-screen="detail" onclick="showScreen('detail')">Detail</button>
+  <button data-screen="prayertime" onclick="showScreen('prayertime')">Prayer Time</button>
+</div>
+
+<div class="phone-frame">
+<div class="phone-screen light ios" id="phoneScreen">
+
+<!-- ==================== HOME ==================== -->
+<div class="screen active" id="screen-home">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-title">Practicing Prayer</span><span></span></div>
+
+  <div class="page-content">
+    <div class="page-header-gradient" style="margin: 0 -20px; padding: 8px 20px 20px;">
+      <div class="page-headline">Good morning</div>
+      <div class="greeting-sub">Tuesday, March 24</div>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 18px;">
+      <div class="btn-secondary flex-1" style="text-align: center; padding: 14px 8px;">
+        <div style="font-size: 18px; margin-bottom: 2px;">+</div>
+        <div style="font-size: 12px;">Quick Add</div>
+      </div>
+      <div class="btn-primary flex-1" style="text-align: center; padding: 14px 8px;">
+        <div style="font-size: 18px; margin-bottom: 2px;">&#9758;</div>
+        <div style="font-size: 12px;">Prayer Time</div>
+      </div>
+    </div>
+
+    <div class="muted text-sm" style="text-align: center; margin-bottom: 18px;">Last prayed: 2 hours ago</div>
+
+    <div class="overdue-card card">
+      <div class="flex-between mb-8">
+        <div class="card-title" style="font-size: 17px;">3 prayers need attention</div>
+        <span style="font-size: 18px; opacity: 0.4;">&#8250;</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="prayer-row">
+        <div>
+          <div class="muted text-xs">Family</div>
+          <div class="prayer-row-title">Mom's recovery</div>
+        </div>
+      </div>
+      <div class="prayer-row">
+        <div>
+          <div class="muted text-xs">Work</div>
+          <div class="prayer-row-title">Wisdom for career decisions</div>
+        </div>
+      </div>
+      <div class="prayer-row">
+        <div>
+          <div class="muted text-xs">Personal Growth</div>
+          <div class="prayer-row-title">Patience with the kids</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="leaf-accent" style="bottom: 40px; right: -60px; transform: rotate(30deg);">&#127807;</div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item active"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== CARDS ==================== -->
+<div class="screen" id="screen-cards">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-title">Prayer Cards</span><span class="nav-action">+ Add Card</span></div>
+
+  <div class="page-content">
+    <!-- Expanded card: Family -->
+    <div class="card">
+      <div class="flex-between mb-4">
+        <div class="flex-row">
+          <span class="card-title">Family</span>
+          <span class="star">&#9733;</span>
+        </div>
+        <span class="badge">3</span>
+      </div>
+      <div class="divider"></div>
+
+      <div class="prayer-row" style="border-bottom: 1px solid rgba(107,125,90,0.08); padding: 10px 4px;">
+        <span class="prayer-row-title">Mom's recovery</span>
+      </div>
+      <div class="prayer-row" style="border-bottom: 1px solid rgba(107,125,90,0.08); padding: 10px 4px;">
+        <span class="prayer-row-title">Dad's job situation</span>
+      </div>
+      <div class="prayer-row" style="border-bottom: 1px solid rgba(107,125,90,0.08); padding: 10px 4px;">
+        <div class="flex-between" style="width: 100%;">
+          <span class="prayer-row-title" style="text-decoration: line-through; opacity: 0.5;">Sister's exam results</span>
+          <span class="answered-badge">Answered Mar 15</span>
+        </div>
+      </div>
+      <div style="padding: 10px 4px 4px; font-size: 14px; font-style: italic;" class="section-label" style="text-transform: none; letter-spacing: 0;">
+        <span style="text-transform: none; letter-spacing: 0; font-style: italic; font-weight: 400;">+ Add prayer</span>
+      </div>
+    </div>
+
+    <!-- Collapsed card: Work -->
+    <div class="card">
+      <div class="flex-between">
+        <span class="card-title">Work</span>
+        <span class="badge">2</span>
+      </div>
+    </div>
+
+    <!-- Collapsed card: Personal Growth -->
+    <div class="card">
+      <div class="flex-between">
+        <span class="card-title">Personal Growth</span>
+        <span class="badge">4</span>
+      </div>
+    </div>
+
+    <!-- Collapsed card: Church -->
+    <div class="card">
+      <div class="flex-between">
+        <span class="card-title">Church</span>
+        <span class="badge">1</span>
+      </div>
+    </div>
+
+    <!-- System card -->
+    <div class="card" style="opacity: 0.6;">
+      <div class="flex-between">
+        <span class="card-title">Uncategorized</span>
+        <span class="badge">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item active"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== PRAYERS ==================== -->
+<div class="screen" id="screen-prayers">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-title">Prayers</span><span class="nav-action">+ Add</span></div>
+
+  <div class="page-content">
+    <div class="page-headline" style="font-size: 24px; margin-bottom: 14px;">Prayer Requests</div>
+
+    <!-- Status toggle -->
+    <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+      <div class="chip active">Active</div>
+      <div class="chip">Answered</div>
+      <div class="chip">All</div>
+    </div>
+
+    <input type="text" class="search-bar" placeholder="Search prayers..." readonly>
+
+    <!-- Tag chips -->
+    <div style="display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto;">
+      <div class="chip active" style="font-size: 11px; padding: 4px 12px;">Family</div>
+      <div class="chip" style="font-size: 11px; padding: 4px 12px;">Healing</div>
+      <div class="chip" style="font-size: 11px; padding: 4px 12px;">Guidance</div>
+      <div class="chip" style="font-size: 11px; padding: 4px 12px;">Gratitude</div>
+    </div>
+
+    <!-- Prayer list items -->
+    <div style="padding: 14px 0; border-bottom: 1px solid rgba(107,125,90,0.08);">
+      <div class="muted text-xs mb-4">Family</div>
+      <div class="prayer-row-title" style="font-size: 16px;">Mom's recovery</div>
+    </div>
+    <div style="padding: 14px 0; border-bottom: 1px solid rgba(107,125,90,0.08);">
+      <div class="muted text-xs mb-4">Family</div>
+      <div class="prayer-row-title" style="font-size: 16px;">Dad's job situation</div>
+    </div>
+    <div style="padding: 14px 0; border-bottom: 1px solid rgba(107,125,90,0.08);">
+      <div class="muted text-xs mb-4">Work</div>
+      <div class="prayer-row-title" style="font-size: 16px;">Wisdom for career decisions</div>
+    </div>
+    <div style="padding: 14px 0; border-bottom: 1px solid rgba(107,125,90,0.08);">
+      <div class="muted text-xs mb-4">Personal Growth</div>
+      <div class="prayer-row-title" style="font-size: 16px;">Patience with the kids</div>
+    </div>
+    <div style="padding: 14px 0; border-bottom: 1px solid rgba(107,125,90,0.08);">
+      <div class="muted text-xs mb-4">Work</div>
+      <div class="prayer-row-title" style="font-size: 16px;">Integrity in leadership</div>
+    </div>
+    <div style="padding: 14px 0; border-bottom: 1px solid rgba(107,125,90,0.08);">
+      <div class="muted text-xs mb-4">Personal Growth</div>
+      <div class="prayer-row-title" style="font-size: 16px;">Deeper prayer life</div>
+    </div>
+    <div style="padding: 14px 0;">
+      <div class="muted text-xs mb-4">Church</div>
+      <div class="prayer-row-title" style="font-size: 16px;">Pastor's sabbatical renewal</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item active"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== DETAIL ==================== -->
+<div class="screen" id="screen-detail">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-action">&#8249; Back</span><span class="nav-title">Prayer Request</span><span></span></div>
+
+  <div class="page-content">
+    <div class="card" style="padding: 24px;">
+      <div class="card-title" style="font-size: 22px; font-weight: 700; margin-bottom: 14px; line-height: 1.3;">Mom's recovery</div>
+      <div class="divider" style="margin: 12px 0;"></div>
+
+      <div style="font-size: 15px; line-height: 1.7; margin-bottom: 16px;">
+        Praying for complete healing after her surgery on March 10th. The doctors said recovery will take 6-8 weeks. Asking for minimal pain, good rest, and that she stays encouraged throughout.
+      </div>
+
+      <div class="flex-row mb-8">
+        <span class="muted text-sm">Frequency:</span>
+        <span class="section-label" style="margin: 0; text-transform: none; letter-spacing: 0; font-size: 13px;">Daily</span>
+      </div>
+
+      <!-- Tags -->
+      <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 20px;">
+        <span class="tag-chip-sm" style="background: #B84040;">Family</span>
+        <span class="tag-chip-sm" style="background: #1E7870;">Healing</span>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="btn-secondary" style="text-align: center; font-size: 13px; padding: 12px;">Share</div>
+        <div class="btn-secondary" style="text-align: center; font-size: 13px; padding: 12px;">Edit</div>
+        <div style="text-align: center; font-size: 13px; padding: 12px; border-radius: 14px; background: #CD5C5C; color: white; cursor: pointer;">Delete</div>
+        <div style="text-align: center; font-size: 13px; padding: 12px; border-radius: 14px; background: #C4A052; color: white; cursor: pointer;">Mark Answered</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item active"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== PRAYER TIME ==================== -->
+<div class="screen" id="screen-prayertime">
+  <div class="status-bar"></div>
+
+  <div class="prayer-time-bg" style="flex: 1; display: flex; flex-direction: column;">
+    <!-- Top bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 20px;">
+      <span class="muted text-sm">2 of 7</span>
+      <div class="flex-row gap-6">
+        <span class="muted" style="font-size: 15px;">&#10074;&#10074;</span>
+        <span class="muted text-sm">0:45</span>
+      </div>
+    </div>
+
+    <!-- Prayer content -->
+    <div style="flex: 1; padding: 24px 28px; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 40px;">
+      <div class="pt-card-content">
+        <div class="pt-card-label section-label" style="margin: 0 0 8px 0; text-transform: none; letter-spacing: 0.5px;">Family</div>
+        <div class="divider" style="margin: 8px 0 16px;"></div>
+        <div class="pt-card-title page-content">Mom's recovery</div>
+        <div class="pt-card-details page-content" style="margin-top: 20px; line-height: 1.8;">
+          Praying for complete healing after her surgery on March 10th. The doctors said recovery will take 6-8 weeks. Asking for minimal pain, good rest, and that she stays encouraged throughout.
+        </div>
+      </div>
+      <!-- Gradient fade -->
+      <div style="height: 48px; flex-shrink: 0;"></div>
+    </div>
+
+    <!-- Bottom navigation -->
+    <div class="pt-nav">
+      <div class="pt-btn-label btn-secondary">I'm done</div>
+      <div style="display: flex; gap: 16px; align-items: center;">
+        <div class="pt-btn btn-secondary" style="opacity: 0.5;">&#8592;</div>
+        <div class="pt-btn btn-primary">&#8594;</div>
+      </div>
+      <div class="pt-btn-label btn-secondary">Auto</div>
+    </div>
+
+    <div style="height: 34px;"></div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+let currentTheme = 'light';
+let currentPlatform = 'ios';
+
+function setTheme(theme) {
+  currentTheme = theme;
+  const screen = document.getElementById('phoneScreen');
+  screen.classList.remove('light', 'dark');
+  screen.classList.add(theme);
+  updateButtons();
+}
+
+function setPlatform(platform) {
+  currentPlatform = platform;
+  const screen = document.getElementById('phoneScreen');
+  screen.classList.remove('ios', 'android');
+  screen.classList.add(platform);
+  const frame = document.querySelector('.phone-frame');
+  if (platform === 'android') {
+    frame.style.borderRadius = '20px';
+  } else {
+    frame.style.borderRadius = '44px';
+  }
+  updateButtons();
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  updateButtons();
+}
+
+function updateButtons() {
+  document.querySelectorAll('.controls button').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.textContent === (currentTheme === 'light' ? 'Light Mode' : 'Dark Mode')) btn.classList.add('active');
+    if (btn.textContent === (currentPlatform === 'ios' ? 'iOS' : 'Android')) btn.classList.add('active');
+    const screenAttr = btn.getAttribute('data-screen');
+    if (screenAttr) {
+      const activeScreen = document.querySelector('.screen.active');
+      if (activeScreen && activeScreen.id === 'screen-' + screenAttr) btn.classList.add('active');
+    }
+  });
+}
+</script>
+</body>
+</html>

@@ -7,7 +7,10 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels;
 
-public sealed record PrayerTimeEntry(int PrayerId, string CardTitle, string PrayerTitle, string Details);
+public sealed record PrayerTimeEntry(int PrayerId, string CardTitle, string PrayerTitle, string Details)
+{
+    public bool IsSentinel => PrayerId == -1;
+}
 
 public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
 {
@@ -17,6 +20,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly IPrayerInteractionService _interactionService;
     private readonly IOnboardingService _onboardingService;
     private CancellationTokenSource _loadCts = new();
+    private int? _recentlyNotifiedTagId;
 
     // Auto-mode
     private static readonly int[] _intervalOptions = { 30, 60, 120 };
@@ -36,26 +40,60 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         }
     }
 
-    public IReadOnlyList<PrayerTimeEntry> Entries { get; private set; } = Array.Empty<PrayerTimeEntry>();
+    private static readonly PrayerTimeEntry _completionSentinel = new(-1, "", "", "");
+
+    private IReadOnlyList<PrayerTimeEntry> _entries = Array.Empty<PrayerTimeEntry>();
+    public IReadOnlyList<PrayerTimeEntry> Entries
+    {
+        get => _entries;
+        private set => SetProperty(ref _entries, value);
+    }
 
     private int _currentIndex;
+    /// <summary>
+    /// Two-way bound to CarouselView.Position. The setter is public so the
+    /// CarouselView can update it on swipe. When the value changes forward,
+    /// interaction logging fires for the prayer that was just left.
+    /// </summary>
     public int CurrentIndex
     {
         get => _currentIndex;
-        private set
+        set
         {
+            var previous = _currentIndex;
             if (SetProperty(ref _currentIndex, value))
             {
                 OnPropertyChanged(nameof(CurrentEntry));
                 OnPropertyChanged(nameof(ProgressDisplay));
                 OnPropertyChanged(nameof(HasPrevious));
                 OnPropertyChanged(nameof(HasNext));
+
+                // Log interaction for the prayer we just swiped away from (forward only)
+                if (value > previous && previous < Entries.Count)
+                    LogInteractionForIndex(previous).SafeFireAndForget();
+
+                // Swiped to the sentinel (completion) position
+                if (value > previous && Entries.Count > 0 && Entries[value].IsSentinel)
+                {
+                    HasCompleted = true;
+                    StopAutoMode();
+                }
             }
         }
     }
 
+    /// <summary>Real prayer count, excluding the completion sentinel.</summary>
+    private int RealEntryCount => Entries.Count > 0 && Entries[^1].IsSentinel ? Entries.Count - 1 : Entries.Count;
+
     public PrayerTimeEntry? CurrentEntry => Entries.Count > 0 ? Entries[CurrentIndex] : null;
-    public string ProgressDisplay => Entries.Count > 0 ? $"{CurrentIndex + 1} of {Entries.Count}" : string.Empty;
+    public string ProgressDisplay
+    {
+        get
+        {
+            var count = RealEntryCount;
+            return count > 0 ? $"{Math.Min(CurrentIndex + 1, count)} of {count}" : string.Empty;
+        }
+    }
     public bool HasPrevious => CurrentIndex > 0;
     public bool HasNext => CurrentIndex < Entries.Count - 1;
 
@@ -178,6 +216,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         HasCompleted = false;
         try
         {
+            // Cache "Recently Notified" tag ID for cleanup after prayers are prayed
+            var systemTag = await _tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
+            _recentlyNotifiedTagId = systemTag?.Id;
+
             var allActive = await _prayerService.GetAllActivePrayersAsync();
             token.ThrowIfCancellationRequested();
 
@@ -206,6 +248,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                     Details: p.Details ?? string.Empty))
                 .ToList();
 
+            bool anyPrayers = entries.Count > 0;
+            if (anyPrayers)
+                entries.Add(_completionSentinel);
+
             Entries = entries.AsReadOnly();
             // SetProperty(ref _currentIndex, 0) is a no-op when _currentIndex is already 0
             // (int default value). Bypass it and fire dependent notifications manually so
@@ -215,7 +261,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             OnPropertyChanged(nameof(ProgressDisplay));
             OnPropertyChanged(nameof(HasPrevious));
             OnPropertyChanged(nameof(HasNext));
-            HasCompleted = entries.Count == 0;
+            HasCompleted = !anyPrayers;
         }
         catch (OperationCanceledException)
         {
@@ -237,20 +283,9 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     {
         if (HasCompleted) return;
 
-        if (CurrentEntry is not null)
-        {
-            try
-            {
-                await _interactionService.LogInteractionAsync(CurrentEntry.PrayerId);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to log interaction: {ex.Message}");
-            }
-        }
-
         if (HasNext)
         {
+            // CurrentIndex setter handles interaction logging for the leaving prayer
             CurrentIndex++;
             // Reset countdown so user gets full interval on the new card
             if (IsAutoMode)
@@ -258,8 +293,28 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         }
         else
         {
+            // Log the final prayer before completing
+            await LogInteractionForIndex(CurrentIndex);
             HasCompleted = true;
             StopAutoMode();
+            SemanticScreenReader.Announce("Prayer session complete");
+        }
+    }
+
+    private async Task LogInteractionForIndex(int index)
+    {
+        if (index < 0 || index >= Entries.Count) return;
+        var entry = Entries[index];
+        if (entry.IsSentinel) return; // sentinel — nothing to log
+        try
+        {
+            await _interactionService.LogInteractionAsync(entry.PrayerId);
+            if (_recentlyNotifiedTagId.HasValue)
+                await _tagService.RemoveTagFromRequestAsync(entry.PrayerId, _recentlyNotifiedTagId.Value);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to log interaction: {ex.Message}");
         }
     }
 

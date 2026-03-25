@@ -4,7 +4,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.PrayerTime.PrayerTimeScopePage"
              x:DataType="viewModels:PrayerTimeScopeViewModel"
-             Title="Select Tags">
+             Title="Select Tags"
+             SafeAreaEdges="All">
     <ContentPage.BindingContext>
         <viewModels:PrayerTimeScopeViewModel />
     </ContentPage.BindingContext>
@@ -14,7 +15,8 @@
             <Label Text="Filter by Tags"
                    FontSize="20"
                    FontAttributes="Bold"
-                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                   SemanticProperties.HeadingLevel="Level1"
+                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
 
             <Label Text="Select the tags to include in your Prayer Time session."
                    Style="{StaticResource MutedText}" />
@@ -28,7 +30,7 @@
                                 <Label Grid.Column="0"
                                        Text="{Binding Tag.Name}"
                                        VerticalOptions="Center"
-                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                                 <CheckBox Grid.Column="1"
                                           IsChecked="{Binding IsSelected}"
                                           SemanticProperties.Description="{Binding Tag.Name}"

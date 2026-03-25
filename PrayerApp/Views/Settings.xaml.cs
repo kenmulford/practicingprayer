@@ -14,21 +14,41 @@ public partial class Settings : ContentPage
         InitializeComponent();
         _backupService = IPlatformApplication.Current!.Services.GetRequiredService<IBackupService>();
         _diagnosticLog = IPlatformApplication.Current!.Services.GetRequiredService<IDiagnosticLog>();
-        TapPrivacyPolicy.Tapped += async (_, _) => await Launcher.OpenAsync(PrivacyPolicyUrl);
+        BtnPrivacyPolicy.Clicked += async (_, _) => await Launcher.OpenAsync(PrivacyPolicyUrl);
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
         chkSettingsAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
+        entryOverdueThreshold.Text = PrayerApp.Services.Settings.OverdueDayThreshold.ToString();
+        timePickerDefaultNotify.Time = new TimeSpan(
+            PrayerApp.Services.Settings.DefaultNotifyHour,
+            PrayerApp.Services.Settings.DefaultNotifyMinute, 0);
 
         var logPath = _diagnosticLog.GetLogPath();
         diagnosticsSection.IsVisible = File.Exists(logPath) && new FileInfo(logPath).Length > 0;
     }
 
+    private void timePickerDefaultNotify_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TimePicker.Time))
+        {
+            if (timePickerDefaultNotify.Time is not { } time) return;
+            PrayerApp.Services.Settings.DefaultNotifyHour = time.Hours;
+            PrayerApp.Services.Settings.DefaultNotifyMinute = time.Minutes;
+        }
+    }
+
     private void chkSettingsAllowNotifications_Toggled(object sender, ToggledEventArgs e)
     {
         PrayerApp.Services.Settings.AllowNotifications = e.Value;
+    }
+
+    private void entryOverdueThreshold_TextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (int.TryParse(e.NewTextValue, out var days) && days >= 1)
+            PrayerApp.Services.Settings.OverdueDayThreshold = days;
     }
 
     private async void btnBackup_Clicked(object sender, EventArgs e)

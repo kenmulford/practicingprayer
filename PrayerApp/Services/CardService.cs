@@ -22,6 +22,19 @@ public class CardService : ICardService
         return _cache;
     }
 
+    public async Task<PrayerCard> GetOrCreateQuickAddCardAsync()
+    {
+        var cards = await GetCardsAsync();
+        var systemCard = cards.FirstOrDefault(c => c.IsSystem);
+        if (systemCard is not null)
+            return systemCard;
+
+        var newCard = new PrayerCard { Title = "Quick Add", IsSystem = true };
+        await newCard.SaveAsync();
+        _cache = null;
+        return newCard;
+    }
+
     public async Task<PrayerCard> SaveCardAsync(PrayerCard card)
     {
         await card.SaveAsync();

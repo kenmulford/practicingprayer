@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dark Mode Only — Practicing Prayer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #222; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; color: #ccc; }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+  .controls button { padding: 8px 18px; border: 2px solid #7d8e6c; background: #333; color: #b8c4aa; border-radius: 24px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; }
+  .controls button.active, .controls button:hover { background: #7d8e6c; color: #0d0e0c; }
+  .controls .separator { width: 1px; background: #444; margin: 0 2px; }
+
+  h1 { font-family: 'Lora', serif; font-size: 22px; color: #dce0d5; margin-bottom: 4px; }
+  .subtitle { color: #6b6f64; font-size: 13px; margin-bottom: 16px; }
+
+  .phone-frame {
+    width: 375px; height: 812px; border-radius: 44px; overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.4), 0 0 0 2px #333, inset 0 0 0 2px #444;
+    position: relative;
+  }
+  .phone-frame-landscape {
+    width: 812px; height: 375px; border-radius: 44px; overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.4), 0 0 0 2px #333, inset 0 0 0 2px #444;
+    position: relative;
+  }
+  .phone-screen {
+    width: 100%; height: 100%; overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    background: #0d0e0c;
+    font-family: 'Inter', sans-serif;
+    color: #dce0d5;
+  }
+
+  .serif { font-family: 'Lora', serif; }
+
+  /* ===== ALL COLORS — DARK MODE ONLY ===== */
+  .status-bar { height: 54px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; font-size: 12px; font-weight: 600; background: #0d0e0c; color: #dce0d5; }
+  .status-bar::after { content: '9:41'; }
+
+  .nav-bar { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #0d0e0c; border-bottom: 1px solid rgba(168,184,150,0.08); }
+  .nav-title { font-family: 'Lora', serif; font-size: 17px; font-weight: 600; color: #dce0d5; }
+  .nav-action { font-size: 14px; font-weight: 500; cursor: pointer; color: #A8B896; }
+
+  .page-content { flex: 1; overflow-y: auto; padding: 0 20px 20px; color: #dce0d5; }
+  .page-content::-webkit-scrollbar { display: none; }
+
+  .card {
+    background: #181a16;
+    border: 1px solid rgba(168,184,150,0.1);
+    border-radius: 12px; padding: 18px; margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .card-title { font-family: 'Lora', serif; font-size: 16px; font-weight: 600; color: #dce0d5; }
+
+  .muted { color: #6b6f64; }
+  .content-primary { color: #dce0d5; }
+  .content-secondary { color: #9a9e92; }
+  .section-label { font-family: 'Lora', serif; font-size: 12px; font-weight: 600; font-style: italic; letter-spacing: 0.3px; margin-bottom: 10px; margin-top: 8px; color: #d4b062; }
+  .star { color: #d4b062; }
+
+  .tab-bar {
+    height: 82px; display: flex; align-items: flex-start; justify-content: space-around;
+    padding-top: 10px; flex-shrink: 0;
+    background: #0a0b09; border-top: 1px solid rgba(168,184,150,0.08);
+  }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 500; cursor: pointer; color: #4a4d46; }
+  .tab-item.active { color: #d4b062; }
+  .tab-icon { font-size: 20px; }
+
+  .divider { height: 1px; width: 100%; margin: 8px 0; background: rgba(168,184,150,0.1); }
+
+  .btn-primary { padding: 14px 24px; border-radius: 10px; text-align: center; font-size: 15px; font-weight: 600; cursor: pointer; background: #7d8e6c; color: #0d0e0c; }
+  .btn-secondary { padding: 14px 24px; border-radius: 10px; text-align: center; font-size: 15px; font-weight: 600; cursor: pointer; background: #252722; color: #dce0d5; }
+  .btn-warm { padding: 14px 24px; border-radius: 10px; text-align: center; font-size: 15px; font-weight: 600; cursor: pointer; background: #c9a94f; color: #0d0e0c; }
+
+  .chip { display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; background: #1c1e19; color: #b8c4aa; border: 1.5px solid rgba(168,184,150,0.28); }
+  .chip.active { background: #7d8e6c; color: #0d0e0c; border-color: #7d8e6c; }
+
+  .search-bar { padding: 12px 16px; border-radius: 10px; font-size: 14px; width: 100%; outline: none; margin: 10px 0; background: #1c1e19; border: 1.5px solid rgba(168,184,150,0.22); color: #dce0d5; }
+  .search-bar::placeholder { color: #6b6f64; opacity: 1; }
+
+  .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 11px; font-size: 11px; font-weight: 700; padding: 0 6px; background: #7d8e6c; color: #0d0e0c; }
+
+  .overdue-card { background: linear-gradient(135deg, #1a1810 0%, #17150e 100%) !important; border: 1.5px solid rgba(196,160,82,0.22) !important; }
+
+  .answered-badge { color: #66BB6A; font-size: 11px; font-weight: 500; font-style: italic; }
+
+  .tag-chip { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; color: white; margin: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+
+  .prayer-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+  .prayer-title { font-size: 15px; font-weight: 500; }
+
+  .paper-texture {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.006; pointer-events: none;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(168,184,150,0.3) 28px, rgba(168,184,150,0.3) 29px);
+  }
+
+  .form-label { font-size: 12px; font-weight: 500; margin-bottom: 4px; color: #9a9e92; }
+  .form-input { width: 100%; padding: 12px 14px; border-radius: 10px; font-size: 14px; outline: none; background: #1c1e19; color: #dce0d5; border: 1.5px solid rgba(168,184,150,0.18); font-family: inherit; }
+  .form-textarea { min-height: 80px; resize: none; font-family: inherit; }
+
+  .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+  .toggle-track { width: 44px; height: 24px; border-radius: 12px; position: relative; cursor: pointer; }
+  .toggle-thumb { width: 20px; height: 20px; border-radius: 10px; position: absolute; top: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.4); background: #dce0d5; }
+  .toggle-track.on { background: #7d8e6c; }
+  .toggle-track.off { background: #353730; }
+  .toggle-track.on .toggle-thumb { left: 22px; }
+  .toggle-track.off .toggle-thumb { left: 2px; }
+
+  .screen { display: none; flex-direction: column; height: 100%; }
+  .screen.active { display: flex; }
+
+  .flex-row { display: flex; align-items: center; gap: 8px; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .flex-1 { flex: 1; }
+  .mb-4 { margin-bottom: 4px; }
+  .mb-8 { margin-bottom: 8px; }
+
+  .pt-btn { width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+  .pt-btn-label { font-size: 12px; font-weight: 500; cursor: pointer; padding: 10px 18px; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<h1>Dark Mode — Practicing Prayer</h1>
+<p class="subtitle">Blended design (Concept 3 base + Concept 1 elements)</p>
+
+<div class="controls">
+  <button class="active" data-screen="home" onclick="showScreen('home')">Home</button>
+  <button data-screen="cards" onclick="showScreen('cards')">Cards</button>
+  <button data-screen="prayers" onclick="showScreen('prayers')">Prayers</button>
+  <button data-screen="detail" onclick="showScreen('detail')">Detail (View)</button>
+  <button data-screen="edit" onclick="showScreen('edit')">Detail (Edit)</button>
+  <button data-screen="prayertime" onclick="showScreen('prayertime')">Prayer Time</button>
+</div>
+
+<div id="mainFrame" class="phone-frame">
+<div class="phone-screen" id="phoneScreen">
+
+<!-- ==================== HOME ==================== -->
+<div class="screen active" id="screen-home">
+  <div class="status-bar"></div>
+  <div class="nav-bar">
+    <span class="nav-title">Practicing Prayer</span>
+    <span></span>
+  </div>
+  <div class="page-content">
+    <div class="paper-texture"></div>
+    <div style="position: relative; z-index: 1;">
+      <div style="margin-top: 8px; margin-bottom: 28px;">
+        <div class="serif content-primary" style="font-size: 30px; font-weight: 700; line-height: 1.2;">Good morning</div>
+        <div class="muted" style="font-size: 13px; margin-top: 6px; font-style: italic;">Tuesday, March 24</div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <div class="btn-secondary flex-1" style="text-align: center; padding: 14px 8px;">
+          <div style="font-size: 13px; font-weight: 500;">+ Quick Add</div>
+        </div>
+        <div class="btn-primary flex-1" style="text-align: center; padding: 14px 8px;">
+          <div style="font-size: 13px; font-weight: 500;">Prayer Time</div>
+        </div>
+      </div>
+      <div class="muted" style="font-size: 12px; text-align: center; margin-bottom: 24px; font-style: italic;">Last prayed: 2 hours ago</div>
+      <div class="overdue-card card" style="position: relative; overflow: hidden;">
+        <div class="flex-between mb-8">
+          <div class="serif card-title" style="font-size: 18px;">3 prayers need attention</div>
+          <span style="font-size: 18px; opacity: 0.35; color: #dce0d5;">&#8250;</span>
+        </div>
+        <div class="divider"></div>
+        <div class="prayer-row"><div><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Family</div><div class="prayer-title content-primary">Mom's recovery</div></div></div>
+        <div class="prayer-row"><div><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Work</div><div class="prayer-title content-primary">Wisdom for career decisions</div></div></div>
+        <div class="prayer-row"><div><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Personal Growth</div><div class="prayer-title content-primary">Patience with the kids</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-item active"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== CARDS ==================== -->
+<div class="screen" id="screen-cards">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-title">Prayer Cards</span><span class="nav-action">+ Add Card</span></div>
+  <div class="page-content">
+    <div class="paper-texture"></div>
+    <div style="position: relative; z-index: 1; padding-top: 10px;">
+    <div class="card" style="position: relative; overflow: hidden;">
+      <div class="flex-between mb-4"><div class="flex-row"><span class="serif card-title">Family</span><span class="star">&#9733;</span></div><span class="badge">3</span></div>
+      <div class="divider"></div>
+      <div class="prayer-row" style="padding: 10px 4px;"><span class="prayer-title">Mom's recovery</span></div>
+      <div class="divider" style="margin: 0 4px;"></div>
+      <div class="prayer-row" style="padding: 10px 4px;"><span class="prayer-title">Dad's job situation</span></div>
+      <div class="divider" style="margin: 0 4px;"></div>
+      <div class="prayer-row" style="padding: 10px 4px;">
+        <div class="flex-between" style="width: 100%;">
+          <span class="prayer-title" style="text-decoration: line-through; opacity: 0.4;">Sister's exam results</span>
+          <span class="answered-badge">Answered Mar 15</span>
+        </div>
+      </div>
+      <div class="divider" style="margin: 0 4px;"></div>
+      <div style="padding: 10px 4px 4px;"><span class="nav-action" style="font-size: 13px; font-style: italic;">+ Add prayer</span></div>
+    </div>
+    <div class="card"><div class="flex-between"><span class="serif card-title">Work</span><span class="badge">2</span></div></div>
+    <div class="card"><div class="flex-between"><span class="serif card-title">Personal Growth</span><span class="badge">4</span></div></div>
+    <div class="card"><div class="flex-between"><span class="serif card-title">Church</span><span class="badge">1</span></div></div>
+    <div class="card" style="opacity: 0.5;"><div class="flex-between"><span class="serif card-title">Uncategorized</span><span class="badge" style="opacity: 0.4;">0</span></div></div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item active"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== PRAYERS ==================== -->
+<div class="screen" id="screen-prayers">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-title">Prayers</span><span class="nav-action">+ Add</span></div>
+  <div class="page-content">
+    <div class="paper-texture"></div>
+    <div style="position: relative; z-index: 1; padding-top: 10px;">
+    <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+      <div class="chip active">Active</div>
+      <div class="chip">Answered</div>
+      <div class="chip">All</div>
+    </div>
+    <input type="text" class="search-bar" placeholder="Search prayers..." readonly>
+    <div style="display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto;">
+      <div class="chip active" style="font-size: 11px; padding: 4px 12px;">Family</div>
+      <div class="chip" style="font-size: 11px; padding: 4px 12px;">Healing</div>
+      <div class="chip" style="font-size: 11px; padding: 4px 12px;">Guidance</div>
+      <div class="chip" style="font-size: 11px; padding: 4px 12px;">Gratitude</div>
+    </div>
+    <div class="card" style="padding: 0;">
+      <div style="padding: 14px 16px; border-bottom: 1px solid rgba(168,184,150,0.06);"><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Family</div><div class="prayer-title content-primary" style="font-size: 15px;">Mom's recovery</div></div>
+      <div style="padding: 14px 16px; border-bottom: 1px solid rgba(168,184,150,0.06);"><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Family</div><div class="prayer-title content-primary" style="font-size: 15px;">Dad's job situation</div></div>
+      <div style="padding: 14px 16px; border-bottom: 1px solid rgba(168,184,150,0.06);"><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Work</div><div class="prayer-title content-primary" style="font-size: 15px;">Wisdom for career decisions</div></div>
+      <div style="padding: 14px 16px; border-bottom: 1px solid rgba(168,184,150,0.06);"><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Personal Growth</div><div class="prayer-title content-primary" style="font-size: 15px;">Patience with the kids</div></div>
+      <div style="padding: 14px 16px; border-bottom: 1px solid rgba(168,184,150,0.06);"><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Work</div><div class="prayer-title content-primary" style="font-size: 15px;">Integrity in leadership</div></div>
+      <div style="padding: 14px 16px; border-bottom: 1px solid rgba(168,184,150,0.06);"><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Personal Growth</div><div class="prayer-title content-primary" style="font-size: 15px;">Deeper prayer life</div></div>
+      <div style="padding: 14px 16px;"><div class="section-label" style="margin: 0 0 2px; font-size: 10px;">Church</div><div class="prayer-title content-primary" style="font-size: 15px;">Pastor's sabbatical renewal</div></div>
+    </div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item active"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== DETAIL (VIEW) ==================== -->
+<div class="screen" id="screen-detail">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-action">&#8249; Back</span><span class="nav-title">Prayer Request</span><span class="nav-action">Edit</span></div>
+  <div class="page-content" style="padding-top: 0;">
+    <div class="paper-texture"></div>
+    <div style="position: relative; z-index: 1;">
+    <div class="card" style="padding: 24px; border-radius: 0 0 12px 12px; margin-left: -20px; margin-right: -20px; border-top: none;">
+      <div class="serif content-primary" style="font-size: 24px; font-weight: 700; margin-bottom: 6px; line-height: 1.2;">Mom's recovery</div>
+      <div class="section-label" style="margin: 0 0 16px; font-size: 11px;">Family</div>
+      <div class="content-secondary" style="font-size: 15px; line-height: 1.8; margin-bottom: 20px; font-style: italic;">Praying for complete healing after her surgery on March 10th. The doctors said recovery will take 6-8 weeks. Asking for minimal pain, good rest, and that she stays encouraged throughout.</div>
+      <div class="divider" style="margin: 16px 0;"></div>
+      <div class="flex-between" style="margin-bottom: 10px;"><span class="muted" style="font-size: 12px; font-style: italic;">Frequency</span><span class="content-primary" style="font-size: 13px; font-weight: 600;">Daily</span></div>
+      <div class="flex-between" style="margin-bottom: 10px;"><span class="muted" style="font-size: 12px; font-style: italic;">Reminder</span><span class="content-primary" style="font-size: 13px; font-weight: 600;">10:00 AM</span></div>
+      <div style="margin: 14px 0 20px;">
+        <span class="tag-chip" style="background: #B84040;">Family</span>
+        <span class="tag-chip" style="background: #1E7870;">Healing</span>
+      </div>
+      <div class="divider" style="margin: 16px 0;"></div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="btn-secondary" style="text-align: center; font-size: 13px; padding: 12px;">Share</div>
+        <div class="btn-warm" style="text-align: center; font-size: 13px; padding: 12px;">Mark Answered</div>
+      </div>
+    </div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item active"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== DETAIL (EDIT) ==================== -->
+<div class="screen" id="screen-edit">
+  <div class="status-bar"></div>
+  <div class="nav-bar"><span class="nav-action">Cancel</span><span class="nav-title">Edit Prayer</span><span class="nav-action" style="font-weight: 700;">Save</span></div>
+  <div class="page-content" style="padding-top: 0;">
+    <div class="paper-texture"></div>
+    <div style="position: relative; z-index: 1;">
+    <div class="card" style="padding: 20px; border-radius: 0 0 12px 12px; margin-left: -20px; margin-right: -20px; border-top: none;">
+      <div style="margin-bottom: 16px;"><div class="form-label">Title</div><input type="text" class="form-input" value="Mom's recovery" readonly></div>
+      <div style="margin-bottom: 16px;"><div class="form-label">Prayer Card</div><select class="form-input" disabled><option>Family</option></select></div>
+      <div style="margin-bottom: 16px;"><div class="form-label">Details</div><textarea class="form-input form-textarea" readonly>Praying for complete healing after her surgery on March 10th. The doctors said recovery will take 6-8 weeks.</textarea></div>
+      <div class="divider" style="margin: 12px 0;"></div>
+      <div class="toggle-row"><span class="content-primary" style="font-size: 14px; font-weight: 500;">Reminders</span><div class="toggle-track on"><div class="toggle-thumb"></div></div></div>
+      <div style="margin-bottom: 16px;"><div class="form-label">Frequency</div><select class="form-input" disabled><option>Daily</option></select></div>
+      <div style="margin-bottom: 16px;"><div class="form-label">Reminder Time</div><input type="text" class="form-input" value="10:00 AM" readonly></div>
+      <div class="divider" style="margin: 12px 0;"></div>
+      <div style="margin-bottom: 12px;">
+        <div class="form-label">Tags</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+          <span class="tag-chip" style="background: #B84040;">Family <span style="opacity: 0.6; margin-left: 4px; cursor: pointer;">&times;</span></span>
+          <span class="tag-chip" style="background: #1E7870;">Healing <span style="opacity: 0.6; margin-left: 4px; cursor: pointer;">&times;</span></span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+        <div class="chip" style="font-size: 11px; padding: 4px 10px;">+ Guidance</div>
+        <div class="chip" style="font-size: 11px; padding: 4px 10px;">+ Gratitude</div>
+        <div class="chip" style="font-size: 11px; padding: 4px 10px;">+ Work</div>
+      </div>
+      <div class="divider" style="margin: 12px 0;"></div>
+      <div class="toggle-row"><span class="content-primary" style="font-size: 14px; font-weight: 500;">Mark as Answered</span><div class="toggle-track off"><div class="toggle-thumb"></div></div></div>
+    </div>
+    <div style="text-align: center; padding: 12px; margin-top: 4px;"><span style="color: #CD5C5C; font-size: 14px; font-weight: 500; cursor: pointer;">Delete Prayer</span></div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-item"><span class="tab-icon">&#9751;</span>Home</div>
+    <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+    <div class="tab-item active"><span class="tab-icon">&#128591;</span>Prayers</div>
+    <div class="tab-item"><span class="tab-icon">&#9873;</span>Tags</div>
+    <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+  </div>
+</div>
+
+<!-- ==================== PRAYER TIME (landscape) ==================== -->
+<div class="screen" id="screen-prayertime">
+  <div style="flex: 1; display: flex; flex-direction: row; position: relative; height: 100%; background: linear-gradient(180deg, #141513 0%, #1a1915 100%);">
+    <div class="paper-texture"></div>
+    <div style="flex: 1; padding: 24px 32px; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 1;">
+      <div class="section-label" style="margin: 0 0 8px; font-size: 14px;">Family</div>
+      <div class="serif content-primary" style="font-size: 26px; font-weight: 700; line-height: 1.2; margin-bottom: 16px;">Mom's recovery</div>
+      <div class="content-secondary" style="font-size: 14px; line-height: 1.8; font-style: italic;">Praying for complete healing after her surgery on March 10th. Asking for minimal pain, good rest, and encouragement.</div>
+    </div>
+    <div style="width: 220px; display: flex; flex-direction: column; justify-content: space-between; padding: 28px 24px; position: relative; z-index: 1;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="muted" style="font-size: 12px; font-style: italic;">2 of 7</span>
+        <div class="flex-row" style="gap: 6px;"><span class="muted" style="font-size: 16px; cursor: pointer;">&#10074;&#10074;</span><span class="muted" style="font-size: 12px; font-style: italic;">0:45</span></div>
+      </div>
+      <div style="display: flex; gap: 16px; align-items: center; justify-content: center;">
+        <div class="pt-btn btn-secondary" style="opacity: 0.4;">&#8592;</div>
+        <div class="pt-btn btn-primary">&#8594;</div>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <div class="pt-btn-label btn-secondary">I'm done</div>
+        <div class="pt-btn-label btn-secondary">Auto</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+let currentScreen = 'home';
+function showScreen(name) {
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const frame = document.getElementById('mainFrame');
+  if (name === 'prayertime') { frame.className = 'phone-frame-landscape'; }
+  else { frame.className = 'phone-frame'; }
+  document.querySelectorAll('.controls button[data-screen]').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-screen') === name);
+  });
+}
+</script>
+</body>
+</html>

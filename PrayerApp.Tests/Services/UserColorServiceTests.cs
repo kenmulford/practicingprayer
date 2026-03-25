@@ -88,15 +88,26 @@ public class UserColorServiceTests
     // ── DeleteColorAsync ────────────────────────────────────────────────────
 
     [Fact]
-    public async Task DeleteColorAsync_ExistingColor_DeletesFromDatabase()
+    public async Task DeleteColorAsync_CustomColor_DeletesFromDatabase()
     {
-        var color = new UserColor { Id = 3, HexValue = "#123456" };
+        var color = new UserColor { Id = 3, HexValue = "#123456", IsDefault = false };
         _db.GetByIdAsync<UserColor>(3).Returns(Task.FromResult(color));
         _db.DeleteAsync(Arg.Any<UserColor>()).Returns(Task.FromResult(1));
 
         await _service.DeleteColorAsync(3);
 
         await _db.Received(1).DeleteAsync(Arg.Is<UserColor>(c => c.Id == 3));
+    }
+
+    [Fact]
+    public async Task DeleteColorAsync_DefaultColor_ProtectedFromDeletion()
+    {
+        var color = new UserColor { Id = 1, HexValue = "#B84040", IsDefault = true };
+        _db.GetByIdAsync<UserColor>(1).Returns(Task.FromResult(color));
+
+        await _service.DeleteColorAsync(1);
+
+        await _db.DidNotReceive().DeleteAsync(Arg.Any<UserColor>());
     }
 
     [Fact]
@@ -107,6 +118,16 @@ public class UserColorServiceTests
         await _service.DeleteColorAsync(99);
 
         await _db.DidNotReceive().DeleteAsync(Arg.Any<UserColor>());
+    }
+
+    // ── GetFirstDefaultHex ───────────────────────────────────────────────
+
+    [Fact]
+    public void GetFirstDefaultHex_ReturnsFirstPaletteColor()
+    {
+        var hex = _service.GetFirstDefaultHex();
+
+        Assert.Equal("#B84040", hex);
     }
 
     // ── SeedDefaultsAsync ───────────────────────────────────────────────────

@@ -120,6 +120,52 @@ namespace PrayerApp.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[UpdateSchema] Orphan PrayerCardTag cleanup: {ex.Message}");
             }
+
+            // Add IsSystem column to PrayerCard for system-managed cards (e.g., Quick Add)
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsSystem INTEGER DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+
+            // Add IsDefault column to UserColor and backfill existing seed colors
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE UserColor ADD COLUMN IsDefault INTEGER DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+
+            // Add IsSystem column to PrayerTag for system-managed tags
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerTag ADD COLUMN IsSystem INTEGER DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+
+            // Add notification scheduling columns to PrayerRequest
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyHour INTEGER DEFAULT 9"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyMinute INTEGER DEFAULT 0"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyDayOfWeek INTEGER DEFAULT -1"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN NotifyDayOfMonth INTEGER DEFAULT -1"); } catch { }
+
+            try
+            {
+                // Mark the 8 original seed colors as defaults (by hex value)
+                var seedHexValues = new[] {
+                    "#B84040", "#B35A20", "#7A4020", "#1E7870",
+                    "#2E5A9A", "#663C8C", "#8C3860", "#505050"
+                };
+                foreach (var hex in seedHexValues)
+                {
+                    await _db.ExecuteAsync(
+                        "UPDATE UserColor SET IsDefault = 1 WHERE UPPER(HexValue) = ?",
+                        hex.ToUpperInvariant());
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UpdateSchema] UserColor IsDefault backfill: {ex.Message}");
+            }
         }
 
         public async Task CloseAsync()
@@ -232,9 +278,9 @@ namespace PrayerApp.Services
         {
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
-            var result = await _db.ExecuteScalarAsync<string>(
+            var result = await _db.ExecuteScalarAsync<long?>(
                 "SELECT MAX(InteractionAt) FROM PrayerInteraction");
-            return result is not null ? DateTime.Parse(result) : null;
+            return result.HasValue ? new DateTime(result.Value) : null;
         }
 
         public async Task<int> DeleteInteractionsByPrayerIdAsync(int prayerId)

@@ -46,9 +46,11 @@ public class UserColorService : IUserColorService
     public async Task DeleteColorAsync(int id)
     {
         var color = await _dbService.GetByIdAsync<UserColor>(id);
-        if (color is not null)
-            await _dbService.DeleteAsync(color);
+        if (color is null || color.IsDefault) return; // protect defaults
+        await _dbService.DeleteAsync(color);
     }
+
+    public string GetFirstDefaultHex() => DefaultPaletteHexValues[0];
 
     public async Task SeedDefaultsAsync()
     {
@@ -57,7 +59,7 @@ public class UserColorService : IUserColorService
 
         foreach (var hex in DefaultPaletteHexValues)
         {
-            await _dbService.InsertAsync(new UserColor { HexValue = hex });
+            await _dbService.InsertAsync(new UserColor { HexValue = hex, IsDefault = true });
         }
     }
 }

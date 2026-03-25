@@ -2,9 +2,11 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:models="clr-namespace:PrayerApp.Models"
              x:Class="PrayerApp.Views.QuickAddPage"
              x:DataType="viewModels:QuickAddViewModel"
-             Title="Quick Add">
+             Title="Quick Add"
+             SafeAreaEdges="All">
     <ContentPage.BindingContext>
         <viewModels:QuickAddViewModel />
     </ContentPage.BindingContext>
@@ -17,22 +19,18 @@
 
                     <Label Text="Prayer Title"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Entry Text="{Binding Title}"
-                               Placeholder="Enter prayer title"
-                               HorizontalOptions="Fill" />
-                    </Border>
+                    <Entry Text="{Binding Title}"
+                           Placeholder="Enter prayer title"
+                           HorizontalOptions="Fill" />
 
                     <Label Text="Add to Card"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource InputBorder}" Padding="10,0">
-                        <Picker ItemsSource="{Binding Cards}"
-                                SelectedItem="{Binding SelectedCard}"
-                                ItemDisplayBinding="{Binding Title}"
-                                Title="Select a card"
-                                SemanticProperties.Hint="Select which prayer card to add this request to"
-                                HorizontalOptions="Fill" />
-                    </Border>
+                    <Picker ItemsSource="{Binding Cards}"
+                            SelectedItem="{Binding SelectedCard}"
+                            ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
+                            Title="Select a card"
+                            SemanticProperties.Hint="Select which prayer card to add this request to"
+                            HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>
             </Border>

@@ -35,6 +35,9 @@ namespace PrayerApp.Models
         [Column("IsFavorite")]
         public bool IsFavorite { get; set; } = false;
 
+        [Column("IsSystem")]
+        public bool IsSystem { get; set; }
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

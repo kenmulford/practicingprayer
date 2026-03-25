@@ -91,6 +91,14 @@ namespace PrayerApp.ViewModels
                 if (int.TryParse(query["prayerSaved"].ToString(), out int prayerId)
                     && int.TryParse(query["parentCardId"].ToString(), out int parentCardId))
                 {
+                    // If the prayer moved to a different card, remove it from the old card
+                    if (query.TryGetValue("oldCardId", out var oldVal)
+                        && int.TryParse(oldVal?.ToString(), out int oldCardId))
+                    {
+                        var oldCard = AllPrayerCards.FirstOrDefault(card => card.Id == oldCardId);
+                        oldCard?.RemovePrayer(prayerId);
+                    }
+
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     if (matched != null)
                     {
@@ -170,7 +178,8 @@ namespace PrayerApp.ViewModels
             try
             {
                 var sorted = AllPrayerCards
-                    .OrderByDescending(pc => pc.IsFavorite)
+                    .OrderByDescending(pc => pc.IsSystem)
+                    .ThenByDescending(pc => pc.IsFavorite)
                     .ThenBy(pc => pc.Title)
                     .ToList();
 

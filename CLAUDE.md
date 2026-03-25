@@ -19,15 +19,15 @@
 
 ## Tech Stack
 
-| Package | Version | Notes |
-|---------|---------|-------|
-| .NET MAUI | 10 | `net10.0-android`, `net10.0-ios` |
-| CommunityToolkit.Mvvm | 8.4.0 | `[ObservableProperty]`, `[RelayCommand]`, `ObservableObject` |
-| CommunityToolkit.Maui | 14.0.1 | Requires `Microsoft.Maui.Controls >= 10.0.41` — do not downgrade |
-| sqlite-net-pcl | 1.9.172 | Active Record model pattern |
-| Plugin.LocalNotification | 13.0.0 | Local push notifications |
-| xUnit | 2.9.2 | Unit tests |
-| NSubstitute | 5.3.0 | Test mocking |
+| Package                  | Version | Notes                                                            |
+| ------------------------ | ------- | ---------------------------------------------------------------- |
+| .NET MAUI                | 10      | `net10.0-android`, `net10.0-ios`                                 |
+| CommunityToolkit.Mvvm    | 8.4.0   | `[ObservableProperty]`, `[RelayCommand]`, `ObservableObject`     |
+| CommunityToolkit.Maui    | 14.0.1  | Requires `Microsoft.Maui.Controls >= 10.0.41` — do not downgrade |
+| sqlite-net-pcl           | 1.9.172 | Active Record model pattern                                      |
+| Plugin.LocalNotification | 13.0.0  | Local push notifications                                         |
+| xUnit                    | 2.9.2   | Unit tests                                                       |
+| NSubstitute              | 5.3.0   | Test mocking                                                     |
 
 ---
 
@@ -50,13 +50,13 @@ Views (XAML)
 
 ## Database Schema
 
-| Table | Key columns |
-|-------|-------------|
-| `PrayerCard` | Id, Title, CanNotify, PrayerFrequency, IsAnswered, IsFavorite, CreatedAt, UpdatedAt |
-| `PrayerRequest` | Id, PrayerCardId (FK), Title, Details, CanNotify, PrayerFrequency, IsAnswered, AnsweredAt, CreatedAt, UpdatedAt |
-| `PrayerTag` | Id, Name, Color (hex, nullable) |
-| `PrayerCardTag` | Id, PrayerCardId (FK), PrayerTagId (FK), PrayerRequestId (FK), CreatedAt |
-| `PrayerInteraction` | Id, PrayerId (FK), InteractionType, InteractionAt |
+| Table               | Key columns                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `PrayerCard`        | Id, Title, CanNotify, PrayerFrequency, IsAnswered, IsFavorite, CreatedAt, UpdatedAt                             |
+| `PrayerRequest`     | Id, PrayerCardId (FK), Title, Details, CanNotify, PrayerFrequency, IsAnswered, AnsweredAt, CreatedAt, UpdatedAt |
+| `PrayerTag`         | Id, Name, Color (hex, nullable)                                                                                 |
+| `PrayerCardTag`     | Id, PrayerCardId (FK), PrayerTagId (FK), PrayerRequestId (FK), CreatedAt                                        |
+| `PrayerInteraction` | Id, PrayerId (FK), InteractionType, InteractionAt                                                               |
 
 - The `Prayer` model uses `[Table("PrayerRequest")]` — the SQLite table is `PrayerRequest`, not `Prayer`
 - Schema migrations live in `DBService.UpdateSchema()`
@@ -66,16 +66,20 @@ Views (XAML)
 ## Conventions
 
 ### Git
+
 - Feature branches off `dev`, PRs target `dev`, `master` updated at release milestones
 - Branch naming: `feature/<short-name>` (e.g., `feature/f7-home-personalization`)
 
 ### Styling
+
 - Full light and dark mode support via `AppThemeBinding` — never hardcode hex in XAML or C#
 - Use `StaticResource` color tokens from `Resources/Styles/Colors.xaml`
 - Card borders: `Style="{StaticResource PrayerCardBorder}"` on every card-wrapping `Border`
 - Named styles for reusable patterns in `Resources/Styles/Styles.xaml`
+- Any time a new style is defined in code, always verify the key exists in Styles.xaml or Colors.xaml.
 
 ### Forms
+
 - Label above field, both full-width (`VerticalStackLayout` with `FormLabel` above input)
 - Never use side-by-side label+field layout
 
@@ -93,15 +97,15 @@ Views (XAML)
 
 ## Known Gotchas
 
-| Gotcha | Detail |
-|--------|--------|
-| `Shell.PushModalAsync` removed | Use `Shell.Current.Navigation.PushModalAsync(page)` |
-| `DisplayAlert` deprecated | Use `DisplayAlertAsync` instead |
-| Timers must use `IDispatcherTimer` | Not `System.Timers.Timer` — MAUI requires UI thread timers |
-| Package version lock | `CommunityToolkit.Maui 14.0.1` requires `Microsoft.Maui.Controls >= 10.0.41` |
-| Prayer table name mismatch | `Prayer` model → `[Table("PrayerRequest")]` SQLite table |
-| SQLite page size warning | XA0141 re: Android 16 16KB pages — third-party issue, no action needed |
-| PAT scope for CI | Pushing `.github/workflows/` requires `workflow` scope on GitHub PAT |
+| Gotcha                             | Detail                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| `Shell.PushModalAsync` removed     | Use `Shell.Current.Navigation.PushModalAsync(page)`                          |
+| `DisplayAlert` deprecated          | Use `DisplayAlertAsync` instead                                              |
+| Timers must use `IDispatcherTimer` | Not `System.Timers.Timer` — MAUI requires UI thread timers                   |
+| Package version lock               | `CommunityToolkit.Maui 14.0.1` requires `Microsoft.Maui.Controls >= 10.0.41` |
+| Prayer table name mismatch         | `Prayer` model → `[Table("PrayerRequest")]` SQLite table                     |
+| SQLite page size warning           | XA0141 re: Android 16 16KB pages — third-party issue, no action needed       |
+| PAT scope for CI                   | Pushing `.github/workflows/` requires `workflow` scope on GitHub PAT         |
 
 ---
 
@@ -111,12 +115,58 @@ Views (XAML)
 - **Feature-completeness**: Finish what you start. Don't leave partial implementations or TODO stubs.
 - **Ask first, assume never**: When requirements are ambiguous, ask clarifying questions before writing code.
 - **Before every git commit**: Run `/simplify` to review changed code for reuse, quality, and efficiency. Fix any issues found before committing.
+- **Parallel agents**: Allowed for this project — override the global single-agent rule. Use parallel agents for independent tasks to maximize efficiency.
+
+---
+
+## Skills
+
+A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically detects MAUI-related keywords in each message and injects the relevant skill names as `additionalContext`. When skills are injected, invoke them via the `Skill` tool before implementing.
+
+**Always invoke for any MAUI/XAML implementation work:**
+- `maui-skills:maui-current-apis` — guardrail against deprecated/removed APIs
+
+**Triggered automatically by keyword detection:**
+
+| Topic | Skill |
+| ----- | ----- |
+| Animations, transitions | `maui-skills:maui-animations` |
+| Local notifications | `maui-skills:maui-local-notifications` |
+| Accessibility / screen readers | `maui-skills:maui-accessibility` |
+| CollectionView, lists, scrolling | `maui-skills:maui-collectionview` |
+| Shell, navigation, tabs, modals, routes | `maui-skills:maui-shell-navigation` |
+| SQLite, database, migrations | `maui-skills:maui-sqlite-database` |
+| Data binding, MVVM, ViewModels | `maui-skills:maui-data-binding` |
+| Runtime permissions | `maui-skills:maui-permissions` |
+| Theming, dark/light mode | `maui-skills:maui-theming` |
+| Gestures (swipe, drag, pinch) | `maui-skills:maui-gestures` |
+| Safe area, insets, edge-to-edge | `maui-skills:maui-safe-area` |
+| Secure storage | `maui-skills:maui-secure-storage` |
+| Unit testing, xUnit, NSubstitute | `maui-skills:maui-unit-testing` |
+| Performance, optimization | `maui-skills:maui-performance` |
+| Custom handlers, native views | `maui-skills:maui-custom-handlers` |
+| App lifecycle, background/foreground | `maui-skills:maui-app-lifecycle` |
+| App icons, splash screens | `maui-skills:maui-app-icons-splash` |
+| File picker, file system | `maui-skills:maui-file-handling` |
+| Dependency injection, service registration | `maui-skills:maui-dependency-injection` |
+
+**Not applicable to this project** (privacy-first, offline): `maui-authentication`, `maui-rest-api`, `maui-push-notifications`, `maui-maps`, `maui-geolocation`, `maui-aspire`, xamarin-* migration skills.
+
+---
+
+## Changelog
+
+- **File:** `docs/CHANGELOG.md` — app store release notes, updated continuously
+- After every commit that adds user-facing changes (features, improvements, bug fixes), update `docs/CHANGELOG.md` with a concise, user-friendly summary
+- Write for end users, not developers — no code references, backlog IDs, or technical jargon
+- When Ken tags a new version/build, reset the changelog: update the baseline tag, clear the entries, and start fresh
 
 ---
 
 ## Key Files
 
 - `BACKLOG.md` — prioritized work queue (update every session)
+- `docs/CHANGELOG.md` — app store release notes (update every session with user-facing changes)
 - `docs/plans/` — active feature implementation plans (F-10, F-13)
 - `docs/research/` — investigation notes
 - `docs/tester-feedback/feedback-log.md` — verbatim tester feedback

@@ -6,7 +6,8 @@
              x:DataType="viewModels:PrayerTimeViewModel"
              Shell.NavBarIsVisible="False"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
-             Shell.TabBarIsVisible="False">
+             Shell.TabBarIsVisible="False"
+             SafeAreaEdges="Container">
     <ContentPage.BindingContext>
         <viewModels:PrayerTimeViewModel />
     </ContentPage.BindingContext>
@@ -22,35 +23,36 @@
                    Style="{StaticResource MutedText}"
                    FontSize="13" />
             <!-- Pause/resume button — only visible while auto-mode is active -->
-            <Label Grid.Column="1"
-                   Text="{Binding PauseButtonText}"
-                   IsVisible="{Binding IsAutoMode}"
-                   VerticalOptions="Center"
-                   Style="{StaticResource MutedText}"
-                   FontSize="16">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding TogglePauseCommand}" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button Grid.Column="1"
+                    Text="{Binding PauseButtonText}"
+                    Command="{Binding TogglePauseCommand}"
+                    IsVisible="{Binding IsAutoMode}"
+                    VerticalOptions="Center"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    FontSize="16"
+                    Padding="4,0"
+                    BorderWidth="0" />
             <!-- Countdown (auto-mode) or configured interval (manual mode); tap to cycle -->
-            <Label Grid.Column="2"
-                   Text="{Binding CountdownDisplay}"
-                   VerticalOptions="Center"
-                   Style="{StaticResource MutedText}"
-                   FontSize="13">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding CycleIntervalCommand}" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button Grid.Column="2"
+                    Text="{Binding CountdownDisplay}"
+                    Command="{Binding CycleIntervalCommand}"
+                    SemanticProperties.Hint="Tap to change auto-advance interval"
+                    VerticalOptions="Center"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    FontSize="13"
+                    Padding="4,0"
+                    BorderWidth="0" />
         </Grid>
 
-        <!-- Row 1: Prayer content — fills remaining screen estate -->
+        <!-- Row 1: Prayer content — CarouselView for swipeable cards -->
         <Grid Grid.Row="1">
 
             <!-- Loading indicator -->
             <ActivityIndicator IsRunning="{Binding IsLoading}"
                                IsVisible="{Binding IsLoading}"
-                               Color="{StaticResource Primary}"
+                               Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                                HorizontalOptions="Center"
                                VerticalOptions="Center" />
 
@@ -62,7 +64,7 @@
                 <Label Text="You've prayed through all your requests!"
                        FontSize="20"
                        FontAttributes="Bold"
-                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                        HorizontalOptions="Center"
                        HorizontalTextAlignment="Center" />
                 <Button Text="Finish"
@@ -70,41 +72,65 @@
                         HorizontalOptions="Center" />
             </VerticalStackLayout>
 
-            <!-- Main prayer content -->
-            <Grid RowDefinitions="Auto, Auto, Auto, *"
-                  IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
-                <Grid.GestureRecognizers>
-                    <SwipeGestureRecognizer Direction="Left" Command="{Binding NextCommand}" />
-                    <SwipeGestureRecognizer Direction="Right" Command="{Binding PreviousCommand}" />
-                </Grid.GestureRecognizers>
+            <!-- Swipeable prayer cards -->
+            <CarouselView ItemsSource="{Binding Entries}"
+                          Position="{Binding CurrentIndex, Mode=TwoWay}"
+                          IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
+                          Loop="False"
+                          IsSwipeEnabled="True"
+                          IsBounceEnabled="False"
+                          HorizontalScrollBarVisibility="Never"
+                          VerticalScrollBarVisibility="Never">
+                <CarouselView.ItemTemplate>
+                    <DataTemplate x:DataType="viewModels:PrayerTimeEntry">
+                        <Grid RowDefinitions="Auto, Auto, Auto, *" Padding="4,0">
 
-                <!-- Card title (small muted header) -->
-                <Label Text="{Binding CurrentEntry.CardTitle, FallbackValue=''}"
-                       FontSize="16"
-                       FontAttributes="Bold"
-                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource PrimaryDark}}"
-                       Margin="0,8,0,0" />
+                            <!-- Card title (small muted header) -->
+                            <Label Text="{Binding CardTitle}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource PrimaryDark}}"
+                                   Margin="0,8,0,0" />
 
-                <!-- Divider -->
-                <BoxView Grid.Row="1"
-                         Style="{StaticResource DividerLine}"
-                         Margin="0,6" />
+                            <!-- Divider -->
+                            <BoxView Grid.Row="1"
+                                     Style="{StaticResource DividerLine}"
+                                     Margin="0,6" />
 
-                <!-- Prayer title -->
-                <Label Grid.Row="2"
-                       Text="{Binding CurrentEntry.PrayerTitle, FallbackValue=''}"
-                       FontSize="22"
-                       FontAttributes="Bold"
-                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}" />
+                            <!-- Prayer title -->
+                            <Label Grid.Row="2"
+                                   Text="{Binding PrayerTitle}"
+                                   FontSize="22"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
 
-                <!-- Details — dominant content, scrollable -->
-                <ScrollView Grid.Row="3" Margin="0,12,0,0">
-                    <Label Text="{Binding CurrentEntry.Details, FallbackValue=''}"
-                           FontSize="17"
-                           LineHeight="1.5"
-                           TextColor="{AppThemeBinding Light={StaticResource OffBlack}, Dark={StaticResource White}}" />
-                </ScrollView>
-            </Grid>
+                            <!-- Details with scroll + fade indicator -->
+                            <Grid Grid.Row="3" Margin="0,12,0,0">
+                                <ScrollView VerticalScrollBarVisibility="Never">
+                                    <Label Text="{Binding Details}"
+                                           FontSize="17"
+                                           LineHeight="1.5"
+                                           Padding="0,0,0,28"
+                                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                                </ScrollView>
+
+                                <!-- Gradient fade at bottom — hints at scrollable content -->
+                                <BoxView HeightRequest="36"
+                                         VerticalOptions="End"
+                                         InputTransparent="True"
+                                         AutomationProperties.IsInAccessibleTree="false">
+                                    <BoxView.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="Transparent" Offset="0.0" />
+                                            <GradientStop Color="{AppThemeBinding Light=#FAF8F3, Dark=#0d0e0c}" Offset="1.0" />
+                                        </LinearGradientBrush>
+                                    </BoxView.Background>
+                                </BoxView>
+                            </Grid>
+                        </Grid>
+                    </DataTemplate>
+                </CarouselView.ItemTemplate>
+            </CarouselView>
 
         </Grid>
 
@@ -117,30 +143,32 @@
             <Button Grid.Column="0"
                     Text="I'm done"
                     Command="{Binding EndSessionCommand}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}"
-                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                     Style="{StaticResource CircleNavButton}"
                     FontSize="11" />
             <Button Grid.Column="2"
                     Text="←"
+                    SemanticProperties.Description="Previous prayer"
                     Command="{Binding PreviousCommand}"
                     IsEnabled="{Binding HasPrevious}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}"
-                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                     Style="{StaticResource CircleNavButton}" />
             <Button Grid.Column="3"
                     Text="→"
+                    SemanticProperties.Description="Next prayer"
                     Command="{Binding NextCommand}"
-                    BackgroundColor="{StaticResource Primary}"
-                    TextColor="{StaticResource White}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"
                     Style="{StaticResource CircleNavButton}"
                     Margin="16,0,0,0" />
             <Button Grid.Column="5"
                     Text="{Binding AutoModeButtonText}"
                     Command="{Binding ToggleAutoModeCommand}"
                     IsEnabled="{Binding HasCompleted, Converter={StaticResource InverseBool}}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray600}}"
-                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource White}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                     Style="{StaticResource CircleNavButton}"
                     FontSize="11" />
 
