@@ -8,7 +8,7 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    public class TagDetailViewModel : ObservableObject, IQueryAttributable
+    public class TagDetailViewModel : ObservableObject, IQueryAttributable, IEditGuard
     {
         private readonly ITagService _tagService;
         private readonly IUserColorService _userColorService;
@@ -16,6 +16,10 @@ namespace PrayerApp.ViewModels
         private PrayerTag _tag = new();
         private string _selectedColorHex = TagColorPalette.Swatches[0].Light;
         private string _firstDefaultHex = string.Empty;
+
+        // Dirty-tracking originals (set after load/save)
+        private string _originalName = string.Empty;
+        private string _originalColorHex = string.Empty;
 
         public string Name
         {
@@ -34,6 +38,17 @@ namespace PrayerApp.ViewModels
         public bool IsSystem { get; private set; }
 
         public bool IsNameEditable => !IsSystem;
+
+        public bool IsDirty =>
+            Name != _originalName ||
+            SelectedColorHex != _originalColorHex;
+
+        public async Task<bool> CanLeaveAsync()
+        {
+            if (!IsDirty) return true;
+            return await Shell.Current.DisplayAlertAsync(
+                "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
+        }
 
         public string SelectedColorHex
         {
@@ -62,6 +77,8 @@ namespace PrayerApp.ViewModels
             _firstDefaultHex = _userColorService.GetFirstDefaultHex();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             AddColorCommand = new AsyncRelayCommand(AddColorAsync);
+
+            CaptureOriginals();
 
             LoadSwatchesAsync().SafeFireAndForget();
         }
@@ -126,6 +143,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(IsNameEditable));
             OnPropertyChanged(nameof(Name));
             SelectedColorHex = _tag.Color ?? TagColorPalette.Swatches[0].Light;
+            CaptureOriginals();
         }
 
         private async Task SaveAsync()
@@ -138,8 +156,15 @@ namespace PrayerApp.ViewModels
 
             _tag.Color = SelectedColorHex;
             await _tagService.SaveTagAsync(_tag);
+            CaptureOriginals();
             SemanticScreenReader.Announce("Tag saved");
             await Shell.Current.GoToAsync("..");
+        }
+
+        private void CaptureOriginals()
+        {
+            _originalName = Name ?? string.Empty;
+            _originalColorHex = SelectedColorHex;
         }
 
         private async Task AddColorAsync()

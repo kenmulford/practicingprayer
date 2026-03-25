@@ -15,8 +15,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Active — iOS tester feedback (feature/ios-feedback-b29)
-**Last completed**: A11Y Phase 1+2 merged to dev. Phase 1 quick wins (F1, F2, F7) committed.
-**Next up**: F4 (keyboard dismiss), F5 (card picker UX), F3 (unsaved changes guard), F6 (tag→prayer nav)
+**Last completed**: Phases 1–3 committed (F1, F2, F7, F4, F5, F3). Unsaved changes guard on all detail pages.
+**Next up**: F6 (tag→prayer navigation)
 
 ---
 

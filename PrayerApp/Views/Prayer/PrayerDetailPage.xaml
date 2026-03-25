@@ -271,6 +271,7 @@
                     <Button Text="Delete"
                             Command="{Binding DeleteCommand}"
                             Style="{StaticResource DangerButton}"
+                            IsVisible="{Binding IsNew, Converter={StaticResource InverseBool}}"
                             HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>

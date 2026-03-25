@@ -14,6 +14,8 @@
 - Tag color swatches and "add color" button now align consistently
 - Search keyboard now dismisses when tapping search button, elsewhere on screen, or navigating away
 - Prayer card picker now shows a clearer label and dropdown indicator
+- Delete button is now hidden on new unsaved cards and prayers
+- App prompts to discard or stay when navigating away with unsaved changes
 
 ### Accessibility Improvements
 - Improved color contrast throughout the app for better readability

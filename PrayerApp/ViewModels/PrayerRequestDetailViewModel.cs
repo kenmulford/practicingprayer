@@ -14,7 +14,7 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    public class PrayerRequestDetailViewModel : ObservableObject, IQueryAttributable
+    public class PrayerRequestDetailViewModel : ObservableObject, IQueryAttributable, IEditGuard
     {
         private Prayer _prayer;
         private readonly IPrayerService _prayerService;
@@ -52,8 +52,17 @@ namespace PrayerApp.ViewModels
 
         private string _savedQueryKey = "saved";
         private string _deletedQueryKey = "deleted";
-        private int _originalCardId;
+
+        // Dirty-tracking originals (set after load/save)
+        private string _originalTitle = string.Empty;
+        private string? _originalDetails;
+        private int _originalPrayerCardId;
+        private bool _originalCanNotify;
+        private PrayerFrequency _originalFrequency;
+        private bool _originalIsAnswered;
+
         public bool ReturnToCards { get; set; }
+        public bool IsNew => _prayer.Id == 0;
 
         private bool _isReadOnly;
         public bool IsReadOnly
@@ -73,6 +82,21 @@ namespace PrayerApp.ViewModels
         public bool IsEditable => !IsReadOnly;
 
         public bool IsNotAnswered => !IsAnswered;
+
+        public bool IsDirty =>
+            Title != _originalTitle ||
+            Details != _originalDetails ||
+            PrayerCardId != _originalPrayerCardId ||
+            CanNotify != _originalCanNotify ||
+            PrayerFrequency != _originalFrequency ||
+            IsAnswered != _originalIsAnswered;
+
+        public async Task<bool> CanLeaveAsync()
+        {
+            if (!IsDirty) return true;
+            return await Shell.Current.DisplayAlertAsync(
+                "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
+        }
 
         public string Identifier => _prayer.Id.ToString();
 
@@ -327,6 +351,7 @@ namespace PrayerApp.ViewModels
         {
             bool isNew = _prayer.Id == 0;
             await _prayerService.SavePrayerAsync(_prayer);
+            CaptureOriginals(); // Reset dirty state before navigation
             // Id is now assigned (even for new prayers).
 
             // For new prayers, persist any tags that were staged in SelectedTags
@@ -354,10 +379,10 @@ namespace PrayerApp.ViewModels
                 // New prayers: stack is Cards→Edit (1 level back)
                 // Existing prayers: stack is Cards→View→Edit (2 levels back)
                 string route = isNew ? ".." : "../..";
-                bool cardChanged = !isNew && _originalCardId != 0 && _originalCardId != PrayerCardId;
+                bool cardChanged = !isNew && _originalPrayerCardId != 0 && _originalPrayerCardId != PrayerCardId;
                 var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
                 if (cardChanged)
-                    queryParts += $"&oldCardId={_originalCardId}";
+                    queryParts += $"&oldCardId={_originalPrayerCardId}";
                 await Shell.Current.GoToAsync($"{route}?{queryParts}");
             }
             else
@@ -416,6 +441,7 @@ namespace PrayerApp.ViewModels
             IsAnswered = true;
             await _notificationService.CancelAsync(_prayer.Id);
             await _prayerService.SavePrayerAsync(_prayer);
+            CaptureOriginals(); // Reset dirty state before navigation
 
             // Navigate back so parent page (list or card accordion) picks up the change
             if (ReturnToCards)
@@ -517,7 +543,6 @@ namespace PrayerApp.ViewModels
                     return;
                 }
                 _prayer = result;
-                _originalCardId = result.PrayerCardId;
             }
             catch (Exception e)
             {
@@ -525,6 +550,7 @@ namespace PrayerApp.ViewModels
                 return;
             }
             RefreshProperties();
+            CaptureOriginals();
             await LoadCardsAsync();
             await LoadTagsAsync();
         }
@@ -536,6 +562,7 @@ namespace PrayerApp.ViewModels
 
         private async Task InitNewPrayerAsync()
         {
+            CaptureOriginals();
             await LoadCardsAsync();
             await LoadTagsAsync();
         }
@@ -638,6 +665,16 @@ namespace PrayerApp.ViewModels
             TagSearchText = string.Empty;
         }
 
+        private void CaptureOriginals()
+        {
+            _originalTitle = Title ?? string.Empty;
+            _originalDetails = Details;
+            _originalPrayerCardId = PrayerCardId;
+            _originalCanNotify = CanNotify;
+            _originalFrequency = PrayerFrequency;
+            _originalIsAnswered = IsAnswered;
+        }
+
         private void RefreshProperties()
         {
             OnPropertyChanged(nameof(Id));
@@ -662,6 +699,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(IsEditable));
             OnPropertyChanged(nameof(IsNotAnswered));
+            OnPropertyChanged(nameof(IsNew));
             OnPropertyChanged(nameof(CardTitle));
         }
     }

@@ -13,11 +13,12 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerCardViewModel : ObservableObject, IQueryAttributable
+    internal class PrayerCardViewModel : ObservableObject, IQueryAttributable, IEditGuard
     {
         private PrayerCard _prayerCard;
         private bool _isExpanded;
         private bool _prayersLoaded;
+        private string _originalTitle = string.Empty;
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
@@ -87,6 +88,17 @@ namespace PrayerApp.ViewModels
         }
 
         public bool IsSystem => _prayerCard.IsSystem;
+        public bool IsNew => _prayerCard.Id == 0;
+        public bool CanDelete => !IsSystem && !IsNew;
+
+        public bool IsDirty => Title != _originalTitle;
+
+        public async Task<bool> CanLeaveAsync()
+        {
+            if (!IsDirty) return true;
+            return await Shell.Current.DisplayAlertAsync(
+                "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
+        }
 
         public bool IsAnswered
         {
@@ -158,6 +170,7 @@ namespace PrayerApp.ViewModels
         {
             bool isNew = _prayerCard.Id == 0;
             await _cardService.SaveCardAsync(_prayerCard);
+            _originalTitle = Title; // Reset dirty state before navigation
             if (isNew)
                 _onboardingService.Advance(); // NameCard → AddRequest
             SemanticScreenReader.Announce("Card saved");
@@ -249,6 +262,7 @@ namespace PrayerApp.ViewModels
             }
             finally
             {
+                _originalTitle = _prayerCard.Title ?? string.Empty;
                 RefreshProperties();
             }
         }
@@ -264,6 +278,8 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
             OnPropertyChanged(nameof(IsSystem));
+            OnPropertyChanged(nameof(IsNew));
+            OnPropertyChanged(nameof(CanDelete));
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
         }

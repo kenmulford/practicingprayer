@@ -10,6 +10,7 @@ using CommunityToolkit.Maui.Views;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using PrayerApp.ViewModels;
 using PrayerApp.Views.Onboarding;
 using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
@@ -48,6 +49,9 @@ namespace PrayerApp
             Routing.RegisterRoute(nameof(PrayerTimePage), typeof(PrayerTimePage));
             Routing.RegisterRoute(nameof(TagDetailPage), typeof(TagDetailPage));
 
+            // Unsaved-changes guard on back navigation
+            this.Navigating += OnShellNavigating;
+
             // Subtle crossfade when switching tabs
             this.Navigated += OnShellNavigated;
 
@@ -64,6 +68,25 @@ namespace PrayerApp
                     ShowOnboardingCompletePopupAsync().SafeFireAndForget();
                 });
             };
+        }
+
+        private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs args)
+        {
+            if (args.Source != ShellNavigationSource.Pop) return;
+
+            if (CurrentPage?.BindingContext is IEditGuard guard && guard.IsDirty)
+            {
+                var deferral = args.GetDeferral();
+                try
+                {
+                    if (!await guard.CanLeaveAsync())
+                        args.Cancel();
+                }
+                finally
+                {
+                    deferral.Complete();
+                }
+            }
         }
 
         private async void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
