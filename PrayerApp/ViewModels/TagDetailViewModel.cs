@@ -66,8 +66,11 @@ namespace PrayerApp.ViewModels
         /// <summary>Dynamic swatch items — loaded from UserColor table.</summary>
         public ObservableCollection<ColorSwatchViewModel> Swatches { get; } = new();
 
+        public bool IsExisting => _tag.Id > 0;
+
         public ICommand SaveCommand { get; }
         public ICommand AddColorCommand { get; }
+        public ICommand ViewPrayersCommand { get; }
 
         public TagDetailViewModel(ITagService tagService, IUserColorService userColorService, IColorPickerService colorPickerService)
         {
@@ -77,6 +80,7 @@ namespace PrayerApp.ViewModels
             _firstDefaultHex = _userColorService.GetFirstDefaultHex();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             AddColorCommand = new AsyncRelayCommand(AddColorAsync);
+            ViewPrayersCommand = new AsyncRelayCommand(ViewPrayersAsync);
 
             CaptureOriginals();
 
@@ -140,6 +144,7 @@ namespace PrayerApp.ViewModels
             _tag = result;
             IsSystem = result.IsSystem;
             OnPropertyChanged(nameof(IsSystem));
+            OnPropertyChanged(nameof(IsExisting));
             OnPropertyChanged(nameof(IsNameEditable));
             OnPropertyChanged(nameof(Name));
             SelectedColorHex = _tag.Color ?? TagColorPalette.Swatches[0].Light;
@@ -188,6 +193,11 @@ namespace PrayerApp.ViewModels
 
             // Auto-select the new color
             SelectedColorHex = hex;
+        }
+
+        private async Task ViewPrayersAsync()
+        {
+            await Shell.Current.GoToAsync($"//PrayersPage?tagId={_tag.Id}");
         }
     }
 

@@ -16,6 +16,7 @@
 - Prayer card picker now shows a clearer label and dropdown indicator
 - Delete button is now hidden on new unsaved cards and prayers
 - App prompts to discard or stay when navigating away with unsaved changes
+- New "View Prayers with this Tag" button on tag detail page — quickly see all prayers for a tag
 
 ### Accessibility Improvements
 - Improved color contrast throughout the app for better readability

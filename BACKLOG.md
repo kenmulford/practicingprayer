@@ -15,8 +15,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Active — iOS tester feedback (feature/ios-feedback-b29)
-**Last completed**: Phases 1–3 committed (F1, F2, F7, F4, F5, F3). Unsaved changes guard on all detail pages.
-**Next up**: F6 (tag→prayer navigation)
+**Last completed**: All phases committed (F1–F7). Ready for PR to dev.
+**Next up**: PR to dev, then A11Y-3 or TD-12
 
 ---
 
