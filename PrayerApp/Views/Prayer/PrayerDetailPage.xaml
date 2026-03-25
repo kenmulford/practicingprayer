@@ -206,15 +206,17 @@
                                                TextColor="{StaticResource White}"
                                                FontSize="12"
                                                VerticalOptions="Center" />
-                                        <Label Text="×"
-                                               SemanticProperties.Description="Remove tag"
-                                               TextColor="{StaticResource White}"
-                                               FontSize="14"
-                                               VerticalOptions="Center">
-                                            <Label.GestureRecognizers>
-                                                <TapGestureRecognizer Command="{Binding RemoveCommand}" />
-                                            </Label.GestureRecognizers>
-                                        </Label>
+                                        <Button Text="×"
+                                                SemanticProperties.Description="Remove tag"
+                                                Command="{Binding RemoveCommand}"
+                                                TextColor="{StaticResource White}"
+                                                BackgroundColor="Transparent"
+                                                FontSize="14"
+                                                Padding="2,0"
+                                                BorderWidth="0"
+                                                MinimumWidthRequest="24"
+                                                MinimumHeightRequest="24"
+                                                VerticalOptions="Center" />
                                     </HorizontalStackLayout>
                                 </Border>
                             </DataTemplate>

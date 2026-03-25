@@ -91,7 +91,8 @@
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:TagFilterChipViewModel">
                             <Border Padding="10,4"
-                                    StrokeThickness="1.5">
+                                    StrokeThickness="1.5"
+                                    SemanticProperties.Hint="Double tap to toggle filter">
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="12" />
                                 </Border.StrokeShape>
@@ -110,7 +111,6 @@
                                 </Border.Triggers>
                                 <Label Text="{Binding Tag.Name}"
                                        FontSize="12"
-                                       SemanticProperties.Hint="Double tap to toggle filter"
                                        VerticalOptions="Center">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
@@ -161,7 +161,8 @@
                 <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
                     <Grid RowDefinitions="Auto, Auto"
                           Padding="4,10"
-                          HorizontalOptions="Fill">
+                          HorizontalOptions="Fill"
+                          SemanticProperties.Hint="Double tap to view details">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
                         </Grid.GestureRecognizers>
@@ -178,7 +179,6 @@
                             <Label Grid.Column="0"
                                    Text="{Binding Title}"
                                    FontSize="17"
-                                   SemanticProperties.Hint="Double tap to view details"
                                    TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                    TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
                                    VerticalOptions="Center" />

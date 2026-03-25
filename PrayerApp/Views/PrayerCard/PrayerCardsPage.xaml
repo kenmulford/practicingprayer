@@ -99,7 +99,6 @@
                                     AutomationProperties.IsInAccessibleTree="false">
                                     <Label
                                         Text="{Binding ActivePrayerCount}"
-                                        SemanticProperties.Hint="active prayers"
                                         FontSize="11"
                                         FontAttributes="Bold"
                                         TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
