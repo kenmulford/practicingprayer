@@ -19,6 +19,7 @@
                    FontSize="22"
                    FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                   SemanticProperties.HeadingLevel="Level1"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 

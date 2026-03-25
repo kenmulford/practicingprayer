@@ -35,6 +35,9 @@ namespace PrayerApp.ViewModels
         // prayer IDs considered overdue (not prayed in 30+ days)
         private HashSet<int> _overdueIds = new();
 
+        // Suppress screen reader announcements during bulk loads
+        private bool _suppressAnnounce;
+
         // Full unfiltered backing store — manipulated by IQueryAttributable
         public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; } = new();
 
@@ -104,6 +107,7 @@ namespace PrayerApp.ViewModels
         public async Task LoadAsync()
         {
             IsLoading = true;
+            _suppressAnnounce = true;
             try
             {
                 // Build card title lookup
@@ -141,6 +145,7 @@ namespace PrayerApp.ViewModels
             finally
             {
                 IsLoading = false;
+                _suppressAnnounce = false;
             }
         }
 
@@ -286,6 +291,9 @@ namespace PrayerApp.ViewModels
             FilteredPrayers.Clear();
             foreach (var p in sorted)
                 FilteredPrayers.Add(p);
+
+            if (!_suppressAnnounce)
+                SemanticScreenReader.Announce($"Showing {FilteredPrayers.Count} prayers");
         }
 
         private async Task AddNewPrayerAsync(string? prayerIdString)
@@ -310,6 +318,7 @@ namespace PrayerApp.ViewModels
 
         private async Task LoadPrayersAsync()
         {
+            _suppressAnnounce = true;
             try
             {
                 _prayerService.InvalidateCache();
@@ -333,6 +342,10 @@ namespace PrayerApp.ViewModels
             catch (Exception e)
             {
                 await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
+            }
+            finally
+            {
+                _suppressAnnounce = false;
             }
         }
 

@@ -14,7 +14,7 @@ public partial class Settings : ContentPage
         InitializeComponent();
         _backupService = IPlatformApplication.Current!.Services.GetRequiredService<IBackupService>();
         _diagnosticLog = IPlatformApplication.Current!.Services.GetRequiredService<IDiagnosticLog>();
-        TapPrivacyPolicy.Tapped += async (_, _) => await Launcher.OpenAsync(PrivacyPolicyUrl);
+        BtnPrivacyPolicy.Clicked += async (_, _) => await Launcher.OpenAsync(PrivacyPolicyUrl);
     }
 
     protected override void OnAppearing()

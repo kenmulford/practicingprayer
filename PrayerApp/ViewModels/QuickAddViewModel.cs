@@ -82,6 +82,7 @@ public class QuickAddViewModel : ObservableObject
         };
         await _prayerService.SavePrayerAsync(prayer);
         _prayerService.InvalidateCache();
+        SemanticScreenReader.Announce("Prayer saved");
         await Shell.Current.Navigation.PopModalAsync();
     }
 

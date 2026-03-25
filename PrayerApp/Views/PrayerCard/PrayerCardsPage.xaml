@@ -80,6 +80,7 @@
                                 <Label
                                     Text="{Binding Title}"
                                     Style="{StaticResource CardTitle}"
+                                    SemanticProperties.Hint="Double tap to expand or collapse. Swipe left to delete, right to edit or favorite"
                                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                     VerticalOptions="Center" />
                                 <!-- Active prayer count badge (collapsed only) -->
@@ -94,7 +95,8 @@
                                     MinimumWidthRequest="20"
                                     VerticalOptions="Center"
                                     HorizontalOptions="End"
-                                    Margin="0,0,8,0">
+                                    Margin="0,0,8,0"
+                                    AutomationProperties.IsInAccessibleTree="false">
                                     <Label
                                         Text="{Binding ActivePrayerCount}"
                                         FontSize="11"
@@ -107,6 +109,7 @@
                                     Grid.Column="2"
                                     Text="★"
                                     FontSize="16"
+                                    SemanticProperties.Description="Favorited"
                                     TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
                                     IsVisible="{Binding IsFavorite}"
                                     VerticalOptions="Center"
@@ -156,6 +159,7 @@
                                                     <Label
                                                         Text="{Binding Title}"
                                                         FontSize="15"
+                                                        SemanticProperties.Hint="Double tap to view. Swipe left to delete, right to edit"
                                                         TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                                         TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
                                                         VerticalOptions="Center" />
@@ -175,18 +179,17 @@
                             </VerticalStackLayout>
 
                             <!-- + Add prayer row (only shown when expanded) -->
-                            <Grid
+                            <Button
+                                Text="+ Add prayer"
+                                Command="{Binding AddPrayerCommand}"
+                                IsVisible="{Binding IsExpanded}"
+                                FontSize="14"
+                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                BackgroundColor="Transparent"
+                                FontAttributes="Italic"
                                 Padding="16,8,12,10"
-                                IsVisible="{Binding IsExpanded}">
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding AddPrayerCommand}" />
-                                </Grid.GestureRecognizers>
-                                <Label
-                                    Text="+ Add prayer"
-                                    FontSize="14"
-                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                                    FontAttributes="Italic" />
-                            </Grid>
+                                BorderWidth="0"
+                                HorizontalOptions="Start" />
 
                         </VerticalStackLayout>
                     </Border>

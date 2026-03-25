@@ -19,6 +19,7 @@
                    FontSize="22"
                    FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                   SemanticProperties.HeadingLevel="Level1"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
@@ -32,15 +33,14 @@
                     Text="Get Started"
                     Margin="0,8,0,0" />
 
-            <Label x:Name="LblSkip"
-                   Text="Skip tour"
-                   FontSize="13"
-                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
-                   HorizontalOptions="Center">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer x:Name="SkipTap" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button x:Name="SkipButton"
+                    Text="Skip tour"
+                    FontSize="13"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    Padding="0"
+                    BorderWidth="0"
+                    HorizontalOptions="Center" />
 
         </VerticalStackLayout>
     </Border>

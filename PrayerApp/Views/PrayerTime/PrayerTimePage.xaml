@@ -23,26 +23,27 @@
                    Style="{StaticResource MutedText}"
                    FontSize="13" />
             <!-- Pause/resume button — only visible while auto-mode is active -->
-            <Label Grid.Column="1"
-                   Text="{Binding PauseButtonText}"
-                   IsVisible="{Binding IsAutoMode}"
-                   VerticalOptions="Center"
-                   Style="{StaticResource MutedText}"
-                   FontSize="16">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding TogglePauseCommand}" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button Grid.Column="1"
+                    Text="{Binding PauseButtonText}"
+                    Command="{Binding TogglePauseCommand}"
+                    IsVisible="{Binding IsAutoMode}"
+                    VerticalOptions="Center"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    FontSize="16"
+                    Padding="4,0"
+                    BorderWidth="0" />
             <!-- Countdown (auto-mode) or configured interval (manual mode); tap to cycle -->
-            <Label Grid.Column="2"
-                   Text="{Binding CountdownDisplay}"
-                   VerticalOptions="Center"
-                   Style="{StaticResource MutedText}"
-                   FontSize="13">
-                <Label.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding CycleIntervalCommand}" />
-                </Label.GestureRecognizers>
-            </Label>
+            <Button Grid.Column="2"
+                    Text="{Binding CountdownDisplay}"
+                    Command="{Binding CycleIntervalCommand}"
+                    SemanticProperties.Hint="Tap to change auto-advance interval"
+                    VerticalOptions="Center"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                    BackgroundColor="Transparent"
+                    FontSize="13"
+                    Padding="4,0"
+                    BorderWidth="0" />
         </Grid>
 
         <!-- Row 1: Prayer content — CarouselView for swipeable cards -->
@@ -116,7 +117,8 @@
                                 <!-- Gradient fade at bottom — hints at scrollable content -->
                                 <BoxView HeightRequest="36"
                                          VerticalOptions="End"
-                                         InputTransparent="True">
+                                         InputTransparent="True"
+                                         AutomationProperties.IsInAccessibleTree="false">
                                     <BoxView.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                             <GradientStop Color="Transparent" Offset="0.0" />
@@ -147,6 +149,7 @@
                     FontSize="11" />
             <Button Grid.Column="2"
                     Text="←"
+                    SemanticProperties.Description="Previous prayer"
                     Command="{Binding PreviousCommand}"
                     IsEnabled="{Binding HasPrevious}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
@@ -154,6 +157,7 @@
                     Style="{StaticResource CircleNavButton}" />
             <Button Grid.Column="3"
                     Text="→"
+                    SemanticProperties.Description="Next prayer"
                     Command="{Binding NextCommand}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                     TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"

@@ -348,6 +348,7 @@ namespace PrayerApp.ViewModels
                 await _notificationService.CancelAsync(_prayer.Id, _prayer.PrayerFrequency);
             if (isNew)
                 _onboardingService.Advance(); // NameRequest → PrayerTime
+            SemanticScreenReader.Announce("Prayer saved");
             if (ReturnToCards)
             {
                 // New prayers: stack is Cards→Edit (1 level back)
@@ -375,6 +376,7 @@ namespace PrayerApp.ViewModels
             if (!confirmed) return;
 
             await _prayerService.DeletePrayerAsync(_prayer);
+            SemanticScreenReader.Announce("Prayer deleted");
             if (ReturnToCards)
             {
                 await Shell.Current.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");

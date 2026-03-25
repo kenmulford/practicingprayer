@@ -15,6 +15,7 @@
             <Label Text="Filter by Tags"
                    FontSize="20"
                    FontAttributes="Bold"
+                   SemanticProperties.HeadingLevel="Level1"
                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
 
             <Label Text="Select the tags to include in your Prayer Time session."

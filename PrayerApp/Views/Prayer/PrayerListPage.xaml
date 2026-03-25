@@ -18,8 +18,7 @@
         <VerticalStackLayout Grid.Row="0" Margin="20,16,20,0" Spacing="8">
 
             <Label Text="Prayer Requests"
-                   Style="{StaticResource Headline}"
-                   SemanticProperties.HeadingLevel="Level1" />
+                   Style="{StaticResource Headline}" />
 
             <!-- 3-way status toggle -->
             <Grid ColumnDefinitions="*, *, *" ColumnSpacing="4">
@@ -92,7 +91,8 @@
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:TagFilterChipViewModel">
                             <Border Padding="10,4"
-                                    StrokeThickness="1.5">
+                                    StrokeThickness="1.5"
+                                    SemanticProperties.Hint="Double tap to toggle filter">
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="12" />
                                 </Border.StrokeShape>
@@ -161,7 +161,8 @@
                 <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
                     <Grid RowDefinitions="Auto, Auto"
                           Padding="4,10"
-                          HorizontalOptions="Fill">
+                          HorizontalOptions="Fill"
+                          SemanticProperties.Hint="Double tap to view details">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
                         </Grid.GestureRecognizers>

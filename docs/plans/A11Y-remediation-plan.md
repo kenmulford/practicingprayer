@@ -1,6 +1,6 @@
 # A11Y-1: Accessibility Remediation Plan
 
-**Status:** Ready to implement
+**Status:** Phase 1 + 2 complete (2026-03-25), Phase 3 next
 **Source:** Accessibility audit (2026-03-24) at `docs/research/accessibility-audit.md`
 **Skill:** `maui-skills:maui-accessibility`
 **Standard:** WCAG 2.1 AA, VoiceOver (iOS), TalkBack (Android)
@@ -17,21 +17,20 @@ The app has partial accessibility (SwipeItem descriptions, some form hints, 44dp
 
 Low-effort, high-impact fixes that don't change layout or behavior.
 
-### 1A. Fix color contrast failures (C3)
+### 1A. Fix color contrast failures (C3) — ✅ DONE
 
-Update `Colors.xaml` color tokens to meet WCAG AA 4.5:1 minimum:
+Recalculated all pairs against post-style-refresh tokens (PageLight/CardLight/PageDark/CardDark):
 
-| Token | Current | Target | Change |
-|-------|---------|--------|--------|
-| MutedText light fg | Gray400 `#919191` | Gray500 `#6E6E6E` or darker | Bump to ≥4.5:1 on White |
-| SectionDescription light fg | Gray500 `#6E6E6E` on Secondary `#E8EDE3` | Darker gray or adjust Secondary | Currently 3.4:1 |
-| ~~SuccessGreen / SuccessBadge~~ | ~~`#4CAF50` on White~~ | ~~Darken to `#2E7D32`~~ | **Done** — darkened to `#2E7D32` in style refresh (build 27) |
-| OnboardingBanner skip link | Gray300 on Tertiary | Gray200 `#C8C8C8` or White | Currently 3.5:1 |
-| TagGray chip text | White on `#505050` | Darken tag bg to `#404040` or lighten text | Currently 4.2:1 |
-| WelcomePopup/CompletePopup sub-text | Gray500 on Secondary | Same fix as SectionDescription | Currently 3.4:1 |
-| TagsPage chevron | Gray300 on Secondary | Darken chevron to Gray500+ | Currently 1.9:1 |
-
-**Validation:** Use a contrast checker tool to verify each pair ≥ 4.5:1.
+| Token | Before | After | Fix |
+|-------|--------|-------|-----|
+| MutedText light | Gray400→Gray500 on PageLight | 3.0→4.8:1 | Changed style to Gray500 |
+| TextMutedDark | `#6b6f64`→`#858981` on PageDark | 3.8→5.4:1 | Lightened token in Colors.xaml |
+| OnboardingBanner skip (light) | Gray300→Gray200 on Tertiary | 4.1→5.6:1 | Inline fix |
+| WelcomePopup skip (light) | Gray400→Gray500 on CardLight | 3.2→5.1:1 | Inline fix |
+| TagsPage chevron (light) | Gray300→Gray500 on PageLight | 2.1→4.8:1 | Inline fix (also hidden from a11y tree) |
+| ~~SectionDescription~~ | Gray500 on CardLight (White) | 5.1:1 | **No fix needed** — plan assumed Secondary bg, but post-refresh it's on CardLight |
+| ~~SuccessGreen~~ | Already `#2E7D32` | 4.8:1 | **Done** in build 27 |
+| ~~TagGray chip~~ | White on `#505050` | 8.1:1 | **Already passing** |
 
 ### 1B. Add HeadingLevel to all pages (I1)
 
@@ -65,7 +64,7 @@ Add `AutomationProperties.IsInAccessibleTree="false"` to:
 
 ---
 
-## Phase 2: Interactive Element Accessibility (1–2 sessions)
+## Phase 2: Interactive Element Accessibility (1–2 sessions) — ✅ DONE (2026-03-25)
 
 Replace inaccessible tap-gesture patterns and add dynamic announcements.
 

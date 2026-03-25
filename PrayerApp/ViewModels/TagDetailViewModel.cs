@@ -138,6 +138,7 @@ namespace PrayerApp.ViewModels
 
             _tag.Color = SelectedColorHex;
             await _tagService.SaveTagAsync(_tag);
+            SemanticScreenReader.Announce("Tag saved");
             await Shell.Current.GoToAsync("..");
         }
 
