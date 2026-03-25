@@ -14,8 +14,8 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Active — Keyboard dismiss audit
-**Last completed**: A11Y Phase 3, FB-29 iOS tester feedback (7 fixes), NuGet package updates (MAUI Controls 10.0.50, LocalNotification 14.0.0, CommunityToolkit.Mvvm 8.4.1, Extensions.Http/Logging 10.0.5)
+**Status**: Idle
+**Last completed**: Session 2026-03-25 — A11Y Phases 1–3 (full WCAG 2.1 AA), FB-29 iOS tester feedback (7 fixes), keyboard dismiss on all input pages, NuGet upgrades (MAUI 10.0.50, LocalNotification 14.0.0)
 **Next up**: TD-12 (MVVM architecture audit)
 
 ---
@@ -24,19 +24,24 @@
 
 Items are listed in work order. Start at the top, work down.
 
-| #   | ID     | Item                                                               | Source | Notes                                                                                                                                                                                                                                                                                                                                                  |
-| --- | ------ | ------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | ~~A11Y-1~~ | ~~Accessibility Phase 1~~ | Audit | ✅ Done (2026-03-25) |
-| 2   | ~~A11Y-2~~ | ~~Accessibility Phase 2~~ | Audit | ✅ Done (2026-03-25) |
-| 3   | ~~A11Y-3~~ | ~~Accessibility Phase 3~~ | Audit | ✅ Done (2026-03-25) |
-| 4   | ~~FB-29~~ | ~~iOS tester feedback (build 29)~~ | Tester | ✅ Done (2026-03-25) |
-| 5   | TD-12  | Full-stack MVVM architecture audit                                 | —      | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`.                                                                                                                                                                                   |
-| 5   | TD-8   | Refactor ViewModels to constructor injection                       | —      | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test.                                                                                                                                                                                                                                                      |
-| 6   | F-10   | Deep-link share — create card/request via tapped link              | —      | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md`                                                                                                                                                                                                                                                                  |
-| 7   | INV-4  | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships.                                                                                                                                                                          |
-| 8   | UX-12  | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                                                                                                 |
-| 9   | M-11   | Monthly notification renewal on app launch                         | —      | iOS uses native `UNCalendarNotificationTrigger` (single repeating notification, no renewal needed). Android pre-schedules 12 one-shot notifications. On app startup, check Android monthly prayers and top up if fewer than 6 future notifications remain.                                                                                             |
-| 10  | F-18   | Widget support for prayer cards                                    | Ken    | Investigate iOS/Android home-screen widgets for prayer cards. Needs fleshing out — scope, widget types (daily card, overdue count, quick-add?), platform APIs (WidgetKit on iOS, App Widgets on Android). Shelved — very large effort (separate native projects for iOS WidgetKit + Android App Widgets).                                                |
+| #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
+| --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | TD-12 | Full-stack MVVM architecture audit                                 | —      | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`.                                                                           |
+| 2   | TD-8  | Refactor ViewModels to constructor injection                       | —      | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test. Unlocks full ViewModel test coverage.                                                                                                        |
+| 3   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
+| 4   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
+| 5   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
+| 6   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
+| 7   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+
+### Completed
+
+| ID     | Item                           | Completed  |
+| ------ | ------------------------------ | ---------- |
+| A11Y-1 | Accessibility Phase 1          | 2026-03-25 |
+| A11Y-2 | Accessibility Phase 2          | 2026-03-25 |
+| A11Y-3 | Accessibility Phase 3          | 2026-03-25 |
+| FB-29  | iOS tester feedback (build 29) | 2026-03-25 |
 
 ---
 
