@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Active — A11Y-3 (Accessibility Phase 3 — polish + UI test IDs)
-**Last completed**: A11Y-1, A11Y-2 (done 2026-03-25), FB-29 iOS tester feedback (7 fixes), NuGet package updates (MAUI Controls 10.0.50, LocalNotification 14.0.0, CommunityToolkit.Mvvm 8.4.1, Extensions.Http/Logging 10.0.5)
-**Next up**: A11Y-3 in progress
+**Status**: Active — Keyboard dismiss audit
+**Last completed**: A11Y Phase 3, FB-29 iOS tester feedback (7 fixes), NuGet package updates (MAUI Controls 10.0.50, LocalNotification 14.0.0, CommunityToolkit.Mvvm 8.4.1, Extensions.Http/Logging 10.0.5)
+**Next up**: TD-12 (MVVM architecture audit)
 
 ---
 
@@ -28,8 +28,9 @@ Items are listed in work order. Start at the top, work down.
 | --- | ------ | ------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1   | ~~A11Y-1~~ | ~~Accessibility Phase 1~~ | Audit | ✅ Done (2026-03-25) |
 | 2   | ~~A11Y-2~~ | ~~Accessibility Phase 2~~ | Audit | ✅ Done (2026-03-25) |
-| 3   | A11Y-3 | Accessibility remediation — Phase 3 (polish + UI test IDs)         | Audit  | 🔄 **In progress.** ColorPickerPopup accessible alternative, AutomationId on all elements, loading announcements, popup focus management. ~1 session.                                                                                                                                                                                                   |
-| 4   | TD-12  | Full-stack MVVM architecture audit                                 | —      | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`.                                                                                                                                                                                   |
+| 3   | ~~A11Y-3~~ | ~~Accessibility Phase 3~~ | Audit | ✅ Done (2026-03-25) |
+| 4   | ~~FB-29~~ | ~~iOS tester feedback (build 29)~~ | Tester | ✅ Done (2026-03-25) |
+| 5   | TD-12  | Full-stack MVVM architecture audit                                 | —      | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`.                                                                                                                                                                                   |
 | 5   | TD-8   | Refactor ViewModels to constructor injection                       | —      | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test.                                                                                                                                                                                                                                                      |
 | 6   | F-10   | Deep-link share — create card/request via tapped link              | —      | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md`                                                                                                                                                                                                                                                                  |
 | 7   | INV-4  | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships.                                                                                                                                                                          |

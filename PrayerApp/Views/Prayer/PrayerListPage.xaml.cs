@@ -30,4 +30,15 @@ public partial class PrayerListPage : ContentPage
 			}
 		}
 	}
+
+	private void OnSearchButtonPressed(object? sender, EventArgs e)
+	{
+		searchBar.Unfocus();
+	}
+
+	private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+	{
+		if (searchBar.IsFocused)
+			searchBar.Unfocus();
+	}
 }

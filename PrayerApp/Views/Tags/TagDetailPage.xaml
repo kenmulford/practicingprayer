@@ -84,8 +84,8 @@
                     </BindableLayout.ItemTemplate>
                 </FlexLayout>
 
-                <!-- Add custom color button -->
-                <Grid WidthRequest="48" HeightRequest="48" Margin="4,0,0,0"
+                <!-- Add custom color button — outside FlexLayout (BindableLayout clears static children) -->
+                <Grid WidthRequest="48" HeightRequest="48" Margin="4"
                       HorizontalOptions="Start"
                       SemanticProperties.Description="Add custom color"
                       SemanticProperties.Hint="Double tap to open color picker">
@@ -111,6 +111,14 @@
                            VerticalOptions="Center" />
                 </Grid>
             </VerticalStackLayout>
+
+            <!-- View prayers with this tag -->
+            <Button Text="View Prayers with this Tag"
+                    Command="{Binding ViewPrayersCommand}"
+                    Style="{StaticResource GhostButton}"
+                    IsVisible="{Binding IsExisting}"
+                    SemanticProperties.Hint="Navigate to prayer list filtered by this tag"
+                    HorizontalOptions="Fill" />
 
         </VerticalStackLayout>
     </ScrollView>

@@ -104,15 +104,24 @@
                 <VerticalStackLayout Spacing="12">
 
                     <!-- Prayer Card -->
-                    <Label Text="Prayer Card"
+                    <Label Text="Belongs to Card"
                            Style="{StaticResource FormLabel}" />
-                    <Picker Title="Select Card"
-                            AutomationId="Detail_Picker_Card"
-                            ItemsSource="{Binding AvailableCards}"
-                            SelectedItem="{Binding SelectedCard}"
-                            ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
-                            SemanticProperties.Hint="Which prayer card this request belongs to"
-                            HorizontalOptions="Fill" />
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Picker Title="Select Card"
+                                AutomationId="Detail_Picker_Card"
+                                ItemsSource="{Binding AvailableCards}"
+                                SelectedItem="{Binding SelectedCard}"
+                                ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
+                                SemanticProperties.Hint="Tap to change which card this prayer belongs to"
+                                HorizontalOptions="Fill" />
+                        <Label Grid.Column="1"
+                               Text="▼"
+                               FontSize="12"
+                               VerticalOptions="Center"
+                               Margin="0,0,4,0"
+                               AutomationProperties.IsInAccessibleTree="false"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                    </Grid>
 
                     <!-- Title -->
                     <Label Text="Title"
@@ -275,6 +284,7 @@
                             AutomationId="Detail_Btn_Delete"
                             Command="{Binding DeleteCommand}"
                             Style="{StaticResource DangerButton}"
+                            IsVisible="{Binding IsNew, Converter={StaticResource InverseBool}}"
                             HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>

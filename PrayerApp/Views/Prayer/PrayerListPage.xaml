@@ -12,7 +12,10 @@
         <ToolbarItem Text="Add" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto, *">
+    <Grid x:Name="rootGrid" RowDefinitions="Auto, *">
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+        </Grid.GestureRecognizers>
 
         <!-- Filter controls (sticky above the list) -->
         <VerticalStackLayout Grid.Row="0" Margin="20,16,20,0" Spacing="8">
@@ -79,9 +82,11 @@
             </Grid>
 
             <!-- Search bar -->
-            <SearchBar Text="{Binding SearchText}"
+            <SearchBar x:Name="searchBar"
+                       Text="{Binding SearchText}"
                        AutomationId="List_Search_Prayers"
                        Placeholder="Search prayers..."
+                       SearchButtonPressed="OnSearchButtonPressed"
                        BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
 
             <!-- Tag chip row — only shown when tags exist -->
