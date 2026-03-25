@@ -4,7 +4,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.QuickAddPage"
              x:DataType="viewModels:QuickAddViewModel"
-             Title="Quick Add">
+             Title="Quick Add"
+             SafeAreaEdges="All">
     <ContentPage.BindingContext>
         <viewModels:QuickAddViewModel />
     </ContentPage.BindingContext>

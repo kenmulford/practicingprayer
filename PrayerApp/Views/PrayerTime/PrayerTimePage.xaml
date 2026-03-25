@@ -6,7 +6,8 @@
              x:DataType="viewModels:PrayerTimeViewModel"
              Shell.NavBarIsVisible="False"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
-             Shell.TabBarIsVisible="False">
+             Shell.TabBarIsVisible="False"
+             SafeAreaEdges="Container">
     <ContentPage.BindingContext>
         <viewModels:PrayerTimeViewModel />
     </ContentPage.BindingContext>

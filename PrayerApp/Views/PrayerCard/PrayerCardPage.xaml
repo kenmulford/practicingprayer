@@ -5,7 +5,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:DataType="viewModels:PrayerCardViewModel"
-             Title="Prayer Card">
+             Title="Prayer Card"
+             SafeAreaEdges="Container">
     <ContentPage.BindingContext>
         <viewModels:PrayerCardViewModel />
     </ContentPage.BindingContext>
