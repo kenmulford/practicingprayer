@@ -320,14 +320,15 @@ namespace PrayerApp.ViewModels
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
-        public PrayerRequestDetailViewModel()
+        public PrayerRequestDetailViewModel(IPrayerService prayerService, ITagService tagService,
+            ICardService cardService, IOnboardingService onboardingService, INotificationService notificationService)
         {
             _prayer = new Prayer();
-            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-            _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
-            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-            _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
-            _notificationService = IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>();
+            _prayerService = prayerService;
+            _tagService = tagService;
+            _cardService = cardService;
+            _onboardingService = onboardingService;
+            _notificationService = notificationService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
@@ -340,6 +341,14 @@ namespace PrayerApp.ViewModels
             SelectedTags.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTags));
             SuggestedTags.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasSuggestions));
         }
+
+        public PrayerRequestDetailViewModel() : this(
+            IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>())
+        { }
 
         public PrayerRequestDetailViewModel(Prayer prayer) : this()
         {

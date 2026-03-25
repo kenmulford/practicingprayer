@@ -6,9 +6,6 @@
              x:DataType="viewModels:QuickAddViewModel"
              Title="Quick Add"
              SafeAreaEdges="All">
-    <ContentPage.BindingContext>
-        <viewModels:QuickAddViewModel />
-    </ContentPage.BindingContext>
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
 

@@ -182,13 +182,14 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     public ICommand CycleIntervalCommand { get; }
     public ICommand TogglePauseCommand { get; }
 
-    public PrayerTimeViewModel()
+    public PrayerTimeViewModel(IPrayerService prayerService, ICardService cardService,
+        ITagService tagService, IPrayerInteractionService interactionService, IOnboardingService onboardingService)
     {
-        _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-        _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-        _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
-        _interactionService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerInteractionService>();
-        _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
+        _prayerService = prayerService;
+        _cardService = cardService;
+        _tagService = tagService;
+        _interactionService = interactionService;
+        _onboardingService = onboardingService;
 
         _selectedIntervalSeconds = Services.Settings.AutoModeIntervalSeconds;
 
@@ -199,6 +200,14 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         CycleIntervalCommand = new RelayCommand(CycleInterval);
         TogglePauseCommand = new RelayCommand(TogglePause);
     }
+
+    public PrayerTimeViewModel() : this(
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerInteractionService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>())
+    { }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {

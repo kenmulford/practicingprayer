@@ -9,9 +9,10 @@ public partial class PrayerDetailPage : ContentPage
     private readonly ToolbarItem _editToolbarItem;
     private readonly ToolbarItem _saveToolbarItem;
 
-    public PrayerDetailPage()
+    public PrayerDetailPage(PrayerRequestDetailViewModel vm)
     {
         InitializeComponent();
+        BindingContext = vm;
 
         _editToolbarItem = new ToolbarItem { Text = "Edit" };
         _editToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.EditPrayerCommand));

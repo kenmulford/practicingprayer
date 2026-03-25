@@ -8,10 +8,6 @@
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              Shell.TabBarIsVisible="False"
              SafeAreaEdges="Container">
-    <ContentPage.BindingContext>
-        <viewModels:PrayerTimeViewModel />
-    </ContentPage.BindingContext>
-
     <Grid RowDefinitions="Auto, *, Auto, Auto" Padding="20,12,20,8">
 
         <!-- Row 0: Progress | [⏸/▶] [interval/countdown] — hidden when session completes -->

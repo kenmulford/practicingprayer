@@ -7,10 +7,6 @@
              x:DataType="viewModels:PrayerCardViewModel"
              Title="Prayer Card"
              SafeAreaEdges="Container">
-    <ContentPage.BindingContext>
-        <viewModels:PrayerCardViewModel />
-    </ContentPage.BindingContext>
-
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Save"
                      Command="{Binding SaveCommand}"

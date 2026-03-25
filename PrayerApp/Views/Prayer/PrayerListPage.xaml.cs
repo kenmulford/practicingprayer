@@ -6,9 +6,10 @@ public partial class PrayerListPage : ContentPage
 {
 	private bool _loaded;
 
-	public PrayerListPage()
+	public PrayerListPage(PrayerListViewModel vm)
 	{
 		InitializeComponent();
+		BindingContext = vm;
 	}
 
 	protected override async void OnAppearing()

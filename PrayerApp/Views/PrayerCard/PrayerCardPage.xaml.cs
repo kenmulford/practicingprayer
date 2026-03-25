@@ -1,10 +1,13 @@
+using PrayerApp.ViewModels;
+
 namespace PrayerApp.Views.PrayerCard;
 
 public partial class PrayerCardPage : ContentPage
 {
-    public PrayerCardPage()
+    public PrayerCardPage(PrayerCardViewModel vm)
     {
         InitializeComponent();
+        BindingContext = vm;
     }
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)

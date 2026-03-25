@@ -14,7 +14,7 @@ namespace PrayerApp.ViewModels
 {
     public enum FilterStatus { Active, Answered, All, Overdue }
 
-    internal class PrayerListViewModel : ObservableObject, IQueryAttributable
+    public class PrayerListViewModel : ObservableObject, IQueryAttributable
     {
         private List<Prayer> _prayerList = new();
         private readonly IPrayerService _prayerService;
@@ -88,11 +88,11 @@ namespace PrayerApp.ViewModels
         public ICommand NewCommand { get; }
         public ICommand SetStatusCommand { get; }
 
-        public PrayerListViewModel()
+        public PrayerListViewModel(IPrayerService prayerService, ICardService cardService, ITagService tagService)
         {
-            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-            _cardService   = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-            _tagService    = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
+            _prayerService = prayerService;
+            _cardService   = cardService;
+            _tagService    = tagService;
 
             // Any change to the backing store re-runs the filter
             AllPrayers.CollectionChanged += (_, _) => ApplyFilter();
@@ -110,6 +110,12 @@ namespace PrayerApp.ViewModels
                 };
             });
         }
+
+        public PrayerListViewModel() : this(
+            IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ITagService>())
+        { }
 
         public async Task LoadAsync()
         {

@@ -7,6 +7,9 @@ using PrayerApp.Services;
 using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
+using PrayerApp.Views.Prayer;
+using PrayerApp.Views.PrayerCard;
+using PrayerApp.Views.PrayerTime;
 using PrayerApp.Views.Tags;
 using System.Globalization;
 
@@ -113,11 +116,30 @@ namespace PrayerApp
             builder.Services.AddSingleton<IColorPickerService, PrayerApp.Platforms.iOS.ColorPickerService>();
 #endif
 
-            // add transient viewmodel so each instance of PrayerCardPage is new (avoid data bleed/leak)
+            // ViewModels — Transient (fresh per page navigation)
+            builder.Services.AddTransient<HomeViewModel>();
+            builder.Services.AddTransient<PrayerCardsViewModel>();
             builder.Services.AddTransient<PrayerCardViewModel>();
-            // tag detail page + viewmodel (transient — each navigation gets a fresh instance)
+            builder.Services.AddTransient<PrayerListViewModel>();
+            builder.Services.AddTransient<PrayerRequestDetailViewModel>();
+            builder.Services.AddTransient<QuickAddViewModel>();
+            builder.Services.AddTransient<PrayerTimeViewModel>();
+            builder.Services.AddTransient<PrayerTimeScopeViewModel>();
+            builder.Services.AddTransient<TagsViewModel>();
             builder.Services.AddTransient<TagDetailViewModel>();
+
+            // Pages — Transient (Shell resolves from DI on navigation)
+            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<PrayerCardsPage>();
+            builder.Services.AddTransient<PrayerCardPage>();
+            builder.Services.AddTransient<PrayerListPage>();
+            builder.Services.AddTransient<PrayerDetailPage>();
+            builder.Services.AddTransient<QuickAddPage>();
+            builder.Services.AddTransient<PrayerTimePage>();
+            builder.Services.AddTransient<PrayerTimeScopePage>();
+            builder.Services.AddTransient<TagsPage>();
             builder.Services.AddTransient<TagDetailPage>();
+            builder.Services.AddTransient<Views.Settings>();
 
             RegisterGlobalExceptionHandlers();
 

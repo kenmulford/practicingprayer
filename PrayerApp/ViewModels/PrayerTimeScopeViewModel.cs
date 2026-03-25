@@ -29,13 +29,17 @@ public class PrayerTimeScopeViewModel : ObservableObject
     public ICommand StartCommand { get; }
     public ICommand CancelCommand { get; }
 
-    public PrayerTimeScopeViewModel()
+    public PrayerTimeScopeViewModel(ITagService tagService)
     {
-        _tagService = IPlatformApplication.Current!.Services.GetRequiredService<ITagService>();
+        _tagService = tagService;
         StartCommand = new AsyncRelayCommand(StartAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
         LoadTagsAsync().SafeFireAndForget();
     }
+
+    public PrayerTimeScopeViewModel() : this(
+        IPlatformApplication.Current!.Services.GetRequiredService<ITagService>())
+    { }
 
     private async Task LoadTagsAsync()
     {

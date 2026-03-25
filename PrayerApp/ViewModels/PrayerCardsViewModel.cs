@@ -12,7 +12,7 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerCardsViewModel : ObservableObject, IQueryAttributable
+    public class PrayerCardsViewModel : ObservableObject, IQueryAttributable
     {
         private List<PrayerCard> _prayerCards;
         private readonly ICardService _cardService;
@@ -35,10 +35,10 @@ namespace PrayerApp.ViewModels
 
         #region Constructors
 
-        public PrayerCardsViewModel()
+        public PrayerCardsViewModel(ICardService cardService, IOnboardingService onboardingService)
         {
-            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-            _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
+            _cardService = cardService;
+            _onboardingService = onboardingService;
 
             _prayerCards = new List<PrayerCard>();
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
@@ -46,6 +46,11 @@ namespace PrayerApp.ViewModels
             // register commands
             NewCommand = new AsyncRelayCommand(NewPrayerCardAsync);
         }
+
+        public PrayerCardsViewModel() : this(
+            IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>())
+        { }
 
         #endregion
 

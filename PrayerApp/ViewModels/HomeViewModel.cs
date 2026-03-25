@@ -76,12 +76,17 @@ public class HomeViewModel : ObservableObject
 
     public ICommand GoToOverdueCommand { get; }
 
-    public HomeViewModel()
+    public HomeViewModel(IPrayerService prayerService, ICardService cardService)
     {
-        _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-        _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+        _prayerService = prayerService;
+        _cardService = cardService;
         GoToOverdueCommand = new AsyncRelayCommand(GoToOverdueAsync);
     }
+
+    public HomeViewModel() : this(
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<ICardService>())
+    { }
 
     public async Task LoadAsync()
     {

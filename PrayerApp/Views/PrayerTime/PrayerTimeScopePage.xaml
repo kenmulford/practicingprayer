@@ -6,9 +6,6 @@
              x:DataType="viewModels:PrayerTimeScopeViewModel"
              Title="Select Tags"
              SafeAreaEdges="All">
-    <ContentPage.BindingContext>
-        <viewModels:PrayerTimeScopeViewModel />
-    </ContentPage.BindingContext>
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
 

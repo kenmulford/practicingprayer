@@ -21,13 +21,18 @@ public class QuickAddViewModel : ObservableObject
     public ICommand SaveCommand { get; }
     public ICommand CancelCommand { get; }
 
-    public QuickAddViewModel()
+    public QuickAddViewModel(ICardService cardService, IPrayerService prayerService)
     {
-        _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-        _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
+        _cardService = cardService;
+        _prayerService = prayerService;
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
     }
+
+    public QuickAddViewModel() : this(
+        IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>())
+    { }
 
     private async Task SaveAsync()
     {

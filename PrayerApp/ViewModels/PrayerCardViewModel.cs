@@ -13,7 +13,7 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerCardViewModel : ObservableObject, IQueryAttributable, IEditGuard
+    public class PrayerCardViewModel : ObservableObject, IQueryAttributable, IEditGuard
     {
         private PrayerCard _prayerCard;
         private bool _isExpanded;
@@ -131,12 +131,12 @@ namespace PrayerApp.ViewModels
 
         #region Constructors
 
-        public PrayerCardViewModel()
+        public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService, IOnboardingService onboardingService)
         {
             _prayerCard = new PrayerCard();
-            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-            _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
+            _cardService = cardService;
+            _prayerService = prayerService;
+            _onboardingService = onboardingService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
@@ -146,6 +146,12 @@ namespace PrayerApp.ViewModels
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
+
+        public PrayerCardViewModel() : this(
+            IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>())
+        { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
         {
