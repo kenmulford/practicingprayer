@@ -24,21 +24,24 @@ public class SelectableTag : ObservableObject
 public class PrayerTimeScopeViewModel : ObservableObject
 {
     private readonly ITagService _tagService;
+    private readonly INavigationService _navigationService;
 
     public ObservableCollection<SelectableTag> Tags { get; } = new();
     public ICommand StartCommand { get; }
     public ICommand CancelCommand { get; }
 
-    public PrayerTimeScopeViewModel(ITagService tagService)
+    public PrayerTimeScopeViewModel(ITagService tagService, INavigationService navigationService)
     {
         _tagService = tagService;
+        _navigationService = navigationService;
         StartCommand = new AsyncRelayCommand(StartAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
         LoadTagsAsync().SafeFireAndForget();
     }
 
     public PrayerTimeScopeViewModel() : this(
-        IPlatformApplication.Current!.Services.GetRequiredService<ITagService>())
+        IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>())
     { }
 
     private async Task LoadTagsAsync()
@@ -53,7 +56,7 @@ public class PrayerTimeScopeViewModel : ObservableObject
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load tags: {ex.Message}");
-            await Shell.Current.DisplayAlertAsync("Error", "Unable to load tags.", "OK");
+            await _navigationService.DisplayAlertAsync("Error", "Unable to load tags.", "OK");
         }
     }
 
@@ -66,17 +69,17 @@ public class PrayerTimeScopeViewModel : ObservableObject
 
         if (!selectedIds.Any())
         {
-            await Shell.Current.DisplayAlertAsync("No Tags Selected", "Please select at least one tag.", "OK");
+            await _navigationService.DisplayAlertAsync("No Tags Selected", "Please select at least one tag.", "OK");
             return;
         }
 
         var tagIdsParam = string.Join(",", selectedIds);
-        await Shell.Current.Navigation.PopModalAsync();
-        await Shell.Current.GoToAsync($"{nameof(PrayerTimePage)}?scope=tags&tagIds={tagIdsParam}");
+        await _navigationService.PopModalAsync();
+        await _navigationService.GoToAsync($"{nameof(PrayerTimePage)}?scope=tags&tagIds={tagIdsParam}");
     }
 
     private async Task CancelAsync()
     {
-        await Shell.Current.Navigation.PopModalAsync();
+        await _navigationService.PopModalAsync();
     }
 }
