@@ -28,7 +28,6 @@ public class QuickAddTests
         driver.EnterText("QuickAdd_Entry_Title", "UI Test Prayer");
         driver.Tap("QuickAdd_Btn_Add");
 
-        // Should be back on the home page
         Thread.Sleep(1000);
         Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd"),
             "Should return to Home after Quick Add save");
@@ -44,11 +43,9 @@ public class QuickAddTests
         driver.Tap("Home_Btn_QuickAdd");
         driver.WaitForElement("QuickAdd_Entry_Title");
 
-        // Tap save without entering a title
         driver.Tap("QuickAdd_Btn_Add");
         Thread.Sleep(500);
 
-        // Should still be on QuickAdd (alert shown, entry still visible after dismissal)
         driver.DismissAlertIfPresent();
         Assert.True(driver.IsDisplayed("QuickAdd_Entry_Title"));
 
@@ -79,18 +76,15 @@ public class QuickAddTests
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
-        // Add a prayer via Quick Add
         driver.Tap("Home_Btn_QuickAdd");
         driver.WaitForElement("QuickAdd_Entry_Title");
         driver.EnterText("QuickAdd_Entry_Title", "CrossTab Test Prayer");
         driver.Tap("QuickAdd_Btn_Add");
         Thread.Sleep(1000);
 
-        // Switch to Prayer Cards tab
         driver.NavigateToTab("Prayer Cards");
         Thread.Sleep(500);
 
-        // Cards page should load — wait longer for data refresh
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
             "Cards tab should show card list after Quick Add");
     }

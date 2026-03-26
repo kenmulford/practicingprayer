@@ -100,7 +100,7 @@ public static class AppExtensions
             var element = driver.FindElement(AutomationIdLocator(automationId));
             return element.Displayed;
         }
-        catch (NoSuchElementException)
+        catch (WebDriverException)
         {
             return false;
         }
@@ -117,6 +117,7 @@ public static class AppExtensions
         int maxScrolls = 5)
     {
         var locator = AutomationIdLocator(automationId);
+        var size = driver.Manage().Window.Size;
         for (int i = 0; i < maxScrolls; i++)
         {
             try
@@ -132,7 +133,6 @@ public static class AppExtensions
                 driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
             }
 
-            var size = driver.Manage().Window.Size;
             driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
             {
                 { "left", size.Width / 4 },
@@ -152,51 +152,60 @@ public static class AppExtensions
     /// <summary>Navigate to a Shell tab by tapping its tab bar item.</summary>
     public static void NavigateToTab(this AppiumDriver driver, string tabTitle)
     {
-        // Dismiss any blocking dialogs/modals first
-        driver.DismissAlertIfPresent();
+        // Try up to 3 times to find the tab bar, going back each time to clear
+        // modals, detail pages, and deep navigation stacks.
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            driver.DismissAlertIfPresent();
 
-        // Try pressing back to dismiss any modal that might be open
-        // (QuickAdd modal, popup, etc.)
+            if (TryTapTab(driver, tabTitle))
+                return;
+
+            // Tab not found — go back to clear the current page/modal
+            try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
+        }
+
+        // Nuclear recovery: re-activate the app (handles case where GoBack closed it)
+        try
+        {
+            driver.ActivateApp(TestConfig.AndroidPackage);
+            Thread.Sleep(1000);
+        }
+        catch (WebDriverException) { }
+
+        if (TryTapTab(driver, tabTitle))
+            return;
+
+        // Final XPath fallback
+        var tab = driver.FindElement(By.XPath(
+            $"//*[contains(@text,'{tabTitle}') or contains(@content-desc,'{tabTitle}')]"));
+        tab.Click();
+        Thread.Sleep(500);
+    }
+
+    /// <summary>Try to find and tap a tab by AccessibilityId. Returns true on success.</summary>
+    private static bool TryTapTab(AppiumDriver driver, string tabTitle)
+    {
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-            // Check if we're already on a page with the target tab visible
-            var tabCheck = driver.FindElement(MobileBy.AccessibilityId(tabTitle));
-            tabCheck.Click();
+            var tab = driver.FindElement(MobileBy.AccessibilityId(tabTitle));
+            tab.Click();
             Thread.Sleep(500);
-            return;
+            return true;
         }
-        catch (NoSuchElementException)
-        {
-            // Tab not found — might be behind a modal. Try going back.
-            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
-            driver.DismissAlertIfPresent();
-        }
+        catch (NoSuchElementException) { return false; }
+        catch (WebDriverException) { return false; }
         finally
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
         }
-
-        // Try again after clearing modals
-        try
-        {
-            var tab = driver.FindElement(MobileBy.AccessibilityId(tabTitle));
-            tab.Click();
-        }
-        catch (NoSuchElementException)
-        {
-            var tab = driver.FindElement(By.XPath(
-                $"//*[contains(@text,'{tabTitle}') or contains(@content-desc,'{tabTitle}')]"));
-            tab.Click();
-        }
-
-        Thread.Sleep(500);
     }
 
     /// <summary>Dismiss onboarding if needed and navigate to a tab. Replaces per-class EnsureOnX() methods.</summary>
     public static void EnsureOnTab(this AppiumDriver driver, string tabTitle, AppiumSetup setup)
     {
+        setup.EnsureSessionAlive();
         driver.DismissOnboardingIfPresent(setup);
         driver.NavigateToTab(tabTitle);
     }
@@ -215,23 +224,14 @@ public static class AppExtensions
     {
         if (setup.OnboardingHandled) return;
 
-        // Check for the welcome popup's Skip button
-        if (driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3))
-        {
-            driver.Tap("Welcome_Btn_Skip");
-            Thread.Sleep(1000);
+        // Check for skip buttons — welcome popup or mid-onboarding banner
+        string? skipButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
+            : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2) ? "Banner_Btn_Skip"
+            : null;
 
-            // The completion popup should appear after skipping
-            if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
-            {
-                driver.Tap("Complete_Btn_Done");
-                Thread.Sleep(500);
-            }
-        }
-        // Also check if we're mid-onboarding (banner skip)
-        else if (driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2))
+        if (skipButton != null)
         {
-            driver.Tap("Banner_Btn_Skip");
+            driver.Tap(skipButton);
             Thread.Sleep(1000);
 
             if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
@@ -256,7 +256,7 @@ public static class AppExtensions
             text = alert.Text;
             return true;
         }
-        catch (NoSuchElementException)
+        catch (WebDriverException)
         {
             text = "";
             return false;
@@ -276,6 +276,111 @@ public static class AppExtensions
         Thread.Sleep(300);
     }
 
+    // ── Toolbar / Text Finders ────────────────────────────────────
+
+    /// <summary>Tap a Shell ToolbarItem by its text label (e.g., "Save", "Edit", "Add Card").</summary>
+    public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    {
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        var element = wait.Until(d => d.FindElement(By.XPath(
+            $"//*[@text='{text}' or @content-desc='{text}']")));
+        element.Click();
+        Thread.Sleep(300);
+    }
+
+    /// <summary>Find an element by its visible text.</summary>
+    public static AppiumElement FindByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    {
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        return (AppiumElement)wait.Until(d => d.FindElement(By.XPath($"//*[@text='{text}']")));
+    }
+
+    /// <summary>Find and tap any element by its visible text.</summary>
+    public static void TapByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    {
+        driver.FindByText(text, timeoutSeconds).Click();
+        Thread.Sleep(300);
+    }
+
+    /// <summary>Check if an element with the given text is displayed.</summary>
+    public static bool IsTextDisplayed(this AppiumDriver driver, string text, int timeoutSeconds = 3)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
+            var element = driver.FindElement(By.XPath($"//*[@text='{text}']"));
+            return element.Displayed;
+        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+    }
+
+    // ── Swipe Gestures ──────────────────────────────────────────
+
+    /// <summary>Swipe an element in the given direction.</summary>
+    private static void SwipeElement(AppiumDriver driver, AppiumElement element, string direction)
+    {
+        var location = element.Location;
+        var size = element.Size;
+        driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+        {
+            { "left", location.X },
+            { "top", location.Y },
+            { "width", size.Width },
+            { "height", size.Height },
+            { "direction", direction },
+            { "percent", 0.5 }
+        });
+        Thread.Sleep(300);
+    }
+
+    /// <summary>Swipe left on an element (to reveal right swipe actions like Delete).</summary>
+    public static void SwipeElementLeft(this AppiumDriver driver, AppiumElement element)
+        => SwipeElement(driver, element, "left");
+
+    /// <summary>Swipe right on an element (to reveal left swipe actions like Favorite/Edit).</summary>
+    public static void SwipeElementRight(this AppiumDriver driver, AppiumElement element)
+        => SwipeElement(driver, element, "right");
+
+    /// <summary>Check if an alert dialog is currently showing.</summary>
+    public static bool IsAlertPresent(this AppiumDriver driver)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            driver.FindElement(By.XPath(
+                "//*[@resource-id='android:id/message' or @resource-id='android:id/alertTitle']"));
+            return true;
+        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+    }
+
+    /// <summary>Navigate back to a tab root, going back multiple times if needed.</summary>
+    public static void NavigateToTabRoot(this AppiumDriver driver, string tabTitle, string rootElementId,
+        AppiumSetup setup, int maxBacks = 5)
+    {
+        driver.DismissOnboardingIfPresent(setup);
+        driver.NavigateToTab(tabTitle);
+        for (int i = 0; i < maxBacks; i++)
+        {
+            if (driver.IsDisplayed(rootElementId, timeoutSeconds: 2))
+                return;
+            driver.GoBack();
+            Thread.Sleep(300);
+        }
+    }
+
+    // ── Test Setup Helpers ─────────────────────────────────────
+
+    /// <summary>Navigate to a new prayer form in edit mode (Prayers tab → Add toolbar).</summary>
+    public static void NavigateToNewPrayer(this AppiumDriver driver, AppiumSetup setup)
+    {
+        driver.EnsureOnTab("Prayers", setup);
+        driver.TapToolbarItem("Add");
+        driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 5);
+    }
+
     /// <summary>Dismiss any visible alert by tapping its positive button (OK/Yes/Cancel).</summary>
     public static void DismissAlertIfPresent(this AppiumDriver driver)
     {
@@ -290,7 +395,7 @@ public static class AppExtensions
             button.Click();
             Thread.Sleep(300);
         }
-        catch (NoSuchElementException) { }
+        catch (WebDriverException) { }
         finally
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
