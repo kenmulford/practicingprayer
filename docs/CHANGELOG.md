@@ -24,3 +24,4 @@
 - Card delete confirmation now shows accurate prayer count even for collapsed cards
 - Overdue filter now refreshes correctly when returning from other tabs
 - Notification scheduling errors no longer prevent prayers from saving
+- Moving a prayer to a different card now correctly removes it from the original card

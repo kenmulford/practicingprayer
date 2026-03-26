@@ -404,12 +404,13 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
+            var origCardId = _originalPrayerCardId; // capture before CoreSaveAsync resets originals
             bool isNew = await CoreSaveAsync();
 
             if (ReturnToCards)
             {
                 string route = isNew ? ".." : "../..";
-                bool cardChanged = !isNew && _originalPrayerCardId != 0 && _originalPrayerCardId != PrayerCardId;
+                bool cardChanged = !isNew && origCardId != 0 && origCardId != PrayerCardId;
                 var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
                 if (cardChanged)
                     queryParts += $"&oldCardId={_originalPrayerCardId}";
