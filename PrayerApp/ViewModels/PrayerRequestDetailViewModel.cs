@@ -22,6 +22,9 @@ namespace PrayerApp.ViewModels
         private readonly ICardService _cardService;
         private readonly IOnboardingService _onboardingService;
         private readonly INotificationService _notificationService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
+        private readonly ISettings _settings;
         private List<PrayerTag> _allTags = new();
 
         public ICommand SaveCommand { get; private set; }
@@ -108,7 +111,7 @@ namespace PrayerApp.ViewModels
         public async Task<bool> CanLeaveAsync()
         {
             if (!IsDirty) return true;
-            return await Shell.Current.DisplayAlertAsync(
+            return await _navigationService.DisplayConfirmAsync(
                 "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
         }
 
@@ -180,7 +183,8 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged(nameof(ShowDayOfMonth));
                     // Request OS permission immediately when user enables notifications here
                     // (e.g. during tutorial) rather than waiting for Settings page visit.
-                    if (value) Services.Settings.EnsureNotificationPermissionRequested();
+                    if (value && _settings.AllowNotifications)
+                        _notificationService.RequestPermissionAsync().SafeFireAndForget();
                 }
             }
         }
@@ -335,7 +339,8 @@ namespace PrayerApp.ViewModels
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
         public PrayerRequestDetailViewModel(IPrayerService prayerService, ITagService tagService,
-            ICardService cardService, IOnboardingService onboardingService, INotificationService notificationService)
+            ICardService cardService, IOnboardingService onboardingService, INotificationService notificationService,
+            INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings)
         {
             _prayer = new Prayer();
             _prayerService = prayerService;
@@ -343,6 +348,9 @@ namespace PrayerApp.ViewModels
             _cardService = cardService;
             _onboardingService = onboardingService;
             _notificationService = notificationService;
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
+            _settings = settings;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             SaveAndNewCommand = new AsyncRelayCommand(SaveAndNewAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
@@ -362,7 +370,10 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
         { }
 
         public PrayerRequestDetailViewModel(Prayer prayer) : this()
@@ -398,7 +409,7 @@ namespace PrayerApp.ViewModels
             if (isNew)
                 _onboardingService.Advance();
 
-            SemanticScreenReader.Announce("Prayer saved");
+            _accessibilityService.Announce("Prayer saved");
             return isNew;
         }
 
@@ -414,11 +425,11 @@ namespace PrayerApp.ViewModels
                 var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
                 if (cardChanged)
                     queryParts += $"&oldCardId={origCardId}";
-                await Shell.Current.GoToAsync($"{route}?{queryParts}");
+                await _navigationService.GoToAsync($"{route}?{queryParts}");
             }
             else
             {
-                await Shell.Current.GoToAsync($"..?{_savedQueryKey}={Identifier}");
+                await _navigationService.GoToAsync($"..?{_savedQueryKey}={Identifier}");
             }
         }
 
@@ -428,7 +439,7 @@ namespace PrayerApp.ViewModels
             if (_saving) return;
             if (string.IsNullOrWhiteSpace(Title))
             {
-                await Shell.Current.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
+                await _navigationService.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
                 return;
             }
 
@@ -445,11 +456,11 @@ namespace PrayerApp.ViewModels
             finally { _saving = false; }
         }
 
-        private static Prayer CreateDefaultPrayer(int? cardId = null) => new()
+        private Prayer CreateDefaultPrayer(int? cardId = null) => new()
         {
             PrayerCardId = cardId ?? 0,
-            NotifyHour = Services.Settings.DefaultNotifyHour,
-            NotifyMinute = Services.Settings.DefaultNotifyMinute
+            NotifyHour = _settings.DefaultNotifyHour,
+            NotifyMinute = _settings.DefaultNotifyMinute
         };
 
         private void ResetForNewPrayer(int cardId)
@@ -467,7 +478,7 @@ namespace PrayerApp.ViewModels
 
         private async Task DeleteAsync()
         {
-            bool confirmed = await Shell.Current.DisplayAlertAsync(
+            bool confirmed = await _navigationService.DisplayConfirmAsync(
                 "Delete Prayer Request",
                 $"Delete \"{Title}\"?",
                 "Delete", "Cancel");
@@ -475,14 +486,14 @@ namespace PrayerApp.ViewModels
             if (!confirmed) return;
 
             await _prayerService.DeletePrayerAsync(_prayer);
-            SemanticScreenReader.Announce("Prayer deleted");
+            _accessibilityService.Announce("Prayer deleted");
             if (ReturnToCards)
             {
-                await Shell.Current.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");
             }
             else
             {
-                await Shell.Current.GoToAsync($"..?{_deletedQueryKey}={Identifier}");
+                await _navigationService.GoToAsync($"..?{_deletedQueryKey}={Identifier}");
             }
         }
 
@@ -490,11 +501,11 @@ namespace PrayerApp.ViewModels
         {
             if (ReturnToCards)
             {
-                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true&returnToCards=true&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true&returnToCards=true&parentCardId={PrayerCardId}");
             }
             else
             {
-                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true");
+                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true");
             }
         }
 
@@ -502,11 +513,11 @@ namespace PrayerApp.ViewModels
         {
             if (ReturnToCards)
             {
-                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true&returnToCards=true&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true&returnToCards=true&parentCardId={PrayerCardId}");
             }
             else
             {
-                await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true");
+                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true");
             }
         }
 
@@ -520,11 +531,11 @@ namespace PrayerApp.ViewModels
             // Navigate back so parent page (list or card accordion) picks up the change
             if (ReturnToCards)
             {
-                await Shell.Current.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
             }
             else
             {
-                await Shell.Current.GoToAsync($"..?{_savedQueryKey}={Identifier}");
+                await _navigationService.GoToAsync($"..?{_savedQueryKey}={Identifier}");
             }
         }
 
@@ -604,14 +615,14 @@ namespace PrayerApp.ViewModels
                 var result = await Prayer.LoadAsync(id);
                 if (result is null)
                 {
-                    await Shell.Current.GoToAsync("..");
+                    await _navigationService.GoToAsync("..");
                     return;
                 }
                 _prayer = result;
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayer: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load prayer: {e.Message}", "OK");
                 return;
             }
             RefreshProperties();
