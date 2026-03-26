@@ -2,7 +2,8 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="PrayerApp.Views.Settings.SettingsHubPage"
-             Title="Settings">
+             Title="Settings"
+             SafeAreaEdges="Container">
 
     <ScrollView>
         <VerticalStackLayout Padding="20,16" Spacing="16">
@@ -11,7 +12,9 @@
                 <VerticalStackLayout Spacing="0">
 
                     <!-- App Settings -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14">
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_AppSettings"
+                          SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnAppSettingsTapped" />
                         </Grid.GestureRecognizers>
@@ -35,7 +38,9 @@
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Backup & Restore -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14">
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_Backup"
+                          SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnBackupTapped" />
                         </Grid.GestureRecognizers>
@@ -59,7 +64,9 @@
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- About -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14">
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_About"
+                          SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnAboutTapped" />
                         </Grid.GestureRecognizers>
@@ -83,7 +90,9 @@
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Help -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14">
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_Help"
+                          SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnHelpTapped" />
                         </Grid.GestureRecognizers>

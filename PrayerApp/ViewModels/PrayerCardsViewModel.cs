@@ -276,7 +276,8 @@ namespace PrayerApp.ViewModels
             Task.Delay(400, token).ContinueWith(_ =>
             {
                 if (!token.IsCancellationRequested)
-                    SemanticScreenReader.Announce($"Showing {count} cards");
+                    MainThread.BeginInvokeOnMainThread(() =>
+                        SemanticScreenReader.Announce($"Showing {count} cards"));
             }, token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
         }
 

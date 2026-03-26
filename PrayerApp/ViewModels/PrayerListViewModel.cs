@@ -473,6 +473,10 @@ namespace PrayerApp.ViewModels
             foreach (var tag in allTags.Where(t => !existingTagIds.Contains(t.Id)))
                 AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
 
+            // Rebuild overdue set so the Overdue filter reflects current state
+            var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
+            _overdueIds = overdue.Select(p => p.Id).ToHashSet();
+
             OnPropertyChanged(nameof(HasTags));
             ApplyPreselectedTag();
             ApplyFilter();

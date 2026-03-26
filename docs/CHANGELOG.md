@@ -18,3 +18,9 @@
 
 - Prayer card counts now update reliably when switching between tabs
 - Moving a prayer to a different card correctly updates both the old and new card's count
+- Restoring a backup now immediately shows restored data (no restart needed)
+- Unsaved changes prompt now appears when switching tabs while editing
+- Notification time and day changes are now tracked as unsaved changes
+- Card delete confirmation now shows accurate prayer count even for collapsed cards
+- Overdue filter now refreshes correctly when returning from other tabs
+- Notification scheduling errors no longer prevent prayers from saving

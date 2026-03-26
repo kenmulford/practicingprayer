@@ -4,7 +4,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Prayer.PrayerListPage"
              x:DataType="viewModels:PrayerListViewModel"
-             Title="Prayers">
+             Title="Prayers"
+             SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>

@@ -4,7 +4,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Tags.TagsPage"
              x:DataType="viewModels:TagsViewModel"
-             Title="Tags">
+             Title="Tags"
+             SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
     </ContentPage.ToolbarItems>

@@ -150,7 +150,7 @@ public class TagService : ITagService
             t.IsSystem && string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
-    private void InvalidateCache()
+    public void InvalidateCache()
     {
         _cache = null;
     }

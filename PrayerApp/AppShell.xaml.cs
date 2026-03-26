@@ -85,7 +85,10 @@ namespace PrayerApp
 
         private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs args)
         {
-            if (args.Source != ShellNavigationSource.Pop) return;
+            if (args.Source is not (ShellNavigationSource.Pop
+                or ShellNavigationSource.ShellItemChanged
+                or ShellNavigationSource.ShellSectionChanged))
+                return;
 
             if (CurrentPage?.BindingContext is IEditGuard guard && guard.IsDirty)
             {

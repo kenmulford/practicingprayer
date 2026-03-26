@@ -18,6 +18,7 @@ namespace PrayerApp.ViewModels
         private PrayerCard _prayerCard;
         private bool _isExpanded;
         private bool _prayersLoaded;
+        private bool _addingPrayer;
         private string _originalTitle = string.Empty;
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
@@ -205,9 +206,9 @@ namespace PrayerApp.ViewModels
         {
             if (_prayerCard.IsSystem) return;
 
-            int prayerCount = Prayers.Count;
-            string detail = prayerCount > 0
-                ? $"Delete \"{Title}\"? This will also delete {prayerCount} prayer request{(prayerCount == 1 ? "" : "s")}."
+            var count = ActivePrayerCount;
+            string detail = count > 0
+                ? $"Delete \"{Title}\" and its {count} prayer request{(count == 1 ? "" : "s")}?"
                 : $"Delete \"{Title}\"?";
 
             bool confirmed = await Shell.Current.DisplayAlertAsync(
@@ -338,6 +339,10 @@ namespace PrayerApp.ViewModels
 
         public async Task AddOrUpdatePrayerAsync(int prayerId)
         {
+            if (_addingPrayer) return;
+            _addingPrayer = true;
+            try
+            {
             // If prayers haven't been loaded yet, load them first so we can
             // display the new/updated prayer in the expanded accordion.
             if (!_prayersLoaded)
@@ -367,6 +372,8 @@ namespace PrayerApp.ViewModels
             Prayers.Insert(insertIndex, viewModel);
             OnPropertyChanged(nameof(HasPrayers));
             LoadActivePrayerCountAsync().SafeFireAndForget();
+            }
+            finally { _addingPrayer = false; }
         }
 
         public void RemovePrayer(int prayerId)

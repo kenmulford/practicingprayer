@@ -8,6 +8,7 @@ namespace PrayerApp.Services;
 public interface ITagService
 {
     Task<IReadOnlyList<PrayerTag>> GetTagsAsync();
+    void InvalidateCache();
 
     // Request-level tag methods (current)
     Task<IReadOnlyList<PrayerTag>> GetTagsByRequestIdAsync(int prayerRequestId);

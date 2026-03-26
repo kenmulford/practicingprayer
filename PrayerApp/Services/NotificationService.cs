@@ -36,6 +36,8 @@ public class NotificationService : INotificationService
 
     public async Task ScheduleAsync(Prayer prayer)
     {
+        try
+        {
         if (!_isNotificationsAllowed())
         {
             System.Diagnostics.Debug.WriteLine($"[Notify] ScheduleAsync SKIPPED — notifications not allowed");
@@ -110,6 +112,12 @@ public class NotificationService : INotificationService
             notifyTime,
             repeatType,
             repeatInterval);
+        }
+        catch (Exception ex)
+        {
+            // Don't let notification failures block prayer saves
+            System.Diagnostics.Debug.WriteLine($"[Notify] ScheduleAsync FAILED: {ex.Message}");
+        }
     }
 
     internal static DateTime GetNextDayOfWeek(DayOfWeek targetDay, int hour, int minute)

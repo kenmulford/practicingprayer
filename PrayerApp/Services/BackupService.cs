@@ -6,11 +6,20 @@ namespace PrayerApp.Services;
 public class BackupService : IBackupService
 {
     private readonly IDBService _dbService;
+    private readonly ICardService _cardService;
+    private readonly IPrayerService _prayerService;
+    private readonly ITagService _tagService;
+    private readonly INotificationService _notificationService;
     private readonly string _dbPath;
 
-    public BackupService(IDBService dbService)
+    public BackupService(IDBService dbService, ICardService cardService,
+        IPrayerService prayerService, ITagService tagService, INotificationService notificationService)
     {
         _dbService = dbService;
+        _cardService = cardService;
+        _prayerService = prayerService;
+        _tagService = tagService;
+        _notificationService = notificationService;
         _dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");
     }
 
@@ -120,9 +129,24 @@ public class BackupService : IBackupService
             File.Move(_dbPath, backupTmpPath, overwrite: true);
             File.Move(restorePath, _dbPath, overwrite: true);
 
-            // Phase 3 — Reinitialize, cleanup, navigate
+            // Phase 3 — Reinitialize + invalidate all caches
             await _dbService.ReinitializeAsync(_dbPath);
+            _cardService.InvalidateCache();
+            _prayerService.InvalidateCache();
+            _tagService.InvalidateCache();
             File.Delete(backupTmpPath);
+
+            // Phase 4 — Reschedule notifications for restored prayers
+            try
+            {
+                var prayers = await _prayerService.GetAllPrayersAsync();
+                foreach (var prayer in prayers.Where(p => p.CanNotify))
+                    await _notificationService.ScheduleAsync(prayer);
+            }
+            catch (Exception notifyEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[BackupService] Notification reschedule failed: {notifyEx.Message}");
+            }
 
             await Shell.Current.GoToAsync("//MainPage");
             await Shell.Current.Navigation.PopModalAsync();
@@ -132,6 +156,11 @@ public class BackupService : IBackupService
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[BackupService.ImportAsync] {ex}");
+
+            // Attempt to reopen the DB so the app remains usable
+            try { await _dbService.ReinitializeAsync(_dbPath); }
+            catch { /* DB may be gone — user must restart */ }
+
             await Shell.Current.Navigation.PopModalAsync();
             await Shell.Current.DisplayAlertAsync("Restore Failed",
                 "Restore failed. Please restart the app.", "OK");

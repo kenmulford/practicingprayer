@@ -62,6 +62,7 @@
                 <Label Text="You've prayed through all your requests!"
                        FontSize="20"
                        FontAttributes="Bold"
+                       SemanticProperties.HeadingLevel="Level1"
                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                        HorizontalOptions="Center"
                        HorizontalTextAlignment="Center" />

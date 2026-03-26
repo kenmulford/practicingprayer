@@ -4,7 +4,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
-             x:DataType="viewModels:PrayerCardsViewModel">
+             x:DataType="viewModels:PrayerCardsViewModel"
+             SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>

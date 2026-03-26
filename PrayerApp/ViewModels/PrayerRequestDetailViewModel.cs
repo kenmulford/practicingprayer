@@ -61,6 +61,10 @@ namespace PrayerApp.ViewModels
         private bool _originalCanNotify;
         private PrayerFrequency _originalFrequency;
         private bool _originalIsAnswered;
+        private int _originalNotifyHour;
+        private int _originalNotifyMinute;
+        private int _originalDayOfWeek;
+        private int _originalDayOfMonth;
 
         public bool ReturnToCards { get; set; }
         public bool IsNew => _prayer.Id == 0;
@@ -95,7 +99,11 @@ namespace PrayerApp.ViewModels
             PrayerCardId != _originalPrayerCardId ||
             CanNotify != _originalCanNotify ||
             PrayerFrequency != _originalFrequency ||
-            IsAnswered != _originalIsAnswered;
+            IsAnswered != _originalIsAnswered ||
+            _prayer.NotifyHour != _originalNotifyHour ||
+            _prayer.NotifyMinute != _originalNotifyMinute ||
+            _prayer.NotifyDayOfWeek != _originalDayOfWeek ||
+            _prayer.NotifyDayOfMonth != _originalDayOfMonth;
 
         public async Task<bool> CanLeaveAsync()
         {
@@ -722,6 +730,10 @@ namespace PrayerApp.ViewModels
             _originalCanNotify = CanNotify;
             _originalFrequency = PrayerFrequency;
             _originalIsAnswered = IsAnswered;
+            _originalNotifyHour = _prayer.NotifyHour;
+            _originalNotifyMinute = _prayer.NotifyMinute;
+            _originalDayOfWeek = _prayer.NotifyDayOfWeek;
+            _originalDayOfMonth = _prayer.NotifyDayOfMonth;
         }
 
         private void RefreshProperties()

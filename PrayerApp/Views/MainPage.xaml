@@ -4,7 +4,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:DataType="viewModels:HomeViewModel"
-             x:Class="PrayerApp.Views.MainPage">
+             x:Class="PrayerApp.Views.MainPage"
+             SafeAreaEdges="Container">
 
     <Grid RowDefinitions="*,Auto">
 
