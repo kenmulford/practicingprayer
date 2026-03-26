@@ -278,16 +278,7 @@
                     <!-- Divider before action buttons -->
                     <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
-                    <!-- Save & Add Another — only for new prayers from cards -->
-                    <Button Text="Save &amp; Add Another"
-                            AutomationId="Detail_Btn_SaveAndNew"
-                            Command="{Binding SaveAndNewCommand}"
-                            IsVisible="{Binding ShowSaveAndNew}"
-                            Style="{StaticResource GhostButton}"
-                            SemanticProperties.Hint="Save this prayer and start a new one on the same card"
-                            HorizontalOptions="Fill" />
-
-                    <!-- Delete Button — Save is in the navbar -->
+                    <!-- Delete Button — Save and Save+ are in the navbar -->
                     <Button Text="Delete"
                             AutomationId="Detail_Btn_Delete"
                             Command="{Binding DeleteCommand}"
