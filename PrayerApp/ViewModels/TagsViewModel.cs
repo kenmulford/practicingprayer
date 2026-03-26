@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.Tags;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -12,6 +11,8 @@ namespace PrayerApp.ViewModels
     public class TagsViewModel : ObservableObject
     {
         private readonly ITagService _tagService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
 
         private bool _isLoading;
         public bool IsLoading
@@ -20,18 +21,27 @@ namespace PrayerApp.ViewModels
             set
             {
                 if (SetProperty(ref _isLoading, value))
-                    SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
+                    _accessibilityService.Announce(value ? "Loading" : "Content loaded");
             }
         }
 
         public ObservableCollection<TagItemViewModel> Tags { get; } = new();
         public ICommand AddCommand { get; }
 
-        public TagsViewModel(ITagService tagService)
+        public TagsViewModel(ITagService tagService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
         {
             _tagService = tagService ?? throw new ArgumentNullException(nameof(tagService));
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
             AddCommand = new AsyncRelayCommand(AddAsync);
         }
+
+        public TagsViewModel(ITagService tagService) : this(
+            tagService,
+            IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+        { }
 
         public async Task LoadAsync()
         {
@@ -41,7 +51,7 @@ namespace PrayerApp.ViewModels
                 var tags = await _tagService.GetTagsAsync();
                 Tags.Clear();
                 foreach (var tag in tags)
-                    Tags.Add(new TagItemViewModel(tag, _tagService, this));
+                    Tags.Add(new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService));
             }
             finally
             {
@@ -67,7 +77,7 @@ namespace PrayerApp.ViewModels
 
             // Add new tags
             foreach (var tag in tags.Where(t => !currentIds.Contains(t.Id)))
-                Tags.Add(new TagItemViewModel(tag, _tagService, this));
+                Tags.Add(new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService));
 
             // Update existing tags with fresh data (name/color changes)
             foreach (var tag in tags)
@@ -80,13 +90,15 @@ namespace PrayerApp.ViewModels
         public void RemoveTag(TagItemViewModel item) => Tags.Remove(item);
 
         private async Task AddAsync() =>
-            await Shell.Current.GoToAsync(nameof(TagDetailPage));
+            await _navigationService.GoToAsync(Routes.TagDetailPage);
     }
 
     public class TagItemViewModel : ObservableObject
     {
         private readonly ITagService _tagService;
         private readonly TagsViewModel _parent;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
         private PrayerTag _tag;
 
         public int Id => _tag.Id;
@@ -96,11 +108,14 @@ namespace PrayerApp.ViewModels
         public ICommand EditCommand { get; }
         public ICommand DeleteCommand { get; }
 
-        public TagItemViewModel(PrayerTag tag, ITagService tagService, TagsViewModel parent)
+        public TagItemViewModel(PrayerTag tag, ITagService tagService, TagsViewModel parent,
+            INavigationService navigationService, IAccessibilityService accessibilityService)
         {
             _tag = tag;
             _tagService = tagService;
             _parent = parent;
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
             EditCommand = new AsyncRelayCommand(EditAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !_tag.IsSystem);
         }
@@ -113,11 +128,11 @@ namespace PrayerApp.ViewModels
         }
 
         private async Task EditAsync() =>
-            await Shell.Current.GoToAsync($"{nameof(TagDetailPage)}?load={Id}");
+            await _navigationService.GoToAsync($"{Routes.TagDetailPage}?load={Id}");
 
         private async Task DeleteAsync()
         {
-            bool confirmed = await Shell.Current.DisplayAlertAsync(
+            bool confirmed = await _navigationService.DisplayConfirmAsync(
                 "Delete Tag",
                 $"Delete \"{Name}\"? It will be removed from all prayer requests.",
                 "Delete", "Cancel");
@@ -125,7 +140,7 @@ namespace PrayerApp.ViewModels
             if (!confirmed) return;
 
             await _tagService.DeleteTagAsync(Id);
-            SemanticScreenReader.Announce("Tag deleted");
+            _accessibilityService.Announce("Tag deleted");
             _parent.RemoveTag(this);
         }
     }

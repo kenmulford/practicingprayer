@@ -13,6 +13,8 @@ namespace PrayerApp.ViewModels
         private readonly ITagService _tagService;
         private readonly IUserColorService _userColorService;
         private readonly IColorPickerService _colorPickerService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
         private PrayerTag _tag = new();
         private string _selectedColorHex = TagColorPalette.Swatches[0].Light;
         private string _firstDefaultHex = string.Empty;
@@ -46,7 +48,7 @@ namespace PrayerApp.ViewModels
         public async Task<bool> CanLeaveAsync()
         {
             if (!IsDirty) return true;
-            return await Shell.Current.DisplayAlertAsync(
+            return await _navigationService.DisplayConfirmAsync(
                 "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
         }
 
@@ -72,11 +74,15 @@ namespace PrayerApp.ViewModels
         public ICommand AddColorCommand { get; }
         public ICommand ViewPrayersCommand { get; }
 
-        public TagDetailViewModel(ITagService tagService, IUserColorService userColorService, IColorPickerService colorPickerService)
+        public TagDetailViewModel(ITagService tagService, IUserColorService userColorService,
+            IColorPickerService colorPickerService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
         {
             _tagService = tagService ?? throw new ArgumentNullException(nameof(tagService));
             _userColorService = userColorService ?? throw new ArgumentNullException(nameof(userColorService));
             _colorPickerService = colorPickerService ?? throw new ArgumentNullException(nameof(colorPickerService));
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
             _firstDefaultHex = _userColorService.GetFirstDefaultHex();
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             AddColorCommand = new AsyncRelayCommand(AddColorAsync);
@@ -115,7 +121,7 @@ namespace PrayerApp.ViewModels
         {
             if (swatch.IsDefault) return;
 
-            var confirm = await Shell.Current.DisplayAlertAsync(
+            var confirm = await _navigationService.DisplayConfirmAsync(
                 "Delete Color", "Remove this color from your palette?", "Delete", "Cancel");
             if (!confirm) return;
 
@@ -138,7 +144,7 @@ namespace PrayerApp.ViewModels
             var result = await PrayerTag.LoadAsync(id);
             if (result is null)
             {
-                await Shell.Current.GoToAsync("..");
+                await _navigationService.GoToAsync("..");
                 return;
             }
             _tag = result;
@@ -155,15 +161,15 @@ namespace PrayerApp.ViewModels
         {
             if (string.IsNullOrWhiteSpace(Name))
             {
-                await Shell.Current.DisplayAlertAsync("Validation", "Tag name cannot be empty.", "OK");
+                await _navigationService.DisplayAlertAsync("Validation", "Tag name cannot be empty.", "OK");
                 return;
             }
 
             _tag.Color = SelectedColorHex;
             await _tagService.SaveTagAsync(_tag);
             CaptureOriginals();
-            SemanticScreenReader.Announce("Tag saved");
-            await Shell.Current.GoToAsync("..");
+            _accessibilityService.Announce("Tag saved");
+            await _navigationService.GoToAsync("..");
         }
 
         private void CaptureOriginals()
@@ -197,7 +203,7 @@ namespace PrayerApp.ViewModels
 
         private async Task ViewPrayersAsync()
         {
-            await Shell.Current.GoToAsync($"//PrayersPage?tagId={_tag.Id}");
+            await _navigationService.GoToAsync($"//PrayersPage?tagId={_tag.Id}");
         }
     }
 

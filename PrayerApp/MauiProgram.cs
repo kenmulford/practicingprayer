@@ -110,6 +110,9 @@ namespace PrayerApp
             builder.Services.AddSingleton<IUserColorService, UserColorService>();
             // Register settings wrapper (delegates to static Settings, enables VM testing)
             builder.Services.AddSingleton<ISettings, SettingsService>();
+            // Navigation + accessibility abstractions (enable VM unit testing)
+            builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
+            builder.Services.AddSingleton<IAccessibilityService, MauiAccessibilityService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();

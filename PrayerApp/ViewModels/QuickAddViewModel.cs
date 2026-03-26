@@ -10,6 +10,8 @@ public class QuickAddViewModel : ObservableObject
 {
     private readonly ICardService _cardService;
     private readonly IPrayerService _prayerService;
+    private readonly INavigationService _navigationService;
+    private readonly IAccessibilityService _accessibilityService;
 
     private string _title = string.Empty;
     public string Title
@@ -21,24 +23,29 @@ public class QuickAddViewModel : ObservableObject
     public ICommand SaveCommand { get; }
     public ICommand CancelCommand { get; }
 
-    public QuickAddViewModel(ICardService cardService, IPrayerService prayerService)
+    public QuickAddViewModel(ICardService cardService, IPrayerService prayerService,
+        INavigationService navigationService, IAccessibilityService accessibilityService)
     {
         _cardService = cardService;
         _prayerService = prayerService;
+        _navigationService = navigationService;
+        _accessibilityService = accessibilityService;
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
     }
 
     public QuickAddViewModel() : this(
         IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
-        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>())
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
     { }
 
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(Title))
         {
-            await Shell.Current.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
+            await _navigationService.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
             return;
         }
 
@@ -52,18 +59,18 @@ public class QuickAddViewModel : ObservableObject
             };
             await _prayerService.SavePrayerAsync(prayer);
             _prayerService.InvalidateCache();
-            SemanticScreenReader.Announce("Prayer saved");
-            await Shell.Current.Navigation.PopModalAsync();
+            _accessibilityService.Announce("Prayer saved");
+            await _navigationService.PopModalAsync();
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Quick add save failed: {ex.Message}");
-            await Shell.Current.DisplayAlertAsync("Error", "Unable to save prayer. Please try again.", "OK");
+            await _navigationService.DisplayAlertAsync("Error", "Unable to save prayer. Please try again.", "OK");
         }
     }
 
     private async Task CancelAsync()
     {
-        await Shell.Current.Navigation.PopModalAsync();
+        await _navigationService.PopModalAsync();
     }
 }

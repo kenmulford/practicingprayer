@@ -19,6 +19,9 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly ITagService _tagService;
     private readonly IPrayerInteractionService _interactionService;
     private readonly IOnboardingService _onboardingService;
+    private readonly INavigationService _navigationService;
+    private readonly IAccessibilityService _accessibilityService;
+    private readonly ISettings _settings;
     private CancellationTokenSource _loadCts = new();
     private int? _recentlyNotifiedTagId;
 
@@ -34,7 +37,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         {
             if (SetProperty(ref _selectedIntervalSeconds, value))
             {
-                Services.Settings.AutoModeIntervalSeconds = value;
+                _settings.AutoModeIntervalSeconds = value;
                 OnPropertyChanged(nameof(CountdownDisplay));
             }
         }
@@ -70,7 +73,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
 
                 // Announce current prayer for screen readers
                 if (!string.IsNullOrEmpty(ProgressDisplay) && CurrentEntry is { } entry && !entry.IsSentinel)
-                    SemanticScreenReader.Announce($"Prayer {ProgressDisplay}: {entry.PrayerTitle}");
+                    _accessibilityService.Announce($"Prayer {ProgressDisplay}: {entry.PrayerTitle}");
 
                 // Log interaction for the prayer we just swiped away from (forward only)
                 if (value > previous && previous < Entries.Count)
@@ -115,7 +118,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         private set
         {
             if (SetProperty(ref _isLoading, value))
-                SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
+                _accessibilityService.Announce(value ? "Loading" : "Content loaded");
         }
     }
 
@@ -183,15 +186,19 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     public ICommand TogglePauseCommand { get; }
 
     public PrayerTimeViewModel(IPrayerService prayerService, ICardService cardService,
-        ITagService tagService, IPrayerInteractionService interactionService, IOnboardingService onboardingService)
+        ITagService tagService, IPrayerInteractionService interactionService, IOnboardingService onboardingService,
+        INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings)
     {
         _prayerService = prayerService;
         _cardService = cardService;
         _tagService = tagService;
         _interactionService = interactionService;
         _onboardingService = onboardingService;
+        _navigationService = navigationService;
+        _accessibilityService = accessibilityService;
+        _settings = settings;
 
-        _selectedIntervalSeconds = Services.Settings.AutoModeIntervalSeconds;
+        _selectedIntervalSeconds = _settings.AutoModeIntervalSeconds;
 
         NextCommand = new AsyncRelayCommand(NextAsync);
         PreviousCommand = new RelayCommand(Previous);
@@ -206,7 +213,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IPrayerInteractionService>(),
-        IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>())
+        IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
     { }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -288,8 +298,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to load prayer time entries: {ex.Message}");
-            if (Shell.Current is not null)
-                await Shell.Current.DisplayAlertAsync("Error", "Unable to load prayers for this session.", "OK");
+            await _navigationService.DisplayAlertAsync("Error", "Unable to load prayers for this session.", "OK");
         }
         finally
         {
@@ -315,7 +324,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             await LogInteractionForIndex(CurrentIndex);
             HasCompleted = true;
             StopAutoMode();
-            SemanticScreenReader.Announce("Prayer session complete");
+            _accessibilityService.Announce("Prayer session complete");
         }
     }
 
@@ -346,7 +355,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     {
         StopAutoMode();
         _onboardingService.Advance(); // PrayerTimeActive → Complete
-        await Shell.Current.GoToAsync("..");
+        await _navigationService.GoToAsync("..");
     }
 
     // ── Auto-mode ────────────────────────────────────────────────────────────

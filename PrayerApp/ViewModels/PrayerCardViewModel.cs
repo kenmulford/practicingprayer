@@ -3,8 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.Prayer;
-using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,6 +21,8 @@ namespace PrayerApp.ViewModels
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
@@ -97,7 +97,7 @@ namespace PrayerApp.ViewModels
         public async Task<bool> CanLeaveAsync()
         {
             if (!IsDirty) return true;
-            return await Shell.Current.DisplayAlertAsync(
+            return await _navigationService.DisplayConfirmAsync(
                 "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
         }
 
@@ -139,12 +139,16 @@ namespace PrayerApp.ViewModels
 
         #region Constructors
 
-        public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService, IOnboardingService onboardingService)
+        public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService,
+            IOnboardingService onboardingService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
         {
             _prayerCard = new PrayerCard();
             _cardService = cardService;
             _prayerService = prayerService;
             _onboardingService = onboardingService;
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
@@ -158,7 +162,9 @@ namespace PrayerApp.ViewModels
         public PrayerCardViewModel() : this(
             IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
         { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
@@ -198,8 +204,8 @@ namespace PrayerApp.ViewModels
             _originalTitle = Title; // Reset dirty state before navigation
             if (isNew)
                 _onboardingService.Advance(); // NameCard → AddRequest
-            SemanticScreenReader.Announce("Card saved");
-            await Shell.Current.GoToAsync($"..?saved={Identifier}");
+            _accessibilityService.Announce("Card saved");
+            await _navigationService.GoToAsync($"..?saved={Identifier}");
         }
 
         private async Task DeleteAsync()
@@ -211,7 +217,7 @@ namespace PrayerApp.ViewModels
                 ? $"Delete \"{Title}\" and its {count} prayer request{(count == 1 ? "" : "s")}?"
                 : $"Delete \"{Title}\"?";
 
-            bool confirmed = await Shell.Current.DisplayAlertAsync(
+            bool confirmed = await _navigationService.DisplayConfirmAsync(
                 "Delete Card", detail, "Delete", "Cancel");
 
             if (!confirmed) return;
@@ -220,14 +226,14 @@ namespace PrayerApp.ViewModels
             foreach (var prayer in prayers)
                 await _prayerService.DeletePrayerAsync(prayer);
             await _cardService.DeleteCardAsync(_prayerCard);
-            SemanticScreenReader.Announce("Card deleted");
-            await Shell.Current.GoToAsync($"..?deleted={Identifier}");
+            _accessibilityService.Announce("Card deleted");
+            await _navigationService.GoToAsync($"..?deleted={Identifier}");
         }
 
         private async Task SelectPrayerCardAsync()
         {
             if (_prayerCard.IsSystem) return;
-            await Shell.Current.GoToAsync($"{nameof(PrayerCardPage)}?load={Identifier}");
+            await _navigationService.GoToAsync($"{Routes.PrayerCardPage}?load={Identifier}");
         }
 
         private async Task ToggleExpandedAsync()
@@ -253,7 +259,7 @@ namespace PrayerApp.ViewModels
         private async Task AddPrayerAsync()
         {
             _onboardingService.Advance(); // AddRequest → NameRequest
-            await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?newForCard={_prayerCard.Id}");
+            await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?newForCard={_prayerCard.Id}");
         }
 
         #endregion
@@ -282,14 +288,14 @@ namespace PrayerApp.ViewModels
                 var loaded = await PrayerCard.LoadAsync(id);
                 if (loaded is null)
                 {
-                    await Shell.Current.GoToAsync("..");
+                    await _navigationService.GoToAsync("..");
                     return;
                 }
                 _prayerCard = loaded;
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
                 return;
             }
 
@@ -338,7 +344,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
             }
         }
 
