@@ -12,6 +12,14 @@ public partial class PrayerCardsPage : ContentPage
         BindingContext = vm;
     }
 
+    private void OnSearchButtonPressed(object? sender, EventArgs e)
+        => searchBar.Unfocus();
+
+    private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+    {
+        if (searchBar.IsFocused) searchBar.Unfocus();
+    }
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();

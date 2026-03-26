@@ -18,6 +18,7 @@ namespace PrayerApp.ViewModels
         private readonly ICardService _cardService;
         private readonly IOnboardingService _onboardingService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
+        public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
         private bool _isSorting;
 
         private bool _isLoading;
@@ -29,6 +30,13 @@ namespace PrayerApp.ViewModels
                 if (SetProperty(ref _isLoading, value))
                     SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
             }
+        }
+
+        private string _searchText = string.Empty;
+        public string SearchText
+        {
+            get => _searchText;
+            set { if (SetProperty(ref _searchText, value)) ApplyFilter(); }
         }
 
         public ICommand NewCommand { get; }
@@ -216,6 +224,26 @@ namespace PrayerApp.ViewModels
             {
                 _isSorting = false;
             }
+
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            IEnumerable<PrayerCardViewModel> result = AllPrayerCards;
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var q = _searchText.Trim();
+                result = result.Where(c =>
+                    c.Title?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false);
+            }
+
+            FilteredPrayerCards.Clear();
+            foreach (var card in result)
+                FilteredPrayerCards.Add(card);
+
+            SemanticScreenReader.Announce($"Showing {FilteredPrayerCards.Count} cards");
         }
 
         private void SubscribeToPropertyChanges(PrayerCardViewModel card)
