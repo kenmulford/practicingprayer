@@ -87,27 +87,82 @@
 
 ---
 
-## SUMMARY BY PRIORITY
+## FINDINGS FROM ADDITIONAL AUDIT PASSES (A + B)
+
+These findings were surfaced by two additional full-scope audit passes and cross-validated. Items already in the main table above are omitted.
+
+| # | Finding | Severity | Source | Location |
+|---|---------|----------|--------|----------|
+| 45 | **Race in AddOrUpdatePrayerAsync** — two concurrent Save+ calls could both trigger LoadPrayersAsync simultaneously, causing duplicate entries | Medium | Pass A | `PrayerCardViewModel.cs:339-370` |
+| 46 | **No try/catch around notification scheduling** — exception in `ShowAsync()` could propagate through `CoreSaveAsync` and prevent the prayer from being saved | Medium | Pass B | `NotificationService.cs:37` |
+| 47 | **PrayerCardViewModel.LoadPrayerCardAsync missing null check** — if card was deleted externally, NRE in `RefreshProperties()` accessing `_prayerCard.Title` | Low | Pass B | `PrayerCardViewModel.cs:281` |
+| 48 | **Overdue filter not discoverable** — only reachable via deep link from home overdue card, not visible as a filter button in the Prayers tab UI | Low | Pass B | `PrayerListPage.xaml` |
+| 49 | **PrayerTagSelectionViewModel appears unused** — not referenced in any View, XAML, or DI registration. Dead code from a previous iteration. | Info | Pass B | `ViewModels/PrayerTagSelectionViewModel.cs` |
+| 50 | **Unnecessary location plist descriptions** — `NSLocationWhenInUseUsageDescription` present with "not used" message. May trigger Apple reviewer questions. | Low | Pass A | `Platforms/iOS/Info.plist:47-50` |
+| 51 | **Seed data uses DateTime.UtcNow, production uses DateTime.Now** — inconsistent timestamps in seed data. Debug-only, no production impact. | Info | Pass B | `DBService.cs:301-352` |
+| 52 | **SaveAndNewAsync no double-tap guard** — AsyncRelayCommand provides re-entrancy protection, but Toast+reset window could theoretically accept input | Low | Pass B | `PrayerRequestDetailViewModel.cs:416-429` |
+
+---
+
+## CROSS-VALIDATION SUMMARY
+
+All 5 audit passes (3 specialized + 2 full-scope) independently confirmed the same top findings:
+
+| Finding | Confirmed by |
+|---------|-------------|
+| PrivacyInfo.xcprivacy UserDefaults commented out | All 5 passes |
+| IEditGuard only fires on Pop, not tab switch | 4 of 5 passes |
+| Backup restore doesn't invalidate service caches | All 5 passes |
+| Notification ID collision (monthly) | 4 of 5 passes |
+| PropertyChanged lambda leak in SubscribeToPropertyChanges | 4 of 5 passes |
+| SettingsHubPage missing a11y hints | 3 of 5 passes |
+| CancellationTokenSource not disposed | 3 of 5 passes |
+| SCHEDULE_EXACT_ALARM needs verification | 3 of 5 passes |
+
+---
+
+## FINAL SUMMARY BY PRIORITY
 
 | Priority | Count |
 |----------|-------|
 | Critical | 1 |
 | High | 6 |
-| Medium | 17 |
-| Low | 16 |
-| Info | 4 |
-| **Total** | **44** |
+| Medium | 19 |
+| Low | 20 |
+| Info | 6 |
+| **Total** | **52** |
 
 ---
 
-## RECOMMENDED FIX ORDER
+## RECOMMENDED FIX ORDER (Remediation Plan)
 
-1. **Privacy manifest** (#2, #15) — Apple will reject without UserDefaults declaration
-2. **Notification ID collision** (#3) — data corruption risk
-3. **SettingsHubPage a11y hints** (#7) — new code we just shipped
-4. **SafeAreaEdges on tab pages** (#5) — visual issue on notched devices
-5. **Service cache invalidation after restore** (#8, #9, #10) — data integrity
-6. **TagDetailPage Grid a11y** (#6) — iOS VoiceOver regression
-7. **Info.plist version sync** (#14) — housekeeping
-8. **ApplyFilter N-times during load** (#11) — performance
-9. Everything else in priority order
+### Phase 1: App Store Blockers (must-fix)
+1. **#2: Privacy manifest** — uncomment UserDefaults declaration with reason `CA92.1`
+2. **#8, #9, #10: Backup/restore cache invalidation** — invalidate all service caches after restore, handle restore failure gracefully, reschedule notifications
+3. **#3: Notification ID collision** — use higher multiplier or separate ID space for monthly schedules
+
+### Phase 2: Data Integrity + Guard Fixes
+4. **#22b: IEditGuard tab switch** — extend `OnShellNavigating` to check `ShellItemChanged` and `ShellSectionChanged`
+5. **#22c: IsDirty missing notification fields** — track NotifyTime, DayOfWeek, DayOfMonth in `CaptureOriginals`
+6. **#45: AddOrUpdatePrayerAsync race** — add `_loadingPrayers` guard boolean
+7. **#46: Notification scheduling try/catch** — wrap in try/catch so save isn't blocked by notification failure
+
+### Phase 3: Accessibility + Platform
+8. **#7: SettingsHubPage a11y** — add SemanticProperties.Hint on navigation rows
+9. **#6: TagDetailPage Grid a11y** — move Description off Grid to avoid iOS child-hiding
+10. **#5: SafeAreaEdges on tab pages** — add to MainPage, PrayerCardsPage, PrayerListPage, TagsPage, SettingsHubPage
+11. **#16: PrayerTimePage completion HeadingLevel** — add Level1
+
+### Phase 4: Memory + Performance
+12. **#4: PropertyChanged lambda leaks** — unsubscribe on remove, or use WeakEventManager
+13. **#29: CancellationTokenSource disposal** — dispose before replacing
+14. **#11: ApplyFilter N-times during load** — batch updates or suppress during load
+15. **#12: N+1 tag query** — batch query method
+
+### Phase 5: Polish + Housekeeping
+16. **#15: NSPrivacyCollectedDataTypes** — add empty array to privacy manifest
+17. **#47: LoadPrayerCardAsync null check** — navigate back on null
+18. **#49: Dead code** — remove PrayerTagSelectionViewModel
+19. **#50: Location plist descriptions** — verify if still needed with LocalNotification v14
+20. **#33: Gradient hex → StaticResource** — replace inline colors
+21. Remaining low/info items as time permits
