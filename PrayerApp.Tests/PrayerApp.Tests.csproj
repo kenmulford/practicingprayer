@@ -52,6 +52,8 @@
 
     <!-- Service interfaces -->
     <Compile Include="../PrayerApp/Services/ISettings.cs" />
+    <Compile Include="../PrayerApp/Services/INavigationService.cs" />
+    <Compile Include="../PrayerApp/Services/IAccessibilityService.cs" />
     <Compile Include="../PrayerApp/Services/IDiagnosticLog.cs" />
     <Compile Include="../PrayerApp/Services/IDBService.cs" />
     <Compile Include="../PrayerApp/Services/IUserColorService.cs" />
