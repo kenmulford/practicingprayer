@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.Prayer;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -501,11 +500,11 @@ namespace PrayerApp.ViewModels
         {
             if (ReturnToCards)
             {
-                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true&returnToCards=true&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={Identifier}&viewOnly=true&returnToCards=true&parentCardId={PrayerCardId}");
             }
             else
             {
-                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&viewOnly=true");
+                await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={Identifier}&viewOnly=true");
             }
         }
 
@@ -513,11 +512,11 @@ namespace PrayerApp.ViewModels
         {
             if (ReturnToCards)
             {
-                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true&returnToCards=true&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={Identifier}&edit=true&returnToCards=true&parentCardId={PrayerCardId}");
             }
             else
             {
-                await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={Identifier}&edit=true");
+                await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={Identifier}&edit=true");
             }
         }
 

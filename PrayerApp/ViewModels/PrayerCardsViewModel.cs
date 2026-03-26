@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -84,7 +83,7 @@ namespace PrayerApp.ViewModels
         private async Task NewPrayerCardAsync()
         {
             _onboardingService.Advance(); // CreateCard → NameCard (no-op if not at CreateCard)
-            await _navigationService.GoToAsync(nameof(Views.PrayerCard.PrayerCardPage));
+            await _navigationService.GoToAsync(Routes.PrayerCardPage);
         }
 
         #endregion

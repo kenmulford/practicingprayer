@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.PrayerTime;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -75,7 +74,7 @@ public class PrayerTimeScopeViewModel : ObservableObject
 
         var tagIdsParam = string.Join(",", selectedIds);
         await _navigationService.PopModalAsync();
-        await _navigationService.GoToAsync($"{nameof(PrayerTimePage)}?scope=tags&tagIds={tagIdsParam}");
+        await _navigationService.GoToAsync($"{Routes.PrayerTimePage}?scope=tags&tagIds={tagIdsParam}");
     }
 
     private async Task CancelAsync()

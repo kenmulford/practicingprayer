@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Services;
-using PrayerApp.Views.Prayer;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -22,7 +21,7 @@ public class SuggestedPrayerViewModel
         CardTitle = cardTitle;
         PrayerTitle = prayerTitle;
         SelectCommand = new AsyncRelayCommand(() =>
-            navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?load={PrayerId}&viewOnly=true"));
+            navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={PrayerId}&viewOnly=true"));
     }
 }
 

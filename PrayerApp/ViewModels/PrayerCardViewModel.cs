@@ -3,8 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.Prayer;
-using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -235,7 +233,7 @@ namespace PrayerApp.ViewModels
         private async Task SelectPrayerCardAsync()
         {
             if (_prayerCard.IsSystem) return;
-            await _navigationService.GoToAsync($"{nameof(PrayerCardPage)}?load={Identifier}");
+            await _navigationService.GoToAsync($"{Routes.PrayerCardPage}?load={Identifier}");
         }
 
         private async Task ToggleExpandedAsync()
@@ -261,7 +259,7 @@ namespace PrayerApp.ViewModels
         private async Task AddPrayerAsync()
         {
             _onboardingService.Advance(); // AddRequest → NameRequest
-            await _navigationService.GoToAsync($"{nameof(PrayerDetailPage)}?newForCard={_prayerCard.Id}");
+            await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?newForCard={_prayerCard.Id}");
         }
 
         #endregion

@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.Tags;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -91,7 +90,7 @@ namespace PrayerApp.ViewModels
         public void RemoveTag(TagItemViewModel item) => Tags.Remove(item);
 
         private async Task AddAsync() =>
-            await _navigationService.GoToAsync(nameof(TagDetailPage));
+            await _navigationService.GoToAsync(Routes.TagDetailPage);
     }
 
     public class TagItemViewModel : ObservableObject
@@ -129,7 +128,7 @@ namespace PrayerApp.ViewModels
         }
 
         private async Task EditAsync() =>
-            await _navigationService.GoToAsync($"{nameof(TagDetailPage)}?load={Id}");
+            await _navigationService.GoToAsync($"{Routes.TagDetailPage}?load={Id}");
 
         private async Task DeleteAsync()
         {

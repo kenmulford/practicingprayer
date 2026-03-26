@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
@@ -386,7 +385,7 @@ namespace PrayerApp.ViewModels
 
         private async Task NewPrayerAsync()
         {
-            await _navigationService.GoToAsync($"{nameof(Views.Prayer.PrayerDetailPage)}?new=true");
+            await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?new=true");
         }
 
         private async Task LoadPrayersAsync()
