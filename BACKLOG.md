@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Idle — alpha release builds in progress
-**Last completed**: Session 2026-03-25 — A11Y all 3 phases, FB-29 iOS feedback (7 fixes), cards UX (search, highlight, accordion, Save+), DI refactor (TD-12 P1+2+4), NuGet upgrades, TimePicker font fix, splash screen fix
-**Next up**: UX-14 (Settings hub) — plan approved at `.claude/plans/witty-hatching-pinwheel.md`
+**Status**: Idle — pre-submission audit in progress
+**Last completed**: UX-14 (Settings hub — 4 sub-pages + Help FAQ). Changelog reset for b30.
+**Next up**: Review consolidated audit report, then TD-13 (INavigationService)
 
 ---
 
@@ -26,7 +26,7 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | UX-14 | Settings hub — split into App Settings, Backup, About, Help/FAQ    | Ken    | Hub-and-spoke from Settings tab. Static FAQ list (~10-15 Q&A). About page with privacy link + app info. Separate backup page. |
+| 1   | ~~UX-14~~ | ~~Settings hub~~ | Ken | ✅ Done (2026-03-26) |
 | 2   | TD-13 | INavigationService abstraction                                     | —      | Abstract `Shell.Current.GoToAsync`, `DisplayAlertAsync`, `SemanticScreenReader.Announce` behind injectable interface. Unlocks VM test compilation in net10.0 test project. Prerequisite for TD-12 Phase 3. |
 | 3   | TD-12p3 | VM test coverage (~55 tests)                                    | —      | **Blocked on TD-13.** Write xUnit tests for HomeVM, PrayerCardsVM, PrayerListVM, PrayerRequestDetailVM, QuickAddVM, PrayerTimeVM business logic. |
 | 4   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
