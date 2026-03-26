@@ -21,8 +21,9 @@ public partial class PrayerDetailPage : ContentPage
         _saveToolbarItem = new ToolbarItem { Text = "Save" };
         _saveToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveCommand));
 
-        _saveAndNewToolbarItem = new ToolbarItem { Text = "Save +", Order = ToolbarItemOrder.Primary };
+        _saveAndNewToolbarItem = new ToolbarItem { Text = "Save +" };
         _saveAndNewToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveAndNewCommand));
+        SemanticProperties.SetDescription(_saveAndNewToolbarItem, "Save and add another prayer");
 
         vm.FormResetRequested += (_, _) =>
             Dispatcher.DispatchAsync(() => TitleEntry.Focus());

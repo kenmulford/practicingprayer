@@ -179,6 +179,13 @@ namespace PrayerApp.ViewModels
         public void RefreshActivePrayerCount()
             => LoadActivePrayerCountAsync().SafeFireAndForget();
 
+        /// <summary>Force-reload prayers from the service (e.g. after Save+ added new prayers).</summary>
+        public void ReloadPrayers()
+        {
+            _prayersLoaded = false;
+            LoadPrayersAsync().SafeFireAndForget();
+        }
+
         #endregion
 
         #region Private Methods

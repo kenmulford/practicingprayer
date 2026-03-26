@@ -330,9 +330,14 @@ namespace PrayerApp.ViewModels
                 AllPrayerCards.Add(vm);
             }
 
-            // Refresh prayer counts on all existing cards (e.g. Quick Add added a prayer)
+            // Refresh prayer counts + reload prayers on expanded cards
+            // (e.g. QuickAdd added a prayer, or "Save +" added multiple)
             foreach (var vm in AllPrayerCards)
+            {
                 vm.RefreshActivePrayerCount();
+                if (vm.IsExpanded)
+                    vm.ReloadPrayers();
+            }
 
             ApplySorting();
         }

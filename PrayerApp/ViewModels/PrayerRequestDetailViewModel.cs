@@ -66,6 +66,7 @@ namespace PrayerApp.ViewModels
         public bool IsNew => _prayer.Id == 0;
         public bool ShowSaveAndNew => IsNew && ReturnToCards;
 
+
         /// <summary>Raised after Save &amp; Add Another resets the form, so the view can focus the title entry.</summary>
         public event EventHandler? FormResetRequested;
 
