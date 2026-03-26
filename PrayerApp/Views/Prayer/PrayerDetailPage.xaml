@@ -163,7 +163,6 @@
                                 <Picker Title="Select Frequency"
                                         AutomationId="Detail_Picker_Frequency"
                                         ItemsSource="{Binding FrequencyOptions}"
-                                        ItemDisplayBinding="{Binding ., x:DataType=x:String}"
                                         SelectedItem="{Binding PrayerFrequency}"
                                         SemanticProperties.Hint="How often to be reminded"
                                         HorizontalOptions="Fill" />
