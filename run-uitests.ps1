@@ -49,6 +49,14 @@ if (-not $SkipAppium) {
     }
 }
 
+# Step 3.5: Install APK on emulator (avoids Appium's Java-dependent signature check)
+if (-not $SkipBuild) {
+    Write-Host "`n=== Installing APK on emulator ===" -ForegroundColor Cyan
+    $apkPath = "PrayerApp/bin/Release/net10.0-android/com.multithreadedllc.prayercards-Signed.apk"
+    & adb install -r $apkPath
+    if ($LASTEXITCODE -ne 0) { throw "APK install failed" }
+}
+
 # Step 4: Run UI tests
 Write-Host "`n=== Running UI Tests ===" -ForegroundColor Cyan
 dotnet test PrayerApp.UITests/PrayerApp.UITests.csproj --logger "console;verbosity=detailed"

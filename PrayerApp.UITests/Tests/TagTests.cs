@@ -4,30 +4,23 @@ using Xunit;
 
 namespace PrayerApp.UITests.Tests;
 
+/// <summary>
+/// UAT Section 7: Tags
+/// </summary>
 [Collection("Appium")]
 [Trait("Platform", "Android")]
+[Trait("Section", "7-Tags")]
 public class TagTests
 {
     private readonly AppiumSetup _setup;
     public TagTests(AppiumSetup setup) => _setup = setup;
 
+    /// <summary>7.1: Tags list loads — all tags visible with color swatches.</summary>
     [Fact]
     public void Tags_PageLoads_ShowsTagList()
     {
-        var driver = _setup.Driver;
-        driver.NavigateToTab("Tags");
-
-        var list = driver.WaitForElement("Tags_List_Tags");
-        Assert.True(list.Displayed);
-    }
-
-    [Fact]
-    public void Tags_PageLoads_WithoutErrors()
-    {
-        var driver = _setup.Driver;
-        driver.NavigateToTab("Tags");
-
-        // The page should load and show the tag list
-        Assert.True(driver.IsDisplayed("Tags_List_Tags"));
+        _setup.Driver.EnsureOnTab("Tags", _setup);
+        Assert.True(_setup.Driver.IsDisplayed("Tags_List_Tags"),
+            "Tag list should be visible on Tags page");
     }
 }

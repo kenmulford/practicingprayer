@@ -1,3 +1,4 @@
+using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
 using OpenQA.Selenium.Appium.iOS;
@@ -13,17 +14,21 @@ public class AppiumSetup : IAsyncLifetime
 {
     public AppiumDriver Driver { get; private set; } = null!;
 
+    /// <summary>Whether onboarding has been handled (dismissed or verified) this session.</summary>
+    public bool OnboardingHandled { get; set; }
+
     public async Task InitializeAsync()
     {
         var options = TestConfig.GetOptions();
 
         Driver = TestConfig.IsAndroid
-            ? new AndroidDriver(TestConfig.AppiumServerUri, options, TestConfig.LongTimeout)
-            : new IOSDriver(TestConfig.AppiumServerUri, options, TestConfig.LongTimeout);
+            ? new AndroidDriver(TestConfig.AppiumServerUri, options, TestConfig.SessionTimeout)
+            : new IOSDriver(TestConfig.AppiumServerUri, options, TestConfig.SessionTimeout);
 
         Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
 
-        await Task.CompletedTask;
+        // Wait for the app to fully load (splash screen + initial page render)
+        await Task.Delay(3000);
     }
 
     public async Task DisposeAsync()

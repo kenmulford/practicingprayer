@@ -16,8 +16,9 @@ public static class TestConfig
     public static readonly Uri AppiumServerUri = new(
         Environment.GetEnvironmentVariable("APPIUM_SERVER_URL") ?? "http://127.0.0.1:4723");
 
-    public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(15);
-    public static readonly TimeSpan LongTimeout = TimeSpan.FromSeconds(30);
+    public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
+    public static readonly TimeSpan ShortTimeout = TimeSpan.FromSeconds(3);
+    public static readonly TimeSpan SessionTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
@@ -41,20 +42,25 @@ public static class TestConfig
         options.PlatformName = "Android";
         options.AutomationName = "UiAutomator2";
 
-        // APK path: env var overrides the default release build location
+        // Prefer appPackage/appActivity (app must be pre-installed via adb).
+        // This avoids Appium's Java-dependent APK signature verification.
+        // Fall back to APK path if PRAYER_APK_PATH is explicitly set.
         var apkPath = Environment.GetEnvironmentVariable("PRAYER_APK_PATH");
-        if (string.IsNullOrEmpty(apkPath))
+        if (!string.IsNullOrEmpty(apkPath))
         {
-            var solutionDir = FindSolutionDirectory();
-            apkPath = Path.Combine(solutionDir, "PrayerApp", "bin", "Release",
-                "net10.0-android", $"{AndroidPackage}-Signed.apk");
+            options.App = apkPath;
+        }
+        else
+        {
+            options.AddAdditionalAppiumOption("appPackage", AndroidPackage);
+            options.AddAdditionalAppiumOption("appActivity", "crc6425c6d21f3599989c.MainActivity");
+            options.AddAdditionalAppiumOption("noReset", true);
         }
 
-        options.App = apkPath;
         options.DeviceName = Environment.GetEnvironmentVariable("ANDROID_AVD") ?? "pixel_9_-_api_36_0";
         options.AddAdditionalAppiumOption("appWaitActivity", "crc*");
         options.AddAdditionalAppiumOption("autoGrantPermissions", true);
-        options.AddAdditionalAppiumOption("newCommandTimeout", 120);
+        options.AddAdditionalAppiumOption("newCommandTimeout", 300);
 
         return options;
     }
@@ -66,24 +72,11 @@ public static class TestConfig
         options.AutomationName = "XCUITest";
         options.AddAdditionalAppiumOption("bundleId", IOSBundleId);
         options.AddAdditionalAppiumOption("autoAcceptAlerts", true);
-        options.AddAdditionalAppiumOption("newCommandTimeout", 120);
+        options.AddAdditionalAppiumOption("newCommandTimeout", 300);
 
-        // Simulator name — override via env var
         options.DeviceName = Environment.GetEnvironmentVariable("IOS_SIMULATOR") ?? "iPhone 17";
         options.PlatformVersion = Environment.GetEnvironmentVariable("IOS_VERSION") ?? "26.0";
 
         return options;
-    }
-
-    private static string FindSolutionDirectory()
-    {
-        var dir = Directory.GetCurrentDirectory();
-        while (dir != null)
-        {
-            if (Directory.GetFiles(dir, "*.sln").Length > 0)
-                return dir;
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-        return Directory.GetCurrentDirectory();
     }
 }
