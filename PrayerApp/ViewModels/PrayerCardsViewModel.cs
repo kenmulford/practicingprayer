@@ -18,6 +18,8 @@ namespace PrayerApp.ViewModels
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
         public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
         private bool _isSorting;
@@ -32,7 +34,7 @@ namespace PrayerApp.ViewModels
             set
             {
                 if (SetProperty(ref _isLoading, value))
-                    SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
+                    _accessibilityService.Announce(value ? "Loading" : "Content loaded");
             }
         }
 
@@ -50,11 +52,15 @@ namespace PrayerApp.ViewModels
 
         #region Constructors
 
-        public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService, IOnboardingService onboardingService)
+        public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
+            IOnboardingService onboardingService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
         {
             _cardService = cardService;
             _prayerService = prayerService;
             _onboardingService = onboardingService;
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
 
             _prayerCards = new List<PrayerCard>();
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
@@ -66,7 +72,9 @@ namespace PrayerApp.ViewModels
         public PrayerCardsViewModel() : this(
             IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
         { }
 
         #endregion
@@ -76,7 +84,7 @@ namespace PrayerApp.ViewModels
         private async Task NewPrayerCardAsync()
         {
             _onboardingService.Advance(); // CreateCard → NameCard (no-op if not at CreateCard)
-            await Shell.Current.GoToAsync(nameof(Views.PrayerCard.PrayerCardPage));
+            await _navigationService.GoToAsync(nameof(Views.PrayerCard.PrayerCardPage));
         }
 
         #endregion
@@ -171,7 +179,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to add new card: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to add new card: {e.Message}", "OK");
             }
         }
 
@@ -203,7 +211,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
             }
             finally
             {
@@ -281,8 +289,7 @@ namespace PrayerApp.ViewModels
             Task.Delay(400, token).ContinueWith(_ =>
             {
                 if (!token.IsCancellationRequested)
-                    MainThread.BeginInvokeOnMainThread(() =>
-                        SemanticScreenReader.Announce($"Showing {count} cards"));
+                    _accessibilityService.Announce($"Showing {count} cards");
             }, token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
         }
 
@@ -302,7 +309,7 @@ namespace PrayerApp.ViewModels
                         if (other != card && other.IsExpanded)
                             other.IsExpanded = false;
 
-                    SemanticScreenReader.Announce($"Expanded {card.Title}");
+                    _accessibilityService.Announce($"Expanded {card.Title}");
                 }
             }
 
