@@ -25,6 +25,7 @@ namespace PrayerApp.ViewModels
         private List<PrayerTag> _allTags = new();
 
         public ICommand SaveCommand { get; private set; }
+        public ICommand SaveAndNewCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectPrayerCommand { get; private set; }
         public ICommand EditPrayerCommand { get; private set; }
@@ -63,6 +64,10 @@ namespace PrayerApp.ViewModels
 
         public bool ReturnToCards { get; set; }
         public bool IsNew => _prayer.Id == 0;
+        public bool ShowSaveAndNew => IsNew && ReturnToCards;
+
+        /// <summary>Raised after Save &amp; Add Another resets the form, so the view can focus the title entry.</summary>
+        public event EventHandler? FormResetRequested;
 
         private bool _isReadOnly;
         public bool IsReadOnly
@@ -330,6 +335,7 @@ namespace PrayerApp.ViewModels
             _onboardingService = onboardingService;
             _notificationService = notificationService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
+            SaveAndNewCommand = new AsyncRelayCommand(SaveAndNewAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
             EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
@@ -356,37 +362,41 @@ namespace PrayerApp.ViewModels
             IsReadOnly = false;
         }
 
-        private async Task SaveAsync()
+        /// <summary>Core save logic shared by Save and Save &amp; Add Another.</summary>
+        /// <returns>True if this was a new prayer (first save).</returns>
+        private async Task<bool> CoreSaveAsync()
         {
             bool isNew = _prayer.Id == 0;
             await _prayerService.SavePrayerAsync(_prayer);
-            CaptureOriginals(); // Reset dirty state before navigation
-            // Id is now assigned (even for new prayers).
+            CaptureOriginals();
 
-            // For new prayers, persist any tags that were staged in SelectedTags
-            // (they couldn't be persisted earlier because the prayer had no ID).
             if (isNew)
             {
                 foreach (var chip in SelectedTags)
                     await _tagService.AddTagToRequestAsync(_prayer.Id, chip.Id);
             }
 
-            // Auto-submit any tag text the user typed without pressing Return
             if (!string.IsNullOrWhiteSpace(_tagSearchText))
                 await SubmitTagEntryAsync();
 
-            // Schedule or cancel notifications accordingly.
             if (_prayer.CanNotify)
                 await _notificationService.ScheduleAsync(_prayer);
             else
                 await _notificationService.CancelAsync(_prayer.Id, _prayer.PrayerFrequency);
+
             if (isNew)
-                _onboardingService.Advance(); // NameRequest → PrayerTime
+                _onboardingService.Advance();
+
             SemanticScreenReader.Announce("Prayer saved");
+            return isNew;
+        }
+
+        private async Task SaveAsync()
+        {
+            bool isNew = await CoreSaveAsync();
+
             if (ReturnToCards)
             {
-                // New prayers: stack is Cards→Edit (1 level back)
-                // Existing prayers: stack is Cards→View→Edit (2 levels back)
                 string route = isNew ? ".." : "../..";
                 bool cardChanged = !isNew && _originalPrayerCardId != 0 && _originalPrayerCardId != PrayerCardId;
                 var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
@@ -398,6 +408,40 @@ namespace PrayerApp.ViewModels
             {
                 await Shell.Current.GoToAsync($"..?{_savedQueryKey}={Identifier}");
             }
+        }
+
+        private async Task SaveAndNewAsync()
+        {
+            if (string.IsNullOrWhiteSpace(Title))
+            {
+                await Shell.Current.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
+                return;
+            }
+
+            var savedTitle = Title;
+            var cardId = PrayerCardId;
+            await CoreSaveAsync();
+
+            await CommunityToolkit.Maui.Alerts.Toast.Make($"Saved \"{savedTitle}\"").Show();
+            ResetForNewPrayer(cardId);
+        }
+
+        private void ResetForNewPrayer(int cardId)
+        {
+            _prayer = new Prayer
+            {
+                PrayerCardId = cardId,
+                NotifyHour = Services.Settings.DefaultNotifyHour,
+                NotifyMinute = Services.Settings.DefaultNotifyMinute
+            };
+            SelectedTags.Clear();
+            SuggestedTags.Clear();
+            TagSearchText = string.Empty;
+            RefreshProperties();
+            CaptureOriginals();
+            OnPropertyChanged(nameof(IsNew));
+            OnPropertyChanged(nameof(ShowSaveAndNew));
+            FormResetRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private async Task DeleteAsync()

@@ -19,6 +19,9 @@ public partial class PrayerDetailPage : ContentPage
 
         _saveToolbarItem = new ToolbarItem { Text = "Save" };
         _saveToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveCommand));
+
+        vm.FormResetRequested += (_, _) =>
+            Dispatcher.DispatchAsync(() => TitleEntry.Focus());
     }
 
     private void OnTagEntryCompleted(object? sender, EventArgs e)
