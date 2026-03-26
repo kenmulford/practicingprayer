@@ -21,6 +21,7 @@ namespace PrayerApp.ViewModels
         public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
         private bool _isSorting;
         private bool _suppressFilterAnnounce;
+        private CancellationTokenSource? _filterAnnounceCts;
 
         private bool _isLoading;
         public bool IsLoading
@@ -257,7 +258,20 @@ namespace PrayerApp.ViewModels
                 FilteredPrayerCards.Add(card);
 
             if (!_suppressFilterAnnounce)
-                SemanticScreenReader.Announce($"Showing {FilteredPrayerCards.Count} cards");
+                AnnounceFilterCountDebounced();
+        }
+
+        private void AnnounceFilterCountDebounced()
+        {
+            _filterAnnounceCts?.Cancel();
+            _filterAnnounceCts = new CancellationTokenSource();
+            var token = _filterAnnounceCts.Token;
+            var count = FilteredPrayerCards.Count;
+            Task.Delay(400, token).ContinueWith(_ =>
+            {
+                if (!token.IsCancellationRequested)
+                    SemanticScreenReader.Announce($"Showing {count} cards");
+            }, token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
         }
 
         private void SubscribeToPropertyChanges(PrayerCardViewModel card)

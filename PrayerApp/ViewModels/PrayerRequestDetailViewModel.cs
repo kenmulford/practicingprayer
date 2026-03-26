@@ -370,6 +370,8 @@ namespace PrayerApp.ViewModels
             await _prayerService.SavePrayerAsync(_prayer);
             CaptureOriginals();
 
+            // New prayers: persist staged tags now that we have an ID.
+            // Existing prayers persist tags immediately in AddSuggestedTagAsync.
             if (isNew)
             {
                 foreach (var chip in SelectedTags)
@@ -426,14 +428,16 @@ namespace PrayerApp.ViewModels
             ResetForNewPrayer(cardId);
         }
 
+        private static Prayer CreateDefaultPrayer(int? cardId = null) => new()
+        {
+            PrayerCardId = cardId ?? 0,
+            NotifyHour = Services.Settings.DefaultNotifyHour,
+            NotifyMinute = Services.Settings.DefaultNotifyMinute
+        };
+
         private void ResetForNewPrayer(int cardId)
         {
-            _prayer = new Prayer
-            {
-                PrayerCardId = cardId,
-                NotifyHour = Services.Settings.DefaultNotifyHour,
-                NotifyMinute = Services.Settings.DefaultNotifyMinute
-            };
+            _prayer = CreateDefaultPrayer(cardId);
             SelectedTags.Clear();
             SuggestedTags.Clear();
             TagSearchText = string.Empty;
@@ -521,12 +525,7 @@ namespace PrayerApp.ViewModels
             {
                 if (int.TryParse(query["newForCard"].ToString(), out int cardId))
                 {
-                    _prayer = new Prayer
-                    {
-                        PrayerCardId = cardId,
-                        NotifyHour = Services.Settings.DefaultNotifyHour,
-                        NotifyMinute = Services.Settings.DefaultNotifyMinute
-                    };
+                    _prayer = CreateDefaultPrayer(cardId);
                     ReturnToCards = true;
                     _savedQueryKey = "prayerSaved";
                     _deletedQueryKey = "prayerDeleted";
@@ -538,11 +537,7 @@ namespace PrayerApp.ViewModels
             else if (query.ContainsKey("new"))
             {
                 // New prayer from the prayer list (no card pre-selected)
-                _prayer = new Prayer
-                {
-                    NotifyHour = Services.Settings.DefaultNotifyHour,
-                    NotifyMinute = Services.Settings.DefaultNotifyMinute
-                };
+                _prayer = CreateDefaultPrayer();
                 IsReadOnly = false;
                 RefreshProperties();
                 InitNewPrayerAsync().SafeFireAndForget();
