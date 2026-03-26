@@ -92,6 +92,8 @@ public class HomeViewModel : ObservableObject
     {
         try
         {
+            _prayerService.InvalidateCache();
+            _cardService.InvalidateCache();
             var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
             OverdueCount = overdue.Count;
             OnPropertyChanged(nameof(OverdueEmptyDescription));

@@ -55,6 +55,7 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public async Task RefreshAsync()
         {
+            _tagService.InvalidateCache();
             var tags = await _tagService.GetTagsAsync();
             var freshIds = tags.Select(t => t.Id).ToHashSet();
             var currentIds = Tags.Select(t => t.Id).ToHashSet();
