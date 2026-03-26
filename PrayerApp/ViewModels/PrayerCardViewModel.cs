@@ -113,6 +113,13 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private bool _isHighlighted;
+        public bool IsHighlighted
+        {
+            get => _isHighlighted;
+            set => SetProperty(ref _isHighlighted, value);
+        }
+
         private int _activePrayerCount;
         public int ActivePrayerCount
         {

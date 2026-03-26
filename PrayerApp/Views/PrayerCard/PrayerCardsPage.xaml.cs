@@ -10,6 +10,16 @@ public partial class PrayerCardsPage : ContentPage
     {
         InitializeComponent();
         BindingContext = vm;
+        vm.HighlightCardRequested += OnHighlightCardRequested;
+    }
+
+    private async void OnHighlightCardRequested(object? sender, PrayerCardViewModel card)
+    {
+        cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
+        SemanticScreenReader.Announce($"New card: {card.Title}");
+
+        await Task.Delay(2500);
+        card.IsHighlighted = false;
     }
 
     private void OnSearchButtonPressed(object? sender, EventArgs e)

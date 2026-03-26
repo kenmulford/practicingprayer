@@ -77,6 +77,13 @@
                     <!-- 3×5 card body -->
                     <Border Style="{StaticResource PrayerCardBorder}"
                             Padding="0">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
+                                <Setter Property="Stroke" Value="{AppThemeBinding
+                                    Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                            </DataTrigger>
+                        </Border.Triggers>
 
                         <VerticalStackLayout Spacing="0">
 
@@ -190,13 +197,15 @@
 
                             <!-- + Add prayer row (only shown when expanded) -->
                             <Button
-                                Text="+ Add prayer"
+                                Text="+ Add prayer ›"
                                 Command="{Binding AddPrayerCommand}"
                                 IsVisible="{Binding IsExpanded}"
+                                AutomationId="Cards_Btn_AddPrayer"
+                                SemanticProperties.Hint="Add a new prayer request to this card"
                                 FontSize="14"
                                 TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                 BackgroundColor="Transparent"
-                                FontAttributes="Italic"
+                                FontAttributes="Bold"
                                 Padding="16,8,12,10"
                                 BorderWidth="0"
                                 HorizontalOptions="Start" />

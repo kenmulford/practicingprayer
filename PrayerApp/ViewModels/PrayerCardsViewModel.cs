@@ -41,6 +41,9 @@ namespace PrayerApp.ViewModels
 
         public ICommand NewCommand { get; }
 
+        /// <summary>Raised when a newly created card should be scrolled to and highlighted.</summary>
+        public event EventHandler<PrayerCardViewModel>? HighlightCardRequested;
+
         #region Constructors
 
         public PrayerCardsViewModel(ICardService cardService, IOnboardingService onboardingService)
@@ -147,7 +150,17 @@ namespace PrayerApp.ViewModels
                 var newCard = new PrayerCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
-                ApplySorting();
+
+                // Collapse all other cards and expand + highlight the new one
+                foreach (var c in AllPrayerCards)
+                    if (c != newCard) c.IsExpanded = false;
+
+                newCard.IsExpanded = true;
+                newCard.IsHighlighted = true;
+
+                ApplySorting(); // also calls ApplyFilter()
+
+                HighlightCardRequested?.Invoke(this, newCard);
             }
             catch (Exception e)
             {
