@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Idle
-**Last completed**: TD-12 Phases 1+2+4 (DI refactor, ISettings, child VM cleanup). Phase 3 (VM tests) deferred — needs INavigationService abstraction.
-**Next up**: TD-13 (INavigationService abstraction) → TD-12 Phase 3 (VM tests)
+**Status**: Idle — alpha release builds in progress
+**Last completed**: Session 2026-03-25 — A11Y all 3 phases, FB-29 iOS feedback (7 fixes), cards UX (search, highlight, accordion, Save+), DI refactor (TD-12 P1+2+4), NuGet upgrades, TimePicker font fix, splash screen fix
+**Next up**: UX-14 (Settings hub) — plan approved at `.claude/plans/witty-hatching-pinwheel.md`
 
 ---
 
@@ -26,13 +26,14 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | TD-13 | INavigationService abstraction                                     | —      | Abstract `Shell.Current.GoToAsync`, `DisplayAlertAsync`, `SemanticScreenReader.Announce` behind injectable interface. Unlocks VM test compilation in net10.0 test project. Prerequisite for TD-12 Phase 3. |
-| 2   | TD-12p3 | VM test coverage (~55 tests)                                    | —      | **Blocked on TD-13.** Write xUnit tests for HomeVM, PrayerCardsVM, PrayerListVM, PrayerRequestDetailVM, QuickAddVM, PrayerTimeVM business logic. |
-| 3   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
-| 4   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
-| 5   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
-| 6   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
-| 7   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+| 1   | UX-14 | Settings hub — split into App Settings, Backup, About, Help/FAQ    | Ken    | Hub-and-spoke from Settings tab. Static FAQ list (~10-15 Q&A). About page with privacy link + app info. Separate backup page. |
+| 2   | TD-13 | INavigationService abstraction                                     | —      | Abstract `Shell.Current.GoToAsync`, `DisplayAlertAsync`, `SemanticScreenReader.Announce` behind injectable interface. Unlocks VM test compilation in net10.0 test project. Prerequisite for TD-12 Phase 3. |
+| 3   | TD-12p3 | VM test coverage (~55 tests)                                    | —      | **Blocked on TD-13.** Write xUnit tests for HomeVM, PrayerCardsVM, PrayerListVM, PrayerRequestDetailVM, QuickAddVM, PrayerTimeVM business logic. |
+| 4   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
+| 5   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
+| 6   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
+| 7   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
+| 8   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
 ### Completed
 

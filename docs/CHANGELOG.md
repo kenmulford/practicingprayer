@@ -25,6 +25,9 @@
 - "Save & Add Another" button when adding prayers to a card — add multiple without navigating back
 - Only one card opens at a time — expanding a card auto-collapses the previous one
 - Expanded cards have more breathing room and slightly larger prayer text
+- Reminder time no longer shows garbled characters on iOS
+- "Save +" moved to the top toolbar next to Save for better visibility
+- Prayers added via "Save +" now appear on the card when you navigate back
 
 ### Accessibility Improvements
 
