@@ -22,6 +22,7 @@ namespace PrayerApp.ViewModels
         public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
         private bool _isSorting;
         private bool _suppressFilterAnnounce;
+        private readonly Dictionary<PrayerCardViewModel, System.ComponentModel.PropertyChangedEventHandler> _cardHandlers = new();
         private CancellationTokenSource? _filterAnnounceCts;
 
         private bool _isLoading;
@@ -91,6 +92,7 @@ namespace PrayerApp.ViewModels
 
                 if (matched != null)
                 {
+                    UnsubscribeFromPropertyChanges(matched);
                     AllPrayerCards.Remove(matched);
                     ApplySorting();
                 }
@@ -189,6 +191,8 @@ namespace PrayerApp.ViewModels
                     SubscribeToPropertyChanges(vm);
                 }
 
+                foreach (var old in AllPrayerCards)
+                    UnsubscribeFromPropertyChanges(old);
                 AllPrayerCards.Clear();
                 foreach (var vm in viewModels)
                 {
@@ -284,14 +288,13 @@ namespace PrayerApp.ViewModels
 
         private void SubscribeToPropertyChanges(PrayerCardViewModel card)
         {
-            card.PropertyChanged += (s, e) =>
+            void Handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
             {
                 if (e.PropertyName == nameof(PrayerCardViewModel.Title)
                     || e.PropertyName == nameof(PrayerCardViewModel.IsFavorite))
                 {
                     ApplySorting();
                 }
-                // Single-open accordion: expanding one card collapses all others
                 else if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded)
                          && card.IsExpanded)
                 {
@@ -301,7 +304,16 @@ namespace PrayerApp.ViewModels
 
                     SemanticScreenReader.Announce($"Expanded {card.Title}");
                 }
-            };
+            }
+
+            card.PropertyChanged += Handler;
+            _cardHandlers[card] = Handler;
+        }
+
+        private void UnsubscribeFromPropertyChanges(PrayerCardViewModel card)
+        {
+            if (_cardHandlers.Remove(card, out var handler))
+                card.PropertyChanged -= handler;
         }
 
         public void Reload()
@@ -326,7 +338,10 @@ namespace PrayerApp.ViewModels
             // Remove deleted cards
             var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
             foreach (var vm in toRemove)
+            {
+                UnsubscribeFromPropertyChanges(vm);
                 AllPrayerCards.Remove(vm);
+            }
 
             // Add new cards
             foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))

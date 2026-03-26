@@ -41,6 +41,8 @@ namespace PrayerApp.ViewModels
 
         // Suppress screen reader announcements during bulk loads
         private bool _suppressAnnounce;
+        private bool _suppressFilter;
+        private readonly Dictionary<PrayerRequestDetailViewModel, System.ComponentModel.PropertyChangedEventHandler> _prayerHandlers = new();
 
         // Pre-selected tag from tag detail navigation (F6)
         private int _preselectedTagId;
@@ -94,8 +96,8 @@ namespace PrayerApp.ViewModels
             _cardService   = cardService;
             _tagService    = tagService;
 
-            // Any change to the backing store re-runs the filter
-            AllPrayers.CollectionChanged += (_, _) => ApplyFilter();
+            // Any change to the backing store re-runs the filter (suppressed during bulk loads)
+            AllPrayers.CollectionChanged += (_, _) => { if (!_suppressFilter) ApplyFilter(); };
 
             // Commands
             NewCommand = new AsyncRelayCommand(NewPrayerAsync);
@@ -123,6 +125,8 @@ namespace PrayerApp.ViewModels
             _suppressAnnounce = true;
             try
             {
+                _suppressFilter = true;
+
                 // Build card title lookup
                 var cards = await _cardService.GetCardsAsync();
                 _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
@@ -138,6 +142,8 @@ namespace PrayerApp.ViewModels
                 _overdueIds = overdue.Select(p => p.Id).ToHashSet();
 
                 // Build prayer ViewModels
+                foreach (var old in AllPrayers)
+                    UnsubscribeFromPropertyChanges(old);
                 AllPrayers.Clear();
                 foreach (var p in _prayerList)
                 {
@@ -160,10 +166,9 @@ namespace PrayerApp.ViewModels
             }
             finally
             {
+                _suppressFilter = false;
                 _suppressAnnounce = false;
                 IsLoading = false;
-                // The specific "Showing N prayers" announce fires via ApplyFilter
-                // when the user changes filters (not suppressed at that point).
             }
         }
 
@@ -194,7 +199,10 @@ namespace PrayerApp.ViewModels
                 var id = query["deleted"].ToString();
                 var matched = AllPrayers.FirstOrDefault(p => p.Identifier == id);
                 if (matched != null)
+                {
+                    UnsubscribeFromPropertyChanges(matched);
                     AllPrayers.Remove(matched); // CollectionChanged → ApplyFilter
+                }
             }
             else if (query.ContainsKey("saved"))
             {
@@ -374,6 +382,7 @@ namespace PrayerApp.ViewModels
         private async Task LoadPrayersAsync()
         {
             _suppressAnnounce = true;
+            _suppressFilter = true;
             try
             {
                 _prayerService.InvalidateCache();
@@ -388,6 +397,8 @@ namespace PrayerApp.ViewModels
 
                 var viewModels = _prayerList.Select(BuildViewModel).ToList();
 
+                foreach (var old in AllPrayers)
+                    UnsubscribeFromPropertyChanges(old);
                 AllPrayers.Clear();
                 foreach (var vm in viewModels)
                     AllPrayers.Add(vm);
@@ -400,18 +411,28 @@ namespace PrayerApp.ViewModels
             }
             finally
             {
+                _suppressFilter = false;
                 _suppressAnnounce = false;
             }
         }
 
         private void SubscribeToPropertyChanges(PrayerRequestDetailViewModel prayer)
         {
-            prayer.PropertyChanged += (_, e) =>
+            void Handler(object? _, System.ComponentModel.PropertyChangedEventArgs e)
             {
                 if (e.PropertyName is nameof(PrayerRequestDetailViewModel.Title)
                                    or nameof(PrayerRequestDetailViewModel.IsAnswered))
                     ApplyFilter();
-            };
+            }
+
+            prayer.PropertyChanged += Handler;
+            _prayerHandlers[prayer] = Handler;
+        }
+
+        private void UnsubscribeFromPropertyChanges(PrayerRequestDetailViewModel prayer)
+        {
+            if (_prayerHandlers.Remove(prayer, out var handler))
+                prayer.PropertyChanged -= handler;
         }
 
         public void Reload() => LoadPrayersAsync().SafeFireAndForget();
@@ -433,7 +454,10 @@ namespace PrayerApp.ViewModels
             // Remove deleted prayers
             var toRemove = AllPrayers.Where(p => !freshIds.Contains(p.Id)).ToList();
             foreach (var vm in toRemove)
+            {
+                UnsubscribeFromPropertyChanges(vm);
                 AllPrayers.Remove(vm);
+            }
 
             // Refresh card lookup
             var cards = await _cardService.GetCardsAsync();

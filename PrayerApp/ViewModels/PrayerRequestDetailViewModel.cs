@@ -422,20 +422,27 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private bool _saving;
         private async Task SaveAndNewAsync()
         {
+            if (_saving) return;
             if (string.IsNullOrWhiteSpace(Title))
             {
                 await Shell.Current.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
                 return;
             }
 
-            var savedTitle = Title;
-            var cardId = PrayerCardId;
-            await CoreSaveAsync();
+            _saving = true;
+            try
+            {
+                var savedTitle = Title;
+                var cardId = PrayerCardId;
+                await CoreSaveAsync();
 
-            await CommunityToolkit.Maui.Alerts.Toast.Make($"Saved \"{savedTitle}\"").Show();
-            ResetForNewPrayer(cardId);
+                await CommunityToolkit.Maui.Alerts.Toast.Make($"Saved \"{savedTitle}\"").Show();
+                ResetForNewPrayer(cardId);
+            }
+            finally { _saving = false; }
         }
 
         private static Prayer CreateDefaultPrayer(int? cardId = null) => new()

@@ -97,9 +97,16 @@ public class NotificationService : INotificationService
                 repeatType = NotifyRepeat.Weekly;
                 break;
             case PrayerFrequency.Yearly:
-                repeatType = NotifyRepeat.TimeInterval;
-                repeatInterval = TimeSpan.FromDays(365);
+            {
+                // Schedule one-shot at next anniversary to avoid leap-year drift.
+                // Compute from today's date at the specified time, then find next year.
+                var candidate = DateTime.Now.Date.AddHours(hour).AddMinutes(minute);
+                if (candidate <= DateTime.Now)
+                    candidate = candidate.AddYears(1);
+                notifyTime = candidate;
+                repeatType = NotifyRepeat.No;
                 break;
+            }
             default: // OneTime
                 repeatType = NotifyRepeat.No;
                 break;

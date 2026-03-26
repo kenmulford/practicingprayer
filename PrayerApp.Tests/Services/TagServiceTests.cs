@@ -220,13 +220,10 @@ public class TagServiceTests
     public async Task GetRequestIdsByTagIdsAsync_ReturnsUnionOfRequestIds()
     {
         // Tag 1 is on requests 10 and 20; tag 2 is on request 10 only
-        _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>
+        _db.GetByTagIdsAsync(Arg.Any<IEnumerable<int>>()).Returns(Task.FromResult(new List<PrayerCardTag>
         {
             new() { PrayerRequestId = 10, PrayerTagId = 1 },
-            new() { PrayerRequestId = 20, PrayerTagId = 1 }
-        }));
-        _db.GetByTagIdAsync(2).Returns(Task.FromResult(new List<PrayerCardTag>
-        {
+            new() { PrayerRequestId = 20, PrayerTagId = 1 },
             new() { PrayerRequestId = 10, PrayerTagId = 2 }
         }));
 
@@ -240,7 +237,7 @@ public class TagServiceTests
     [Fact]
     public async Task GetRequestIdsByTagIdsAsync_NoMatchingTags_ReturnsEmpty()
     {
-        _db.GetByTagIdAsync(Arg.Any<int>()).Returns(Task.FromResult(new List<PrayerCardTag>()));
+        _db.GetByTagIdsAsync(Arg.Any<IEnumerable<int>>()).Returns(Task.FromResult(new List<PrayerCardTag>()));
 
         var result = await _service.GetRequestIdsByTagIdsAsync(new[] { 99 });
 
@@ -251,7 +248,7 @@ public class TagServiceTests
     public async Task GetRequestIdsByTagIdsAsync_SkipsLegacyCardLevelRows()
     {
         // Legacy rows have PrayerRequestId == 0 and should be excluded
-        _db.GetByTagIdAsync(1).Returns(Task.FromResult(new List<PrayerCardTag>
+        _db.GetByTagIdsAsync(Arg.Any<IEnumerable<int>>()).Returns(Task.FromResult(new List<PrayerCardTag>
         {
             new() { PrayerCardId = 5, PrayerRequestId = 0, PrayerTagId = 1 }, // legacy
             new() { PrayerRequestId = 42, PrayerTagId = 1 }                  // current
@@ -343,14 +340,15 @@ public class TagServiceTests
         var tag2 = new PrayerTag { Id = 2, Name = "Family", Color = "#00FF00" };
         var tag3 = new PrayerTag { Id = 3, Name = "Urgent", Color = "#FF5500" };
         _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(new List<PrayerTag> { tag1, tag2, tag3 }));
+        // ReassignColorAsync now loads fresh tags by ID instead of mutating cached objects
+        _db.GetByIdAsync<PrayerTag>(1).Returns(Task.FromResult(new PrayerTag { Id = 1, Name = "Work", Color = "#FF5500" }));
+        _db.GetByIdAsync<PrayerTag>(3).Returns(Task.FromResult(new PrayerTag { Id = 3, Name = "Urgent", Color = "#FF5500" }));
         _db.UpdateAsync(Arg.Any<PrayerTag>()).Returns(Task.FromResult(1));
 
         await _service.ReassignColorAsync("#FF5500", "#B84040");
 
-        Assert.Equal("#B84040", tag1.Color);
-        Assert.Equal("#00FF00", tag2.Color); // unchanged
-        Assert.Equal("#B84040", tag3.Color);
-        await _db.Received(2).UpdateAsync(Arg.Any<PrayerTag>());
+        // Verify the service called update for the two matching tags
+        await _db.Received(2).UpdateAsync(Arg.Is<PrayerTag>(t => t.Color == "#B84040"));
     }
 
     [Fact]
