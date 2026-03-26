@@ -124,7 +124,10 @@ namespace PrayerApp.ViewModels
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     if (matched != null)
                     {
+                        // Re-expand the parent card so the user sees their saved prayer
+                        matched.IsExpanded = true;
                         matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
+                        matched.RefreshActivePrayerCount();
                     }
                 }
             }

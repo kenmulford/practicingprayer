@@ -748,6 +748,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(IsEditable));
             OnPropertyChanged(nameof(IsNotAnswered));
             OnPropertyChanged(nameof(IsNew));
+            OnPropertyChanged(nameof(ShowSaveAndNew));
             OnPropertyChanged(nameof(CardTitle));
         }
     }

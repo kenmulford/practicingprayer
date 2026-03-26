@@ -331,10 +331,10 @@ namespace PrayerApp.ViewModels
 
         public async Task AddOrUpdatePrayerAsync(int prayerId)
         {
+            // If prayers haven't been loaded yet, load them first so we can
+            // display the new/updated prayer in the expanded accordion.
             if (!_prayersLoaded)
-            {
-                return;
-            }
+                await LoadPrayersAsync();
 
             var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
             if (existing != null)
