@@ -18,6 +18,7 @@
 - Card picker on prayer detail now clearly looks like a drop down list
 - Tag detail page lets you view all prayers with that tag in one tap
 - Color swatch alignment fixed on the tag editor
+- Splash screen now shows app name and tagline instead of a square icon
 
 ### Accessibility Improvements
 
