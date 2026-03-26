@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Services;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels;
@@ -18,7 +19,7 @@ public class FaqItemViewModel : ObservableObject
 
     public ICommand ToggleCommand { get; }
 
-    public FaqItemViewModel(string question, string answer)
+    public FaqItemViewModel(string question, string answer, IAccessibilityService? accessibilityService = null)
     {
         Question = question;
         Answer = answer;
@@ -26,7 +27,7 @@ public class FaqItemViewModel : ObservableObject
         {
             IsExpanded = !IsExpanded;
             if (IsExpanded)
-                SemanticScreenReader.Announce(Answer);
+                accessibilityService?.Announce(Answer);
         });
     }
 }
