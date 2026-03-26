@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Idle — pre-submission audit in progress
-**Last completed**: UX-14 (Settings hub — 4 sub-pages + Help FAQ). Changelog reset for b30.
-**Next up**: Review consolidated audit report, then TD-13 (INavigationService)
+**Status**: Idle
+**Last completed**: TD-13 (INavigationService abstraction) + TD-12p3 (74 VM tests). PR #20 merged to dev.
+**Next up**: AUD-1 remaining phases, then UX-15
 
 ---
 
@@ -29,8 +29,8 @@ Items are listed in work order. Start at the top, work down.
 | 1   | ~~UX-14~~ | ~~Settings hub~~ | Ken | ✅ Done (2026-03-26) |
 | 2   | AUD-1 | Pre-submission audit remediation (52 findings, 5 phases)           | Audit  | 📋 **Plan ready** at `docs/research/pre-submission-audit.md`. Phase 1 (app store blockers) is the priority. |
 | 3   | UX-15 | Quick Add clarity + temporary prayer concept                       | Ken    | Add helper text to QuickAddPage explaining prayers go to "Quick Add" card + encourage assigning to a permanent card later. **Future:** consider excluding Quick Add prayers from Prayer Time and overdue calculations — possibly a separate container/reminder context. Not urgent. |
-| 4   | TD-13 | INavigationService abstraction                                     | —      | Abstract `Shell.Current.GoToAsync`, `DisplayAlertAsync`, `SemanticScreenReader.Announce` behind injectable interface. Unlocks VM test compilation in net10.0 test project. Prerequisite for TD-12 Phase 3. |
-| 5   | TD-12p3 | VM test coverage (~55 tests)                                    | —      | **Blocked on TD-13.** Write xUnit tests for HomeVM, PrayerCardsVM, PrayerListVM, PrayerRequestDetailVM, QuickAddVM, PrayerTimeVM business logic. |
+| 4   | ~~TD-13~~ | ~~INavigationService abstraction~~ | — | ✅ Done (2026-03-27) |
+| 5   | ~~TD-12p3~~ | ~~VM test coverage (74 tests)~~ | — | ✅ Done (2026-03-27) |
 | 6   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
 | 7   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
 | 8   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
@@ -48,6 +48,10 @@ Items are listed in work order. Start at the top, work down.
 | TD-12  | MVVM architecture audit (Phases 1+2+4) | 2026-03-25 |
 | TD-8   | ViewModel constructor injection | 2026-03-25 |
 | FB-29  | iOS tester feedback (build 29) | 2026-03-25 |
+| UX-14  | Settings hub (4 sub-pages + Help FAQ) | 2026-03-26 |
+| AUD-1  | Pre-submission audit Phases 1-3 | 2026-03-26 |
+| TD-13  | INavigationService + IAccessibilityService | 2026-03-27 |
+| TD-12p3 | VM test coverage (74 tests, 8 VMs) | 2026-03-27 |
 
 ---
 
