@@ -48,6 +48,8 @@
 | 20 | **Edit guard does not protect modal dismissal** — `OnShellNavigating` only fires for Shell Pop. Modal pages (QuickAdd, PrayerTimeScopePage) dismissed via `PopModalAsync` bypass the guard. Not currently exploitable (no modals have IEditGuard), but a pattern risk. | Audit 1 | `AppShell.xaml.cs:86-103` |
 | 21 | **TagService.ReassignColorAsync mutates cached objects** — directly modifies `tag.Color` on cached objects before saving. Between mutation and `InvalidateCache()`, concurrent readers see uncommitted state. | Audit 3 | `TagService.cs:108-120` |
 | 22 | **SemanticScreenReader.Announce called from thread pool** — the debounced filter announce continuation runs on `TaskScheduler.Default`, not the UI thread. May silently fail on some platforms. | Audit 3 | `PrayerCardsViewModel.cs:276` |
+| 22b | **Edit guard only fires on Pop, not tab switches** — `OnShellNavigating` checks `ShellNavigationSource.Pop` only. If user taps a different tab while editing, the source is `ShellItemChanged` and the guard is bypassed. Unsaved changes lost silently. | Audit 1 | `AppShell.xaml.cs:86-103` |
+| 22c | **IsDirty doesn't track NotifyTime/DayOfWeek/DayOfMonth** — changing only notification schedule fields and backing out discards changes without a prompt. `CaptureOriginals()` doesn't capture these fields. | Audit 1 | `PrayerRequestDetailViewModel.cs:92-98` |
 
 ---
 
@@ -91,10 +93,10 @@
 |----------|-------|
 | Critical | 1 |
 | High | 6 |
-| Medium | 15 |
+| Medium | 17 |
 | Low | 16 |
 | Info | 4 |
-| **Total** | **42** |
+| **Total** | **44** |
 
 ---
 
