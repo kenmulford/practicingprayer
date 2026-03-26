@@ -4,18 +4,28 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
-             x:DataType="viewModels:PrayerCardsViewModel">
-    <ContentPage.BindingContext>
-        <viewModels:PrayerCardsViewModel />
-    </ContentPage.BindingContext>
+             x:DataType="viewModels:PrayerCardsViewModel"
+             SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="*,Auto,Auto">
+    <Grid RowDefinitions="Auto,*,Auto,Auto">
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+        </Grid.GestureRecognizers>
+
+        <!-- Search -->
+        <SearchBar x:Name="searchBar" Grid.Row="0"
+                   Text="{Binding SearchText}"
+                   AutomationId="Cards_Search"
+                   Placeholder="Search cards..."
+                   SearchButtonPressed="OnSearchButtonPressed"
+                   SemanticProperties.Hint="Search prayer cards by name"
+                   BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
 
         <!-- Loading indicator -->
-        <ActivityIndicator Grid.Row="0"
+        <ActivityIndicator Grid.Row="1"
                            IsRunning="{Binding IsLoading}"
                            IsVisible="{Binding IsLoading}"
                            Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
@@ -23,9 +33,10 @@
                            VerticalOptions="Center" />
 
         <CollectionView
-            Grid.Row="0"
+            Grid.Row="1"
             x:Name="cardCollection"
-            ItemsSource="{Binding AllPrayerCards}"
+            AutomationId="Cards_List_Cards"
+            ItemsSource="{Binding FilteredPrayerCards}"
             Margin="12,8"
             SelectionMode="None">
         <CollectionView.ItemsLayout>
@@ -67,6 +78,16 @@
                     <!-- 3×5 card body -->
                     <Border Style="{StaticResource PrayerCardBorder}"
                             Padding="0">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
+                                <Setter Property="Stroke" Value="{AppThemeBinding
+                                    Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsExpanded}" Value="True">
+                                <Setter Property="Margin" Value="0,8" />
+                            </DataTrigger>
+                        </Border.Triggers>
 
                         <VerticalStackLayout Spacing="0">
 
@@ -151,14 +172,14 @@
 
                                                 <!-- Prayer row -->
                                                 <Grid
-                                                    Padding="16,8,12,8"
+                                                    Padding="16,10,12,10"
                                                     ColumnDefinitions="*,Auto">
                                                     <Grid.GestureRecognizers>
                                                         <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
                                                     </Grid.GestureRecognizers>
                                                     <Label
                                                         Text="{Binding Title}"
-                                                        FontSize="15"
+                                                        FontSize="16"
                                                         SemanticProperties.Hint="Double tap to view. Swipe left to delete, right to edit"
                                                         TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                                         TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
@@ -180,13 +201,15 @@
 
                             <!-- + Add prayer row (only shown when expanded) -->
                             <Button
-                                Text="+ Add prayer"
+                                Text="+ Add prayer ›"
                                 Command="{Binding AddPrayerCommand}"
                                 IsVisible="{Binding IsExpanded}"
+                                AutomationId="Cards_Btn_AddPrayer"
+                                SemanticProperties.Hint="Add a new prayer request to this card"
                                 FontSize="14"
                                 TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                 BackgroundColor="Transparent"
-                                FontAttributes="Italic"
+                                FontAttributes="Bold"
                                 Padding="16,8,12,10"
                                 BorderWidth="0"
                                 HorizontalOptions="Start" />
@@ -201,14 +224,14 @@
 
         <!-- CreateCard step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="1"
+            Grid.Row="2"
             ExpectedStep="CreateCard"
             HeadlineText="Tap 'Add Card' to create your first prayer card"
             SubText="Give it a name — a person, a topic, or a place." />
 
         <!-- AddRequest step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="2"
+            Grid.Row="3"
             ExpectedStep="AddRequest"
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />

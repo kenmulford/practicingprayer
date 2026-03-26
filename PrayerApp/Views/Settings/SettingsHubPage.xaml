@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PrayerApp.Views.Settings.SettingsHubPage"
+             Title="Settings"
+             SafeAreaEdges="Container">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20,16" Spacing="16">
+
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="0">
+                <VerticalStackLayout Spacing="0">
+
+                    <!-- App Settings -->
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_AppSettings"
+                          SemanticProperties.Hint="Double tap to open">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnAppSettingsTapped" />
+                        </Grid.GestureRecognizers>
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="App Settings"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="Notifications &amp; reminders"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1"
+                               Text="›"
+                               FontSize="20"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+
+                    <BoxView Style="{StaticResource DividerLine}" />
+
+                    <!-- Backup & Restore -->
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_Backup"
+                          SemanticProperties.Hint="Double tap to open">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnBackupTapped" />
+                        </Grid.GestureRecognizers>
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Backup &amp; Restore"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="Export or restore your data"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1"
+                               Text="›"
+                               FontSize="20"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+
+                    <BoxView Style="{StaticResource DividerLine}" />
+
+                    <!-- About -->
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_About"
+                          SemanticProperties.Hint="Double tap to open">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnAboutTapped" />
+                        </Grid.GestureRecognizers>
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="About"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="Privacy, version &amp; links"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1"
+                               Text="›"
+                               FontSize="20"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+
+                    <BoxView Style="{StaticResource DividerLine}" />
+
+                    <!-- Help -->
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_Help"
+                          SemanticProperties.Hint="Double tap to open">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnHelpTapped" />
+                        </Grid.GestureRecognizers>
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Help"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="Tips &amp; frequently asked questions"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1"
+                               Text="›"
+                               FontSize="20"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

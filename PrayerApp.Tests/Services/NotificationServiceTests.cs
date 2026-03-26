@@ -129,15 +129,16 @@ public class NotificationServiceTests
     }
 
     [Fact]
-    public async Task ScheduleAsync_YearlyFrequency_SchedulesWithTimeInterval365Days()
+    public async Task ScheduleAsync_YearlyFrequency_SchedulesOneShot()
     {
         var prayer = new Prayer { Id = 4, Title = "Yearly", PrayerFrequency = PrayerFrequency.Yearly };
 
         await _service.ScheduleAsync(prayer);
 
+        // Yearly now schedules as a one-shot at the next anniversary to avoid leap-year drift
         await _center.Received(1).ShowAsync(
             4, "Practicing Prayer", "Yearly",
-            Arg.Any<DateTime>(), NotifyRepeat.TimeInterval, TimeSpan.FromDays(365));
+            Arg.Any<DateTime>(), NotifyRepeat.No, null);
     }
 
     [Fact]

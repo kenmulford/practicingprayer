@@ -4,7 +4,8 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Tags.TagsPage"
              x:DataType="viewModels:TagsViewModel"
-             Title="Tags">
+             Title="Tags"
+             SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
     </ContentPage.ToolbarItems>
@@ -19,6 +20,7 @@
                        VerticalOptions="Center" />
 
     <CollectionView
+        AutomationId="Tags_List_Tags"
         ItemsSource="{Binding Tags}"
         SelectionMode="None"
         Margin="10">

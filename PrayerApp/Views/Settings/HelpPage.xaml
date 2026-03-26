@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.Settings.HelpPage"
+             x:DataType="viewModels:HelpViewModel"
+             Title="Help"
+             SafeAreaEdges="Container">
+
+    <CollectionView ItemsSource="{Binding FaqItems}" Margin="20,16">
+        <CollectionView.ItemsLayout>
+            <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
+        </CollectionView.ItemsLayout>
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="viewModels:FaqItemViewModel">
+                <VerticalStackLayout Padding="0,0,0,1">
+
+                    <!-- Question row -->
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleCommand}" />
+                        </Grid.GestureRecognizers>
+                        <Label Text="{Binding Question}"
+                               FontSize="15"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
+                               SemanticProperties.Hint="Double tap to expand" />
+                        <Label Grid.Column="1"
+                               Text="{Binding IsExpanded, Converter={StaticResource BoolToChevron}}"
+                               FontSize="16"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+
+                    <!-- Answer (visible when expanded) -->
+                    <Label Text="{Binding Answer}"
+                           IsVisible="{Binding IsExpanded}"
+                           FontSize="14"
+                           Padding="16,0,16,14"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
+                           LineBreakMode="WordWrap" />
+
+                    <BoxView Style="{StaticResource DividerLine}" />
+
+                </VerticalStackLayout>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+    </CollectionView>
+
+</ContentPage>

@@ -12,21 +12,23 @@ public partial class MainPage : ContentPage
     private readonly HomeViewModel _homeViewModel;
     private readonly IOnboardingService _onboardingService;
     private readonly IOrientationService? _orientationService;
+    private readonly IServiceProvider _services;
 
-    public MainPage()
+    public MainPage(HomeViewModel homeViewModel, IOnboardingService onboardingService,
+        IOrientationService orientationService, IServiceProvider services)
     {
         InitializeComponent();
 
-        _homeViewModel = new HomeViewModel();
+        _homeViewModel = homeViewModel;
         BindingContext = _homeViewModel;
 
-        _onboardingService = IPlatformApplication.Current!.Services
-            .GetRequiredService<IOnboardingService>();
-        _orientationService = IPlatformApplication.Current!.Services
-            .GetService<IOrientationService>();
+        _onboardingService = onboardingService;
+        _orientationService = orientationService;
+        _services = services;
 
         BtnQuickAdd.Clicked += async (s, e) =>
-            await Shell.Current.Navigation.PushModalAsync(new QuickAddPage());
+            await Shell.Current.Navigation.PushModalAsync(
+                _services.GetRequiredService<QuickAddPage>());
 
         BtnPrayerTime.Clicked += async (s, e) =>
         {
@@ -34,7 +36,8 @@ public partial class MainPage : ContentPage
             if (action == "All Requests")
                 await Shell.Current.GoToAsync($"{nameof(PrayerTime.PrayerTimePage)}?scope=all");
             else if (action == "By Tags")
-                await Shell.Current.Navigation.PushModalAsync(new PrayerTime.PrayerTimeScopePage());
+                await Shell.Current.Navigation.PushModalAsync(
+                    _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());
         };
     }
 

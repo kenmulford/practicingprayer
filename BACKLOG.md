@@ -15,8 +15,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: Idle
-**Last completed**: Session 26–27 — Warm Journal style refresh (17 semantic color tokens, full dark mode redesign), navbar layout UX (Edit/Save to toolbar, Delete to edit-only), home button layout, Switch dark mode fix, badge contrast fix, iPad tag layout fix, safe area compliance across all pages
-**Next up**: A11Y-1 (Accessibility Phase 1 — color contrast + semantic wins)
+**Last completed**: TD-13 (INavigationService abstraction) + TD-12p3 (74 VM tests). PR #20 merged to dev.
+**Next up**: AUD-1 remaining phases, then UX-15
 
 ---
 
@@ -24,18 +24,34 @@
 
 Items are listed in work order. Start at the top, work down.
 
-| #   | ID     | Item                                                               | Source | Notes                                                                                                                                                                                                                                                                                                                                                  |
-| --- | ------ | ------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | A11Y-1 | Accessibility remediation — Phase 1 (contrast + semantic wins)     | Audit  | 📋 **Plan ready** at `docs/plans/A11Y-remediation-plan.md`. Fix WCAG AA color contrast failures, add HeadingLevel to all pages, hide decorative elements, add icon descriptions. ~1 session.                                                                                                                                                          |
-| 2   | A11Y-2 | Accessibility remediation — Phase 2 (interactive elements)         | Audit  | 📋 **Plan ready.** Fix TapGestureRecognizer accessibility (11+ pages), add SemanticScreenReader.Announce calls, swipe hints, TabIndex ordering. ~1–2 sessions.                                                                                                                                                                                         |
-| 3   | A11Y-3 | Accessibility remediation — Phase 3 (polish + UI test IDs)         | Audit  | 📋 **Plan ready.** ColorPickerPopup accessible alternative, AutomationId on all elements, loading announcements, popup focus management. ~1 session.                                                                                                                                                                                                   |
-| 4   | TD-12  | Full-stack MVVM architecture audit                                 | —      | 📋 **Plan ready.** Comprehensive audit of VMs, Services, Views, Models. Output: findings doc + remediation plan at `docs/research/TD-12-mvvm-architecture-audit.md`.                                                                                                                                                                                   |
-| 5   | TD-8   | Refactor ViewModels to constructor injection                       | —      | All ViewModels resolve services at runtime via MAUI DI host, making them impossible to unit test.                                                                                                                                                                                                                                                      |
-| 6   | F-10   | Deep-link share — create card/request via tapped link              | —      | Deferred until app is in the store — full plan at `docs/plans/F10-deep-link-share.md`                                                                                                                                                                                                                                                                  |
-| 7   | INV-4  | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update 2.1.0.18` conflicts with MAUI 10.0.41 AndroidX pin. Resume when MAUI bumps AndroidX floor or a compatible binding ships.                                                                                                                                                                          |
-| 8   | UX-12  | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Removed for now. Locations that need SVG icons: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                                                                                                 |
-| 9   | M-11   | Monthly notification renewal on app launch                         | —      | iOS uses native `UNCalendarNotificationTrigger` (single repeating notification, no renewal needed). Android pre-schedules 12 one-shot notifications. On app startup, check Android monthly prayers and top up if fewer than 6 future notifications remain.                                                                                             |
-| 10  | F-18   | Widget support for prayer cards                                    | Ken    | Investigate iOS/Android home-screen widgets for prayer cards. Needs fleshing out — scope, widget types (daily card, overdue count, quick-add?), platform APIs (WidgetKit on iOS, App Widgets on Android). Shelved — very large effort (separate native projects for iOS WidgetKit + Android App Widgets).                                                |
+| #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
+| --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | ~~UX-14~~ | ~~Settings hub~~ | Ken | ✅ Done (2026-03-26) |
+| 2   | AUD-1 | Pre-submission audit remediation (52 findings, 5 phases)           | Audit  | 📋 **Plan ready** at `docs/research/pre-submission-audit.md`. Phase 1 (app store blockers) is the priority. |
+| 3   | UX-15 | Quick Add clarity + temporary prayer concept                       | Ken    | Add helper text to QuickAddPage explaining prayers go to "Quick Add" card + encourage assigning to a permanent card later. **Future:** consider excluding Quick Add prayers from Prayer Time and overdue calculations — possibly a separate container/reminder context. Not urgent. |
+| 4   | ~~TD-13~~ | ~~INavigationService abstraction~~ | — | ✅ Done (2026-03-27) |
+| 5   | ~~TD-12p3~~ | ~~VM test coverage (74 tests)~~ | — | ✅ Done (2026-03-27) |
+| 6   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
+| 7   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
+| 8   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
+| 9   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
+| 10  | UX-16 | Portrait mode option for Prayer Time                               | Users  | Multiple user feedback. Add settings toggle (default landscape). PrayerTimePage.OnAppearing checks setting. Layout already uses flexible Grid — works in both orientations with minor padding tweaks. Low risk. |
+| 11  | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+
+### Completed
+
+| ID     | Item                           | Completed  |
+| ------ | ------------------------------ | ---------- |
+| A11Y-1 | Accessibility Phase 1          | 2026-03-25 |
+| A11Y-2 | Accessibility Phase 2          | 2026-03-25 |
+| A11Y-3 | Accessibility Phase 3          | 2026-03-25 |
+| TD-12  | MVVM architecture audit (Phases 1+2+4) | 2026-03-25 |
+| TD-8   | ViewModel constructor injection | 2026-03-25 |
+| FB-29  | iOS tester feedback (build 29) | 2026-03-25 |
+| UX-14  | Settings hub (4 sub-pages + Help FAQ) | 2026-03-26 |
+| AUD-1  | Pre-submission audit Phases 1-3 | 2026-03-26 |
+| TD-13  | INavigationService + IAccessibilityService | 2026-03-27 |
+| TD-12p3 | VM test coverage (74 tests, 8 VMs) | 2026-03-27 |
 
 ---
 

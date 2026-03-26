@@ -1,10 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels;
@@ -13,6 +10,8 @@ public class QuickAddViewModel : ObservableObject
 {
     private readonly ICardService _cardService;
     private readonly IPrayerService _prayerService;
+    private readonly INavigationService _navigationService;
+    private readonly IAccessibilityService _accessibilityService;
 
     private string _title = string.Empty;
     public string Title
@@ -21,73 +20,57 @@ public class QuickAddViewModel : ObservableObject
         set => SetProperty(ref _title, value);
     }
 
-    private PrayerCard? _selectedCard;
-    public PrayerCard? SelectedCard
-    {
-        get => _selectedCard;
-        set => SetProperty(ref _selectedCard, value);
-    }
-
-    public ObservableCollection<PrayerCard> Cards { get; } = new();
-
     public ICommand SaveCommand { get; }
     public ICommand CancelCommand { get; }
 
-    public QuickAddViewModel()
+    public QuickAddViewModel(ICardService cardService, IPrayerService prayerService,
+        INavigationService navigationService, IAccessibilityService accessibilityService)
     {
-        _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-        _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
+        _cardService = cardService;
+        _prayerService = prayerService;
+        _navigationService = navigationService;
+        _accessibilityService = accessibilityService;
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
-        LoadCardsAsync().SafeFireAndForget();
     }
 
-    private async Task LoadCardsAsync()
-    {
-        try
-        {
-            var cards = await _cardService.GetCardsAsync();
-            Cards.Clear();
-            foreach (var card in cards)
-                Cards.Add(card);
-
-            // Prefer the system "Quick Add" card as default selection
-            if (Cards.Count > 0)
-                SelectedCard = Cards.FirstOrDefault(c => c.IsSystem) ?? Cards[0];
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Failed to load cards: {ex.Message}");
-            await Shell.Current.DisplayAlertAsync("Error", "Unable to load prayer cards.", "OK");
-        }
-    }
+    public QuickAddViewModel() : this(
+        IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+    { }
 
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(Title))
         {
-            await Shell.Current.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
-            return;
-        }
-        if (SelectedCard == null)
-        {
-            await Shell.Current.DisplayAlertAsync("Required", "Please select a card.", "OK");
+            await _navigationService.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
             return;
         }
 
-        var prayer = new Prayer
+        try
         {
-            Title = Title.Trim(),
-            PrayerCardId = SelectedCard.Id
-        };
-        await _prayerService.SavePrayerAsync(prayer);
-        _prayerService.InvalidateCache();
-        SemanticScreenReader.Announce("Prayer saved");
-        await Shell.Current.Navigation.PopModalAsync();
+            var systemCard = await _cardService.GetOrCreateQuickAddCardAsync();
+            var prayer = new Prayer
+            {
+                Title = Title.Trim(),
+                PrayerCardId = systemCard.Id
+            };
+            await _prayerService.SavePrayerAsync(prayer);
+            _prayerService.InvalidateCache();
+            _accessibilityService.Announce("Prayer saved");
+            await _navigationService.PopModalAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Quick add save failed: {ex.Message}");
+            await _navigationService.DisplayAlertAsync("Error", "Unable to save prayer. Please try again.", "OK");
+        }
     }
 
     private async Task CancelAsync()
     {
-        await Shell.Current.Navigation.PopModalAsync();
+        await _navigationService.PopModalAsync();
     }
 }

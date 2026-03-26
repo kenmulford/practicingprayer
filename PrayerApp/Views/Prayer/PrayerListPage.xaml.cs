@@ -6,9 +6,10 @@ public partial class PrayerListPage : ContentPage
 {
 	private bool _loaded;
 
-	public PrayerListPage()
+	public PrayerListPage(PrayerListViewModel vm)
 	{
 		InitializeComponent();
+		BindingContext = vm;
 	}
 
 	protected override async void OnAppearing()
@@ -29,5 +30,16 @@ public partial class PrayerListPage : ContentPage
 				await vm.RefreshAsync();
 			}
 		}
+	}
+
+	private void OnSearchButtonPressed(object? sender, EventArgs e)
+	{
+		searchBar.Unfocus();
+	}
+
+	private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+	{
+		if (searchBar.IsFocused)
+			searchBar.Unfocus();
 	}
 }

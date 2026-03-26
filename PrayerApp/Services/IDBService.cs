@@ -26,6 +26,7 @@ namespace PrayerApp.Services
         // PrayerCardTag specific queries
         Task<List<PrayerApp.Models.PrayerCardTag>> GetByRequestIdAsync(int prayerRequestId);
         Task<List<PrayerApp.Models.PrayerCardTag>> GetByTagIdAsync(int prayerTagId);
+        Task<List<PrayerApp.Models.PrayerCardTag>> GetByTagIdsAsync(IEnumerable<int> tagIds);
         Task<int> DeleteByTagIdAsync(int prayerTagId);
         Task<int> DeleteJunctionRowsByRequestIdAsync(int prayerRequestId);
 

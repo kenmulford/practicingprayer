@@ -3,8 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.Prayer;
-using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,14 +11,18 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerCardViewModel : ObservableObject, IQueryAttributable
+    public class PrayerCardViewModel : ObservableObject, IQueryAttributable, IEditGuard
     {
         private PrayerCard _prayerCard;
         private bool _isExpanded;
         private bool _prayersLoaded;
+        private bool _addingPrayer;
+        private string _originalTitle = string.Empty;
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
@@ -87,6 +89,17 @@ namespace PrayerApp.ViewModels
         }
 
         public bool IsSystem => _prayerCard.IsSystem;
+        public bool IsNew => _prayerCard.Id == 0;
+        public bool CanDelete => !IsSystem && !IsNew;
+
+        public bool IsDirty => Title != _originalTitle;
+
+        public async Task<bool> CanLeaveAsync()
+        {
+            if (!IsDirty) return true;
+            return await _navigationService.DisplayConfirmAsync(
+                "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
+        }
 
         public bool IsAnswered
         {
@@ -99,6 +112,13 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged();
                 }
             }
+        }
+
+        private bool _isHighlighted;
+        public bool IsHighlighted
+        {
+            get => _isHighlighted;
+            set => SetProperty(ref _isHighlighted, value);
         }
 
         private int _activePrayerCount;
@@ -119,12 +139,16 @@ namespace PrayerApp.ViewModels
 
         #region Constructors
 
-        public PrayerCardViewModel()
+        public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService,
+            IOnboardingService onboardingService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
         {
             _prayerCard = new PrayerCard();
-            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-            _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-            _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
+            _cardService = cardService;
+            _prayerService = prayerService;
+            _onboardingService = onboardingService;
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
@@ -134,6 +158,14 @@ namespace PrayerApp.ViewModels
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
+
+        public PrayerCardViewModel() : this(
+            IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+        { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
         {
@@ -150,6 +182,17 @@ namespace PrayerApp.ViewModels
                 ActivePrayerCount = await _prayerService.GetActivePrayerCountByCardAsync(_prayerCard.Id);
         }
 
+        /// <summary>Refresh the badge count from the service (lightweight — single query).</summary>
+        public void RefreshActivePrayerCount()
+            => LoadActivePrayerCountAsync().SafeFireAndForget();
+
+        /// <summary>Force-reload prayers from the service (e.g. after Save+ added new prayers).</summary>
+        public void ReloadPrayers()
+        {
+            _prayersLoaded = false;
+            LoadPrayersAsync().SafeFireAndForget();
+        }
+
         #endregion
 
         #region Private Methods
@@ -158,22 +201,23 @@ namespace PrayerApp.ViewModels
         {
             bool isNew = _prayerCard.Id == 0;
             await _cardService.SaveCardAsync(_prayerCard);
+            _originalTitle = Title; // Reset dirty state before navigation
             if (isNew)
                 _onboardingService.Advance(); // NameCard → AddRequest
-            SemanticScreenReader.Announce("Card saved");
-            await Shell.Current.GoToAsync($"..?saved={Identifier}");
+            _accessibilityService.Announce("Card saved");
+            await _navigationService.GoToAsync($"..?saved={Identifier}");
         }
 
         private async Task DeleteAsync()
         {
             if (_prayerCard.IsSystem) return;
 
-            int prayerCount = Prayers.Count;
-            string detail = prayerCount > 0
-                ? $"Delete \"{Title}\"? This will also delete {prayerCount} prayer request{(prayerCount == 1 ? "" : "s")}."
+            var count = ActivePrayerCount;
+            string detail = count > 0
+                ? $"Delete \"{Title}\" and its {count} prayer request{(count == 1 ? "" : "s")}?"
                 : $"Delete \"{Title}\"?";
 
-            bool confirmed = await Shell.Current.DisplayAlertAsync(
+            bool confirmed = await _navigationService.DisplayConfirmAsync(
                 "Delete Card", detail, "Delete", "Cancel");
 
             if (!confirmed) return;
@@ -182,14 +226,14 @@ namespace PrayerApp.ViewModels
             foreach (var prayer in prayers)
                 await _prayerService.DeletePrayerAsync(prayer);
             await _cardService.DeleteCardAsync(_prayerCard);
-            SemanticScreenReader.Announce("Card deleted");
-            await Shell.Current.GoToAsync($"..?deleted={Identifier}");
+            _accessibilityService.Announce("Card deleted");
+            await _navigationService.GoToAsync($"..?deleted={Identifier}");
         }
 
         private async Task SelectPrayerCardAsync()
         {
             if (_prayerCard.IsSystem) return;
-            await Shell.Current.GoToAsync($"{nameof(PrayerCardPage)}?load={Identifier}");
+            await _navigationService.GoToAsync($"{Routes.PrayerCardPage}?load={Identifier}");
         }
 
         private async Task ToggleExpandedAsync()
@@ -215,7 +259,7 @@ namespace PrayerApp.ViewModels
         private async Task AddPrayerAsync()
         {
             _onboardingService.Advance(); // AddRequest → NameRequest
-            await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?newForCard={_prayerCard.Id}");
+            await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?newForCard={_prayerCard.Id}");
         }
 
         #endregion
@@ -241,16 +285,22 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                _prayerCard = await PrayerCard.LoadAsync(id);
+                var loaded = await PrayerCard.LoadAsync(id);
+                if (loaded is null)
+                {
+                    await _navigationService.GoToAsync("..");
+                    return;
+                }
+                _prayerCard = loaded;
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+                return;
             }
-            finally
-            {
-                RefreshProperties();
-            }
+
+            _originalTitle = _prayerCard.Title ?? string.Empty;
+            RefreshProperties();
         }
 
         public void Reload()
@@ -264,6 +314,8 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
             OnPropertyChanged(nameof(IsSystem));
+            OnPropertyChanged(nameof(IsNew));
+            OnPropertyChanged(nameof(CanDelete));
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
         }
@@ -292,16 +344,20 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
             }
         }
 
         public async Task AddOrUpdatePrayerAsync(int prayerId)
         {
-            if (!_prayersLoaded)
+            if (_addingPrayer) return;
+            _addingPrayer = true;
+            try
             {
-                return;
-            }
+            // If prayers haven't been loaded yet, load them first so we can
+            // display the new/updated prayer in the expanded accordion.
+            if (!_prayersLoaded)
+                await LoadPrayersAsync();
 
             var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
             if (existing != null)
@@ -327,22 +383,24 @@ namespace PrayerApp.ViewModels
             Prayers.Insert(insertIndex, viewModel);
             OnPropertyChanged(nameof(HasPrayers));
             LoadActivePrayerCountAsync().SafeFireAndForget();
+            }
+            finally { _addingPrayer = false; }
         }
 
         public void RemovePrayer(int prayerId)
         {
-            if (!_prayersLoaded)
+            if (_prayersLoaded)
             {
-                return;
+                var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
+                if (existing != null)
+                {
+                    Prayers.Remove(existing);
+                    OnPropertyChanged(nameof(HasPrayers));
+                }
             }
 
-            var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
-            if (existing != null)
-            {
-                Prayers.Remove(existing);
-                OnPropertyChanged(nameof(HasPrayers));
-                LoadActivePrayerCountAsync().SafeFireAndForget();
-            }
+            // Always refresh the badge count, even if prayers weren't loaded
+            RefreshActivePrayerCount();
         }
 
         #endregion

@@ -8,16 +8,25 @@ public partial class PrayerDetailPage : ContentPage
     private bool _initialLoadComplete;
     private readonly ToolbarItem _editToolbarItem;
     private readonly ToolbarItem _saveToolbarItem;
+    private readonly ToolbarItem _saveAndNewToolbarItem;
 
-    public PrayerDetailPage()
+    public PrayerDetailPage(PrayerRequestDetailViewModel vm)
     {
         InitializeComponent();
+        BindingContext = vm;
 
         _editToolbarItem = new ToolbarItem { Text = "Edit" };
         _editToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.EditPrayerCommand));
 
         _saveToolbarItem = new ToolbarItem { Text = "Save" };
         _saveToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveCommand));
+
+        _saveAndNewToolbarItem = new ToolbarItem { Text = "Save +" };
+        _saveAndNewToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveAndNewCommand));
+        SemanticProperties.SetDescription(_saveAndNewToolbarItem, "Save and add another prayer");
+
+        vm.FormResetRequested += (_, _) =>
+            Dispatcher.DispatchAsync(() => TitleEntry.Focus());
     }
 
     private void OnTagEntryCompleted(object? sender, EventArgs e)
@@ -73,8 +82,9 @@ public partial class PrayerDetailPage : ContentPage
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(PrayerRequestDetailViewModel.IsReadOnly) &&
-            sender is PrayerRequestDetailViewModel vm)
+        if (sender is PrayerRequestDetailViewModel vm &&
+            (e.PropertyName == nameof(PrayerRequestDetailViewModel.IsReadOnly) ||
+             e.PropertyName == nameof(PrayerRequestDetailViewModel.ShowSaveAndNew)))
         {
             UpdateToolbarItems(vm);
         }
@@ -83,6 +93,22 @@ public partial class PrayerDetailPage : ContentPage
     private void UpdateToolbarItems(PrayerRequestDetailViewModel vm)
     {
         ToolbarItems.Clear();
-        ToolbarItems.Add(vm.IsReadOnly ? _editToolbarItem : _saveToolbarItem);
+        if (vm.IsReadOnly)
+        {
+            ToolbarItems.Add(_editToolbarItem);
+        }
+        else
+        {
+            if (vm.ShowSaveAndNew)
+                ToolbarItems.Add(_saveAndNewToolbarItem);
+            ToolbarItems.Add(_saveToolbarItem);
+        }
+    }
+
+    private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+    {
+        if (TitleEntry.IsFocused) TitleEntry.Unfocus();
+        else if (DetailsEditor.IsFocused) DetailsEditor.Unfocus();
+        else if (tagEntry.IsFocused) tagEntry.Unfocus();
     }
 }

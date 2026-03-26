@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PrayerApp.Views.Settings.BackupPage"
+             Title="Backup &amp; Restore"
+             SafeAreaEdges="Container">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20,16" Spacing="16">
+
+            <!-- Backup -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Backup"
+                           SemanticProperties.HeadingLevel="Level2"
+                           Style="{StaticResource SectionHeading}" />
+                    <Label Text="Export your prayer data to a file you can restore on another device."
+                           Style="{StaticResource SectionDescription}" />
+                    <Button x:Name="btnBackup"
+                            Text="Back Up Now"
+                            AutomationId="Backup_Btn_Backup"
+                            Clicked="OnBackupClicked"
+                            HorizontalOptions="Fill"
+                            Margin="0,4,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Restore -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Restore"
+                           SemanticProperties.HeadingLevel="Level2"
+                           Style="{StaticResource SectionHeading}" />
+                    <Label Text="Replace all current data with a previously exported backup. This cannot be undone."
+                           Style="{StaticResource SectionDescription}" />
+                    <Button x:Name="btnRestore"
+                            Text="Restore from Backup"
+                            AutomationId="Backup_Btn_Restore"
+                            Clicked="OnRestoreClicked"
+                            Style="{StaticResource DangerButton}"
+                            HorizontalOptions="Fill"
+                            Margin="0,4,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Diagnostics — hidden when no log file exists -->
+            <Border x:Name="diagnosticsSection"
+                    Style="{StaticResource PrayerCardBorder}"
+                    Padding="16"
+                    IsVisible="False">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Diagnostics"
+                           SemanticProperties.HeadingLevel="Level2"
+                           Style="{StaticResource SectionHeading}" />
+                    <Label Text="If you're experiencing issues, send this log to help us diagnose the problem."
+                           Style="{StaticResource SectionDescription}" />
+                    <Button x:Name="btnSendDiagnostics"
+                            Text="Send Diagnostic Info"
+                            AutomationId="Backup_Btn_Diagnostics"
+                            Clicked="OnSendDiagnosticsClicked"
+                            HorizontalOptions="Fill"
+                            Margin="0,4,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

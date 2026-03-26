@@ -19,8 +19,8 @@
 		<ApplicationId>com.multithreadedllc.prayercards</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0.5</ApplicationDisplayVersion>
-		<ApplicationVersion>29</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.6</ApplicationDisplayVersion>
+		<ApplicationVersion>32</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -59,7 +59,7 @@
 	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
 	  <!-- Xcode 26.2 and 26.3 have identical SDKs; skip the version check until workloads catch up -->
 	  <ValidateXcodeVersion>false</ValidateXcodeVersion>
-	  <CodesignKey>iPhone Developer</CodesignKey>
+	  <CodesignKey>iPhone Distribution</CodesignKey>
 	  <CodesignProvision></CodesignProvision>
 	  <ProvisioningType>manual</ProvisioningType>
 	</PropertyGroup>
@@ -102,7 +102,7 @@
 		</MauiImage>
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#6B7D5A" BaseSize="128,128" />
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#6B7D5A" BaseSize="256,256" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
@@ -125,11 +125,11 @@
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Maui" Version="14.0.1" />
 		<PackageReference Include="CommunityToolkit.Maui.Core" Version="14.0.1" />
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
-		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.41" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.2" />
-		<PackageReference Include="Plugin.LocalNotification" Version="13.0.0" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.50" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.5" />
+		<PackageReference Include="Plugin.LocalNotification" Version="14.0.0" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
 	</ItemGroup>

@@ -40,6 +40,7 @@
                 <Button x:Name="SkipButton"
                         Grid.Column="1"
                         Text="Skip tour"
+                        AutomationId="Banner_Btn_Skip"
                         TextColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TextMutedDark}}"
                         BackgroundColor="Transparent"
                         FontSize="12"

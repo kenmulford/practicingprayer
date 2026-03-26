@@ -1,12 +1,11 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Models;
 
 namespace PrayerApp.ViewModels;
 
-public class TagFilterChipViewModel : INotifyPropertyChanged
+public class TagFilterChipViewModel : ObservableObject
 {
     public PrayerTag Tag { get; }
 
@@ -14,14 +13,7 @@ public class TagFilterChipViewModel : INotifyPropertyChanged
     public bool IsSelected
     {
         get => _isSelected;
-        set
-        {
-            if (_isSelected != value)
-            {
-                _isSelected = value;
-                OnPropertyChanged();
-            }
-        }
+        set => SetProperty(ref _isSelected, value);
     }
 
     public ICommand ToggleCommand { get; }
@@ -35,8 +27,4 @@ public class TagFilterChipViewModel : INotifyPropertyChanged
             onToggle(this);
         });
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? name = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

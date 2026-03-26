@@ -246,6 +246,16 @@ namespace PrayerApp.Services
                 .ToListAsync();
         }
 
+        public async Task<List<PrayerCardTag>> GetByTagIdsAsync(IEnumerable<int> tagIds)
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            var idSet = tagIds.ToHashSet();
+            // sqlite-net-pcl doesn't support Contains in LINQ, so filter in memory
+            var all = await _db.Table<PrayerCardTag>().ToListAsync();
+            return all.Where(pct => idSet.Contains(pct.PrayerTagId)).ToList();
+        }
+
         public async Task<int> DeleteByTagIdAsync(int prayerTagId)
         {
             await EnsureInitializedAsync();
@@ -302,8 +312,8 @@ namespace PrayerApp.Services
             {
                 Title = "General",
                 IsFavorite = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             };
             await InsertAsync(generalCard);
 
@@ -320,8 +330,8 @@ namespace PrayerApp.Services
                 PrayerCardId = generalCard.Id,
                 Title = "Sample Prayer Entry 1",
                 Details = "Sample details.",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             });
 
             await InsertAsync(new Prayer
@@ -329,8 +339,8 @@ namespace PrayerApp.Services
                 PrayerCardId = generalCard.Id,
                 Title = "Sample Prayer Entry 2",
                 Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus.",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             });
 
             await InsertAsync(new Prayer
@@ -338,8 +348,8 @@ namespace PrayerApp.Services
                 PrayerCardId = generalCard.Id,
                 Title = "Sample Prayer Entry 3",
                 Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus.",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             });
 
             await InsertAsync(new Prayer
@@ -347,8 +357,8 @@ namespace PrayerApp.Services
                 PrayerCardId = generalCard.Id,
                 Title = "Sample Prayer Entry 4",
                 Details = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis in sem sit amet sapien tincidunt pretium. Mauris tristique libero tellus, laoreet blandit metus congue non. Ut at sagittis lacus. Nullam in felis quam. Phasellus nisi augue, hendrerit non vulputate fermentum, maximus a risus. Phasellus aliquam fringilla libero et feugiat. Nam eget varius mi. Curabitur sit amet rutrum sem. Morbi ut ipsum ex. Nulla est ante, hendrerit vitae mollis quis, fringilla id ligula. Vestibulum id nisi sed nunc finibus egestas. Phasellus eleifend ante at enim ornare auctor a ac dolor. Nullam nec nisi vulputate, ultrices nisi quis, bibendum ligula. Proin fermentum mauris nec ipsum ultrices gravida. Sed faucibus scelerisque massa at porttitor.",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             });
         }
 

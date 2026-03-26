@@ -6,6 +6,7 @@
     xmlns:local="clr-namespace:PrayerApp"
     xmlns:views="clr-namespace:PrayerApp.Views"
     xmlns:tagViews="clr-namespace:PrayerApp.Views.Tags"
+    xmlns:settingsViews="clr-namespace:PrayerApp.Views.Settings"
     Title="PrayerApp">
 
     <TabBar>
@@ -37,7 +38,7 @@
         <ShellContent
             Title="Settings"
             Icon="gear_solid_full.png"
-            ContentTemplate="{DataTemplate views:Settings}"
+            ContentTemplate="{DataTemplate settingsViews:SettingsHubPage}"
             Route="Settings" />
 
     </TabBar>

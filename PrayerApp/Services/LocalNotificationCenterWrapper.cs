@@ -1,4 +1,6 @@
 using Plugin.LocalNotification;
+using Plugin.LocalNotification.Core.Models;
+using Plugin.LocalNotification.Core.Models.AndroidOption;
 #if IOS
 using Foundation;
 using UserNotifications;
@@ -13,6 +15,11 @@ namespace PrayerApp.Services;
 /// </summary>
 public class LocalNotificationCenterWrapper : ILocalNotificationCenter
 {
+    public const string PrayerRemindersChannelId = "prayer_reminders";
+
+    /// <summary>Offset for monthly Android notification IDs to avoid colliding with prayer IDs.</summary>
+    private const int MonthlyIdOffset = 1_000_000;
+
     public event EventHandler<int>? NotificationTapped;
 
     public LocalNotificationCenterWrapper()
@@ -43,7 +50,7 @@ public class LocalNotificationCenterWrapper : ILocalNotificationCenter
     {
         // Always cancel legacy Plugin one-shots (IDs notificationId*100+0 through +11)
         // so existing users don't get duplicates after the native scheduling migration.
-        Cancel(Enumerable.Range(0, 12).Select(i => notificationId * 100 + i).ToArray());
+        Cancel(Enumerable.Range(0, 12).Select(i => MonthlyIdOffset + notificationId * 100 + i).ToArray());
 
 #if IOS
         // Also cancel the native repeating notification
@@ -118,8 +125,8 @@ public class LocalNotificationCenterWrapper : ILocalNotificationCenter
                 continue;
             }
 
-            System.Diagnostics.Debug.WriteLine($"[Notify]   month {i}: SCHEDULING id={notificationId * 100 + i}, target={target}");
-            await ShowAsync(notificationId * 100 + i, title, description,
+            System.Diagnostics.Debug.WriteLine($"[Notify]   month {i}: SCHEDULING id={MonthlyIdOffset + notificationId * 100 + i}, target={target}");
+            await ShowAsync(MonthlyIdOffset + notificationId * 100 + i, title, description,
                             target, NotifyRepeat.No, null);
             scheduled++;
         }
@@ -148,16 +155,16 @@ public class LocalNotificationCenterWrapper : ILocalNotificationCenter
                 },
                 NotifyRepeatInterval = repeatInterval,
 #if ANDROID
-                Android = new Plugin.LocalNotification.AndroidOption.AndroidScheduleOptions
+                Android = new AndroidScheduleOptions
                 {
-                    AlarmType = Plugin.LocalNotification.AndroidOption.AndroidAlarmType.RtcWakeup
+                    AlarmType = AndroidAlarmType.RtcWakeup
                 }
 #endif
             },
 #if ANDROID
-            Android = new Plugin.LocalNotification.AndroidOption.AndroidOptions
+            Android = new AndroidOptions
             {
-                ChannelId = "prayer_reminders"
+                ChannelId = PrayerRemindersChannelId
             }
 #endif
         };

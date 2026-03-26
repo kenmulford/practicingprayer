@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
-using PrayerApp.Views.PrayerCard;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,29 +11,55 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    internal class PrayerCardsViewModel : ObservableObject, IQueryAttributable
+    public class PrayerCardsViewModel : ObservableObject, IQueryAttributable
     {
         private List<PrayerCard> _prayerCards;
         private readonly ICardService _cardService;
+        private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
+        public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
         private bool _isSorting;
+        private bool _suppressFilterAnnounce;
+        private readonly Dictionary<PrayerCardViewModel, System.ComponentModel.PropertyChangedEventHandler> _cardHandlers = new();
+        private CancellationTokenSource? _filterAnnounceCts;
 
         private bool _isLoading;
         public bool IsLoading
         {
             get => _isLoading;
-            set => SetProperty(ref _isLoading, value);
+            set
+            {
+                if (SetProperty(ref _isLoading, value))
+                    _accessibilityService.Announce(value ? "Loading" : "Content loaded");
+            }
+        }
+
+        private string _searchText = string.Empty;
+        public string SearchText
+        {
+            get => _searchText;
+            set { if (SetProperty(ref _searchText, value)) ApplyFilter(); }
         }
 
         public ICommand NewCommand { get; }
 
+        /// <summary>Raised when a newly created card should be scrolled to and highlighted.</summary>
+        public event EventHandler<PrayerCardViewModel>? HighlightCardRequested;
+
         #region Constructors
 
-        public PrayerCardsViewModel()
+        public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
+            IOnboardingService onboardingService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
         {
-            _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-            _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
+            _cardService = cardService;
+            _prayerService = prayerService;
+            _onboardingService = onboardingService;
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
 
             _prayerCards = new List<PrayerCard>();
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
@@ -43,6 +68,14 @@ namespace PrayerApp.ViewModels
             NewCommand = new AsyncRelayCommand(NewPrayerCardAsync);
         }
 
+        public PrayerCardsViewModel() : this(
+            IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+        { }
+
         #endregion
 
         #region Private Methods
@@ -50,7 +83,7 @@ namespace PrayerApp.ViewModels
         private async Task NewPrayerCardAsync()
         {
             _onboardingService.Advance(); // CreateCard → NameCard (no-op if not at CreateCard)
-            await Shell.Current.GoToAsync(nameof(Views.PrayerCard.PrayerCardPage));
+            await _navigationService.GoToAsync(Routes.PrayerCardPage);
         }
 
         #endregion
@@ -66,6 +99,7 @@ namespace PrayerApp.ViewModels
 
                 if (matched != null)
                 {
+                    UnsubscribeFromPropertyChanges(matched);
                     AllPrayerCards.Remove(matched);
                     ApplySorting();
                 }
@@ -102,7 +136,10 @@ namespace PrayerApp.ViewModels
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     if (matched != null)
                     {
+                        // Re-expand the parent card so the user sees their saved prayer
+                        matched.IsExpanded = true;
                         matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
+                        matched.RefreshActivePrayerCount();
                     }
                 }
             }
@@ -130,17 +167,25 @@ namespace PrayerApp.ViewModels
                 var newCard = new PrayerCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
-                ApplySorting();
+
+                // Expand + highlight the new card (accordion handler auto-collapses others)
+                newCard.IsExpanded = true;
+                newCard.IsHighlighted = true;
+
+                ApplySorting(); // also calls ApplyFilter()
+
+                HighlightCardRequested?.Invoke(this, newCard);
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to add new card: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to add new card: {e.Message}", "OK");
             }
         }
 
         public async Task LoadAsync()
         {
             IsLoading = true;
+            _suppressFilterAnnounce = true;
             try
             {
                 _cardService.InvalidateCache();
@@ -153,6 +198,8 @@ namespace PrayerApp.ViewModels
                     SubscribeToPropertyChanges(vm);
                 }
 
+                foreach (var old in AllPrayerCards)
+                    UnsubscribeFromPropertyChanges(old);
                 AllPrayerCards.Clear();
                 foreach (var vm in viewModels)
                 {
@@ -163,10 +210,11 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
             }
             finally
             {
+                _suppressFilterAnnounce = false;
                 IsLoading = false;
             }
         }
@@ -207,18 +255,71 @@ namespace PrayerApp.ViewModels
             {
                 _isSorting = false;
             }
+
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            IEnumerable<PrayerCardViewModel> result = AllPrayerCards;
+
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var q = _searchText.Trim();
+                result = result.Where(c =>
+                    c.Title?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false);
+            }
+
+            FilteredPrayerCards.Clear();
+            foreach (var card in result)
+                FilteredPrayerCards.Add(card);
+
+            if (!_suppressFilterAnnounce)
+                AnnounceFilterCountDebounced();
+        }
+
+        private void AnnounceFilterCountDebounced()
+        {
+            _filterAnnounceCts?.Cancel();
+            _filterAnnounceCts?.Dispose();
+            _filterAnnounceCts = new CancellationTokenSource();
+            var token = _filterAnnounceCts.Token;
+            var count = FilteredPrayerCards.Count;
+            Task.Delay(400, token).ContinueWith(_ =>
+            {
+                if (!token.IsCancellationRequested)
+                    _accessibilityService.Announce($"Showing {count} cards");
+            }, token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
         }
 
         private void SubscribeToPropertyChanges(PrayerCardViewModel card)
         {
-            card.PropertyChanged += (s, e) =>
+            void Handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
             {
                 if (e.PropertyName == nameof(PrayerCardViewModel.Title)
                     || e.PropertyName == nameof(PrayerCardViewModel.IsFavorite))
                 {
                     ApplySorting();
                 }
-            };
+                else if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded)
+                         && card.IsExpanded)
+                {
+                    foreach (var other in AllPrayerCards)
+                        if (other != card && other.IsExpanded)
+                            other.IsExpanded = false;
+
+                    _accessibilityService.Announce($"Expanded {card.Title}");
+                }
+            }
+
+            card.PropertyChanged += Handler;
+            _cardHandlers[card] = Handler;
+        }
+
+        private void UnsubscribeFromPropertyChanges(PrayerCardViewModel card)
+        {
+            if (_cardHandlers.Remove(card, out var handler))
+                card.PropertyChanged -= handler;
         }
 
         public void Reload()
@@ -235,6 +336,7 @@ namespace PrayerApp.ViewModels
         public async Task RefreshAsync()
         {
             _cardService.InvalidateCache();
+            _prayerService.InvalidateCache();
             var cards = await _cardService.GetCardsAsync();
             var freshIds = cards.Select(c => c.Id).ToHashSet();
             var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
@@ -242,7 +344,10 @@ namespace PrayerApp.ViewModels
             // Remove deleted cards
             var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
             foreach (var vm in toRemove)
+            {
+                UnsubscribeFromPropertyChanges(vm);
                 AllPrayerCards.Remove(vm);
+            }
 
             // Add new cards
             foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
@@ -250,6 +355,15 @@ namespace PrayerApp.ViewModels
                 var vm = new PrayerCardViewModel(card);
                 SubscribeToPropertyChanges(vm);
                 AllPrayerCards.Add(vm);
+            }
+
+            // Refresh prayer counts + reload prayers on expanded cards
+            // (e.g. QuickAdd added a prayer, or "Save +" added multiple)
+            foreach (var vm in AllPrayerCards)
+            {
+                vm.RefreshActivePrayerCount();
+                if (vm.IsExpanded)
+                    vm.ReloadPrayers();
             }
 
             ApplySorting();

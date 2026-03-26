@@ -10,10 +10,12 @@ using CommunityToolkit.Maui.Views;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using PrayerApp.ViewModels;
 using PrayerApp.Views.Onboarding;
 using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
 using PrayerApp.Views.PrayerTime;
+using PrayerApp.Views.Settings;
 using PrayerApp.Views.Tags;
 
 namespace PrayerApp
@@ -47,6 +49,13 @@ namespace PrayerApp
             Routing.RegisterRoute(nameof(PrayerDetailPage), typeof(PrayerDetailPage));
             Routing.RegisterRoute(nameof(PrayerTimePage), typeof(PrayerTimePage));
             Routing.RegisterRoute(nameof(TagDetailPage), typeof(TagDetailPage));
+            Routing.RegisterRoute(nameof(AppSettingsPage), typeof(AppSettingsPage));
+            Routing.RegisterRoute(nameof(BackupPage), typeof(BackupPage));
+            Routing.RegisterRoute(nameof(AboutPage), typeof(AboutPage));
+            Routing.RegisterRoute(nameof(HelpPage), typeof(HelpPage));
+
+            // Unsaved-changes guard on back navigation
+            this.Navigating += OnShellNavigating;
 
             // Subtle crossfade when switching tabs
             this.Navigated += OnShellNavigated;
@@ -59,11 +68,41 @@ namespace PrayerApp
             {
                 if (onboardingService.CurrentStep != OnboardingStep.Complete) return;
 
+                // If the user skipped onboarding while editing (IEditGuard.IsDirty),
+                // silently complete — don't interrupt with a popup that may disrupt
+                // the navigation stack and lose their unsaved work.
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
+                    if (CurrentPage?.BindingContext is IEditGuard { IsDirty: true })
+                    {
+                        Settings.OnboardingComplete = true;
+                        return;
+                    }
                     ShowOnboardingCompletePopupAsync().SafeFireAndForget();
                 });
             };
+        }
+
+        private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs args)
+        {
+            if (args.Source is not (ShellNavigationSource.Pop
+                or ShellNavigationSource.ShellItemChanged
+                or ShellNavigationSource.ShellSectionChanged))
+                return;
+
+            if (CurrentPage?.BindingContext is IEditGuard guard && guard.IsDirty)
+            {
+                var deferral = args.GetDeferral();
+                try
+                {
+                    if (!await guard.CanLeaveAsync())
+                        args.Cancel();
+                }
+                finally
+                {
+                    deferral.Complete();
+                }
+            }
         }
 
         private async void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)

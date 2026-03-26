@@ -7,10 +7,6 @@
              x:DataType="viewModels:PrayerCardViewModel"
              Title="Prayer Card"
              SafeAreaEdges="Container">
-    <ContentPage.BindingContext>
-        <viewModels:PrayerCardViewModel />
-    </ContentPage.BindingContext>
-
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Save"
                      Command="{Binding SaveCommand}"
@@ -21,6 +17,9 @@
 
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Padding="12,8" Spacing="16">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+                </VerticalStackLayout.GestureRecognizers>
 
                 <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
                     <VerticalStackLayout Spacing="12">
@@ -28,6 +27,7 @@
                         <Label Text="Title" Style="{StaticResource FormLabel}" />
                         <Entry x:Name="TitleEntry"
                                Text="{Binding Title}"
+                               AutomationId="Card_Entry_Title"
                                IsReadOnly="{Binding IsSystem}"
                                HorizontalOptions="Fill"
                                Placeholder="Card title"
@@ -37,9 +37,10 @@
 
                         <!-- Delete Button — Save is in the navbar -->
                         <Button Text="Delete"
+                                AutomationId="Card_Btn_Delete"
                                 Style="{StaticResource DangerButton}"
                                 Command="{Binding DeleteCommand}"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                IsVisible="{Binding CanDelete}"
                                 HorizontalOptions="Fill" />
 
                     </VerticalStackLayout>

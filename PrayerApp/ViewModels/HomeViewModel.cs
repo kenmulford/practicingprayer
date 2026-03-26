@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Services;
-using PrayerApp.Views.Prayer;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -15,22 +14,23 @@ public class SuggestedPrayerViewModel
     public string PrayerTitle { get; }
     public ICommand SelectCommand { get; }
 
-    public SuggestedPrayerViewModel(int prayerId, string cardTitle, string prayerTitle)
+    public SuggestedPrayerViewModel(int prayerId, string cardTitle, string prayerTitle,
+        INavigationService navigationService)
     {
         PrayerId = prayerId;
         CardTitle = cardTitle;
         PrayerTitle = prayerTitle;
-        SelectCommand = new AsyncRelayCommand(SelectAsync);
+        SelectCommand = new AsyncRelayCommand(() =>
+            navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={PrayerId}&viewOnly=true"));
     }
-
-    private async Task SelectAsync() =>
-        await Shell.Current.GoToAsync($"{nameof(PrayerDetailPage)}?load={PrayerId}&viewOnly=true");
 }
 
 public class HomeViewModel : ObservableObject
 {
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
+    private readonly INavigationService _navigationService;
+    private readonly ISettings _settings;
 
     private int _overdueCount;
     public int OverdueCount
@@ -59,7 +59,7 @@ public class HomeViewModel : ObservableObject
     {
         get
         {
-            var days = Settings.OverdueDayThreshold;
+            var days = _settings.OverdueDayThreshold;
             var dayLabel = days == 1 ? "day" : "days";
             return $"Requests not prayed for in {days} {dayLabel} will appear here. You can update this in Settings.";
         }
@@ -76,18 +76,30 @@ public class HomeViewModel : ObservableObject
 
     public ICommand GoToOverdueCommand { get; }
 
-    public HomeViewModel()
+    public HomeViewModel(IPrayerService prayerService, ICardService cardService,
+        INavigationService navigationService, ISettings settings)
     {
-        _prayerService = IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>();
-        _cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
+        _prayerService = prayerService;
+        _cardService = cardService;
+        _navigationService = navigationService;
+        _settings = settings;
         GoToOverdueCommand = new AsyncRelayCommand(GoToOverdueAsync);
     }
+
+    public HomeViewModel() : this(
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
+    { }
 
     public async Task LoadAsync()
     {
         try
         {
-            var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
+            _prayerService.InvalidateCache();
+            _cardService.InvalidateCache();
+            var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
             OverdueCount = overdue.Count;
             OnPropertyChanged(nameof(OverdueEmptyDescription));
 
@@ -98,7 +110,7 @@ public class HomeViewModel : ObservableObject
             foreach (var p in overdue.Take(5))
             {
                 var cardTitle = cardLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
-                SuggestedPrayers.Add(new SuggestedPrayerViewModel(p.Id, cardTitle, p.Title));
+                SuggestedPrayers.Add(new SuggestedPrayerViewModel(p.Id, cardTitle, p.Title, _navigationService));
             }
 
             // Last prayed date
@@ -111,7 +123,7 @@ public class HomeViewModel : ObservableObject
         }
     }
 
-    private static string FormatLastPrayed(DateTime? date)
+    internal static string FormatLastPrayed(DateTime? date)
     {
         if (date is null) return "Never";
         var days = (DateTime.Now - date.Value).TotalDays;
@@ -129,6 +141,6 @@ public class HomeViewModel : ObservableObject
     private async Task GoToOverdueAsync()
     {
         if (!HasOverdue) return;
-        await Shell.Current.GoToAsync("//PrayersPage?filter=overdue");
+        await _navigationService.GoToAsync("//PrayersPage?filter=overdue");
     }
 }

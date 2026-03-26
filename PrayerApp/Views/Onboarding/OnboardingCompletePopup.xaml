@@ -31,6 +31,7 @@
 
             <Button x:Name="BtnDone"
                     Text="Done"
+                    AutomationId="Complete_Btn_Done"
                     Margin="0,8,0,0" />
 
         </VerticalStackLayout>

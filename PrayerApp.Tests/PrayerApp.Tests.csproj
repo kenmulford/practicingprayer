@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Maui" Version="14.0.1" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.50" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -46,8 +48,34 @@
     <!-- Helpers -->
     <Compile Include="../PrayerApp/Helpers/TaskExtensions.cs" />
     <Compile Include="../PrayerApp/Helpers/NotificationHelper.cs" />
+    <Compile Include="../PrayerApp/Helpers/TagColorPalette.cs" />
+
+    <!-- ViewModel interfaces -->
+    <Compile Include="../PrayerApp/ViewModels/IEditGuard.cs" />
+
+    <!-- Route constants -->
+    <Compile Include="../PrayerApp/Routes.cs" />
+
+    <!-- ViewModels -->
+    <Compile Include="../PrayerApp/ViewModels/QuickAddViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/FaqItemViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/HelpViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/HomeViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerTimeScopeViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/TagsViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/TagDetailViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerTimeViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerCardsViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerListViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerCardViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerRequestDetailViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/TagFilterChipViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/TagChipViewModel.cs" />
 
     <!-- Service interfaces -->
+    <Compile Include="../PrayerApp/Services/ISettings.cs" />
+    <Compile Include="../PrayerApp/Services/INavigationService.cs" />
+    <Compile Include="../PrayerApp/Services/IAccessibilityService.cs" />
     <Compile Include="../PrayerApp/Services/IDiagnosticLog.cs" />
     <Compile Include="../PrayerApp/Services/IDBService.cs" />
     <Compile Include="../PrayerApp/Services/IUserColorService.cs" />
@@ -58,6 +86,9 @@
     <Compile Include="../PrayerApp/Services/IOnboardingService.cs" />
     <Compile Include="../PrayerApp/Services/INotificationService.cs" />
     <Compile Include="../PrayerApp/Services/ILocalNotificationCenter.cs" />
+    <Compile Include="../PrayerApp/Services/IColorPickerService.cs" />
+    <Compile Include="../PrayerApp/Services/IOrientationService.cs" />
+    <Compile Include="../PrayerApp/Services/IBackupService.cs" />
 
     <!-- Service implementations (no MAUI dependencies) -->
     <Compile Include="../PrayerApp/Services/DiagnosticLog.cs" />

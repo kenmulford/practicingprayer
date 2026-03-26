@@ -9,13 +9,12 @@
              x:Name="page"
              Title="Prayer Request"
              SafeAreaEdges="Container">
-    <ContentPage.BindingContext>
-        <viewModels:PrayerRequestDetailViewModel />
-    </ContentPage.BindingContext>
-
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
         <VerticalStackLayout Padding="12,8" Spacing="16">
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+            </VerticalStackLayout.GestureRecognizers>
 
             <!-- VIEW MODE -->
             <Border Style="{StaticResource PrayerCardBorder}"
@@ -81,11 +80,13 @@
                     <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                         <Button Grid.Column="0"
                                 Text="Share"
+                                AutomationId="Detail_Btn_Share"
                                 Style="{StaticResource SmallActionButton}"
                                 Command="{Binding ShareCommand}"
                                 HorizontalOptions="Fill" />
                         <Button Grid.Column="1"
                                 Text="Mark Answered"
+                                AutomationId="Detail_Btn_MarkAnswered"
                                 Style="{StaticResource AnsweredButton}"
                                 Command="{Binding MarkAnsweredCommand}"
                                 IsVisible="{Binding IsNotAnswered}"
@@ -102,20 +103,31 @@
                 <VerticalStackLayout Spacing="12">
 
                     <!-- Prayer Card -->
-                    <Label Text="Prayer Card"
+                    <Label Text="Belongs to Card"
                            Style="{StaticResource FormLabel}" />
-                    <Picker Title="Select Card"
-                            ItemsSource="{Binding AvailableCards}"
-                            SelectedItem="{Binding SelectedCard}"
-                            ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
-                            SemanticProperties.Hint="Which prayer card this request belongs to"
-                            HorizontalOptions="Fill" />
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Picker Title="Select Card"
+                                AutomationId="Detail_Picker_Card"
+                                ItemsSource="{Binding AvailableCards}"
+                                SelectedItem="{Binding SelectedCard}"
+                                ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
+                                SemanticProperties.Hint="Tap to change which card this prayer belongs to"
+                                HorizontalOptions="Fill" />
+                        <Label Grid.Column="1"
+                               Text="▼"
+                               FontSize="12"
+                               VerticalOptions="Center"
+                               Margin="0,0,4,0"
+                               AutomationProperties.IsInAccessibleTree="false"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                    </Grid>
 
                     <!-- Title -->
                     <Label Text="Title"
                            Style="{StaticResource FormLabel}" />
                     <Entry x:Name="TitleEntry"
                            Text="{Binding Title}"
+                           AutomationId="Detail_Entry_Title"
                            Placeholder="Prayer title"
                            SemanticProperties.Hint="Prayer request title"
                            HorizontalOptions="Fill" />
@@ -123,7 +135,9 @@
                     <!-- Details -->
                     <Label Text="Details"
                            Style="{StaticResource FormLabel}" />
-                    <Editor Text="{Binding Details}"
+                    <Editor x:Name="DetailsEditor"
+                            Text="{Binding Details}"
+                            AutomationId="Detail_Entry_Details"
                             Placeholder="Add details..."
                             SemanticProperties.Hint="Prayer request details or Scripture reference"
                             HeightRequest="100"
@@ -137,6 +151,7 @@
                                        Style="{StaticResource SectionHeading}"
                                        VerticalOptions="Center" />
                                 <Switch Grid.Column="1"
+                                        AutomationId="Detail_Switch_Reminders"
                                         IsToggled="{Binding CanNotify}"
                                         SemanticProperties.Description="Enable reminders for this request"
                                         VerticalOptions="Center" />
@@ -146,8 +161,8 @@
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
                                 <Label Text="Frequency" Style="{StaticResource FormLabel}" />
                                 <Picker Title="Select Frequency"
+                                        AutomationId="Detail_Picker_Frequency"
                                         ItemsSource="{Binding FrequencyOptions}"
-                                        ItemDisplayBinding="{Binding ., x:DataType=x:String}"
                                         SelectedItem="{Binding PrayerFrequency}"
                                         SemanticProperties.Hint="How often to be reminded"
                                         HorizontalOptions="Fill" />
@@ -156,13 +171,14 @@
                             <!-- Reminder Time -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
                                 <Label Text="Reminder Time" Style="{StaticResource FormLabel}" />
-                                <TimePicker Time="{Binding NotifyTime}" />
+                                <TimePicker AutomationId="Detail_Picker_ReminderTime" Time="{Binding NotifyTime}" />
                             </VerticalStackLayout>
 
                             <!-- Day of Week (Weekly only) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfWeek}">
                                 <Label Text="Day of Week" Style="{StaticResource FormLabel}" />
-                                <Picker ItemsSource="{Binding DaysOfWeek}"
+                                <Picker AutomationId="Detail_Picker_DayOfWeek"
+                                        ItemsSource="{Binding DaysOfWeek}"
                                         SelectedItem="{Binding SelectedDayOfWeek}"
                                         Title="Select Day" />
                             </VerticalStackLayout>
@@ -170,7 +186,8 @@
                             <!-- Day of Month (Monthly only) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfMonth}">
                                 <Label Text="Day of Month" Style="{StaticResource FormLabel}" />
-                                <Picker ItemsSource="{Binding DaysOfMonth}"
+                                <Picker AutomationId="Detail_Picker_DayOfMonth"
+                                        ItemsSource="{Binding DaysOfMonth}"
                                         SelectedItem="{Binding SelectedDayOfMonth}"
                                         Title="Select Day" />
                             </VerticalStackLayout>
@@ -181,7 +198,8 @@
                     <HorizontalStackLayout Spacing="10">
                         <Label Text="Answered"
                                VerticalOptions="Center" />
-                        <Switch IsToggled="{Binding IsAnswered}"
+                        <Switch AutomationId="Detail_Switch_Answered"
+                                IsToggled="{Binding IsAnswered}"
                                 SemanticProperties.Description="Mark this request as answered"
                                 VerticalOptions="Center" />
                     </HorizontalStackLayout>
@@ -226,6 +244,7 @@
                     <!-- Tag search entry -->
                     <Entry x:Name="tagEntry"
                            Text="{Binding TagSearchText}"
+                           AutomationId="Detail_Entry_TagSearch"
                            Placeholder="Add tags..."
                            ReturnCommand="{Binding SubmitTagEntryCommand}"
                            ReturnType="Done"
@@ -241,7 +260,8 @@
                             Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                             StrokeShape="RoundRectangle 6"
                             Padding="0">
-                        <CollectionView ItemsSource="{Binding SuggestedTags}"
+                        <CollectionView AutomationId="Detail_List_TagSuggestions"
+                                        ItemsSource="{Binding SuggestedTags}"
                                         SelectionMode="Single"
                                         SelectionChanged="OnSuggestionSelected"
                                         HeightRequest="180">
@@ -258,10 +278,12 @@
                     <!-- Divider before action buttons -->
                     <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
-                    <!-- Delete Button — Save is in the navbar -->
+                    <!-- Delete Button — Save and Save+ are in the navbar -->
                     <Button Text="Delete"
+                            AutomationId="Detail_Btn_Delete"
                             Command="{Binding DeleteCommand}"
                             Style="{StaticResource DangerButton}"
+                            IsVisible="{Binding IsNew, Converter={StaticResource InverseBool}}"
                             HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>

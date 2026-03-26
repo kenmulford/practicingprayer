@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PrayerApp.Views.Settings.AboutPage"
+             Title="About"
+             SafeAreaEdges="Container">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20,24" Spacing="20">
+
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="24">
+                <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+
+                    <Label Text="Practicing Prayer"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           SemanticProperties.HeadingLevel="Level1"
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                           HorizontalTextAlignment="Center" />
+
+                    <Label x:Name="lblVersion"
+                           FontSize="14"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
+                           HorizontalTextAlignment="Center" />
+
+                    <Label Text="A personal worship tool for organizing your prayer life. Create prayer cards, track requests, set reminders, and spend focused time in prayer."
+                           FontSize="15"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
+                           HorizontalTextAlignment="Center"
+                           Margin="0,8,0,0" />
+
+                </VerticalStackLayout>
+            </Border>
+
+            <VerticalStackLayout Spacing="8">
+
+                <Button Text="Privacy Policy"
+                        AutomationId="About_Btn_Privacy"
+                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        BackgroundColor="Transparent"
+                        FontSize="15"
+                        Padding="16,10"
+                        BorderWidth="0"
+                        Clicked="OnPrivacyClicked"
+                        HorizontalOptions="Fill" />
+
+                <Button Text="Visit Website"
+                        AutomationId="About_Btn_Website"
+                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                        BackgroundColor="Transparent"
+                        FontSize="15"
+                        Padding="16,10"
+                        BorderWidth="0"
+                        Clicked="OnWebsiteClicked"
+                        HorizontalOptions="Fill" />
+
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

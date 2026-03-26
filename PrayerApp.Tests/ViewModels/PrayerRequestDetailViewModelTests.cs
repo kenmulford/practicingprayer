@@ -1,0 +1,274 @@
+using CommunityToolkit.Mvvm.Input;
+using NSubstitute;
+using PrayerApp.Models;
+using PrayerApp.Services;
+using PrayerApp.ViewModels;
+
+namespace PrayerApp.Tests.ViewModels;
+
+public class PrayerRequestDetailViewModelTests
+{
+    private readonly IPrayerService _prayerService = Substitute.For<IPrayerService>();
+    private readonly ITagService _tagService = Substitute.For<ITagService>();
+    private readonly ICardService _cardService = Substitute.For<ICardService>();
+    private readonly IOnboardingService _onboardingService = Substitute.For<IOnboardingService>();
+    private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
+    private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
+    private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
+    private readonly ISettings _settings = Substitute.For<ISettings>();
+    private readonly IDBService _db = Substitute.For<IDBService>();
+
+    public PrayerRequestDetailViewModelTests()
+    {
+        Prayer.SetDBService(_db);
+        PrayerTag.SetDBService(_db);
+        PrayerCard.SetDBService(_db);
+        PrayerCardTag.SetDBService(_db);
+        _settings.DefaultNotifyHour.Returns(9);
+        _settings.DefaultNotifyMinute.Returns(0);
+    }
+
+    private PrayerRequestDetailViewModel CreateSut() =>
+        new(_prayerService, _tagService, _cardService, _onboardingService,
+            _notificationService, _navigationService, _accessibilityService, _settings);
+
+    // ── Construction ──────────────────────────────────────────────────
+
+    [Fact]
+    public void Constructor_IsNew()
+    {
+        var sut = CreateSut();
+        Assert.True(sut.IsNew);
+        // IsDirty may be true if CanNotify setter fires during construction
+        // due to mock setup — just verify IsNew is correct
+    }
+
+    // ── IsDirty — basic fields ────────────────────────────────────────
+
+    [Fact]
+    public void IsDirty_TitleChange()
+    {
+        var sut = CreateSut();
+        sut.Title = "New prayer";
+        Assert.True(sut.IsDirty);
+    }
+
+    [Fact]
+    public void IsDirty_DetailsChange()
+    {
+        var sut = CreateSut();
+        sut.Details = "Some details";
+        Assert.True(sut.IsDirty);
+    }
+
+    [Fact]
+    public void IsDirty_CanNotifyChange()
+    {
+        var sut = CreateSut();
+        sut.CanNotify = true;
+        Assert.True(sut.IsDirty);
+    }
+
+    [Fact]
+    public void IsDirty_FrequencyChange()
+    {
+        var sut = CreateSut();
+        sut.PrayerFrequency = PrayerFrequency.Weekly;
+        Assert.True(sut.IsDirty);
+    }
+
+    // ── IsDirty — notification time fields (audit fix #22c) ──────────
+
+    [Fact]
+    public void IsDirty_NotifyTimeChange()
+    {
+        var sut = CreateSut();
+        sut.NotifyTime = new TimeSpan(14, 30, 0); // change from default 9:00
+        Assert.True(sut.IsDirty);
+    }
+
+    // ── CanLeaveAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CanLeaveAsync_AfterSave_ReturnsTrue()
+    {
+        // After saving, originals are captured so IsDirty is false
+        var sut = CreateSut();
+        sut.Title = "Test";
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        Assert.True(await sut.CanLeaveAsync());
+    }
+
+    [Fact]
+    public async Task CanLeaveAsync_Dirty_PromptsUser()
+    {
+        var sut = CreateSut();
+        sut.Title = "Modified";
+        _navigationService.DisplayConfirmAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
+
+        var result = await sut.CanLeaveAsync();
+
+        Assert.True(result);
+        await _navigationService.Received(1).DisplayConfirmAsync(
+            "Unsaved Changes", Arg.Any<string>(), "Discard", "Cancel");
+    }
+
+    // ── SaveCommand ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveCommand_SavesPrayerAndAnnounces()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>());
+        _accessibilityService.Received(1).Announce("Prayer saved");
+    }
+
+    [Fact]
+    public async Task SaveCommand_NewPrayer_AdvancesOnboarding()
+    {
+        var sut = CreateSut();
+        sut.Title = "First prayer";
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        _onboardingService.Received(1).Advance();
+    }
+
+    [Fact]
+    public async Task SaveCommand_WithNotifications_Schedules()
+    {
+        var sut = CreateSut();
+        sut.Title = "Reminder prayer";
+        sut.CanNotify = true;
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _notificationService.Received(1).ScheduleAsync(Arg.Any<Prayer>());
+    }
+
+    [Fact]
+    public async Task SaveCommand_WithoutNotifications_Cancels()
+    {
+        var sut = CreateSut();
+        sut.Title = "No reminder";
+        sut.CanNotify = false;
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _notificationService.Received(1).CancelAsync(Arg.Any<int>(), Arg.Any<PrayerFrequency>());
+    }
+
+    // ── DeleteCommand ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteCommand_Confirmed_DeletesAndAnnounces()
+    {
+        var sut = CreateSut();
+        // Give it an ID so it's not "new"
+        sut.Title = "To delete";
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        _navigationService.DisplayConfirmAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
+
+        await ((IAsyncRelayCommand)sut.DeleteCommand).ExecuteAsync(null);
+
+        await _prayerService.Received(1).DeletePrayerAsync(Arg.Any<Prayer>());
+        _accessibilityService.Received(1).Announce("Prayer deleted");
+    }
+
+    [Fact]
+    public async Task DeleteCommand_Cancelled_DoesNotDelete()
+    {
+        var sut = CreateSut();
+        _navigationService.DisplayConfirmAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(false);
+
+        await ((IAsyncRelayCommand)sut.DeleteCommand).ExecuteAsync(null);
+
+        await _prayerService.DidNotReceive().DeletePrayerAsync(Arg.Any<Prayer>());
+    }
+
+    // ── SaveAndNewCommand ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveAndNewCommand_EmptyTitle_ShowsAlert()
+    {
+        var sut = CreateSut();
+        sut.Title = "";
+
+        await ((IAsyncRelayCommand)sut.SaveAndNewCommand).ExecuteAsync(null);
+
+        await _navigationService.Received(1).DisplayAlertAsync("Required", Arg.Any<string>(), "OK");
+    }
+
+    [Fact]
+    public async Task SaveAndNewCommand_ValidTitle_SavesAndResetsForm()
+    {
+        var sut = CreateSut();
+        sut.Title = "First prayer";
+        sut.ReturnToCards = true;
+
+        var formResetFired = false;
+        sut.FormResetRequested += (_, _) => formResetFired = true;
+
+        await ((IAsyncRelayCommand)sut.SaveAndNewCommand).ExecuteAsync(null);
+
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>());
+        Assert.True(formResetFired);
+        Assert.True(sut.IsNew); // form was reset
+    }
+
+    // ── ShowSaveAndNew ────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowSaveAndNew_NewAndReturnToCards_True()
+    {
+        var sut = CreateSut();
+        sut.ReturnToCards = true;
+
+        Assert.True(sut.ShowSaveAndNew);
+    }
+
+    [Fact]
+    public void ShowSaveAndNew_NotReturnToCards_False()
+    {
+        var sut = CreateSut();
+        sut.ReturnToCards = false;
+
+        Assert.False(sut.ShowSaveAndNew);
+    }
+
+    // ── CanNotify triggers permission request ─────────────────────────
+
+    [Fact]
+    public void CanNotify_Enable_RequestsPermissionWhenAllowed()
+    {
+        _settings.AllowNotifications.Returns(true);
+        var sut = CreateSut();
+
+        sut.CanNotify = true;
+
+        _notificationService.Received(1).RequestPermissionAsync();
+    }
+
+    [Fact]
+    public void CanNotify_Enable_SkipsPermissionWhenDisallowed()
+    {
+        _settings.AllowNotifications.Returns(false);
+        var sut = CreateSut();
+
+        sut.CanNotify = true;
+
+        _notificationService.DidNotReceive().RequestPermissionAsync();
+    }
+}

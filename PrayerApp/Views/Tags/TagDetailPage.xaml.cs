@@ -102,5 +102,11 @@ namespace PrayerApp.Views.Tags
             }
         }
 #endif
+
+        private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+        {
+            if (NameEntry.IsFocused)
+                NameEntry.Unfocus();
+        }
     }
 }

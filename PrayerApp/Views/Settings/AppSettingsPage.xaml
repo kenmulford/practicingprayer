@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PrayerApp.Views.Settings.AppSettingsPage"
+             Title="App Settings"
+             SafeAreaEdges="Container">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20,16" Spacing="16">
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+            </VerticalStackLayout.GestureRecognizers>
+
+            <!-- Notifications -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Notifications"
+                           SemanticProperties.HeadingLevel="Level2"
+                           Style="{StaticResource SectionHeading}" />
+                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12" HorizontalOptions="Fill">
+                        <Label Text="Allow Notifications" VerticalOptions="Center" />
+                        <Switch x:Name="chkAllowNotifications"
+                                Grid.Column="1"
+                                AutomationId="AppSettings_Switch_Notifications"
+                                Toggled="OnAllowNotificationsToggled" />
+                    </Grid>
+                    <VerticalStackLayout Spacing="4"
+                                         IsVisible="{Binding Source={x:Reference chkAllowNotifications}, Path=IsToggled, x:DataType=Switch}">
+                        <Label Text="Default Reminder Time" Style="{StaticResource FormLabel}" />
+                        <TimePicker x:Name="timePickerDefaultNotify"
+                                    AutomationId="AppSettings_Picker_ReminderTime"
+                                    PropertyChanged="OnDefaultTimeChanged" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Prayer Reminders -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Prayer Reminders"
+                           SemanticProperties.HeadingLevel="Level2"
+                           Style="{StaticResource SectionHeading}" />
+                    <Label Text="Prayers not prayed within this many days appear in your overdue list on the home page."
+                           Style="{StaticResource SectionDescription}" />
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Overdue after (days)" Style="{StaticResource FormLabel}" />
+                        <Entry x:Name="entryOverdueThreshold"
+                               AutomationId="AppSettings_Entry_OverdueThreshold"
+                               Keyboard="Numeric"
+                               ReturnType="Done"
+                               Placeholder="30"
+                               TextChanged="OnOverdueThresholdChanged"
+                               HorizontalOptions="Fill" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

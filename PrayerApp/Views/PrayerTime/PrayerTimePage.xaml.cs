@@ -8,11 +8,12 @@ public partial class PrayerTimePage : ContentPage
     private readonly IOrientationService _orientationService;
     private readonly IOnboardingService _onboardingService;
 
-    public PrayerTimePage()
+    public PrayerTimePage(PrayerTimeViewModel vm, IOrientationService orientationService, IOnboardingService onboardingService)
     {
         InitializeComponent();
-        _orientationService = IPlatformApplication.Current!.Services.GetRequiredService<IOrientationService>();
-        _onboardingService = IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>();
+        BindingContext = vm;
+        _orientationService = orientationService;
+        _onboardingService = onboardingService;
     }
 
     protected override void OnAppearing()

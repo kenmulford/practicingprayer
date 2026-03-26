@@ -7,6 +7,10 @@ using PrayerApp.Services;
 using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
+using PrayerApp.Views.Prayer;
+using PrayerApp.Views.PrayerCard;
+using PrayerApp.Views.PrayerTime;
+using PrayerApp.Views.Settings;
 using PrayerApp.Views.Tags;
 using System.Globalization;
 
@@ -44,12 +48,12 @@ namespace PrayerApp
 #if ANDROID
                 config.AddAndroid(android =>
                 {
-                    android.AddChannel(new Plugin.LocalNotification.AndroidOption.NotificationChannelRequest
+                    android.AddChannel(new Plugin.LocalNotification.Core.Models.AndroidOption.AndroidNotificationChannelRequest
                     {
-                        Id = "prayer_reminders",
+                        Id = LocalNotificationCenterWrapper.PrayerRemindersChannelId,
                         Name = "Prayer Reminders",
                         Description = "Scheduled prayer reminder notifications",
-                        Importance = Plugin.LocalNotification.AndroidOption.AndroidImportance.High,
+                        Importance = Plugin.LocalNotification.Core.Models.AndroidOption.AndroidImportance.High,
                         EnableSound = true,
                         EnableVibration = true
                     });
@@ -104,6 +108,11 @@ namespace PrayerApp
             builder.Services.AddSingleton<IBackupService, BackupService>();
             // Register user color service
             builder.Services.AddSingleton<IUserColorService, UserColorService>();
+            // Register settings wrapper (delegates to static Settings, enables VM testing)
+            builder.Services.AddSingleton<ISettings, SettingsService>();
+            // Navigation + accessibility abstractions (enable VM unit testing)
+            builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
+            builder.Services.AddSingleton<IAccessibilityService, MauiAccessibilityService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
@@ -113,11 +122,35 @@ namespace PrayerApp
             builder.Services.AddSingleton<IColorPickerService, PrayerApp.Platforms.iOS.ColorPickerService>();
 #endif
 
-            // add transient viewmodel so each instance of PrayerCardPage is new (avoid data bleed/leak)
+            // ViewModels — Transient (fresh per page navigation)
+            builder.Services.AddTransient<HomeViewModel>();
+            builder.Services.AddTransient<PrayerCardsViewModel>();
             builder.Services.AddTransient<PrayerCardViewModel>();
-            // tag detail page + viewmodel (transient — each navigation gets a fresh instance)
+            builder.Services.AddTransient<PrayerListViewModel>();
+            builder.Services.AddTransient<PrayerRequestDetailViewModel>();
+            builder.Services.AddTransient<QuickAddViewModel>();
+            builder.Services.AddTransient<PrayerTimeViewModel>();
+            builder.Services.AddTransient<PrayerTimeScopeViewModel>();
+            builder.Services.AddTransient<TagsViewModel>();
             builder.Services.AddTransient<TagDetailViewModel>();
+
+            // Pages — Transient (Shell resolves from DI on navigation)
+            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<PrayerCardsPage>();
+            builder.Services.AddTransient<PrayerCardPage>();
+            builder.Services.AddTransient<PrayerListPage>();
+            builder.Services.AddTransient<PrayerDetailPage>();
+            builder.Services.AddTransient<QuickAddPage>();
+            builder.Services.AddTransient<PrayerTimePage>();
+            builder.Services.AddTransient<PrayerTimeScopePage>();
+            builder.Services.AddTransient<TagsPage>();
             builder.Services.AddTransient<TagDetailPage>();
+            builder.Services.AddTransient<SettingsHubPage>();
+            builder.Services.AddTransient<AppSettingsPage>();
+            builder.Services.AddTransient<BackupPage>();
+            builder.Services.AddTransient<AboutPage>();
+            builder.Services.AddTransient<HelpPage>();
+            builder.Services.AddTransient<HelpViewModel>();
 
             RegisterGlobalExceptionHandlers();
 

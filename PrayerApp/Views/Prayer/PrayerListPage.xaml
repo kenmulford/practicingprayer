@@ -4,15 +4,16 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              x:Class="PrayerApp.Views.Prayer.PrayerListPage"
              x:DataType="viewModels:PrayerListViewModel"
-             Title="Prayers">
-    <ContentPage.BindingContext>
-        <viewModels:PrayerListViewModel />
-    </ContentPage.BindingContext>
+             Title="Prayers"
+             SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Add" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto, *">
+    <Grid x:Name="rootGrid" RowDefinitions="Auto, *">
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+        </Grid.GestureRecognizers>
 
         <!-- Filter controls (sticky above the list) -->
         <VerticalStackLayout Grid.Row="0" Margin="20,16,20,0" Spacing="8">
@@ -24,6 +25,7 @@
             <Grid ColumnDefinitions="*, *, *" ColumnSpacing="4">
 
                 <Button Text="Active"
+                        AutomationId="List_Filter_Active"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="Active"
                         FontSize="13">
@@ -41,6 +43,7 @@
 
                 <Button Grid.Column="1"
                         Text="Answered"
+                        AutomationId="List_Filter_Answered"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="Answered"
                         FontSize="13">
@@ -58,6 +61,7 @@
 
                 <Button Grid.Column="2"
                         Text="All"
+                        AutomationId="List_Filter_All"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="All"
                         FontSize="13">
@@ -76,8 +80,11 @@
             </Grid>
 
             <!-- Search bar -->
-            <SearchBar Text="{Binding SearchText}"
+            <SearchBar x:Name="searchBar"
+                       Text="{Binding SearchText}"
+                       AutomationId="List_Search_Prayers"
                        Placeholder="Search prayers..."
+                       SearchButtonPressed="OnSearchButtonPressed"
                        BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
 
             <!-- Tag chip row — only shown when tags exist -->
@@ -132,6 +139,7 @@
         <!-- Prayer list -->
         <CollectionView
             x:Name="prayerCollection"
+            AutomationId="List_List_Prayers"
             Grid.Row="1"
             ItemsSource="{Binding FilteredPrayers}"
             Margin="20,0"

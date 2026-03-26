@@ -24,18 +24,24 @@ public partial class ColorPickerPopup : Popup
         SvPicker.Drawable = new SvDrawable(this);
         HueBar.Drawable = new HueBarDrawable(this);
 
-        UpdateFromHsv();
+        UpdateFromHsv(updateAccessibility: true);
+
+        Opened += async (_, _) =>
+        {
+            await Task.Delay(100);
+            HexEntry.SetSemanticFocus();
+        };
     }
 
     // ── SV picker touch ─────────────────────────────────────────
 
     private void OnSvStartInteraction(object? sender, TouchEventArgs e)
-        => HandleSvTouch(e.Touches.FirstOrDefault());
+        => HandleSvTouch(e.Touches.FirstOrDefault(), updateAccessibility: true);
 
     private void OnSvDragInteraction(object? sender, TouchEventArgs e)
         => HandleSvTouch(e.Touches.FirstOrDefault());
 
-    private void HandleSvTouch(PointF? point)
+    private void HandleSvTouch(PointF? point, bool updateAccessibility = false)
     {
         if (point is null) return;
         var w = SvPicker.Width;
@@ -45,18 +51,18 @@ public partial class ColorPickerPopup : Popup
         _saturation = Math.Clamp((float)(point.Value.X / w), 0f, 1f);
         _value = Math.Clamp(1f - (float)(point.Value.Y / h), 0f, 1f);
 
-        UpdateFromHsv();
+        UpdateFromHsv(updateAccessibility);
     }
 
     // ── Hue bar touch ───────────────────────────────────────────
 
     private void OnHueStartInteraction(object? sender, TouchEventArgs e)
-        => HandleHueTouch(e.Touches.FirstOrDefault());
+        => HandleHueTouch(e.Touches.FirstOrDefault(), updateAccessibility: true);
 
     private void OnHueDragInteraction(object? sender, TouchEventArgs e)
         => HandleHueTouch(e.Touches.FirstOrDefault());
 
-    private void HandleHueTouch(PointF? point)
+    private void HandleHueTouch(PointF? point, bool updateAccessibility = false)
     {
         if (point is null) return;
         var w = HueBar.Width;
@@ -64,7 +70,7 @@ public partial class ColorPickerPopup : Popup
 
         _hue = Math.Clamp((float)(point.Value.X / w) * 360f, 0f, 360f);
 
-        UpdateFromHsv();
+        UpdateFromHsv(updateAccessibility);
     }
 
     // ── Hex entry ───────────────────────────────────────────────
@@ -86,6 +92,10 @@ public partial class ColorPickerPopup : Popup
             UpdatePreview();
             SvPicker.Invalidate();
             HueBar.Invalidate();
+
+            var name = GetApproximateColorName(_hue, _saturation, _value);
+            SemanticProperties.SetDescription(PreviewBox.Parent as VisualElement ?? PreviewBox,
+                $"Color preview: {name}, {text.ToUpperInvariant()}");
         }
         catch { /* ignore parse errors while typing */ }
     }
@@ -107,7 +117,7 @@ public partial class ColorPickerPopup : Popup
 
     // ── Update helpers ──────────────────────────────────────────
 
-    private void UpdateFromHsv()
+    private void UpdateFromHsv(bool updateAccessibility = false)
     {
         UpdatePreview();
         SvPicker.Invalidate();
@@ -115,9 +125,18 @@ public partial class ColorPickerPopup : Popup
 
         // Update hex entry text
         var color = ColorFromHsv(_hue, _saturation, _value);
+        var hex = ToHexString(color);
         _suppressHexUpdate = true;
-        HexEntry.Text = ToHexString(color);
+        HexEntry.Text = hex;
         _suppressHexUpdate = false;
+
+        // Only update accessible description on touch-start / hex entry, not every drag frame
+        if (updateAccessibility)
+        {
+            var name = GetApproximateColorName(_hue, _saturation, _value);
+            SemanticProperties.SetDescription(PreviewBox.Parent as VisualElement ?? PreviewBox,
+                $"Color preview: {name}, {hex}");
+        }
     }
 
     private void UpdatePreview()
@@ -181,6 +200,36 @@ public partial class ColorPickerPopup : Popup
         int g = (int)(c.Green * 255);
         int b = (int)(c.Blue * 255);
         return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    // ── Accessible color name ─────────────────────────────────
+
+    internal static string GetApproximateColorName(float h, float s, float v)
+    {
+        if (v < 0.15f) return "Black";
+        if (s < 0.10f)
+        {
+            if (v > 0.85f) return "White";
+            if (v > 0.5f) return "Light gray";
+            return "Dark gray";
+        }
+
+        var prefix = v < 0.4f ? "Dark " : s < 0.25f && v > 0.8f ? "Pastel " : s < 0.5f ? "Light " : "";
+
+        var name = h switch
+        {
+            < 15 => "Red",
+            < 40 => "Orange",
+            < 70 => "Yellow",
+            < 160 => "Green",
+            < 195 => "Teal",
+            < 250 => "Blue",
+            < 290 => "Purple",
+            < 330 => "Pink",
+            _ => "Red"
+        };
+
+        return prefix + name;
     }
 
     // ── Drawables ───────────────────────────────────────────────

@@ -2,14 +2,10 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
-             xmlns:models="clr-namespace:PrayerApp.Models"
              x:Class="PrayerApp.Views.QuickAddPage"
              x:DataType="viewModels:QuickAddViewModel"
              Title="Quick Add"
              SafeAreaEdges="All">
-    <ContentPage.BindingContext>
-        <viewModels:QuickAddViewModel />
-    </ContentPage.BindingContext>
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
 
@@ -20,17 +16,10 @@
                     <Label Text="Prayer Title"
                            Style="{StaticResource FormLabel}" />
                     <Entry Text="{Binding Title}"
+                           AutomationId="QuickAdd_Entry_Title"
                            Placeholder="Enter prayer title"
+                           SemanticProperties.Hint="Title for your prayer request"
                            HorizontalOptions="Fill" />
-
-                    <Label Text="Add to Card"
-                           Style="{StaticResource FormLabel}" />
-                    <Picker ItemsSource="{Binding Cards}"
-                            SelectedItem="{Binding SelectedCard}"
-                            ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
-                            Title="Select a card"
-                            SemanticProperties.Hint="Select which prayer card to add this request to"
-                            HorizontalOptions="Fill" />
 
                 </VerticalStackLayout>
             </Border>
@@ -38,11 +27,13 @@
             <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                 <Button Grid.Column="0"
                         Text="Cancel"
+                        AutomationId="QuickAdd_Btn_Cancel"
                         Style="{StaticResource GhostButton}"
                         Command="{Binding CancelCommand}"
                         HorizontalOptions="Fill" />
                 <Button Grid.Column="1"
                         Text="Add"
+                        AutomationId="QuickAdd_Btn_Add"
                         Command="{Binding SaveCommand}"
                         HorizontalOptions="Fill" />
             </Grid>

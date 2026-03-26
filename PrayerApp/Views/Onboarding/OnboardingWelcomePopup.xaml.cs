@@ -13,6 +13,12 @@ public partial class OnboardingWelcomePopup : Popup
         InitializeComponent();
         _onboardingService = onboardingService;
 
+        Opened += async (_, _) =>
+        {
+            await Task.Delay(100);
+            BtnGetStarted.SetSemanticFocus();
+        };
+
         BtnGetStarted.Clicked += async (_, _) =>
         {
             await CloseAsync(CancellationToken.None);

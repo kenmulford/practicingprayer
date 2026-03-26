@@ -76,15 +76,13 @@ public class TagService : ITagService
 
     public async Task<IReadOnlyList<int>> GetRequestIdsByTagIdsAsync(IEnumerable<int> tagIds)
     {
-        var requestIds = new HashSet<int>();
-        foreach (var tagId in tagIds)
-        {
-            var rows = await _dbService.GetByTagIdAsync(tagId);
-            foreach (var r in rows)
-                if (r.PrayerRequestId > 0)
-                    requestIds.Add(r.PrayerRequestId);
-        }
-        return requestIds.ToList().AsReadOnly();
+        var rows = await _dbService.GetByTagIdsAsync(tagIds);
+        return rows
+            .Where(r => r.PrayerRequestId > 0)
+            .Select(r => r.PrayerRequestId)
+            .Distinct()
+            .ToList()
+            .AsReadOnly();
     }
 
     public async Task<PrayerTag> SaveTagAsync(PrayerTag tag)
@@ -107,16 +105,22 @@ public class TagService : ITagService
 
     public async Task ReassignColorAsync(string oldColorHex, string newColorHex)
     {
+        // Snapshot tag IDs before invalidating, so we don't mutate cached objects
         var allTags = await GetTagsAsync();
-        foreach (var tag in allTags)
+        var idsToUpdate = allTags
+            .Where(t => string.Equals(t.Color, oldColorHex, StringComparison.OrdinalIgnoreCase))
+            .Select(t => t.Id)
+            .ToList();
+
+        InvalidateCache(); // Invalidate first so concurrent readers get fresh data
+
+        foreach (var id in idsToUpdate)
         {
-            if (string.Equals(tag.Color, oldColorHex, StringComparison.OrdinalIgnoreCase))
-            {
-                tag.Color = newColorHex;
-                await tag.SaveAsync();
-            }
+            var tag = await PrayerTag.LoadAsync(id);
+            if (tag is null) continue;
+            tag.Color = newColorHex;
+            await tag.SaveAsync();
         }
-        InvalidateCache();
     }
 
     public async Task ClearAllAssignmentsForTagAsync(int tagId)
@@ -150,7 +154,7 @@ public class TagService : ITagService
             t.IsSystem && string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
-    private void InvalidateCache()
+    public void InvalidateCache()
     {
         _cache = null;
     }

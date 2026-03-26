@@ -31,10 +31,12 @@
 
             <Button x:Name="BtnGetStarted"
                     Text="Get Started"
+                    AutomationId="Welcome_Btn_GetStarted"
                     Margin="0,8,0,0" />
 
             <Button x:Name="SkipButton"
                     Text="Skip tour"
+                    AutomationId="Welcome_Btn_Skip"
                     FontSize="13"
                     TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                     BackgroundColor="Transparent"

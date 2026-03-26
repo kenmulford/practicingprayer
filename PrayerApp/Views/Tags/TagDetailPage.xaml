@@ -15,6 +15,9 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="24,20" Spacing="24">
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+            </VerticalStackLayout.GestureRecognizers>
 
             <!-- System tag note -->
             <Border IsVisible="{Binding IsSystem}"
@@ -30,8 +33,9 @@
             <!-- Name field -->
             <VerticalStackLayout Spacing="6">
                 <Label Text="Name" Style="{StaticResource FormLabel}" />
-                <Entry
+                <Entry x:Name="NameEntry"
                     Text="{Binding Name}"
+                    AutomationId="TagDetail_Entry_Name"
                     Placeholder="Tag name"
                     IsReadOnly="{Binding IsSystem}"
                     ReturnType="Done" />
@@ -52,7 +56,6 @@
                         <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
                             <Grid WidthRequest="48" HeightRequest="48" Margin="4"
                                   Loaded="OnSwatchLoaded"
-                                  SemanticProperties.Description="{Binding LightHex}"
                                   SemanticProperties.Hint="Double tap to select, long press to delete">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SelectCommand}" />
@@ -65,7 +68,7 @@
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center"
                                     InputTransparent="True"
-                                    AutomationProperties.IsInAccessibleTree="false" />
+                                    SemanticProperties.Description="{Binding LightHex}" />
                                 <!-- Selected ring -->
                                 <Ellipse
                                     Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
@@ -83,8 +86,8 @@
                     </BindableLayout.ItemTemplate>
                 </FlexLayout>
 
-                <!-- Add custom color button -->
-                <Grid WidthRequest="48" HeightRequest="48" Margin="4,0,0,0"
+                <!-- Add custom color button — outside FlexLayout (BindableLayout clears static children) -->
+                <Grid WidthRequest="48" HeightRequest="48" Margin="4"
                       HorizontalOptions="Start"
                       SemanticProperties.Description="Add custom color"
                       SemanticProperties.Hint="Double tap to open color picker">
@@ -110,6 +113,14 @@
                            VerticalOptions="Center" />
                 </Grid>
             </VerticalStackLayout>
+
+            <!-- View prayers with this tag -->
+            <Button Text="View Prayers with this Tag"
+                    Command="{Binding ViewPrayersCommand}"
+                    Style="{StaticResource GhostButton}"
+                    IsVisible="{Binding IsExisting}"
+                    SemanticProperties.Hint="Navigate to prayer list filtered by this tag"
+                    HorizontalOptions="Fill" />
 
         </VerticalStackLayout>
     </ScrollView>
