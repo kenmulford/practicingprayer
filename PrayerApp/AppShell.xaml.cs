@@ -63,8 +63,16 @@ namespace PrayerApp
             {
                 if (onboardingService.CurrentStep != OnboardingStep.Complete) return;
 
+                // If the user skipped onboarding while editing (IEditGuard.IsDirty),
+                // silently complete — don't interrupt with a popup that may disrupt
+                // the navigation stack and lose their unsaved work.
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
+                    if (CurrentPage?.BindingContext is IEditGuard { IsDirty: true })
+                    {
+                        Settings.OnboardingComplete = true;
+                        return;
+                    }
                     ShowOnboardingCompletePopupAsync().SafeFireAndForget();
                 });
             };
