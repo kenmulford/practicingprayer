@@ -279,17 +279,22 @@ namespace PrayerApp.ViewModels
         {
             try
             {
-                _prayerCard = await PrayerCard.LoadAsync(id);
+                var loaded = await PrayerCard.LoadAsync(id);
+                if (loaded is null)
+                {
+                    await Shell.Current.GoToAsync("..");
+                    return;
+                }
+                _prayerCard = loaded;
             }
             catch (Exception e)
             {
                 await Shell.Current.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
+                return;
             }
-            finally
-            {
-                _originalTitle = _prayerCard.Title ?? string.Empty;
-                RefreshProperties();
-            }
+
+            _originalTitle = _prayerCard.Title ?? string.Empty;
+            RefreshProperties();
         }
 
         public void Reload()

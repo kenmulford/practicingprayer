@@ -270,6 +270,7 @@ namespace PrayerApp.ViewModels
         private void AnnounceFilterCountDebounced()
         {
             _filterAnnounceCts?.Cancel();
+            _filterAnnounceCts?.Dispose();
             _filterAnnounceCts = new CancellationTokenSource();
             var token = _filterAnnounceCts.Token;
             var count = FilteredPrayerCards.Count;

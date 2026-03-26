@@ -226,6 +226,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private async Task LoadEntriesAsync(IEnumerable<int>? tagIds)
     {
         _loadCts.Cancel();
+        _loadCts.Dispose();
         _loadCts = new CancellationTokenSource();
         var token = _loadCts.Token;
 
