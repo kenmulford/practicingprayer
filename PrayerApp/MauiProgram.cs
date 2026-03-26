@@ -10,6 +10,7 @@ using PrayerApp.Views;
 using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
 using PrayerApp.Views.PrayerTime;
+using PrayerApp.Views.Settings;
 using PrayerApp.Views.Tags;
 using System.Globalization;
 
@@ -141,7 +142,12 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerTimeScopePage>();
             builder.Services.AddTransient<TagsPage>();
             builder.Services.AddTransient<TagDetailPage>();
-            builder.Services.AddTransient<Views.Settings>();
+            builder.Services.AddTransient<SettingsHubPage>();
+            builder.Services.AddTransient<AppSettingsPage>();
+            builder.Services.AddTransient<BackupPage>();
+            builder.Services.AddTransient<AboutPage>();
+            builder.Services.AddTransient<HelpPage>();
+            builder.Services.AddTransient<HelpViewModel>();
 
             RegisterGlobalExceptionHandlers();
 
