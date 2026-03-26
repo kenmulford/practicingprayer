@@ -20,6 +20,7 @@ namespace PrayerApp.ViewModels
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
         public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
         private bool _isSorting;
+        private bool _suppressFilterAnnounce;
 
         private bool _isLoading;
         public bool IsLoading
@@ -171,6 +172,7 @@ namespace PrayerApp.ViewModels
         public async Task LoadAsync()
         {
             IsLoading = true;
+            _suppressFilterAnnounce = true;
             try
             {
                 _cardService.InvalidateCache();
@@ -197,6 +199,7 @@ namespace PrayerApp.ViewModels
             }
             finally
             {
+                _suppressFilterAnnounce = false;
                 IsLoading = false;
             }
         }
@@ -256,7 +259,8 @@ namespace PrayerApp.ViewModels
             foreach (var card in result)
                 FilteredPrayerCards.Add(card);
 
-            SemanticScreenReader.Announce($"Showing {FilteredPrayerCards.Count} cards");
+            if (!_suppressFilterAnnounce)
+                SemanticScreenReader.Announce($"Showing {FilteredPrayerCards.Count} cards");
         }
 
         private void SubscribeToPropertyChanges(PrayerCardViewModel card)

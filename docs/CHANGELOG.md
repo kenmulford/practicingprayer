@@ -19,6 +19,10 @@
 - Tag detail page lets you view all prayers with that tag in one tap
 - Color swatch alignment fixed on the tag editor
 - Splash screen now shows app name and tagline instead of a square icon
+- Prayer card count now updates immediately after Quick Add
+- Search bar on prayer cards page for finding cards quickly
+- Newly created cards auto-expand with a gold highlight so you can find them
+- "Save & Add Another" button when adding prayers to a card — add multiple without navigating back
 
 ### Accessibility Improvements
 

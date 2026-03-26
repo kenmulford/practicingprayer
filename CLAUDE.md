@@ -114,7 +114,7 @@ Views (XAML)
 - **TDD**: Write tests first, then implementation. All new features, classes, and models must be designed for testability from the start.
 - **Feature-completeness**: Finish what you start. Don't leave partial implementations or TODO stubs.
 - **Ask first, assume never**: When requirements are ambiguous, ask clarifying questions before writing code.
-- **Before every git commit**: Run `/simplify` to review changed code for reuse, quality, and efficiency. Fix any issues found before committing.
+- **Before every git commit**: Run `/simplify` to review changed code for reuse, quality, and efficiency. Fix any issues found before committing. Parallel sub-agents are allowed for `/simplify` reviews.
 - **Parallel agents**: Allowed for this project — override the global single-agent rule. Use parallel agents for independent tasks to maximize efficiency.
 
 ---
