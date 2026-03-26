@@ -413,7 +413,7 @@ namespace PrayerApp.ViewModels
                 bool cardChanged = !isNew && origCardId != 0 && origCardId != PrayerCardId;
                 var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
                 if (cardChanged)
-                    queryParts += $"&oldCardId={_originalPrayerCardId}";
+                    queryParts += $"&oldCardId={origCardId}";
                 await Shell.Current.GoToAsync($"{route}?{queryParts}");
             }
             else
