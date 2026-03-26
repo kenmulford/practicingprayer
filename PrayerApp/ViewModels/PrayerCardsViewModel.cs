@@ -152,10 +152,7 @@ namespace PrayerApp.ViewModels
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
 
-                // Collapse all other cards and expand + highlight the new one
-                foreach (var c in AllPrayerCards)
-                    if (c != newCard) c.IsExpanded = false;
-
+                // Expand + highlight the new card (accordion handler auto-collapses others)
                 newCard.IsExpanded = true;
                 newCard.IsHighlighted = true;
 
@@ -271,6 +268,16 @@ namespace PrayerApp.ViewModels
                     || e.PropertyName == nameof(PrayerCardViewModel.IsFavorite))
                 {
                     ApplySorting();
+                }
+                // Single-open accordion: expanding one card collapses all others
+                else if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded)
+                         && card.IsExpanded)
+                {
+                    foreach (var other in AllPrayerCards)
+                        if (other != card && other.IsExpanded)
+                            other.IsExpanded = false;
+
+                    SemanticScreenReader.Announce($"Expanded {card.Title}");
                 }
             };
         }

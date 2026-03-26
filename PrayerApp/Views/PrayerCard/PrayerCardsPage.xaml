@@ -83,6 +83,9 @@
                                     Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
                                 <Setter Property="StrokeThickness" Value="2.5" />
                             </DataTrigger>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsExpanded}" Value="True">
+                                <Setter Property="Margin" Value="0,8" />
+                            </DataTrigger>
                         </Border.Triggers>
 
                         <VerticalStackLayout Spacing="0">
@@ -168,14 +171,14 @@
 
                                                 <!-- Prayer row -->
                                                 <Grid
-                                                    Padding="16,8,12,8"
+                                                    Padding="16,10,12,10"
                                                     ColumnDefinitions="*,Auto">
                                                     <Grid.GestureRecognizers>
                                                         <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
                                                     </Grid.GestureRecognizers>
                                                     <Label
                                                         Text="{Binding Title}"
-                                                        FontSize="15"
+                                                        FontSize="16"
                                                         SemanticProperties.Hint="Double tap to view. Swipe left to delete, right to edit"
                                                         TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                                         TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"

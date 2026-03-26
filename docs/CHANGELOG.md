@@ -23,6 +23,8 @@
 - Search bar on prayer cards page for finding cards quickly
 - Newly created cards auto-expand with a gold highlight so you can find them
 - "Save & Add Another" button when adding prayers to a card — add multiple without navigating back
+- Only one card opens at a time — expanding a card auto-collapses the previous one
+- Expanded cards have more breathing room and slightly larger prayer text
 
 ### Accessibility Improvements
 
