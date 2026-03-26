@@ -16,6 +16,7 @@ namespace PrayerApp.ViewModels
     {
         private List<PrayerCard> _prayerCards;
         private readonly ICardService _cardService;
+        private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
         public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
@@ -48,9 +49,10 @@ namespace PrayerApp.ViewModels
 
         #region Constructors
 
-        public PrayerCardsViewModel(ICardService cardService, IOnboardingService onboardingService)
+        public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService, IOnboardingService onboardingService)
         {
             _cardService = cardService;
+            _prayerService = prayerService;
             _onboardingService = onboardingService;
 
             _prayerCards = new List<PrayerCard>();
@@ -62,6 +64,7 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardsViewModel() : this(
             IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>())
         { }
 
@@ -313,6 +316,7 @@ namespace PrayerApp.ViewModels
         public async Task RefreshAsync()
         {
             _cardService.InvalidateCache();
+            _prayerService.InvalidateCache();
             var cards = await _cardService.GetCardsAsync();
             var freshIds = cards.Select(c => c.Id).ToHashSet();
             var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();

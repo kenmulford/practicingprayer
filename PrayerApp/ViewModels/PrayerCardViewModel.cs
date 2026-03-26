@@ -371,18 +371,18 @@ namespace PrayerApp.ViewModels
 
         public void RemovePrayer(int prayerId)
         {
-            if (!_prayersLoaded)
+            if (_prayersLoaded)
             {
-                return;
+                var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
+                if (existing != null)
+                {
+                    Prayers.Remove(existing);
+                    OnPropertyChanged(nameof(HasPrayers));
+                }
             }
 
-            var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
-            if (existing != null)
-            {
-                Prayers.Remove(existing);
-                OnPropertyChanged(nameof(HasPrayers));
-                LoadActivePrayerCountAsync().SafeFireAndForget();
-            }
+            // Always refresh the badge count, even if prayers weren't loaded
+            RefreshActivePrayerCount();
         }
 
         #endregion
