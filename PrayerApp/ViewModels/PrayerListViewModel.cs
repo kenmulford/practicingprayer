@@ -20,6 +20,9 @@ namespace PrayerApp.ViewModels
         private readonly IPrayerService _prayerService;
         private readonly ICardService _cardService;
         private readonly ITagService _tagService;
+        private readonly INavigationService _navigationService;
+        private readonly IAccessibilityService _accessibilityService;
+        private readonly ISettings _settings;
         private Dictionary<int, string> _cardTitleLookup = new();
 
         private bool _isLoading = true;
@@ -29,7 +32,7 @@ namespace PrayerApp.ViewModels
             set
             {
                 if (SetProperty(ref _isLoading, value))
-                    SemanticScreenReader.Announce(value ? "Loading" : "Content loaded");
+                    _accessibilityService.Announce(value ? "Loading" : "Content loaded");
             }
         }
 
@@ -90,11 +93,15 @@ namespace PrayerApp.ViewModels
         public ICommand NewCommand { get; }
         public ICommand SetStatusCommand { get; }
 
-        public PrayerListViewModel(IPrayerService prayerService, ICardService cardService, ITagService tagService)
+        public PrayerListViewModel(IPrayerService prayerService, ICardService cardService, ITagService tagService,
+            INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings)
         {
             _prayerService = prayerService;
             _cardService   = cardService;
             _tagService    = tagService;
+            _navigationService = navigationService;
+            _accessibilityService = accessibilityService;
+            _settings = settings;
 
             // Any change to the backing store re-runs the filter (suppressed during bulk loads)
             AllPrayers.CollectionChanged += (_, _) => { if (!_suppressFilter) ApplyFilter(); };
@@ -116,7 +123,10 @@ namespace PrayerApp.ViewModels
         public PrayerListViewModel() : this(
             IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<ITagService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
         { }
 
         public async Task LoadAsync()
@@ -138,7 +148,7 @@ namespace PrayerApp.ViewModels
                 _requestTagIds = await BuildRequestTagLookupAsync();
 
                 // Build overdue set for Overdue filter
-                var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
+                var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
                 _overdueIds = overdue.Select(p => p.Id).ToHashSet();
 
                 // Build prayer ViewModels
@@ -283,7 +293,7 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged(nameof(IsAllSelected));
                     OnPropertyChanged(nameof(IsOverdueSelected));
                 }
-                SemanticScreenReader.Announce($"Filtered by {target.Tag.Name}");
+                _accessibilityService.Announce($"Filtered by {target.Tag.Name}");
             }
 
             _preselectedTagId = 0;
@@ -356,7 +366,7 @@ namespace PrayerApp.ViewModels
                 FilteredPrayers.Add(p);
 
             if (!_suppressAnnounce)
-                SemanticScreenReader.Announce($"Showing {FilteredPrayers.Count} prayers");
+                _accessibilityService.Announce($"Showing {FilteredPrayers.Count} prayers");
         }
 
         private async Task AddNewPrayerAsync(string? prayerIdString)
@@ -370,13 +380,13 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to add new prayer: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to add new prayer: {e.Message}", "OK");
             }
         }
 
         private async Task NewPrayerAsync()
         {
-            await Shell.Current.GoToAsync($"{nameof(Views.Prayer.PrayerDetailPage)}?new=true");
+            await _navigationService.GoToAsync($"{nameof(Views.Prayer.PrayerDetailPage)}?new=true");
         }
 
         private async Task LoadPrayersAsync()
@@ -407,7 +417,7 @@ namespace PrayerApp.ViewModels
             }
             catch (Exception e)
             {
-                await Shell.Current.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
+                await _navigationService.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
             }
             finally
             {
@@ -498,7 +508,7 @@ namespace PrayerApp.ViewModels
                 AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
 
             // Rebuild overdue set so the Overdue filter reflects current state
-            var overdue = await _prayerService.GetOverduePrayersAsync(Settings.OverdueDayThreshold);
+            var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
             _overdueIds = overdue.Select(p => p.Id).ToHashSet();
 
             OnPropertyChanged(nameof(HasTags));
