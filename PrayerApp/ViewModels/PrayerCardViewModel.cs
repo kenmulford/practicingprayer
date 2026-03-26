@@ -168,6 +168,10 @@ namespace PrayerApp.ViewModels
                 ActivePrayerCount = await _prayerService.GetActivePrayerCountByCardAsync(_prayerCard.Id);
         }
 
+        /// <summary>Refresh the badge count from the service (lightweight — single query).</summary>
+        public void RefreshActivePrayerCount()
+            => LoadActivePrayerCountAsync().SafeFireAndForget();
+
         #endregion
 
         #region Private Methods

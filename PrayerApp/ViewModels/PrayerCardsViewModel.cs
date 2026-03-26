@@ -261,6 +261,10 @@ namespace PrayerApp.ViewModels
                 AllPrayerCards.Add(vm);
             }
 
+            // Refresh prayer counts on all existing cards (e.g. Quick Add added a prayer)
+            foreach (var vm in AllPrayerCards)
+                vm.RefreshActivePrayerCount();
+
             ApplySorting();
         }
 
