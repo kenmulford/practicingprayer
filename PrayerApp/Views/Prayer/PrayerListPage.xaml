@@ -167,7 +167,7 @@
 
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
-                    <Grid RowDefinitions="Auto, Auto"
+                    <Grid RowDefinitions="Auto, Auto, Auto"
                           Padding="4,10"
                           HorizontalOptions="Fill"
                           SemanticProperties.Hint="Double tap to view details">
@@ -197,6 +197,13 @@
                                    VerticalOptions="Center"
                                    Margin="6,0,0,0" />
                         </Grid>
+
+                        <!-- Subtle inset separator -->
+                        <BoxView Grid.Row="2"
+                                 HeightRequest="0.5"
+                                 Color="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
+                                 Opacity="0.4"
+                                 Margin="0,8,0,0" />
 
                     </Grid>
                 </DataTemplate>
