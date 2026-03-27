@@ -105,16 +105,18 @@ public static class AppExtensions
             // it often does nothing, causing text to append instead of replace.
             // Tap the iOS "Clear text" (X) button if visible, then fall back to Clear().
             element.Click();
-            Thread.Sleep(200);
-            try
+            var currentText = element.Text;
+            if (!string.IsNullOrEmpty(currentText))
             {
-                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
-                var clearBtn = driver.FindElement(MobileBy.AccessibilityId("Clear text"));
-                clearBtn.Click();
-                Thread.Sleep(200);
+                try
+                {
+                    driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+                    var clearBtn = driver.FindElement(MobileBy.AccessibilityId("Clear text"));
+                    clearBtn.Click();
+                }
+                catch (WebDriverException) { element.Clear(); }
+                finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
             }
-            catch (WebDriverException) { element.Clear(); }
-            finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
         }
         else
         {
@@ -151,7 +153,7 @@ public static class AppExtensions
 
     // ── Scrolling ────────────────────────────────────────────────
 
-    /// <summary>Scroll down until an element with the given AutomationId is found (Android).</summary>
+    /// <summary>Scroll down until an element with the given AutomationId is found.</summary>
     public static AppiumElement ScrollDownTo(this AppiumDriver driver, string automationId,
         int maxScrolls = 5)
     {
@@ -433,7 +435,7 @@ public static class AppExtensions
         driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 5);
     }
 
-    /// <summary>Dismiss any visible alert by tapping its positive button (OK/Yes/Cancel).</summary>
+    /// <summary>Accept any visible alert by tapping its positive button (OK/Yes).</summary>
     public static void DismissAlertIfPresent(this AppiumDriver driver)
     {
         if (TestConfig.IsIOS)
