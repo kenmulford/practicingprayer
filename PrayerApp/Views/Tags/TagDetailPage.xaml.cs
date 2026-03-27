@@ -9,10 +9,38 @@ namespace PrayerApp.Views.Tags
 {
     public partial class TagDetailPage : ContentPage
     {
+#if IOS
+        // Track native gesture recognizers so we can remove them before the page
+        // is torn down. Without cleanup, the UILongPressGestureRecognizer closure
+        // holds a strong reference to the managed Grid → BindingContext chain.
+        // When Shell pops this page, iOS deallocates native views while the GC
+        // may collect the managed objects — that race causes SIGABRT. (BUG-1)
+        private readonly List<(UIView NativeView, UIGestureRecognizer Recognizer)> _nativeGestures = new();
+#endif
+
         public TagDetailPage(TagDetailViewModel vm)
         {
             InitializeComponent();
             BindingContext = vm;
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+#if IOS
+            // Detach all native gesture recognizers before the page is popped.
+            // This breaks the strong reference chain and prevents the SIGABRT
+            // that occurs when iOS deallocates native views while managed objects
+            // are being collected.
+            foreach (var (nativeView, recognizer) in _nativeGestures)
+                nativeView.RemoveGestureRecognizer(recognizer);
+            _nativeGestures.Clear();
+#endif
+            // Signal the ViewModel to stop any in-flight async work (e.g.
+            // LoadSwatchesAsync modifying the ObservableCollection after the
+            // page's layout handlers have been torn down).
+            if (BindingContext is TagDetailViewModel tdvm)
+                tdvm.CancelPendingWork();
         }
 
         private void OnSwatchLoaded(object? sender, EventArgs e)
@@ -35,7 +63,7 @@ namespace PrayerApp.Views.Tags
             }
         }
 
-        private static void AttachNativeLongPress(Grid grid)
+        private void AttachNativeLongPress(Grid grid)
         {
 #if ANDROID
             if (grid.Handler?.PlatformView is Android.Views.View nativeView)
@@ -57,10 +85,14 @@ namespace PrayerApp.Views.Tags
 #elif IOS
             if (grid.Handler?.PlatformView is UIView nativeView)
             {
+                // Use a WeakReference to the grid so the gesture recognizer
+                // closure doesn't prevent GC of the managed MAUI object.
+                var weakGrid = new WeakReference<Grid>(grid);
                 var longPress = new UILongPressGestureRecognizer(r =>
                 {
                     if (r.State == UIGestureRecognizerState.Began &&
-                        grid.BindingContext is ColorSwatchViewModel vm &&
+                        weakGrid.TryGetTarget(out var g) &&
+                        g.BindingContext is ColorSwatchViewModel vm &&
                         vm.DeleteCommand.CanExecute(null))
                     {
                         MainThread.BeginInvokeOnMainThread(() => vm.DeleteCommand.Execute(null));
@@ -68,6 +100,7 @@ namespace PrayerApp.Views.Tags
                 });
                 longPress.MinimumPressDuration = 0.5; // 500ms, matches prior LongPressDuration
                 nativeView.AddGestureRecognizer(longPress);
+                _nativeGestures.Add((nativeView, longPress));
             }
 #endif
         }

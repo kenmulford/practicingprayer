@@ -36,7 +36,7 @@ Items are listed in work order. Start at the top, work down.
 | 8   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
 | 9   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
 | 10  | ~~UX-16~~ | ~~Portrait mode option for Prayer Time~~ | Users | ✅ Done (2026-03-27) — Settings toggle + conditional orientation lock |
-| 11  | ~~BUG-1~~ | ~~iOS: SIGABRT crash during tag save navigation~~ | UITest | ✅ Done (2026-03-27) — try-catch around `GoToAsync("..")` in `TagDetailViewModel.SaveAsync()` |
+| 11  | ~~BUG-1~~ | ~~iOS: SIGABRT crash during tag save navigation~~ | UITest | ✅ Done (2026-03-27) — Native gesture cleanup in OnDisappearing + WeakReference in closure + CancellationToken for async work |
 | 12  | ~~BUG-2~~ | ~~iOS: Unsaved changes guard bypassed on back nav~~ | UITest | ✅ Done (2026-03-27) — Added `ShellNavigationSource.Unknown` to `OnShellNavigating` |
 | 13  | ~~BUG-3~~ | ~~iOS: GoToAsync("..") unreliable after tag save~~ | UITest | ✅ Done (2026-03-27) — Same fix as BUG-1 |
 | 14  | ~~BUG-4~~ | ~~iOS: Prayer Time action sheet stale element~~ | UITest | ✅ Done (2026-03-27) — `_prayerTimeNavigating` guard prevents double-tap |
