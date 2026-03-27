@@ -32,18 +32,52 @@ public class AppiumSetup : IAsyncLifetime
     {
         try
         {
-            // Quick health check — PageSource requires a live session
+            // Quick health check — PageSource requires a live session.
+            // Use try/catch around ImplicitWait too since it throws
+            // NotImplementedException when the session is fully dead.
             Driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
             _ = Driver.PageSource;
             Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
         }
         catch (Exception)
         {
-            try { Driver.Quit(); } catch { }
-            try { Driver.Dispose(); } catch { }
-            CreateDriver();
-            Thread.Sleep(3000); // Wait for app to load after session restart
-            OnboardingHandled = false; // Onboarding may show again
+            RecreateDriver();
+        }
+    }
+
+    /// <summary>Tear down the current driver and create a fresh session.</summary>
+    private void RecreateDriver()
+    {
+        try { Driver.Quit(); } catch { }
+        try { Driver.Dispose(); } catch { }
+        CreateDriver();
+        Thread.Sleep(5000); // Wait for app to fully load after session restart
+        OnboardingHandled = false; // Onboarding may show again
+
+        // Verify the new session is responsive — including ImplicitWait
+        // which throws NotImplementedException on dead sessions
+        try
+        {
+            Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+            _ = Driver.PageSource;
+        }
+        catch (Exception)
+        {
+            // Second attempt — sometimes WDA needs extra time on iOS
+            Thread.Sleep(5000);
+            try
+            {
+                Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+                _ = Driver.PageSource;
+            }
+            catch (Exception)
+            {
+                // Third attempt — full recreate
+                try { Driver.Quit(); } catch { }
+                try { Driver.Dispose(); } catch { }
+                CreateDriver();
+                Thread.Sleep(5000);
+            }
         }
     }
 
