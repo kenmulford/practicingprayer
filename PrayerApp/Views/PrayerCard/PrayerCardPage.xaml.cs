@@ -10,6 +10,22 @@ public partial class PrayerCardPage : ContentPage
         BindingContext = vm;
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+#if IOS
+        Platforms.iOS.Helpers.SwipeBackHelper.DisableSwipeBack(this);
+#endif
+    }
+
+    protected override void OnDisappearing()
+    {
+#if IOS
+        Platforms.iOS.Helpers.SwipeBackHelper.EnableSwipeBack(this);
+#endif
+        base.OnDisappearing();
+    }
+
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)
     {
         // Dismiss keyboard when tapping outside input fields (iOS)

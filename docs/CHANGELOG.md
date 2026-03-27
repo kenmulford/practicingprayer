@@ -29,7 +29,8 @@
 - Notification time and day changes are now tracked as unsaved changes
 - Card delete confirmation now shows accurate prayer count even for collapsed cards
 - Fixed a crash on iOS when saving a tag (native gesture cleanup during page teardown)
-- Unsaved changes prompt now works correctly with iOS back button and swipe-back gesture
+- Unsaved changes prompt now works correctly with iOS back button and swipe-back gesture (swipe-back disabled on edit pages to prevent data loss)
+- Quick Add and Prayer Time tag picker now display as card-style sheets on iPad instead of full-screen
 - Prayer Time button no longer allows double-tap during navigation
 - Prayer card expansion now displays correctly on iPad (prayers and "Add prayer" button visible)
 - Overdue filter now refreshes correctly when returning from other tabs

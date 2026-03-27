@@ -19,11 +19,14 @@ public class UnsavedChangesTests
     [Fact]
     public void UnsavedChanges_EditTitle_BackShowsDiscardDialog()
     {
-        // Skip BEFORE any navigation — iOS back button doesn't fire Shell.Navigating,
-        // so the unsaved changes guard is bypassed. Skipping early prevents dirty state
-        // from cascading into subsequent tests.
+        // iOS back button tap does not fire Shell.Navigating (dotnet/maui#15813, #7351).
+        // SwipeBackHelper disables the swipe-back gesture on edit pages, but the native
+        // back button in the nav bar is a separate code path that MAUI doesn't intercept.
+        // Skip until MAUI fixes Shell.Navigating for iOS back button, or we find a
+        // non-BackButtonBehavior workaround (BBB corrupts Shell nav stack — see run history).
         if (TestConfig.IsIOS)
-            throw Xunit.Sdk.SkipException.ForSkip("iOS Bug #2: Shell.Navigating doesn't fire on iOS back button — unsaved changes guard bypassed");
+            throw Xunit.Sdk.SkipException.ForSkip(
+                "iOS back button does not fire Shell.Navigating — swipe-back is disabled but back button still bypasses guard (MAUI #15813)");
 
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
