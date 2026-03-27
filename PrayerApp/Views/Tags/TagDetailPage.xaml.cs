@@ -1,4 +1,3 @@
-using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 #if ANDROID
 using Android.Views;
@@ -23,8 +22,6 @@ namespace PrayerApp.Views.Tags
         {
             InitializeComponent();
             BindingContext = vm;
-
-            EditGuardHelper.AttachEditGuardBackButton(this);
         }
 
         protected override void OnDisappearing()

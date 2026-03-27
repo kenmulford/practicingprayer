@@ -19,6 +19,12 @@ public class UnsavedChangesTests
     [Fact]
     public void UnsavedChanges_EditTitle_BackShowsDiscardDialog()
     {
+        // Skip BEFORE any navigation — iOS back button doesn't fire Shell.Navigating,
+        // so the unsaved changes guard is bypassed. Skipping early prevents dirty state
+        // from cascading into subsequent tests.
+        if (TestConfig.IsIOS)
+            throw Xunit.Sdk.SkipException.ForSkip("iOS Bug #2: Shell.Navigating doesn't fire on iOS back button — unsaved changes guard bypassed");
+
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 

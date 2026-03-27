@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: All 5 iOS app bugs (BUG-1 through BUG-5) fixed. Onboarding review plan drafted. Help FAQ text awaiting Ken's personal review.
-**Last completed**: BUG-1/2/3/4/5 iOS bug fixes, iOS UITest code review, UX-15, UX-16
-**Next up**: AUD-1 remaining phases, then onboarding refresh
+**Status**: BUG-1/3/4/5 fixed. BUG-2 (iOS unsaved changes guard) still open — BackButtonBehavior approach failed, needs platform-level investigation. Test ordering + scroll timing fixes applied.
+**Last completed**: BUG-1/3/4/5 iOS bug fixes, iOS UITest code review, UX-15, UX-16
+**Next up**: BUG-2 investigation, then AUD-1 remaining phases, onboarding refresh
 
 ---
 
@@ -37,7 +37,7 @@ Items are listed in work order. Start at the top, work down.
 | 9   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
 | 10  | ~~UX-16~~ | ~~Portrait mode option for Prayer Time~~ | Users | ✅ Done (2026-03-27) — Settings toggle + conditional orientation lock |
 | 11  | ~~BUG-1~~ | ~~iOS: SIGABRT crash during tag save navigation~~ | UITest | ✅ Done (2026-03-27) — Native gesture cleanup in OnDisappearing + WeakReference in closure + CancellationToken for async work |
-| 12  | ~~BUG-2~~ | ~~iOS: Unsaved changes guard bypassed on back nav~~ | UITest | ✅ Done (2026-03-27) — `EditGuardHelper.AttachEditGuardBackButton` on all IEditGuard pages |
+| 12  | BUG-2 | iOS: Unsaved changes guard bypassed on back nav | UITest | **Open** — `BackButtonBehavior` approach corrupts iOS Shell nav stack. `Shell.Navigating` doesn't fire for iOS back button. Needs platform-level fix. |
 | 13  | ~~BUG-3~~ | ~~iOS: GoToAsync("..") unreliable after tag save~~ | UITest | ✅ Done (2026-03-27) — Same fix as BUG-1 |
 | 14  | ~~BUG-4~~ | ~~iOS: Prayer Time action sheet stale element~~ | UITest | ✅ Done (2026-03-27) — `_prayerTimeNavigating` guard prevents double-tap |
 | 15  | ~~BUG-5~~ | ~~iOS: Empty card expand layout on iPad~~ | UITest | ✅ Done (2026-03-27) — `ItemSizingStrategy="MeasureAllItems"` on PrayerCards CollectionView |
@@ -60,7 +60,6 @@ Items are listed in work order. Start at the top, work down.
 | UX-15  | Quick Add tip banner (Concept C) | 2026-03-27 |
 | UX-16  | Portrait mode toggle for Prayer Time | 2026-03-27 |
 | BUG-1  | iOS tag save navigation crash fix | 2026-03-27 |
-| BUG-2  | iOS unsaved changes guard fix | 2026-03-27 |
 | BUG-3  | iOS GoToAsync("..") reliability (same fix as BUG-1) | 2026-03-27 |
 | BUG-4  | iOS Prayer Time action sheet guard | 2026-03-27 |
 | BUG-5  | iPad card expand layout fix | 2026-03-27 |

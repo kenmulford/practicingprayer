@@ -1,4 +1,3 @@
-using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.ViewModels;
 
@@ -28,8 +27,6 @@ public partial class PrayerDetailPage : ContentPage
 
         vm.FormResetRequested += (_, _) =>
             Dispatcher.DispatchAsync(() => TitleEntry.Focus());
-
-        EditGuardHelper.AttachEditGuardBackButton(this);
     }
 
     private void OnTagEntryCompleted(object? sender, EventArgs e)

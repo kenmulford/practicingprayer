@@ -85,10 +85,10 @@ namespace PrayerApp
 
         private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs args)
         {
-            // BackButtonBehavior handles back-button taps (fires GoToAsync("..") → Pop).
-            // This handler covers tab switches and iOS swipe-back (Unknown).
-            // Pop is excluded to avoid double-prompting with BackButtonBehavior.
-            if (args.Source is not (ShellNavigationSource.ShellItemChanged
+            // iOS swipe-back gesture may fire as Unknown — include it so the
+            // unsaved-changes guard isn't bypassed on iOS back navigation.
+            if (args.Source is not (ShellNavigationSource.Pop
+                or ShellNavigationSource.ShellItemChanged
                 or ShellNavigationSource.ShellSectionChanged
                 or ShellNavigationSource.Unknown))
                 return;
