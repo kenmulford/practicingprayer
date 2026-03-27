@@ -59,11 +59,21 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.Tap("Cards_Search");
-        Thread.Sleep(300);
-
-        driver.GoBack();
-        Thread.Sleep(300);
+        if (TestConfig.IsIOS)
+        {
+            // iOS with hardware keyboard: on-screen keyboard doesn't appear,
+            // so test that tapping search and going back doesn't break navigation.
+            driver.Tap("Cards_Search");
+            Thread.Sleep(300);
+            driver.NavigateToTab("Prayer Cards");
+        }
+        else
+        {
+            driver.Tap("Cards_Search");
+            Thread.Sleep(300);
+            driver.GoBack();
+            Thread.Sleep(300);
+        }
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
     }
@@ -193,9 +203,10 @@ public class PrayerCardTests
                 || driver.IsTextDisplayed("Edit", timeoutSeconds: 2),
                 "Swipe right should reveal Favorite and Edit actions");
 
-            // Dismiss swipe — tap anywhere safe, then go back if keyboard appeared
-            try { driver.Tap("Cards_Search"); } catch (NoSuchElementException) { }
-            try { driver.GoBack(); } catch (WebDriverException) { }
+            // Dismiss swipe — tap a non-interactive element to clear the swipe state.
+            // Avoid tapping Cards_Search on iOS as it opens the keyboard.
+            try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
+            Thread.Sleep(300);
         }
     }
 
@@ -215,9 +226,10 @@ public class PrayerCardTests
             // The ViewModel guard prevents deletion even if the swipe item appears
             driver.IsTextDisplayed("Delete", timeoutSeconds: 2);
 
-            // Dismiss swipe — tap anywhere safe, then go back if keyboard appeared
-            try { driver.Tap("Cards_Search"); } catch (NoSuchElementException) { }
-            try { driver.GoBack(); } catch (WebDriverException) { }
+            // Dismiss swipe — tap a non-interactive element to clear the swipe state.
+            // Avoid tapping Cards_Search on iOS as it opens the keyboard.
+            try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
+            Thread.Sleep(300);
             Thread.Sleep(300);
         }
 

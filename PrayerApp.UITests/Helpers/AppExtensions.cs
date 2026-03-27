@@ -101,30 +101,40 @@ public static class AppExtensions
 
         if (TestConfig.IsIOS)
         {
-            // element.Clear() is unreliable on iOS with hardware keyboard —
-            // it often does nothing, causing text to append instead of replace.
-            // Tap the iOS "Clear text" (X) button if visible, then fall back to Clear().
-            element.Click();
-            var currentText = element.Text;
-            if (!string.IsNullOrEmpty(currentText))
+            // element.Clear() doesn't work on iOS search fields (XCUIElementTypeOther wrappers).
+            // Use the iOS "Clear text" (X) button to clear, then SendKeys to type.
+            // autoDismissAlerts handles any Siri/dictation prompts from SendKeys.
+            //
+            // IMPORTANT: element.Click() opens the keyboard, so only click when we
+            // need to type or when the field has content to clear.
+            try
             {
-                try
-                {
-                    driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
-                    var clearBtn = driver.FindElement(MobileBy.AccessibilityId("Clear text"));
-                    clearBtn.Click();
-                }
-                catch (WebDriverException) { element.Clear(); }
-                finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+                // Check for "Clear text" button WITHOUT clicking the field first.
+                // The button is only visible when the field already has content and focus.
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+                var clearBtn = driver.FindElement(MobileBy.AccessibilityId("Clear text"));
+                clearBtn.Click();
+                Thread.Sleep(200);
+            }
+            catch (WebDriverException)
+            {
+                // No "Clear text" button — field is empty or unfocused, that's fine
+            }
+            finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                element.SendKeys(text);
+                // Dismiss keyboard so it doesn't cover tab bar or other elements
+                try { driver.HideKeyboard(); } catch (WebDriverException) { }
             }
         }
         else
         {
             element.Clear();
+            if (!string.IsNullOrEmpty(text))
+                element.SendKeys(text);
         }
-
-        if (!string.IsNullOrEmpty(text))
-            element.SendKeys(text);
     }
 
     /// <summary>Get the text content of an element.</summary>
@@ -174,15 +184,27 @@ public static class AppExtensions
                 driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
             }
 
-            driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+            if (TestConfig.IsIOS)
             {
-                { "left", size.Width / 4 },
-                { "top", size.Height / 4 },
-                { "width", size.Width / 2 },
-                { "height", size.Height / 2 },
-                { "direction", "up" },
-                { "percent", 0.5 }
-            });
+                // iOS XCUITest: "mobile: swipe" with direction
+                driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
+                {
+                    { "direction", "up" }
+                });
+            }
+            else
+            {
+                // Android UiAutomator2: "mobile: swipeGesture" with bounding area
+                driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+                {
+                    { "left", size.Width / 4 },
+                    { "top", size.Height / 4 },
+                    { "width", size.Width / 2 },
+                    { "height", size.Height / 2 },
+                    { "direction", "up" },
+                    { "percent", 0.5 }
+                });
+            }
         }
 
         throw new NoSuchElementException($"Element '{automationId}' not found after {maxScrolls} scrolls.");
@@ -193,6 +215,10 @@ public static class AppExtensions
     /// <summary>Navigate to a Shell tab by tapping its tab bar item.</summary>
     public static void NavigateToTab(this AppiumDriver driver, string tabTitle)
     {
+        // iOS: keyboard can cover the tab bar — dismiss it first
+        if (TestConfig.IsIOS)
+            try { driver.HideKeyboard(); } catch (WebDriverException) { }
+
         // Try up to 3 times to find the tab bar, going back each time to clear
         // modals, detail pages, and deep navigation stacks.
         for (int attempt = 0; attempt < 3; attempt++)
@@ -368,17 +394,30 @@ public static class AppExtensions
     /// <summary>Swipe an element in the given direction.</summary>
     private static void SwipeElement(AppiumDriver driver, AppiumElement element, string direction)
     {
-        var location = element.Location;
-        var size = element.Size;
-        driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+        if (TestConfig.IsIOS)
         {
-            { "left", location.X },
-            { "top", location.Y },
-            { "width", size.Width },
-            { "height", size.Height },
-            { "direction", direction },
-            { "percent", 0.5 }
-        });
+            // iOS XCUITest: "mobile: swipe" with elementId and direction
+            driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
+            {
+                { "elementId", element.Id },
+                { "direction", direction }
+            });
+        }
+        else
+        {
+            // Android UiAutomator2: "mobile: swipeGesture" with bounding area
+            var location = element.Location;
+            var size = element.Size;
+            driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+            {
+                { "left", location.X },
+                { "top", location.Y },
+                { "width", size.Width },
+                { "height", size.Height },
+                { "direction", direction },
+                { "percent", 0.5 }
+            });
+        }
         Thread.Sleep(300);
     }
 
