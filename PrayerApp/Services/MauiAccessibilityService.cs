@@ -20,7 +20,7 @@ public class MauiAccessibilityService : IAccessibilityService
 #if IOS
         MainThread.BeginInvokeOnMainThread(() =>
             UIKit.UIAccessibility.PostNotification(
-                UIKit.UIAccessibilityPostNotification.LayoutChangedNotification, null));
+                UIKit.UIAccessibilityPostNotification.LayoutChanged, null));
 #endif
     }
 }
