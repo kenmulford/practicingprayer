@@ -1,8 +1,8 @@
 # iOS UAT: Test Results and Bug Tracking
 
 **Last updated:** 2026-03-27
-**Latest build tested:** Release config, commit `c8574d7` (Fix 5 remaining iOS UITest failures)
-**Test result:** 32 passed, 23 failed (55 total) — REGRESSION from 50/55
+**Latest build tested:** Release config, commit `767dc6a` (EditGuardHelper PopAsync fix)
+**Test result:** 35 passed, 20 failed (55 total) — still regressed from 50/55 baseline
 
 ---
 
@@ -32,106 +32,109 @@
 
 | Commit | Result | Notes |
 |--------|--------|-------|
-| `93c412b` (BUG-1/2/3/4/5) | 47/55 | Bugs 1, 3, 5 fixed. Prayer Time still flaky. |
-| `1b19734` (BUG-1 SIGABRT) | 50/55 | All 5 Prayer Time tests pass. No crashes. Best run. |
-| `c8574d7` (Fix remaining 5) | **32/55** | **REGRESSION.** EditGuardHelper causes cascade failure from Reminders onward. |
+| `93c412b` (BUG-1/2/3/4/5) | 47/55 | Bugs 1, 3, 5 fixed. |
+| `1b19734` (BUG-1 SIGABRT) | **50/55** | **BEST RUN.** All Prayer Time passes. No crashes. |
+| `c8574d7` (Fix remaining 5) | 32/55 | EditGuardHelper regression — cascade from Reminders. |
+| `767dc6a` (PopAsync fix) | **35/55** | Reminders recovered (+3). Settings/Tags/UnsavedChanges still cascade. |
 
 ---
 
-## CRITICAL: Regression Introduced by `c8574d7`
+## CRITICAL: EditGuardHelper Still Breaking Navigation
 
-### Root Cause: `EditGuardHelper.AttachEditGuardBackButton()` Breaks Navigation
+### What `767dc6a` Fixed
 
-**File:** `PrayerApp/Helpers/EditGuardHelper.cs` (new file in `c8574d7`)
+The `PopAsync()` change recovered the **Reminders** tests (all 3 pass now). The Reminders tests open `PrayerDetailPage`, which has `EditGuardHelper` attached. With `PopAsync()` instead of `GoToAsync("..")`, back navigation from the prayer detail page now works correctly for the Reminders flow.
 
-This helper replaces the native back button behavior on `PrayerDetailPage`, `PrayerCardPage`, and `TagDetailPage` with a custom `Command` that:
-1. Checks `IEditGuard.IsDirty`
-2. If dirty, calls `guard.CanLeaveAsync()` (shows discard dialog)
-3. Navigates via `Shell.Current.GoToAsync("..")`
+### What's Still Broken: 16 Tests in Cascade
 
-**The problem:** Even when the page is NOT dirty, the back button now uses `GoToAsync("..")` instead of the native back navigation. `GoToAsync("..")` does not behave identically to native back — it can fail to resolve correctly depending on the Shell navigation stack state.
+Everything from **Settings** onward fails (16 tests). The cascade starts at `Settings_Backup_ShowsButtons` and continues through all Settings (7), Tags (5), and UnsavedChanges (4) tests.
 
-### Evidence: Cascade Failure Pattern
+**Critical finding: The app navigates to the tab but content doesn't render.**
 
-The failure cascade starts at test #38 (`Reminders_ToggleOn_ShowsPickers`) and every test after it fails:
+| Test | Error | Duration |
+|------|-------|----------|
+| `Settings_HubPage_Shows4Rows` | "App Settings row should be visible" | 82s |
+| `Settings_Backup_ShowsButtons` | `WaitAndTap("Settings_Row_Backup")` timeout | 92s |
+| `Tags_PageLoads_ShowsTagList` | "Tag list should be visible" | 5s |
 
-| Test # | Test | Result | Duration | Notes |
-|--------|------|--------|----------|-------|
-| 37 | `Reminders_ToggleOff_HidesPickers` | PASS | 27s | Last passing test |
-| 38 | `Reminders_ToggleOn_ShowsPickers` | **FAIL** | 13s | Can't find "Add" toolbar — first failure |
-| 39 | `Reminders_FrequencyPicker_HasOptions` | **FAIL** | 13s | Same — can't find "Add" toolbar |
-| 40-46 | All 7 Settings tests | **FAIL** | ~93s each | Can't navigate to Settings tab |
-| 47-51 | All 5 Tag tests | **FAIL** | 5-13s | Can't navigate to Tags tab |
-| 52-55 | All 4 UnsavedChanges tests | **FAIL** | 13s | Can't navigate to Prayers tab |
+These tests successfully navigate to the Settings/Tags tab (no `NavigateToTab` error), but the page content (rows, lists) isn't rendering. This suggests the app's UI is in a corrupted state — Shell tabs switch but pages don't load their content.
 
-**All failures share the same root:** `NavigateToTab` or `TapToolbarItem` can't find expected elements because the app is stuck in an unrecoverable navigation state after a `GoToAsync("..")` call from the EditGuardHelper fails or leaves a corrupted nav stack.
+### What Causes the Corruption
 
-### What Test #37 Does That Triggers It
+The corruption starts somewhere between `Reminders_FrequencyPicker_HasOptions` (last pass, test #39) and `Settings_Backup_ShowsButtons` (first fail, test #40). The Reminders test ends by calling `driver.GoBack()` from a prayer detail page. Even with `PopAsync()`, the `BackButtonBehavior` + `PopAsync()` combination may be corrupting the Shell's internal navigation state.
 
-`Reminders_ToggleOff_HidesPickers` navigates to a new prayer detail page (which now has EditGuardHelper attached), toggles reminders, then calls `GoBack()`. The `GoBack()` triggers the custom `BackButtonBehavior.Command` → `GoToAsync("..")`. If this doesn't pop back correctly, the navigation stack is corrupted and no subsequent test can find tabs or toolbar items.
+### The Real Problem with EditGuardHelper
 
-### Recommended Fix
+The `BackButtonBehavior` with a custom `Command` **completely replaces** the native iOS back button behavior. Even for non-dirty pages, the native back gesture/button now goes through a custom code path (`PopAsync()`). This is fundamentally different from the default Shell back behavior:
 
-The `EditGuardHelper` approach has a fundamental problem: **it replaces native back with `GoToAsync("..")` for ALL back navigations, not just dirty ones.** Options:
+- **Default Shell back:** Native iOS manages the navigation stack, animations, and page lifecycle
+- **Custom BackButtonBehavior:** .NET MAUI intercepts the button, runs C# code, then calls `PopAsync()` programmatically
 
-1. **Only override when dirty:** Don't set `BackButtonBehavior` at all unless/until `IsDirty` becomes true. Re-attach when dirty, remove when clean.
-2. **Use native back for clean pages:** In the Command, if `!guard.IsDirty`, call `Shell.Current.Navigation.PopAsync()` instead of `GoToAsync("..")`.
-3. **Use `Shell.Navigating` event instead:** Hook into `Shell.Current.Navigating` on the page and cancel the event when dirty, rather than replacing the back button entirely.
+The `PopAsync()` path may not trigger the same page lifecycle events, Shell state updates, or cleanup that the native back does. Over multiple back navigations (each test navigates forward and back), this drift accumulates until the Shell state is corrupt enough that pages stop loading.
 
-Option 2 is the quickest fix:
+### Recommended Approach
+
+**Don't use `BackButtonBehavior` at all.** Instead:
+
+1. **Use `Shell.Navigating` event** on the page to intercept back navigation:
 ```csharp
-Command = new Command(async () =>
+protected override void OnAppearing()
 {
-    if (page.BindingContext is IEditGuard guard && guard.IsDirty)
+    base.OnAppearing();
+    Shell.Current.Navigating += OnShellNavigating;
+}
+
+protected override void OnDisappearing()
+{
+    Shell.Current.Navigating -= OnShellNavigating;
+    base.OnDisappearing();
+}
+
+private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs e)
+{
+    if (BindingContext is IEditGuard guard && guard.IsDirty)
     {
+        var deferral = e.GetDeferral();
         if (!await guard.CanLeaveAsync())
-            return;
+            e.Cancel();
+        deferral.Complete();
     }
-    // Use native pop instead of GoToAsync("..") to preserve nav stack
-    await Shell.Current.Navigation.PopAsync();
-})
+}
 ```
 
----
+2. This preserves the **native back button** entirely — no custom Command, no PopAsync, no replacement of iOS navigation behavior.
+3. `Shell.Navigating` fires for ALL navigation (back button, tab switch, programmatic), so it also catches the tab-switch discard case.
+4. If `Shell.Navigating` doesn't fire on iOS back button (the original Bug #2), then the issue is in MAUI's Shell implementation and needs a different workaround (e.g., `Page.OnNavigatingFrom` in .NET 10).
 
-## Pre-Regression Bugs Still Open
-
-These were the 5 failures from the `1b19734` run (50/55) that `c8574d7` attempted to fix:
-
-### Bug #2: Unsaved Changes Guard Bypassed on iOS Back Navigation
-
-**Status:** The `EditGuardHelper` was the attempted fix for this. It needs to be reworked per the options above.
-
-### Empty Card Expand Edge Case
-
-**Test:** `EdgeCase_EmptyCardExpand_ShowsAddPrayer`
-**Status:** Still fails (32s). Freshly-created empty card expand on iPad doesn't show the "+ Add prayer" button.
-
-### Test Dependency: 'UI Test Prayer' Not Found
-
-**Tests:** `Cards_EditPrayerFromCard`, `Prayers_TapPrayer_ShowsViewMode`
-**Status:** `Cards_EditPrayerFromCard` now PASSES (commit `c8574d7` made it self-contained). `Prayers_TapPrayer_ShowsViewMode` still fails — now with a different error (timeout at `TapByText`, not a precondition skip), likely because the test changes in `c8574d7` have a bug or are affected by the EditGuardHelper regression.
+**Alternative: Remove EditGuardHelper entirely and revert to `1b19734` baseline (50/55).** The unsaved changes guard (Bug #2) is a real issue but the current fix approach is causing more damage than the bug itself.
 
 ---
 
-## Bugs Confirmed Fixed (Holding Across Runs)
+## Other Failures (Not EditGuardHelper Related)
 
-| Bug | Test | Fix Commit |
-|-----|------|------------|
-| Bug #1: SIGABRT crash during tag save | `Tags_CreateTag_AppearsInList` | `1b19734` |
-| Bug #3: `GoToAsync("..")` unreliable after tag save | Same test | `93c412b` |
-| Bug #4: Prayer Time action sheet stale element | PrayerTime tests | `1b19734` |
-| Bug #5: Empty card expand (main case) | `Cards_ExpandCard_ShowsPrayers` | `93c412b` |
+### `EdgeCase_EmptyCardExpand_ShowsAddPrayer` (1 test)
+Same as before — freshly-created empty card on iPad doesn't show "+ Add prayer" button after expansion. 31s duration. Unrelated to EditGuardHelper.
 
-**Note:** Bug #4 (Prayer Time) regressed in this run — `NavigationButtons_Present`, `AutoMode_CyclesInterval`, and `FinishButton_ExitsPrayerTime` failed again. This may be the EditGuardHelper cascade poisoning the app state before these tests run, or it may be intermittent. The previous run (`1b19734`) had all 5 Prayer Time tests passing.
+### `Prayers_TapPrayer_ShowsViewMode` (1 test)
+Timeout at `TapByText` (25s). The test was rewritten in `c8574d7` to be self-contained (creates its own prayer). The new version may have a bug — needs investigation separate from EditGuardHelper.
+
+### `PrayerTime_NavigationButtons_Present` and `PrayerTime_AutoMode_CyclesInterval` (2 tests)
+Action sheet intermittency — `TryStartPrayerTime()` can't tap "All Requests". These were passing at `1b19734`. May be re-triggered by EditGuardHelper corrupting state before Prayer Time tests run, or may be genuinely intermittent (Bug #4).
+
+---
+
+## Bugs Confirmed Fixed (Holding Across All Runs)
+
+| Bug | Fix Commit | Status |
+|-----|------------|--------|
+| Bug #1: SIGABRT crash during tag save | `1b19734` | Stable — no crashes in any run |
+| Bug #3: `GoToAsync("..")` after tag save | `93c412b` | Stable |
+| Bug #5: Card expand (main case) | `93c412b` | Stable |
 
 ---
 
 ## Summary
 
-**The `c8574d7` commit should be reverted or the `EditGuardHelper` reworked.** It regressed from 50/55 to 32/55 by replacing native back navigation with `GoToAsync("..")` on all detail pages. The best baseline is commit `1b19734` at 50/55.
+**The EditGuardHelper approach (BackButtonBehavior + custom Command) is fundamentally incompatible with stable iOS Shell navigation.** Both `GoToAsync("..")` and `PopAsync()` cause progressive Shell state corruption over multiple test navigations. The fix needs to use `Shell.Navigating` event interception or be reverted entirely.
 
-**Priority:**
-1. Fix `EditGuardHelper` — use `PopAsync()` for clean pages, only intercept when dirty
-2. Retest from the fixed EditGuardHelper
-3. Then address the remaining 5 from the `1b19734` baseline
+**Best baseline: `1b19734` at 50/55.**
