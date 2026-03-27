@@ -63,7 +63,8 @@ tail -5 <output-file>
 | `67baef6` (fixes after 51/55) | **54/58** | Clean reinstall. No crashes. 2 scroll fixes still failing + 1 Android-only + 1 known skip. |
 | `d6b7c57` (CollectionView fix) | **54/58** | CollectionView desync fixed (no more layout errors). Scroll tests still fail — locator issue, not scroll. PrayerTime intermittent = action sheet mis-tap. |
 | `43500b0` (diagnostic logging) | **54/58** | Diagnostics confirm: CollectionView cell contents invisible in iOS accessibility tree. Both scroll test failures are the same root cause. |
-| `8073ded` (accessibility fix + build fix) | **54/58** | **Current.** Accessibility semantics added but CollectionView still flattens cells into one element. Root cause identified: need `IsInAccessibleTree` per-cell. |
+| `8073ded` (accessibility fix + build fix) | **54/58** | Accessibility semantics added but CollectionView still flattens cells into one element. Root cause identified: need `IsInAccessibleTree` per-cell. |
+| `e437ec2` (accessibility flattening fix) | **54/58** | **Current.** Still flattened — diagnostic dump still shows `name="Quick Add, UI Test Prayer"` as single element. `IsInAccessibleTree` approach not working. PrayerTime mis-tap also persists (separate issue). |
 
 ---
 
@@ -182,9 +183,11 @@ All prayer items ("Quick Add", "UI Test Prayer") are concatenated into one `name
 - `Prayers_TapPrayer_ShowsViewMode` — can't find "UI Test Prayer" as a tappable element
 
 **Possible fixes:**
-1. Set `AutomationProperties.IsInAccessibleTree="false"` on the CollectionView itself, and `"true"` on individual cell root elements — forces iOS to expose children instead of flattening
+1. ~~Set `AutomationProperties.IsInAccessibleTree="false"` on the CollectionView itself, and `"true"` on individual cell root elements~~ — **tried in `e437ec2`, did not work.** Cells still flattened.
 2. Use `SemanticProperties.Description` on each cell template root to give each cell its own identity
 3. Switch test locators to search within the flattened label text (fragile workaround)
+4. Try `InputTransparent="False"` or wrapping cell content in a container with explicit `AutomationId` — may force iOS to treat each cell as a separate accessible element
+5. Consider using `accessible="false"` on the CollectionView's native iOS handler to prevent it from being an accessibility container that swallows children
 
 ---
 
