@@ -152,21 +152,21 @@ Use these as a reference for what to expect. Failures marked below are test logi
 
 ---
 
-## iOS Test Results (first full run — 2026-03-26)
+## iOS Test Results (best run — 2026-03-26, 28/55)
 
 | Test Class | Passing | Notes |
 |------------|---------|-------|
 | OnboardingTests | 2/2 | All pass |
-| PrayerCardTests | 8/10 | `AddPrayerToCard`, `SearchKeyboard_DismissesOnBackground` fail |
-| SettingsTests | 5/7 | `Backup_ShowsButtons` (timeout), `Help_ShowsFaqItems` |
-| EdgeCaseTests | 2/5 | `EmptyCard`, `LongPrayerTitle`, `RapidTabSwitching` |
-| TagTests | 1/5 | Only `PageLoads` passes |
-| HomeTests | 0/1 | `Home_Btn_QuickAdd` not found (cascade from prior test) |
-| PrayerListTests | 0/9 | All fail — `TapToolbarItem("Add")` or cascading |
-| PrayerTimeTests | 0/5 | All fail — `WaitForElement` timeout on prayer time elements |
-| QuickAddTests | 0/4 | All fail — `Home_Btn_QuickAdd` not found (cascade) |
-| ReminderTests | 0/3 | All fail — `NavigateToNewPrayer` → `TapToolbarItem("Add")` |
-| UnsavedChangesTests | 0/4 | All fail — same `TapToolbarItem("Add")` cascade |
+| PrayerListTests | 8/9 | Only `SearchBar_FiltersResults` fails (clear issue) |
+| PrayerTimeTests | 5/5 | All pass |
+| QuickAddTests | 4/4 | All pass |
+| PrayerCardTests | 2/10 | Session crash cascade after `AddPrayerToCard` |
+| SettingsTests | 3/7 | Some pass, session crash cascade |
+| EdgeCaseTests | 2/5 | `DoubleTapSave` + `EmptySearch` pass |
+| HomeTests | 1/1 | Passes when not cascading |
+| ReminderTests | 1/3 | `ToggleOff` passes |
+| TagTests | 0/5 | All fail — session crash + keyboard issues |
+| UnsavedChangesTests | 0/4 | All fail — `TapToolbarItem("Add")` cascade |
 
 **Total: 18/55 passing**
 
