@@ -17,9 +17,6 @@ public class AppiumSetup : IAsyncLifetime
     /// <summary>Whether onboarding has been handled (dismissed or verified) this session.</summary>
     public bool OnboardingHandled { get; set; }
 
-    /// <summary>Whether the current session is responsive. Tests can check this to skip gracefully.</summary>
-    public bool SessionHealthy { get; private set; } = true;
-
     public async Task InitializeAsync()
     {
         CreateDriver();
@@ -57,7 +54,6 @@ public class AppiumSetup : IAsyncLifetime
     /// <summary>Tear down the current driver and create a fresh session with retry.</summary>
     private void RecreateDriver()
     {
-        SessionHealthy = false;
         try { Driver.Quit(); } catch { }
         try { Driver.Dispose(); } catch { }
 
@@ -71,7 +67,6 @@ public class AppiumSetup : IAsyncLifetime
             {
                 Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
                 _ = Driver.PageSource;
-                SessionHealthy = true;
                 return;
             }
             catch

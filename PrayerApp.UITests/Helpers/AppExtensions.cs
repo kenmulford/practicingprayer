@@ -75,23 +75,19 @@ public static class AppExtensions
     {
         var locator = AutomationIdLocator(automationId);
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        wait.Until(d =>
+        try
         {
-            try
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            wait.Until(d =>
             {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-                d.FindElement(locator);
-                return false;
-            }
-            catch (NoSuchElementException)
-            {
-                return true;
-            }
-            finally
-            {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            }
-        });
+                try { d.FindElement(locator); return false; }
+                catch (NoSuchElementException) { return true; }
+            });
+        }
+        finally
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+        }
     }
 
     // ── Actions ──────────────────────────────────────────────────
@@ -171,20 +167,18 @@ public static class AppExtensions
 
         var locator = AutomationIdLocator(automationId);
         var size = driver.Manage().Window.Size;
+        try
+        {
+        driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
         for (int i = 0; i < maxScrolls; i++)
         {
             try
             {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
                 var element = driver.FindElement(locator);
                 if (element.Displayed)
                     return (AppiumElement)element;
             }
             catch (NoSuchElementException) { }
-            finally
-            {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            }
 
             if (TestConfig.IsIOS)
             {
@@ -208,19 +202,28 @@ public static class AppExtensions
                 });
             }
         }
+        }
+        finally
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+        }
 
         throw new NoSuchElementException($"Element '{automationId}' not found after {maxScrolls} scrolls.");
     }
 
     // ── Navigation ───────────────────────────────────────────────
 
-    /// <summary>Navigate to a Shell tab by tapping its tab bar item.</summary>
+    /// <summary>
+    /// Navigate to a Shell tab by tapping its tab bar item.
+    /// Escalation: (1) back to clear nav stack, (2) dismiss known modals,
+    /// (3) re-activate app, (4) XPath text fallback.
+    /// </summary>
     public static void NavigateToTab(this AppiumDriver driver, string tabTitle)
     {
         driver.DismissKeyboardIfPresent();
 
-        // Try up to 3 times to find the tab bar, going back each time to clear
-        // modals, detail pages, and deep navigation stacks.
+        // Stage 1: Try up to 3 times to find the tab bar, going back each time
+        // to clear modals, detail pages, and deep navigation stacks.
         for (int attempt = 0; attempt < 3; attempt++)
         {
             driver.DismissAlertIfPresent();
@@ -232,12 +235,12 @@ public static class AppExtensions
             try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
         }
 
-        // Try dismissing a modal (Cancel/Close/Done buttons commonly found on modals)
+        // Stage 2: Try dismissing a known modal (Cancel buttons that block tab access)
         foreach (var modalButton in new[] { "Scope_Btn_Cancel", "QuickAdd_Btn_Cancel" })
         {
             try
             {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
                 var btn = driver.FindElement(MobileBy.AccessibilityId(modalButton));
                 btn.Click();
                 Thread.Sleep(1000);
@@ -249,7 +252,7 @@ public static class AppExtensions
                 return;
         }
 
-        // Nuclear recovery: re-activate the app (handles case where GoBack closed it)
+        // Stage 3: re-activate the app (handles case where GoBack closed it)
         try
         {
             var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
@@ -261,7 +264,7 @@ public static class AppExtensions
         if (TryTapTab(driver, tabTitle))
             return;
 
-        // Final XPath fallback
+        // Stage 4: final XPath text fallback
         var tab = driver.FindElement(TextContainsLocator(tabTitle));
         tab.Click();
         Thread.Sleep(500);
@@ -291,7 +294,7 @@ public static class AppExtensions
     {
         setup.EnsureSessionAlive();
         driver.DismissOnboardingIfPresent(setup);
-        driver.NavigateToTab(tabTitle); // NavigateToTab handles keyboard dismiss + alert dismiss
+        driver.NavigateToTab(tabTitle);
     }
 
     /// <summary>Go back (Android back button or iOS back nav).</summary>

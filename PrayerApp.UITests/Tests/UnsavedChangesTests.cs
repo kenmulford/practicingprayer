@@ -64,18 +64,8 @@ public class UnsavedChangesTests
     {
         var driver = _setup.Driver;
 
-        // Recovery: dismiss any leftover alerts/dialogs from prior tests
-        driver.DismissAlertIfPresent();
-        if (driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 2))
-        {
-            // Still on detail page from a prior test — discard and leave
-            driver.NavigateToTab("Prayers");
-            Thread.Sleep(500);
-            try { driver.TapAlertButton("Discard"); } catch { driver.DismissAlertIfPresent(); }
-            Thread.Sleep(500);
-        }
-
-        _setup.Driver.NavigateToNewPrayer(_setup);
+        // EnsureOnTab handles any leftover modals/alerts from prior tests
+        driver.NavigateToNewPrayer(_setup);
 
         driver.EnterText("Detail_Entry_Title", "Tab Switch Dirty");
         driver.NavigateToTab("Home");

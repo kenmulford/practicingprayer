@@ -35,7 +35,6 @@ public class TagTests
         driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 5);
 
         driver.EnterText("TagDetail_Entry_Name", "UITest Tag");
-        if (TestConfig.IsIOS) Thread.Sleep(500); // Let keyboard fully dismiss before tapping toolbar
         driver.TapToolbarItem("Save");
         Thread.Sleep(1500);
 

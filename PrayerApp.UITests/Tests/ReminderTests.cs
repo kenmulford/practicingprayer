@@ -16,18 +16,23 @@ public class ReminderTests
     private readonly AppiumSetup _setup;
     public ReminderTests(AppiumSetup setup) => _setup = setup;
 
+    /// <summary>Navigate to a new prayer and enable the reminders toggle.</summary>
+    private void NavigateToNewPrayerWithReminders(string title)
+    {
+        var driver = _setup.Driver;
+        driver.NavigateToNewPrayer(_setup);
+        driver.EnterText("Detail_Entry_Title", title);
+        driver.ScrollDownTo("Detail_Switch_Reminders");
+        driver.Tap("Detail_Switch_Reminders");
+        Thread.Sleep(500);
+    }
+
     /// <summary>6.1: Enable reminders — toggle on shows frequency/time pickers.</summary>
     [Fact]
     public void Reminders_ToggleOn_ShowsPickers()
     {
-        _setup.Driver.NavigateToNewPrayer(_setup);
+        NavigateToNewPrayerWithReminders("Reminder Test Prayer");
         var driver = _setup.Driver;
-
-        driver.EnterText("Detail_Entry_Title", "Reminder Test Prayer");
-        driver.ScrollDownTo("Detail_Switch_Reminders");
-
-        driver.Tap("Detail_Switch_Reminders");
-        Thread.Sleep(500);
 
         Assert.True(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 5),
             "Frequency picker should appear when reminders are enabled");
@@ -42,14 +47,8 @@ public class ReminderTests
     [Fact]
     public void Reminders_FrequencyPicker_HasOptions()
     {
-        _setup.Driver.NavigateToNewPrayer(_setup);
+        NavigateToNewPrayerWithReminders("Freq Test Prayer");
         var driver = _setup.Driver;
-
-        driver.EnterText("Detail_Entry_Title", "Freq Test Prayer");
-        driver.ScrollDownTo("Detail_Switch_Reminders");
-
-        driver.Tap("Detail_Switch_Reminders");
-        Thread.Sleep(500);
 
         if (driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 3))
         {
@@ -60,8 +59,17 @@ public class ReminderTests
             {
                 // iOS shows a native picker wheel — options aren't findable via text locators.
                 // Verify the picker opened by looking for the picker wheel element or Done button.
-                var pickerOpened = driver.IsTextDisplayed("Done", timeoutSeconds: 3)
-                    || driver.FindElements(By.XPath("//XCUIElementTypePickerWheel")).Count > 0;
+                bool pickerOpened;
+                try
+                {
+                    driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+                    pickerOpened = driver.IsTextDisplayed("Done", timeoutSeconds: 3)
+                        || driver.FindElements(By.XPath("//XCUIElementTypePickerWheel")).Count > 0;
+                }
+                finally
+                {
+                    driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+                }
                 Assert.True(pickerOpened,
                     "Frequency picker should open and show a selection wheel on iOS");
                 // Dismiss the picker
@@ -86,15 +94,9 @@ public class ReminderTests
     [Fact]
     public void Reminders_ToggleOff_HidesPickers()
     {
-        _setup.Driver.NavigateToNewPrayer(_setup);
+        NavigateToNewPrayerWithReminders("Toggle Off Test");
         var driver = _setup.Driver;
 
-        driver.EnterText("Detail_Entry_Title", "Toggle Off Test");
-        driver.ScrollDownTo("Detail_Switch_Reminders");
-
-        // Toggle ON
-        driver.Tap("Detail_Switch_Reminders");
-        Thread.Sleep(500);
         Assert.True(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 3));
 
         // Toggle OFF

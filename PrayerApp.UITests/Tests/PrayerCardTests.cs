@@ -234,7 +234,6 @@ public class PrayerCardTests
             // Avoid tapping Cards_Search on iOS as it opens the keyboard.
             try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
             Thread.Sleep(300);
-            Thread.Sleep(300);
         }
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
