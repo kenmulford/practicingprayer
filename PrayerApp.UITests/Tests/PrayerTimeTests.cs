@@ -19,12 +19,14 @@ public class PrayerTimeTests
     private bool TryStartPrayerTime()
     {
         var driver = _setup.Driver;
-        driver.EnsureOnTab("Home", _setup);
 
         // Retry the whole flow up to 2 times — the action sheet can re-render
         // between IsTextDisplayed and TapByText, causing stale element errors.
         for (int attempt = 0; attempt < 2; attempt++)
         {
+            driver.EnsureOnTab("Home", _setup);
+            if (TestConfig.IsIOS) Thread.Sleep(500); // Let Home page fully render
+
             driver.WaitAndTap("Home_Btn_PrayerTime");
             Thread.Sleep(500);
 
