@@ -138,13 +138,11 @@ public class PrayerCardTests
     [Fact]
     public void Cards_EditPrayerFromCard()
     {
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
+        driver.EnsureUITestPrayerExists(_setup);
 
+        driver.EnsureOnTab("Prayer Cards", _setup);
         ExpandQuickAddCard();
-
-        if (!driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UI Test Prayer' not found — depends on earlier QuickAdd test");
 
         driver.TapByText("UI Test Prayer");
 

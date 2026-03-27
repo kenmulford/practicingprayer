@@ -92,11 +92,9 @@ public class PrayerListTests
     [Fact]
     public void Prayers_TapPrayer_ShowsViewMode()
     {
-        _setup.Driver.EnsureOnTab("Prayers", _setup);
         var driver = _setup.Driver;
-
-        if (!driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UI Test Prayer' not found — depends on earlier QuickAdd test");
+        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureOnTab("Prayers", _setup);
 
         driver.TapByText("UI Test Prayer");
 

@@ -120,28 +120,36 @@ public class EdgeCaseTests
 
         // Navigate away and back to ensure all cards are collapsed (clean state)
         driver.NavigateToTab("Home");
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
         driver.NavigateToTab("Prayer Cards");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Scroll to find the new card if it's below the fold
+        // Scroll down to find the new card — it may be below the fold on iPad
         if (!driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 3))
         {
-            try { driver.ScrollDownTo("Cards_List_Cards", maxScrolls: 3); }
-            catch { /* might already be visible */ }
+            for (int i = 0; i < 3 && !driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 2); i++)
+            {
+                driver.ExecuteScript(
+                    TestConfig.IsIOS ? "mobile: swipe" : "mobile: swipeGesture",
+                    TestConfig.IsIOS
+                        ? new Dictionary<string, object> { { "direction", "up" } }
+                        : new Dictionary<string, object>
+                        {
+                            { "left", 100 }, { "top", 300 },
+                            { "width", 400 }, { "height", 600 },
+                            { "direction", "up" }, { "percent", 0.5 }
+                        });
+                Thread.Sleep(500);
+            }
         }
 
-        if (!driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 5))
-        {
-            if (TestConfig.IsIOS)
-                throw Xunit.Sdk.SkipException.ForSkip("iOS Bug #5: Empty card not visible after scroll on iPad layout");
-            Assert.Fail("Could not find 'Empty Card Test' card after creation");
-        }
+        Assert.True(driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 5),
+            "Could not find 'Empty Card Test' card after creation and scrolling");
 
         // Tap the card title to expand — retry once if stale
         try { driver.TapByText("Empty Card Test"); }
         catch (WebDriverException) { Thread.Sleep(TestConfig.DelayAfterTap); driver.TapByText("Empty Card Test"); }
-        Thread.Sleep(800);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // After expansion, the "+ Add prayer" button may need scrolling into view
         var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);

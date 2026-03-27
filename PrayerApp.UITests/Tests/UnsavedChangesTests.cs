@@ -25,11 +25,6 @@ public class UnsavedChangesTests
         driver.EnterText("Detail_Entry_Title", "Dirty Prayer");
         Thread.Sleep(TestConfig.DelayDirtyRegistration);
 
-        // Known iOS bug: GoBack bypasses the unsaved changes guard entirely.
-        // See docs/research/ios-uat-bugs-found.md Bug #2
-        if (TestConfig.IsIOS)
-            throw Xunit.Sdk.SkipException.ForSkip("iOS Bug #2: Unsaved changes guard bypassed on iOS back navigation — data loss risk");
-
         driver.GoBack();
         Thread.Sleep(TestConfig.DelayAfterSave);
 

@@ -37,7 +37,7 @@ Items are listed in work order. Start at the top, work down.
 | 9   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
 | 10  | ~~UX-16~~ | ~~Portrait mode option for Prayer Time~~ | Users | ✅ Done (2026-03-27) — Settings toggle + conditional orientation lock |
 | 11  | ~~BUG-1~~ | ~~iOS: SIGABRT crash during tag save navigation~~ | UITest | ✅ Done (2026-03-27) — Native gesture cleanup in OnDisappearing + WeakReference in closure + CancellationToken for async work |
-| 12  | ~~BUG-2~~ | ~~iOS: Unsaved changes guard bypassed on back nav~~ | UITest | ✅ Done (2026-03-27) — Added `ShellNavigationSource.Unknown` to `OnShellNavigating` |
+| 12  | ~~BUG-2~~ | ~~iOS: Unsaved changes guard bypassed on back nav~~ | UITest | ✅ Done (2026-03-27) — `EditGuardHelper.AttachEditGuardBackButton` on all IEditGuard pages |
 | 13  | ~~BUG-3~~ | ~~iOS: GoToAsync("..") unreliable after tag save~~ | UITest | ✅ Done (2026-03-27) — Same fix as BUG-1 |
 | 14  | ~~BUG-4~~ | ~~iOS: Prayer Time action sheet stale element~~ | UITest | ✅ Done (2026-03-27) — `_prayerTimeNavigating` guard prevents double-tap |
 | 15  | ~~BUG-5~~ | ~~iOS: Empty card expand layout on iPad~~ | UITest | ✅ Done (2026-03-27) — `ItemSizingStrategy="MeasureAllItems"` on PrayerCards CollectionView |

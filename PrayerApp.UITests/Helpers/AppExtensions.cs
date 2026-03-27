@@ -495,6 +495,25 @@ public static class AppExtensions
 
     // ── Test Setup Helpers ─────────────────────────────────────
 
+    /// <summary>
+    /// Ensures a prayer named "UI Test Prayer" exists. Creates it via QuickAdd if missing.
+    /// Call at the start of any test that depends on this prayer existing.
+    /// </summary>
+    public static void EnsureUITestPrayerExists(this AppiumDriver driver, AppiumSetup setup)
+    {
+        driver.EnsureOnTab("Prayers", setup);
+        if (driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
+            return;
+
+        // Create via QuickAdd from Home tab
+        driver.NavigateToTab("Home");
+        driver.Tap("Home_Btn_QuickAdd");
+        driver.WaitForElement("QuickAdd_Entry_Title");
+        driver.EnterText("QuickAdd_Entry_Title", "UI Test Prayer");
+        driver.Tap("QuickAdd_Btn_Add");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+    }
+
     /// <summary>Navigate to a new prayer form in edit mode (Prayers tab → Add toolbar).</summary>
     public static void NavigateToNewPrayer(this AppiumDriver driver, AppiumSetup setup)
     {

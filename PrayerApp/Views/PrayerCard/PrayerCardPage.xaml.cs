@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 
 namespace PrayerApp.Views.PrayerCard;
@@ -8,6 +9,8 @@ public partial class PrayerCardPage : ContentPage
     {
         InitializeComponent();
         BindingContext = vm;
+
+        EditGuardHelper.AttachEditGuardBackButton(this);
     }
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)
