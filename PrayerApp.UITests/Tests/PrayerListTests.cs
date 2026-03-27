@@ -100,21 +100,21 @@ public class PrayerListTests
         // Wait for CollectionView cells to materialize in the accessibility tree
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // On iOS, CollectionView cell contents may not appear in the flat accessibility tree.
-        // Use iOS native scroll with predicateString to reach inside cells, then tap by text.
+        // On iOS, SemanticProperties.Description composes cell labels (e.g. "Quick Add, UI Test Prayer").
+        // Use CONTAINS predicate to match partial text, then tap with contains-based locator.
         bool scrolledToItem = false;
         if (TestConfig.IsIOS)
         {
             scrolledToItem = driver.IOSScrollToPredicateInContainer(
-                "List_List_Prayers", "label == 'UI Test Prayer'");
+                "List_List_Prayers", "label CONTAINS 'UI Test Prayer'");
         }
 
         try
         {
             if (scrolledToItem)
             {
-                // iOS native scroll found it — now tap by text
-                driver.TapByText("UI Test Prayer", timeoutSeconds: 5);
+                // iOS: cell label is composed — use contains-based tap
+                driver.TapByTextContains("UI Test Prayer", timeoutSeconds: 5);
             }
             else
             {

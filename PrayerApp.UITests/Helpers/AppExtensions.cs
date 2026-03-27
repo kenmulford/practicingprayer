@@ -441,6 +441,15 @@ public static class AppExtensions
         Thread.Sleep(300);
     }
 
+    /// <summary>Find and tap any element whose text/label <em>contains</em> the given substring.</summary>
+    public static void TapByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    {
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        var element = (AppiumElement)wait.Until(d => d.FindElement(TextContainsLocator(text)));
+        element.Click();
+        Thread.Sleep(300);
+    }
+
     /// <summary>Check if an element with the given text is displayed.</summary>
     public static bool IsTextDisplayed(this AppiumDriver driver, string text, int timeoutSeconds = 3)
     {

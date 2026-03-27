@@ -137,25 +137,26 @@ public class EdgeCaseTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // After expansion, the "+ Add prayer" button may be below the viewport on iPad.
-        // On iOS, CollectionView cell children may not appear in the flat accessibility tree.
-        // Use multiple strategies: standard find → iOS native scroll by name → text fallback.
+        // On iOS, SemanticProperties.Description makes cells atomic — child AutomationIds
+        // aren't individually exposed. Use multiple strategies with text-based fallbacks.
         var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
         if (!found)
         {
-            // iOS: use mobile: scroll with name parameter — reaches inside CollectionView cells
-            found = driver.IOSScrollToNameInContainer("Cards_List_Cards", "Cards_Btn_AddPrayer");
-            if (found) found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 3);
+            // iOS: use CONTAINS predicate to find "Add prayer" in composed cell labels
+            found = driver.IOSScrollToPredicateInContainer(
+                "Cards_List_Cards", "label CONTAINS 'Add prayer'");
         }
         if (!found)
         {
-            // Fallback: try standard scroll
+            // Fallback: try standard scroll to the button by AutomationId
             try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"); found = true; }
             catch (WebDriverException) { /* still not found after scrolling */ }
         }
         if (!found)
         {
-            // Last resort: find by button text
-            found = driver.IsTextDisplayed("+ Add prayer", timeoutSeconds: 3);
+            // Text-based fallback — exact or partial match
+            found = driver.IsTextDisplayed("+ Add prayer", timeoutSeconds: 3)
+                 || driver.IsTextDisplayed("Add prayer", timeoutSeconds: 2);
         }
         if (!found)
         {
