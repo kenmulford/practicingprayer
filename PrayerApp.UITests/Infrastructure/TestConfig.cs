@@ -71,11 +71,18 @@ public static class TestConfig
         options.PlatformName = "iOS";
         options.AutomationName = "XCUITest";
         options.AddAdditionalAppiumOption("bundleId", IOSBundleId);
-        options.AddAdditionalAppiumOption("autoAcceptAlerts", true);
+        // Auto-dismiss iOS system alerts (permissions, dictation prompts).
+        options.AddAdditionalAppiumOption("autoDismissAlerts", true);
+        // Hardware keyboard hides software keyboard — prevents SendKeys from
+        // hitting dictation/emoji buttons. Only works when Appium boots the
+        // simulator itself (not pre-booted). Shut down simulator before test run.
+        options.AddAdditionalAppiumOption("connectHardwareKeyboard", true);
         options.AddAdditionalAppiumOption("newCommandTimeout", 300);
 
-        options.DeviceName = Environment.GetEnvironmentVariable("IOS_SIMULATOR") ?? "iPhone 17";
-        options.PlatformVersion = Environment.GetEnvironmentVariable("IOS_VERSION") ?? "26.0";
+        // iPad: mobile: hideKeyboard works reliably on tablets (has "Done" button).
+        // iPhone keyboard has no dismiss button, causing cascade failures.
+        options.DeviceName = Environment.GetEnvironmentVariable("IOS_SIMULATOR") ?? "iPad (A16)";
+        options.PlatformVersion = Environment.GetEnvironmentVariable("IOS_VERSION") ?? "26.4";
 
         return options;
     }

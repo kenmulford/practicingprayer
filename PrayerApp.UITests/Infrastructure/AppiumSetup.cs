@@ -25,26 +25,57 @@ public class AppiumSetup : IAsyncLifetime
     }
 
     /// <summary>
-    /// Check if the driver session is alive. If the UiAutomator2 instrumentation
-    /// crashed, recreate the driver to recover.
+    /// Check if the driver session and app are alive using the documented
+    /// mobile: queryAppState API. If the app isn't in the foreground,
+    /// try to activate it. If the session is dead, recreate it.
     /// </summary>
     public void EnsureSessionAlive()
     {
         try
         {
-            // Quick health check — PageSource requires a live session
-            Driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
-            _ = Driver.PageSource;
-            Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+            var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
+            var paramName = TestConfig.IsIOS ? "bundleId" : "appId";
+            var state = Driver.ExecuteScript("mobile: queryAppState",
+                new Dictionary<string, object> { { paramName, appId } });
+            int appState = Convert.ToInt32(state);
+
+            if (appState < 3) // not running or background-suspended
+            {
+                Driver.ActivateApp(appId);
+                Thread.Sleep(2000);
+            }
         }
         catch (Exception)
         {
-            try { Driver.Quit(); } catch { }
-            try { Driver.Dispose(); } catch { }
-            CreateDriver();
-            Thread.Sleep(3000); // Wait for app to load after session restart
-            OnboardingHandled = false; // Onboarding may show again
+            RecreateDriver();
         }
+    }
+
+    /// <summary>Tear down the current driver and create a fresh session with retry.</summary>
+    private void RecreateDriver()
+    {
+        try { Driver.Quit(); } catch { }
+        try { Driver.Dispose(); } catch { }
+
+        for (int attempt = 1; attempt <= 3; attempt++)
+        {
+            CreateDriver();
+            Thread.Sleep(5000);
+            OnboardingHandled = false;
+
+            try
+            {
+                Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+                _ = Driver.PageSource;
+                return;
+            }
+            catch
+            {
+                try { Driver.Quit(); } catch { }
+                try { Driver.Dispose(); } catch { }
+            }
+        }
+        // All 3 attempts failed — SessionHealthy stays false
     }
 
     private void CreateDriver()

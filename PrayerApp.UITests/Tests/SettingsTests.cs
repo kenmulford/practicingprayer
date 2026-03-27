@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 9: Settings Hub
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "9-Settings")]
 public class SettingsTests
 {
@@ -18,6 +18,8 @@ public class SettingsTests
     private void EnsureOnSettingsHub()
     {
         _setup.Driver.NavigateToTabRoot("Settings", "Settings_Row_AppSettings", _setup);
+        // Let Shell finish rendering all hub rows before interacting
+        if (TestConfig.IsIOS) Thread.Sleep(500);
     }
 
     /// <summary>9.1: Hub page loads — 4 rows with chevrons.</summary>
@@ -114,11 +116,13 @@ public class SettingsTests
         var driver = _setup.Driver;
 
         driver.WaitAndTap("Settings_Row_Help");
+        Thread.Sleep(1500); // CollectionView needs time to render items on iOS
 
+        // IsTextDisplayed uses exact match — use full question text from FAQ
         Assert.True(
-            driver.IsTextDisplayed("How", timeoutSeconds: 5)
-            || driver.IsTextDisplayed("What", timeoutSeconds: 3)
-            || driver.IsTextDisplayed("Can", timeoutSeconds: 3),
+            driver.IsTextDisplayed("How do I create a prayer card?", timeoutSeconds: 8)
+            || driver.IsTextDisplayed("What is Quick Add?", timeoutSeconds: 3)
+            || driver.IsTextDisplayed("Is my data private?", timeoutSeconds: 3),
             "Help page should show FAQ items");
 
         driver.GoBack();

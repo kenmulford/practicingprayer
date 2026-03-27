@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 7: Tags
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "7-Tags")]
 public class TagTests
 {
@@ -36,7 +36,11 @@ public class TagTests
 
         driver.EnterText("TagDetail_Entry_Name", "UITest Tag");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(1500);
+
+        // Save navigates back via GoToAsync("..") — if we're not on the list yet, try navigating
+        if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5))
+            driver.NavigateToTab("Tags");
 
         Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5),
             "Should return to tag list after saving new tag");

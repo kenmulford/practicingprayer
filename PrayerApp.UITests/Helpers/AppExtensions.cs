@@ -14,6 +14,16 @@ public static class AppExtensions
 {
     private const string PackagePrefix = "com.multithreadedllc.prayercards:id/";
 
+    /// <summary>iOS swipe velocity in pixels/sec. Moderate speed to reliably trigger SwipeView.</summary>
+    private const int IOSSwipeVelocity = 1500;
+
+    /// <summary>Dismiss the software keyboard if showing on iOS. No-op on Android.</summary>
+    public static void DismissKeyboardIfPresent(this AppiumDriver driver)
+    {
+        if (!TestConfig.IsIOS) return;
+        try { driver.HideKeyboard(); } catch (WebDriverException) { }
+    }
+
     /// <summary>Build the correct locator for an AutomationId on the current platform.</summary>
     private static By AutomationIdLocator(string automationId)
     {
@@ -26,6 +36,22 @@ public static class AppExtensions
                 $"//*[@resource-id='{PackagePrefix}{automationId}' or @content-desc='{automationId}']");
         }
         return MobileBy.AccessibilityId(automationId);
+    }
+
+    /// <summary>Build a platform-correct XPath to find an element by its visible text.</summary>
+    private static By TextLocator(string text)
+    {
+        if (TestConfig.IsIOS)
+            return By.XPath($"//*[@name='{text}' or @label='{text}']");
+        return By.XPath($"//*[@text='{text}' or @content-desc='{text}']");
+    }
+
+    /// <summary>Build a platform-correct XPath to find an element containing text.</summary>
+    private static By TextContainsLocator(string text)
+    {
+        if (TestConfig.IsIOS)
+            return By.XPath($"//*[contains(@name,'{text}') or contains(@label,'{text}')]");
+        return By.XPath($"//*[contains(@text,'{text}') or contains(@content-desc,'{text}')]");
     }
 
     // ── Element Finders ──────────────────────────────────────────
@@ -49,23 +75,19 @@ public static class AppExtensions
     {
         var locator = AutomationIdLocator(automationId);
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        wait.Until(d =>
+        try
         {
-            try
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            wait.Until(d =>
             {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-                d.FindElement(locator);
-                return false;
-            }
-            catch (NoSuchElementException)
-            {
-                return true;
-            }
-            finally
-            {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            }
-        });
+                try { d.FindElement(locator); return false; }
+                catch (NoSuchElementException) { return true; }
+            });
+        }
+        finally
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+        }
     }
 
     // ── Actions ──────────────────────────────────────────────────
@@ -82,8 +104,33 @@ public static class AppExtensions
     public static void EnterText(this AppiumDriver driver, string automationId, string text)
     {
         var element = driver.FindByAutomationId(automationId);
-        element.Clear();
-        element.SendKeys(text);
+
+        if (TestConfig.IsIOS)
+        {
+            // iOS: use "Clear text" button to clear (element.Clear() is broken on
+            // search field wrappers), then standard SendKeys to type.
+            // autoDismissAlerts handles any dictation prompts from the keyboard.
+            try
+            {
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+                driver.FindElement(MobileBy.AccessibilityId("Clear text")).Click();
+                Thread.Sleep(200);
+            }
+            catch (WebDriverException) { /* field empty or unfocused */ }
+            finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+            if (!string.IsNullOrEmpty(text))
+            {
+                element.SendKeys(text);
+                driver.DismissKeyboardIfPresent();
+            }
+        }
+        else
+        {
+            element.Clear();
+            if (!string.IsNullOrEmpty(text))
+                element.SendKeys(text);
+        }
     }
 
     /// <summary>Get the text content of an element.</summary>
@@ -112,36 +159,53 @@ public static class AppExtensions
 
     // ── Scrolling ────────────────────────────────────────────────
 
-    /// <summary>Scroll down until an element with the given AutomationId is found (Android).</summary>
+    /// <summary>Scroll down until an element with the given AutomationId is found.</summary>
     public static AppiumElement ScrollDownTo(this AppiumDriver driver, string automationId,
         int maxScrolls = 5)
     {
+        driver.DismissKeyboardIfPresent();
+
         var locator = AutomationIdLocator(automationId);
         var size = driver.Manage().Window.Size;
+        try
+        {
+        driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
         for (int i = 0; i < maxScrolls; i++)
         {
             try
             {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
                 var element = driver.FindElement(locator);
                 if (element.Displayed)
                     return (AppiumElement)element;
             }
             catch (NoSuchElementException) { }
-            finally
-            {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            }
 
-            driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+            if (TestConfig.IsIOS)
             {
-                { "left", size.Width / 4 },
-                { "top", size.Height / 4 },
-                { "width", size.Width / 2 },
-                { "height", size.Height / 2 },
-                { "direction", "up" },
-                { "percent", 0.5 }
-            });
+                // iOS XCUITest: "mobile: swipe" with direction
+                driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
+                {
+                    { "direction", "up" }
+                });
+            }
+            else
+            {
+                // Android UiAutomator2: "mobile: swipeGesture" with bounding area
+                driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+                {
+                    { "left", size.Width / 4 },
+                    { "top", size.Height / 4 },
+                    { "width", size.Width / 2 },
+                    { "height", size.Height / 2 },
+                    { "direction", "up" },
+                    { "percent", 0.5 }
+                });
+            }
+        }
+        }
+        finally
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
         }
 
         throw new NoSuchElementException($"Element '{automationId}' not found after {maxScrolls} scrolls.");
@@ -149,11 +213,17 @@ public static class AppExtensions
 
     // ── Navigation ───────────────────────────────────────────────
 
-    /// <summary>Navigate to a Shell tab by tapping its tab bar item.</summary>
+    /// <summary>
+    /// Navigate to a Shell tab by tapping its tab bar item.
+    /// Escalation: (1) back to clear nav stack, (2) dismiss known modals,
+    /// (3) re-activate app, (4) XPath text fallback.
+    /// </summary>
     public static void NavigateToTab(this AppiumDriver driver, string tabTitle)
     {
-        // Try up to 3 times to find the tab bar, going back each time to clear
-        // modals, detail pages, and deep navigation stacks.
+        driver.DismissKeyboardIfPresent();
+
+        // Stage 1: Try up to 3 times to find the tab bar, going back each time
+        // to clear modals, detail pages, and deep navigation stacks.
         for (int attempt = 0; attempt < 3; attempt++)
         {
             driver.DismissAlertIfPresent();
@@ -165,10 +235,28 @@ public static class AppExtensions
             try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
         }
 
-        // Nuclear recovery: re-activate the app (handles case where GoBack closed it)
+        // Stage 2: Try dismissing a known modal (Cancel buttons that block tab access)
+        foreach (var modalButton in new[] { "Scope_Btn_Cancel", "QuickAdd_Btn_Cancel" })
+        {
+            try
+            {
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+                var btn = driver.FindElement(MobileBy.AccessibilityId(modalButton));
+                btn.Click();
+                Thread.Sleep(1000);
+            }
+            catch (WebDriverException) { }
+            finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+            if (TryTapTab(driver, tabTitle))
+                return;
+        }
+
+        // Stage 3: re-activate the app (handles case where GoBack closed it)
         try
         {
-            driver.ActivateApp(TestConfig.AndroidPackage);
+            var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
+            driver.ActivateApp(appId);
             Thread.Sleep(1000);
         }
         catch (WebDriverException) { }
@@ -176,9 +264,8 @@ public static class AppExtensions
         if (TryTapTab(driver, tabTitle))
             return;
 
-        // Final XPath fallback
-        var tab = driver.FindElement(By.XPath(
-            $"//*[contains(@text,'{tabTitle}') or contains(@content-desc,'{tabTitle}')]"));
+        // Stage 4: final XPath text fallback
+        var tab = driver.FindElement(TextContainsLocator(tabTitle));
         tab.Click();
         Thread.Sleep(500);
     }
@@ -249,41 +336,57 @@ public static class AppExtensions
     /// <summary>Check if an alert dialog is displayed and get its text.</summary>
     public static bool TryGetAlertText(this AppiumDriver driver, out string text)
     {
+        if (TestConfig.IsIOS)
+        {
+            try { text = driver.SwitchTo().Alert().Text; return true; }
+            catch (WebDriverException) { text = ""; return false; }
+        }
+
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-            var alert = driver.FindElement(By.Id("android:id/message"));
-            text = alert.Text;
+            text = driver.FindElement(By.Id("android:id/message")).Text;
             return true;
         }
-        catch (WebDriverException)
-        {
-            text = "";
-            return false;
-        }
-        finally
-        {
-            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-        }
+        catch (WebDriverException) { text = ""; return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
     }
 
     /// <summary>Tap a button in an alert dialog by its text.</summary>
     public static void TapAlertButton(this AppiumDriver driver, string buttonText)
     {
-        var button = driver.FindElement(By.XPath(
-            $"//*[@resource-id='android:id/button1' or @resource-id='android:id/button2' or @resource-id='android:id/button3'][contains(@text,'{buttonText}')]"));
-        button.Click();
+        if (TestConfig.IsIOS)
+        {
+            // iOS alerts expose buttons as XCUIElementTypeButton with @name matching the button label
+            var button = driver.FindElement(
+                By.XPath($"//XCUIElementTypeButton[@name='{buttonText}']"));
+            button.Click();
+        }
+        else
+        {
+            var button = driver.FindElement(By.XPath(
+                $"//*[@resource-id='android:id/button1' or @resource-id='android:id/button2' or @resource-id='android:id/button3'][contains(@text,'{buttonText}')]"));
+            button.Click();
+        }
         Thread.Sleep(300);
     }
 
     // ── Toolbar / Text Finders ────────────────────────────────────
 
     /// <summary>Tap a Shell ToolbarItem by its text label (e.g., "Save", "Edit", "Add Card").</summary>
-    public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
+        driver.DismissKeyboardIfPresent();
+        if (TestConfig.IsIOS) Thread.Sleep(300);
+
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        var element = wait.Until(d => d.FindElement(By.XPath(
-            $"//*[@text='{text}' or @content-desc='{text}']")));
+
+        // iOS Shell toolbar items render as XCUIElementTypeButton — use specific locator
+        By locator = TestConfig.IsIOS
+            ? By.XPath($"//XCUIElementTypeButton[@name='{text}' or @label='{text}']")
+            : TextLocator(text);
+
+        var element = wait.Until(d => d.FindElement(locator));
         element.Click();
         Thread.Sleep(300);
     }
@@ -292,7 +395,7 @@ public static class AppExtensions
     public static AppiumElement FindByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
     {
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        return (AppiumElement)wait.Until(d => d.FindElement(By.XPath($"//*[@text='{text}']")));
+        return (AppiumElement)wait.Until(d => d.FindElement(TextLocator(text)));
     }
 
     /// <summary>Find and tap any element by its visible text.</summary>
@@ -308,7 +411,7 @@ public static class AppExtensions
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
-            var element = driver.FindElement(By.XPath($"//*[@text='{text}']"));
+            var element = driver.FindElement(TextLocator(text));
             return element.Displayed;
         }
         catch (WebDriverException) { return false; }
@@ -320,17 +423,31 @@ public static class AppExtensions
     /// <summary>Swipe an element in the given direction.</summary>
     private static void SwipeElement(AppiumDriver driver, AppiumElement element, string direction)
     {
-        var location = element.Location;
-        var size = element.Size;
-        driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+        if (TestConfig.IsIOS)
         {
-            { "left", location.X },
-            { "top", location.Y },
-            { "width", size.Width },
-            { "height", size.Height },
-            { "direction", direction },
-            { "percent", 0.5 }
-        });
+            // iOS XCUITest: "mobile: swipe" with elementId, direction, and velocity (px/sec)
+            driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
+            {
+                { "elementId", element.Id },
+                { "direction", direction },
+                { "velocity", IOSSwipeVelocity }
+            });
+        }
+        else
+        {
+            // Android UiAutomator2: "mobile: swipeGesture" with bounding area
+            var location = element.Location;
+            var size = element.Size;
+            driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+            {
+                { "left", location.X },
+                { "top", location.Y },
+                { "width", size.Width },
+                { "height", size.Height },
+                { "direction", direction },
+                { "percent", 0.5 }
+            });
+        }
         Thread.Sleep(300);
     }
 
@@ -345,6 +462,12 @@ public static class AppExtensions
     /// <summary>Check if an alert dialog is currently showing.</summary>
     public static bool IsAlertPresent(this AppiumDriver driver)
     {
+        if (TestConfig.IsIOS)
+        {
+            try { driver.SwitchTo().Alert(); return true; }
+            catch (WebDriverException) { return false; }
+        }
+
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
@@ -377,13 +500,21 @@ public static class AppExtensions
     public static void NavigateToNewPrayer(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayers", setup);
+        if (TestConfig.IsIOS) Thread.Sleep(500); // Let Shell finish rendering toolbar items
         driver.TapToolbarItem("Add");
         driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 5);
     }
 
-    /// <summary>Dismiss any visible alert by tapping its positive button (OK/Yes/Cancel).</summary>
+    /// <summary>Accept any visible alert by tapping its positive button (OK/Yes).</summary>
     public static void DismissAlertIfPresent(this AppiumDriver driver)
     {
+        if (TestConfig.IsIOS)
+        {
+            try { driver.SwitchTo().Alert().Accept(); Thread.Sleep(300); }
+            catch (WebDriverException) { }
+            return;
+        }
+
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;

@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 8: Prayer Time
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "8-PrayerTime")]
 public class PrayerTimeTests
 {
@@ -19,19 +19,36 @@ public class PrayerTimeTests
     private bool TryStartPrayerTime()
     {
         var driver = _setup.Driver;
-        driver.EnsureOnTab("Home", _setup);
 
-        driver.WaitAndTap("Home_Btn_PrayerTime");
-        Thread.Sleep(500);
-
-        if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
+        // Retry the whole flow up to 2 times — the action sheet can re-render
+        // between IsTextDisplayed and TapByText, causing stale element errors.
+        for (int attempt = 0; attempt < 2; attempt++)
         {
-            driver.TapByText("All Requests");
-            Thread.Sleep(1000);
-            return true;
-        }
+            driver.EnsureOnTab("Home", _setup);
+            if (TestConfig.IsIOS) Thread.Sleep(500); // Let Home page fully render
 
-        driver.DismissAlertIfPresent();
+            driver.WaitAndTap("Home_Btn_PrayerTime");
+            Thread.Sleep(500);
+
+            if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
+            {
+                try
+                {
+                    driver.TapByText("All Requests");
+                    Thread.Sleep(1000);
+                    return true;
+                }
+                catch
+                {
+                    // Stale element — dismiss the action sheet and retry
+                    driver.DismissAlertIfPresent();
+                    Thread.Sleep(500);
+                    continue;
+                }
+            }
+
+            driver.DismissAlertIfPresent();
+        }
         return false;
     }
 
@@ -139,7 +156,11 @@ public class PrayerTimeTests
                 || driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 3),
                 "Tag scope page should show Start and Cancel buttons");
 
-            driver.Tap("Scope_Btn_Cancel");
+            driver.WaitAndTap("Scope_Btn_Cancel");
+            Thread.Sleep(1000); // Wait for modal dismiss animation
+            // Verify we're back on Home (modal actually dismissed)
+            Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 5),
+                "Cancel should dismiss scope modal and return to Home");
         }
         else
         {
