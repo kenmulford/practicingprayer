@@ -21,19 +21,32 @@ public class PrayerTimeTests
         var driver = _setup.Driver;
         driver.EnsureOnTab("Home", _setup);
 
-        driver.WaitAndTap("Home_Btn_PrayerTime");
-        Thread.Sleep(500);
-
-        if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
+        // Retry the whole flow up to 2 times — the action sheet can re-render
+        // between IsTextDisplayed and TapByText, causing stale element errors.
+        for (int attempt = 0; attempt < 2; attempt++)
         {
-            // Retry tap — element can go stale if the action sheet re-renders
-            try { driver.TapByText("All Requests"); }
-            catch { Thread.Sleep(300); driver.TapByText("All Requests"); }
-            Thread.Sleep(1000);
-            return true;
-        }
+            driver.WaitAndTap("Home_Btn_PrayerTime");
+            Thread.Sleep(500);
 
-        driver.DismissAlertIfPresent();
+            if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
+            {
+                try
+                {
+                    driver.TapByText("All Requests");
+                    Thread.Sleep(1000);
+                    return true;
+                }
+                catch
+                {
+                    // Stale element — dismiss the action sheet and retry
+                    driver.DismissAlertIfPresent();
+                    Thread.Sleep(500);
+                    continue;
+                }
+            }
+
+            driver.DismissAlertIfPresent();
+        }
         return false;
     }
 
