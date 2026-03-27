@@ -79,7 +79,9 @@ public static class TestConfig
         options.AddAdditionalAppiumOption("connectHardwareKeyboard", true);
         options.AddAdditionalAppiumOption("newCommandTimeout", 300);
 
-        options.DeviceName = Environment.GetEnvironmentVariable("IOS_SIMULATOR") ?? "iPhone 17";
+        // iPad: mobile: hideKeyboard works reliably on tablets (has "Done" button).
+        // iPhone keyboard has no dismiss button, causing cascade failures.
+        options.DeviceName = Environment.GetEnvironmentVariable("IOS_SIMULATOR") ?? "iPad (A16)";
         options.PlatformVersion = Environment.GetEnvironmentVariable("IOS_VERSION") ?? "26.4";
 
         return options;

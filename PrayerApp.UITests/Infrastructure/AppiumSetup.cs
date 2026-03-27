@@ -17,6 +17,9 @@ public class AppiumSetup : IAsyncLifetime
     /// <summary>Whether onboarding has been handled (dismissed or verified) this session.</summary>
     public bool OnboardingHandled { get; set; }
 
+    /// <summary>Whether the current session is responsive. Tests can check this to skip gracefully.</summary>
+    public bool SessionHealthy { get; private set; } = true;
+
     public async Task InitializeAsync()
     {
         CreateDriver();
@@ -25,19 +28,25 @@ public class AppiumSetup : IAsyncLifetime
     }
 
     /// <summary>
-    /// Check if the driver session is alive. If the UiAutomator2 instrumentation
-    /// crashed, recreate the driver to recover.
+    /// Check if the driver session and app are alive using the documented
+    /// mobile: queryAppState API. If the app isn't in the foreground,
+    /// try to activate it. If the session is dead, recreate it.
     /// </summary>
     public void EnsureSessionAlive()
     {
         try
         {
-            // Quick health check — PageSource requires a live session.
-            // Use try/catch around ImplicitWait too since it throws
-            // NotImplementedException when the session is fully dead.
-            Driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
-            _ = Driver.PageSource;
-            Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+            var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
+            var paramName = TestConfig.IsIOS ? "bundleId" : "appId";
+            var state = Driver.ExecuteScript("mobile: queryAppState",
+                new Dictionary<string, object> { { paramName, appId } });
+            int appState = Convert.ToInt32(state);
+
+            if (appState < 3) // not running or background-suspended
+            {
+                Driver.ActivateApp(appId);
+                Thread.Sleep(2000);
+            }
         }
         catch (Exception)
         {
@@ -45,40 +54,33 @@ public class AppiumSetup : IAsyncLifetime
         }
     }
 
-    /// <summary>Tear down the current driver and create a fresh session.</summary>
+    /// <summary>Tear down the current driver and create a fresh session with retry.</summary>
     private void RecreateDriver()
     {
+        SessionHealthy = false;
         try { Driver.Quit(); } catch { }
         try { Driver.Dispose(); } catch { }
-        CreateDriver();
-        Thread.Sleep(5000); // Wait for app to fully load after session restart
-        OnboardingHandled = false; // Onboarding may show again
 
-        // Verify the new session is responsive — including ImplicitWait
-        // which throws NotImplementedException on dead sessions
-        try
+        for (int attempt = 1; attempt <= 3; attempt++)
         {
-            Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            _ = Driver.PageSource;
-        }
-        catch (Exception)
-        {
-            // Second attempt — sometimes WDA needs extra time on iOS
+            CreateDriver();
             Thread.Sleep(5000);
+            OnboardingHandled = false;
+
             try
             {
                 Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
                 _ = Driver.PageSource;
+                SessionHealthy = true;
+                return;
             }
-            catch (Exception)
+            catch
             {
-                // Third attempt — full recreate
                 try { Driver.Quit(); } catch { }
                 try { Driver.Dispose(); } catch { }
-                CreateDriver();
-                Thread.Sleep(5000);
             }
         }
+        // All 3 attempts failed — SessionHealthy stays false
     }
 
     private void CreateDriver()
