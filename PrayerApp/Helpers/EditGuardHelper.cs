@@ -20,7 +20,10 @@ public static class EditGuardHelper
                     if (!await guard.CanLeaveAsync())
                         return;
                 }
-                await Shell.Current.GoToAsync("..");
+                // Use PopAsync (native pop) instead of GoToAsync("..") — on iOS,
+                // GoToAsync("..") can fail to resolve correctly and corrupt the
+                // Shell navigation stack, leaving the app in an unrecoverable state.
+                await Shell.Current.Navigation.PopAsync();
             })
         });
     }
