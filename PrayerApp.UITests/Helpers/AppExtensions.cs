@@ -98,7 +98,29 @@ public static class AppExtensions
     public static void EnterText(this AppiumDriver driver, string automationId, string text)
     {
         var element = driver.FindByAutomationId(automationId);
-        element.Clear();
+
+        if (TestConfig.IsIOS)
+        {
+            // element.Clear() is unreliable on iOS with hardware keyboard —
+            // it often does nothing, causing text to append instead of replace.
+            // Tap the iOS "Clear text" (X) button if visible, then fall back to Clear().
+            element.Click();
+            Thread.Sleep(200);
+            try
+            {
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+                var clearBtn = driver.FindElement(MobileBy.AccessibilityId("Clear text"));
+                clearBtn.Click();
+                Thread.Sleep(200);
+            }
+            catch (WebDriverException) { element.Clear(); }
+            finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+        }
+        else
+        {
+            element.Clear();
+        }
+
         if (!string.IsNullOrEmpty(text))
             element.SendKeys(text);
     }
@@ -173,11 +195,12 @@ public static class AppExtensions
         // modals, detail pages, and deep navigation stacks.
         for (int attempt = 0; attempt < 3; attempt++)
         {
+            driver.DismissAlertIfPresent();
+
             if (TryTapTab(driver, tabTitle))
                 return;
 
-            // Tab not found — dismiss any blocking alert, then go back
-            driver.DismissAlertIfPresent();
+            // Tab not found — go back to clear the current page/modal
             try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
         }
 

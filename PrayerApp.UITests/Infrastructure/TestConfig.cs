@@ -71,10 +71,10 @@ public static class TestConfig
         options.PlatformName = "iOS";
         options.AutomationName = "XCUITest";
         options.AddAdditionalAppiumOption("bundleId", IOSBundleId);
-        // Auto-dismiss iOS system alerts (permissions, dictation prompts).
+        // Auto-accept iOS system alerts (permissions, dictation prompts).
         // App-level alerts (DisplayAlertAsync) are NOT affected — those are
         // handled explicitly by DismissAlertIfPresent / TapAlertButton.
-        options.AddAdditionalAppiumOption("autoDismissAlerts", true);
+        options.AddAdditionalAppiumOption("autoAcceptAlerts", true);
         // Connect hardware keyboard so SendKeys bypasses the on-screen keyboard.
         // This prevents accidental taps on the dictation/emoji buttons.
         options.AddAdditionalAppiumOption("connectHardwareKeyboard", true);
