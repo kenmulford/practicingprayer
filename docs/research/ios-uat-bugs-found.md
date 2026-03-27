@@ -62,7 +62,8 @@ tail -5 <output-file>
 | `8d9bdb6` (BUG-2 swipe-back) | **51/55** | Prayer Time intermittent tests now pass. 3 remaining real failures + 1 skip. |
 | `67baef6` (fixes after 51/55) | **54/58** | Clean reinstall. No crashes. 2 scroll fixes still failing + 1 Android-only + 1 known skip. |
 | `d6b7c57` (CollectionView fix) | **54/58** | CollectionView desync fixed (no more layout errors). Scroll tests still fail — locator issue, not scroll. PrayerTime intermittent = action sheet mis-tap. |
-| `43500b0` (diagnostic logging) | **54/58** | **Current.** Diagnostics confirm: CollectionView cell contents invisible in iOS accessibility tree. Both scroll test failures are the same root cause. |
+| `43500b0` (diagnostic logging) | **54/58** | Diagnostics confirm: CollectionView cell contents invisible in iOS accessibility tree. Both scroll test failures are the same root cause. |
+| `8073ded` (accessibility fix + build fix) | **54/58** | **Current.** Accessibility semantics added but CollectionView still flattens cells into one element. Root cause identified: need `IsInAccessibleTree` per-cell. |
 
 ---
 
@@ -108,6 +109,8 @@ Consistent failure. On iPad, expanding an empty card at the bottom of the list p
 
 **Diagnostic page source dump (`43500b0`):** After expanding the card, the page source shows `Cards_List_Cards` with card titles ("Quick Add", "Empty Card Test") but **no child elements inside the expanded card**. `Cards_Btn_AddPrayer` does not exist anywhere in the accessibility tree. The CollectionView only exposes top-level cell labels — expanded content (buttons, sub-views) is invisible to Appium/XCUITest.
 
+**Post-accessibility fix (`76cf6c2` + `8073ded`):** Still fails. See "Root Cause" section below — CollectionView flattens all cells into one element.
+
 ---
 
 ### 3. Prayers_TapPrayer_ShowsViewMode — 1 test (FIX APPLIED)
@@ -120,6 +123,8 @@ After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByTe
 **Fix:** Added `ScrollDownToText` call before `TapByText` — scrolls `List_List_Prayers` CollectionView to find the prayer.
 
 **Diagnostic page source dump (`43500b0`):** The `List_List_Prayers` CollectionView is visible in the page source but **contains zero prayer items** — only scroll bar elements. Either `EnsureUITestPrayerExists` didn't create the prayer, or the CollectionView is not rendering its item cells in the iOS accessibility tree. Same root cause as EmptyCardExpand: MAUI CollectionView cell contents are invisible to Appium/XCUITest.
+
+**Post-accessibility fix (`76cf6c2` + `8073ded`):** Still fails. See "Root Cause" section below — CollectionView flattens all cells into one element.
 
 ---
 
@@ -156,6 +161,30 @@ The CollectionView layout cache has stale items (indexes 0-11) but the data sour
 **Not yet investigated:** Could be triggered by the tag scope page binding its CollectionView ItemsSource before data loads, or by a race between navigation and data population.
 
 **Additional observation:** The same CollectionView layout desync also occurs on the Cards tab (`Cards_List_Cards`) during the `EdgeCase_EmptyCardExpand` test — not limited to the tag scope page. This is a systemic MAUI CollectionView issue across multiple pages.
+
+---
+
+### Root Cause: iOS CollectionView Accessibility Tree Flattening
+
+**Discovered:** `8073ded` diagnostic dump on `Prayers_TapPrayer_ShowsViewMode`
+
+MAUI CollectionView on iOS **flattens all cell content into a single accessibility element** instead of exposing individual cells as separate nodes. The diagnostic page source shows:
+
+```xml
+<XCUIElementTypeOther name="Quick Add, UI Test Prayer" label="Quick Add, UI Test Prayer"
+    enabled="true" visible="true" accessible="true" x="20" y="313" width="780" height="31"/>
+```
+
+All prayer items ("Quick Add", "UI Test Prayer") are concatenated into one `name`/`label` on a single `XCUIElementTypeOther` node. Appium's `FindByText("UI Test Prayer")` and `FindByAccessibilityId("Cards_Btn_AddPrayer")` fail because there are no individual cell elements — everything is merged.
+
+**This affects all CollectionView-based tests** that need to locate individual items:
+- `EdgeCase_EmptyCardExpand_ShowsAddPrayer` — can't find `Cards_Btn_AddPrayer` inside expanded card
+- `Prayers_TapPrayer_ShowsViewMode` — can't find "UI Test Prayer" as a tappable element
+
+**Possible fixes:**
+1. Set `AutomationProperties.IsInAccessibleTree="false"` on the CollectionView itself, and `"true"` on individual cell root elements — forces iOS to expose children instead of flattening
+2. Use `SemanticProperties.Description` on each cell template root to give each cell its own identity
+3. Switch test locators to search within the flattened label text (fragile workaround)
 
 ---
 
