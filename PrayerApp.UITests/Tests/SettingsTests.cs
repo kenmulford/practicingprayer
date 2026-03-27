@@ -116,12 +116,13 @@ public class SettingsTests
         var driver = _setup.Driver;
 
         driver.WaitAndTap("Settings_Row_Help");
-        Thread.Sleep(1000); // CollectionView needs time to render items on iOS
+        Thread.Sleep(1500); // CollectionView needs time to render items on iOS
 
+        // IsTextDisplayed uses exact match — use full question text from FAQ
         Assert.True(
-            driver.IsTextDisplayed("How", timeoutSeconds: 8)
-            || driver.IsTextDisplayed("What", timeoutSeconds: 3)
-            || driver.IsTextDisplayed("Can", timeoutSeconds: 3),
+            driver.IsTextDisplayed("How do I create a prayer card?", timeoutSeconds: 8)
+            || driver.IsTextDisplayed("What is Quick Add?", timeoutSeconds: 3)
+            || driver.IsTextDisplayed("Is my data private?", timeoutSeconds: 3),
             "Help page should show FAQ items");
 
         driver.GoBack();

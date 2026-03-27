@@ -26,7 +26,9 @@ public class PrayerTimeTests
 
         if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
         {
-            driver.TapByText("All Requests");
+            // Retry tap — element can go stale if the action sheet re-renders
+            try { driver.TapByText("All Requests"); }
+            catch { Thread.Sleep(300); driver.TapByText("All Requests"); }
             Thread.Sleep(1000);
             return true;
         }

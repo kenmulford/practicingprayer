@@ -118,15 +118,34 @@ public class EdgeCaseTests
         driver.TapToolbarItem("Save");
         Thread.Sleep(1000);
 
-        // Back on cards list — tap the new card to expand
+        // Navigate away and back to ensure all cards are collapsed (clean state)
+        driver.NavigateToTab("Home");
+        Thread.Sleep(300);
+        driver.NavigateToTab("Prayer Cards");
+        Thread.Sleep(500);
+
+        // Scroll to find the new card if it's below the fold
+        if (!driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 3))
+        {
+            try { driver.ScrollDownTo("Cards_List_Cards", maxScrolls: 3); }
+            catch { /* might already be visible */ }
+        }
+
         if (driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 5))
         {
-            driver.TapByText("Empty Card Test");
-            Thread.Sleep(500);
+            // Tap the card title to expand — retry once if stale
+            try { driver.TapByText("Empty Card Test"); }
+            catch { Thread.Sleep(300); driver.TapByText("Empty Card Test"); }
+            Thread.Sleep(800);
 
-            // Should show the "Add prayer" button (card is empty)
-            Assert.True(driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5),
-                "Empty card should show '+ Add prayer' button");
+            // After expansion, the "+ Add prayer" button may need scrolling into view
+            var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
+            if (!found)
+            {
+                try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 2); found = true; }
+                catch { /* still not found after scrolling */ }
+            }
+            Assert.True(found, "Empty card should show '+ Add prayer' button");
         }
     }
 }

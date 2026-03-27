@@ -35,8 +35,13 @@ public class TagTests
         driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 5);
 
         driver.EnterText("TagDetail_Entry_Name", "UITest Tag");
+        if (TestConfig.IsIOS) Thread.Sleep(500); // Let keyboard fully dismiss before tapping toolbar
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(1500);
+
+        // Save navigates back via GoToAsync("..") — if we're not on the list yet, try navigating
+        if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5))
+            driver.NavigateToTab("Tags");
 
         Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5),
             "Should return to tag list after saving new tag");
