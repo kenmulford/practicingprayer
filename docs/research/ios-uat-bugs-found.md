@@ -60,7 +60,8 @@ tail -5 <output-file>
 | `767dc6a` (PopAsync fix) | 35/55 | Partial recovery — Reminders fixed, Settings/Tags still cascade. |
 | `fab14aa` (Revert EditGuardHelper) | 49/55 | Cascade eliminated. TabSwitch unsaved changes now passes. |
 | `8d9bdb6` (BUG-2 swipe-back) | **51/55** | Prayer Time intermittent tests now pass. 3 remaining real failures + 1 skip. |
-| `67baef6` (fixes after 51/55) | **54/58** | **Current.** Clean reinstall. No crashes. 2 scroll fixes still failing + 1 Android-only + 1 known skip. |
+| `67baef6` (fixes after 51/55) | **54/58** | Clean reinstall. No crashes. 2 scroll fixes still failing + 1 Android-only + 1 known skip. |
+| `d6b7c57` (CollectionView fix) | **54/58** | **Current.** CollectionView desync fixed (no more layout errors). Scroll tests still fail — locator issue, not scroll. PrayerTime intermittent = action sheet mis-tap. |
 
 ---
 
@@ -102,6 +103,8 @@ Consistent failure. On iPad, expanding an empty card at the bottom of the list p
 
 **Fix:** Changed `ScrollDownTo` to use iOS `mobile: scroll` with `elementId` targeting the `Cards_List_Cards` CollectionView for element-targeted scrolling.
 
+**Visual observation (manual):** The empty card expands/contracts correctly. Scrolling moves the whole CollectionView correctly. The `Cards_Btn_AddPrayer` button is visually present after expand — the Appium locator (`IsDisplayed` / `ScrollDownTo`) is not finding it despite the element being on screen. Likely an AutomationId or accessibility tree issue rather than a scroll issue.
+
 ---
 
 ### 3. Prayers_TapPrayer_ShowsViewMode — 1 test (FIX APPLIED)
@@ -123,6 +126,8 @@ After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByTe
 `IsTextDisplayed("By Tags")` found the action sheet element, but by the time `TapByText` re-queried, the element went stale (action sheet animation still settling).
 
 **Fix:** Increased post-tap delay from 500ms to 1000ms for action sheet animation, added 300ms settle delay before tapping, increased timeout to 5s.
+
+**Root cause update:** `TryStartPrayerTime()` only handles "All Requests" — it does not handle "By Tags". The intermittent failures are caused by the tap landing on "By Tags" instead of "All Requests" because the action sheet is still animating when the tap fires. Once on the tag selection page with no tags selected, the test stalls. "All Requests" is always present in the action sheet — it's not a detection issue, it's a mis-tap targeting issue during animation.
 
 ---
 
