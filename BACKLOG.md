@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Active — iOS UITest review complete (bug masking removed, 5 iOS app bugs tracked).
-**Last completed**: iOS UITest code review — replaced silent passes with `Assert.Skip`/`Assert.Fail` for 5 known iOS bugs
-**Next up**: BUG-1 (critical iOS crash), then AUD-1 remaining phases
+**Status**: iOS UITest review committed. 5 iOS app bugs cataloged (BUG-1 through BUG-5). Onboarding review plan drafted. Help FAQ text awaiting Ken's personal review.
+**Last completed**: iOS UITest code review (bug masking removed), UX-15, UX-16
+**Next up**: BUG-1 (critical iOS tag crash), then AUD-1 remaining phases, then onboarding refresh
 
 ---
 
