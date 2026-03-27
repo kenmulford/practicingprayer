@@ -140,6 +140,7 @@
         <CollectionView
             x:Name="prayerCollection"
             AutomationId="List_List_Prayers"
+            AutomationProperties.IsInAccessibleTree="false"
             Grid.Row="1"
             ItemsSource="{Binding FilteredPrayers}"
             Margin="20,0"

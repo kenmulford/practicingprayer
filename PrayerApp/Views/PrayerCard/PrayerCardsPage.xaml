@@ -36,6 +36,7 @@
             Grid.Row="1"
             x:Name="cardCollection"
             AutomationId="Cards_List_Cards"
+            AutomationProperties.IsInAccessibleTree="false"
             ItemsSource="{Binding FilteredPrayerCards}"
             ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
