@@ -13,6 +13,7 @@ public partial class MainPage : ContentPage
     private readonly IOnboardingService _onboardingService;
     private readonly IOrientationService? _orientationService;
     private readonly IServiceProvider _services;
+    private bool _prayerTimeNavigating;
 
     public MainPage(HomeViewModel homeViewModel, IOnboardingService onboardingService,
         IOrientationService orientationService, IServiceProvider services)
@@ -32,12 +33,21 @@ public partial class MainPage : ContentPage
 
         BtnPrayerTime.Clicked += async (s, e) =>
         {
-            var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, "All Requests", "By Tags");
-            if (action == "All Requests")
-                await Shell.Current.GoToAsync($"{nameof(PrayerTime.PrayerTimePage)}?scope=all");
-            else if (action == "By Tags")
-                await Shell.Current.Navigation.PushModalAsync(
-                    _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());
+            if (_prayerTimeNavigating) return;
+            _prayerTimeNavigating = true;
+            try
+            {
+                var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, "All Requests", "By Tags");
+                if (action == "All Requests")
+                    await Shell.Current.GoToAsync($"{nameof(PrayerTime.PrayerTimePage)}?scope=all");
+                else if (action == "By Tags")
+                    await Shell.Current.Navigation.PushModalAsync(
+                        _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());
+            }
+            finally
+            {
+                _prayerTimeNavigating = false;
+            }
         };
     }
 

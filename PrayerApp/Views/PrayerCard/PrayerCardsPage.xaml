@@ -37,6 +37,7 @@
             x:Name="cardCollection"
             AutomationId="Cards_List_Cards"
             ItemsSource="{Binding FilteredPrayerCards}"
+            ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
             SelectionMode="None">
         <CollectionView.ItemsLayout>

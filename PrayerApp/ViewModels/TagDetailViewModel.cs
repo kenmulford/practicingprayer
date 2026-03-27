@@ -169,7 +169,13 @@ namespace PrayerApp.ViewModels
             await _tagService.SaveTagAsync(_tag);
             CaptureOriginals();
             _accessibilityService.Announce("Tag saved");
-            await _navigationService.GoToAsync("..");
+
+            // Navigate back — catch iOS Shell navigation failures (BUG-1/3)
+            try { await _navigationService.GoToAsync(".."); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Tag save navigation failed: {ex}");
+            }
         }
 
         private void CaptureOriginals()

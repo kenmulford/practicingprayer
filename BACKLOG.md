@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: iOS UITest review committed. 5 iOS app bugs cataloged (BUG-1 through BUG-5). Onboarding review plan drafted. Help FAQ text awaiting Ken's personal review.
-**Last completed**: iOS UITest code review (bug masking removed), UX-15, UX-16
-**Next up**: BUG-1 (critical iOS tag crash), then AUD-1 remaining phases, then onboarding refresh
+**Status**: All 5 iOS app bugs (BUG-1 through BUG-5) fixed. Onboarding review plan drafted. Help FAQ text awaiting Ken's personal review.
+**Last completed**: BUG-1/2/3/4/5 iOS bug fixes, iOS UITest code review, UX-15, UX-16
+**Next up**: AUD-1 remaining phases, then onboarding refresh
 
 ---
 
@@ -36,11 +36,11 @@ Items are listed in work order. Start at the top, work down.
 | 8   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
 | 9   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
 | 10  | ~~UX-16~~ | ~~Portrait mode option for Prayer Time~~ | Users | ✅ Done (2026-03-27) — Settings toggle + conditional orientation lock |
-| 11  | BUG-1 | iOS: SIGABRT crash during tag save navigation (GoToAsync)          | UITest | **Critical.** App crashes on iOS during/after `GoToAsync("..")` in `TagDetailViewModel.SaveAsync()`. See `docs/research/ios-crash-tag-save-navigation.md`. |
-| 12  | BUG-2 | iOS: Unsaved changes guard bypassed on back navigation             | UITest | **High — data loss.** `GoBack()` on iOS from dirty prayer detail skips discard dialog. See `docs/research/ios-uat-bugs-found.md` Bug #2. |
-| 13  | BUG-3 | iOS: GoToAsync("..") unreliable after tag save                     | UITest | **Medium.** Likely same root cause as BUG-1. See `docs/research/ios-uat-bugs-found.md` Bug #3. |
-| 14  | BUG-4 | iOS: Prayer Time action sheet stale element re-render              | UITest | **Low-Medium.** Action sheet re-renders between detection and tap. See `docs/research/ios-uat-bugs-found.md` Bug #4. |
-| 15  | BUG-5 | iOS: Empty card expand layout on iPad                              | UITest | **Low-Medium.** Card expansion doesn't show Add Prayer button on iPad layout. See `docs/research/ios-uat-bugs-found.md` Bug #5. |
+| 11  | ~~BUG-1~~ | ~~iOS: SIGABRT crash during tag save navigation~~ | UITest | ✅ Done (2026-03-27) — `_isSaving` guard + try-catch in `TagDetailViewModel.SaveAsync()` |
+| 12  | ~~BUG-2~~ | ~~iOS: Unsaved changes guard bypassed on back nav~~ | UITest | ✅ Done (2026-03-27) — Added `ShellNavigationSource.Unknown` to `OnShellNavigating` |
+| 13  | ~~BUG-3~~ | ~~iOS: GoToAsync("..") unreliable after tag save~~ | UITest | ✅ Done (2026-03-27) — Same fix as BUG-1 |
+| 14  | ~~BUG-4~~ | ~~iOS: Prayer Time action sheet stale element~~ | UITest | ✅ Done (2026-03-27) — `_prayerTimeNavigating` guard prevents double-tap |
+| 15  | ~~BUG-5~~ | ~~iOS: Empty card expand layout on iPad~~ | UITest | ✅ Done (2026-03-27) — `ItemSizingStrategy="MeasureAllItems"` on PrayerCards CollectionView |
 | 16  | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
 ### Completed
@@ -59,6 +59,11 @@ Items are listed in work order. Start at the top, work down.
 | TD-12p3 | VM test coverage (74 tests, 8 VMs) | 2026-03-27 |
 | UX-15  | Quick Add tip banner (Concept C) | 2026-03-27 |
 | UX-16  | Portrait mode toggle for Prayer Time | 2026-03-27 |
+| BUG-1  | iOS tag save navigation crash fix | 2026-03-27 |
+| BUG-2  | iOS unsaved changes guard fix | 2026-03-27 |
+| BUG-3  | iOS GoToAsync("..") reliability (same fix as BUG-1) | 2026-03-27 |
+| BUG-4  | iOS Prayer Time action sheet guard | 2026-03-27 |
+| BUG-5  | iPad card expand layout fix | 2026-03-27 |
 
 ---
 
