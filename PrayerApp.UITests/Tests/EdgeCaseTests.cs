@@ -151,11 +151,12 @@ public class EdgeCaseTests
         catch (WebDriverException) { Thread.Sleep(TestConfig.DelayAfterTap); driver.TapByText("Empty Card Test"); }
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // After expansion, the "+ Add prayer" button may need scrolling into view
+        // After expansion, the "+ Add prayer" button may be below the viewport on iPad.
+        // Use ScrollDownTo with enough scroll attempts to bring it into view.
         var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
         if (!found)
         {
-            try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 2); found = true; }
+            try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4); found = true; }
             catch (WebDriverException) { /* still not found after scrolling */ }
         }
         Assert.True(found, "Empty card should show '+ Add prayer' button");

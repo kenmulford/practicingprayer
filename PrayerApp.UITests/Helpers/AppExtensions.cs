@@ -512,6 +512,11 @@ public static class AppExtensions
         driver.EnterText("QuickAdd_Entry_Title", "UI Test Prayer");
         driver.Tap("QuickAdd_Btn_Add");
         Thread.Sleep(TestConfig.DelayAfterSave);
+
+        // Navigate back to Prayers and wait for the new prayer to render
+        driver.NavigateToTab("Prayers");
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 5);
     }
 
     /// <summary>Navigate to a new prayer form in edit mode (Prayers tab → Add toolbar).</summary>
