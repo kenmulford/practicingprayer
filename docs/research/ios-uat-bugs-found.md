@@ -61,7 +61,8 @@ tail -5 <output-file>
 | `fab14aa` (Revert EditGuardHelper) | 49/55 | Cascade eliminated. TabSwitch unsaved changes now passes. |
 | `8d9bdb6` (BUG-2 swipe-back) | **51/55** | Prayer Time intermittent tests now pass. 3 remaining real failures + 1 skip. |
 | `67baef6` (fixes after 51/55) | **54/58** | Clean reinstall. No crashes. 2 scroll fixes still failing + 1 Android-only + 1 known skip. |
-| `d6b7c57` (CollectionView fix) | **54/58** | **Current.** CollectionView desync fixed (no more layout errors). Scroll tests still fail — locator issue, not scroll. PrayerTime intermittent = action sheet mis-tap. |
+| `d6b7c57` (CollectionView fix) | **54/58** | CollectionView desync fixed (no more layout errors). Scroll tests still fail — locator issue, not scroll. PrayerTime intermittent = action sheet mis-tap. |
+| `43500b0` (diagnostic logging) | **54/58** | **Current.** Diagnostics confirm: CollectionView cell contents invisible in iOS accessibility tree. Both scroll test failures are the same root cause. |
 
 ---
 
@@ -103,7 +104,9 @@ Consistent failure. On iPad, expanding an empty card at the bottom of the list p
 
 **Fix:** Changed `ScrollDownTo` to use iOS `mobile: scroll` with `elementId` targeting the `Cards_List_Cards` CollectionView for element-targeted scrolling.
 
-**Visual observation (manual):** The empty card expands/contracts correctly. Scrolling moves the whole CollectionView correctly. The `Cards_Btn_AddPrayer` button is visually present after expand — the Appium locator (`IsDisplayed` / `ScrollDownTo`) is not finding it despite the element being on screen. Likely an AutomationId or accessibility tree issue rather than a scroll issue.
+**Visual observation (manual):** The empty card expands/contracts correctly. Scrolling moves the whole CollectionView correctly. The `Cards_Btn_AddPrayer` button is visually present after expand — the Appium locator (`IsDisplayed` / `ScrollDownTo`) is not finding it despite the element being on screen.
+
+**Diagnostic page source dump (`43500b0`):** After expanding the card, the page source shows `Cards_List_Cards` with card titles ("Quick Add", "Empty Card Test") but **no child elements inside the expanded card**. `Cards_Btn_AddPrayer` does not exist anywhere in the accessibility tree. The CollectionView only exposes top-level cell labels — expanded content (buttons, sub-views) is invisible to Appium/XCUITest.
 
 ---
 
@@ -115,6 +118,8 @@ Consistent failure. On iPad, expanding an empty card at the bottom of the list p
 After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByText` doesn't scroll. `EnsureUITestPrayerExists` uses `IsTextDisplayed` (no scroll) which can miss off-screen items.
 
 **Fix:** Added `ScrollDownToText` call before `TapByText` — scrolls `List_List_Prayers` CollectionView to find the prayer.
+
+**Diagnostic page source dump (`43500b0`):** The `List_List_Prayers` CollectionView is visible in the page source but **contains zero prayer items** — only scroll bar elements. Either `EnsureUITestPrayerExists` didn't create the prayer, or the CollectionView is not rendering its item cells in the iOS accessibility tree. Same root cause as EmptyCardExpand: MAUI CollectionView cell contents are invisible to Appium/XCUITest.
 
 ---
 
