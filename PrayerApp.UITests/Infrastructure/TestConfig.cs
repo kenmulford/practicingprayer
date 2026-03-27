@@ -71,10 +71,12 @@ public static class TestConfig
         options.PlatformName = "iOS";
         options.AutomationName = "XCUITest";
         options.AddAdditionalAppiumOption("bundleId", IOSBundleId);
-        // Auto-dismiss iOS system alerts (permissions, dictation prompts) by
-        // tapping their cancel/dismiss button. Prevents system dialogs from
-        // blocking tests without accidentally enabling features like dictation.
+        // Auto-dismiss iOS system alerts (permissions, dictation prompts).
         options.AddAdditionalAppiumOption("autoDismissAlerts", true);
+        // Hardware keyboard hides software keyboard — prevents SendKeys from
+        // hitting dictation/emoji buttons. Only works when Appium boots the
+        // simulator itself (not pre-booted). Shut down simulator before test run.
+        options.AddAdditionalAppiumOption("connectHardwareKeyboard", true);
         options.AddAdditionalAppiumOption("newCommandTimeout", 300);
 
         options.DeviceName = Environment.GetEnvironmentVariable("IOS_SIMULATOR") ?? "iPhone 17";

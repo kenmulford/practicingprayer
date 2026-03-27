@@ -101,31 +101,21 @@ public static class AppExtensions
 
         if (TestConfig.IsIOS)
         {
-            // element.Clear() doesn't work on iOS search fields (XCUIElementTypeOther wrappers).
-            // Use the iOS "Clear text" (X) button to clear, then SendKeys to type.
-            // autoDismissAlerts handles any Siri/dictation prompts from SendKeys.
-            //
-            // IMPORTANT: element.Click() opens the keyboard, so only click when we
-            // need to type or when the field has content to clear.
+            // iOS: use "Clear text" button to clear (element.Clear() is broken on
+            // search field wrappers), then standard SendKeys to type.
+            // autoDismissAlerts handles any dictation prompts from the keyboard.
             try
             {
-                // Check for "Clear text" button WITHOUT clicking the field first.
-                // The button is only visible when the field already has content and focus.
                 driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
-                var clearBtn = driver.FindElement(MobileBy.AccessibilityId("Clear text"));
-                clearBtn.Click();
+                driver.FindElement(MobileBy.AccessibilityId("Clear text")).Click();
                 Thread.Sleep(200);
             }
-            catch (WebDriverException)
-            {
-                // No "Clear text" button — field is empty or unfocused, that's fine
-            }
+            catch (WebDriverException) { /* field empty or unfocused */ }
             finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
 
             if (!string.IsNullOrEmpty(text))
             {
                 element.SendKeys(text);
-                // Dismiss keyboard so it doesn't cover tab bar or other elements
                 try { driver.HideKeyboard(); } catch (WebDriverException) { }
             }
         }
