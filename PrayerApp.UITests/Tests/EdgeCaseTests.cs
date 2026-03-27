@@ -144,6 +144,10 @@ public class EdgeCaseTests
             try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"); found = true; }
             catch (WebDriverException) { /* still not found after scrolling */ }
         }
-        Assert.True(found, "Empty card should show '+ Add prayer' button");
+        if (!found)
+        {
+            var dumpPath = driver.DumpPageSource("EdgeCase_EmptyCardExpand");
+            Assert.Fail($"Empty card should show '+ Add prayer' button. Page source dumped to: {dumpPath}");
+        }
     }
 }

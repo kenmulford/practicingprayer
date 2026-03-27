@@ -599,4 +599,21 @@ public static class AppExtensions
             driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
         }
     }
+
+    // ── Diagnostics ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Dumps the Appium page source (accessibility tree) to a file in the test output directory.
+    /// Use this to diagnose elements that are visually present but not found by Appium locators.
+    /// Returns the file path written to.
+    /// </summary>
+    public static string DumpPageSource(this AppiumDriver driver, string testName)
+    {
+        var dir = Path.Combine(AppContext.BaseDirectory, "diagnostics");
+        Directory.CreateDirectory(dir);
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+        var filePath = Path.Combine(dir, $"{testName}_{timestamp}.xml");
+        File.WriteAllText(filePath, driver.PageSource);
+        return filePath;
+    }
 }

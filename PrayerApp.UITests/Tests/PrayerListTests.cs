@@ -1,3 +1,4 @@
+using OpenQA.Selenium;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -97,7 +98,15 @@ public class PrayerListTests
         driver.EnsureOnTab("Prayers", _setup);
 
         // Prayer may be off-screen after other tests create data — scroll to find it, then tap
-        driver.ScrollDownToText("UI Test Prayer", maxScrolls: 3, scrollableAutomationId: "List_List_Prayers").Click();
+        try
+        {
+            driver.ScrollDownToText("UI Test Prayer", maxScrolls: 3, scrollableAutomationId: "List_List_Prayers").Click();
+        }
+        catch (Exception ex) when (ex is NoSuchElementException or WebDriverException)
+        {
+            var dumpPath = driver.DumpPageSource("Prayers_TapPrayer_ShowsViewMode");
+            Assert.Fail($"Could not find 'UI Test Prayer' after scrolling. {ex.GetType().Name}: {ex.Message}. Page source dumped to: {dumpPath}");
+        }
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 5)
