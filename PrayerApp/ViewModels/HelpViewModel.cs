@@ -46,6 +46,10 @@ public class HelpViewModel
                 "Auto-mode automatically advances to the next prayer after a set interval (30s, 60s, or 120s). Tap the timer display to cycle through intervals. Tap pause to stop auto-advance.",
                 accessibilityService),
 
+            new("Can I use Prayer Time in portrait mode?",
+                "Yes. Go to Settings → App Settings and turn off Landscape Mode. Prayer Time will stay in portrait orientation.",
+                accessibilityService),
+
             new("Can I filter Prayer Time by tags?",
                 "Yes. From the home screen, tap \"Prayer Time\" and choose \"By Tags.\" Select one or more tags, then tap Start to pray through only those tagged prayers.",
                 accessibilityService),

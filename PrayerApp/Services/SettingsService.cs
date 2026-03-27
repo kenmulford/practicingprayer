@@ -47,4 +47,16 @@ public class SettingsService : ISettings
         get => Settings.AllowNotifications;
         set => Settings.AllowNotifications = value;
     }
+
+    public bool QuickAddTipDismissed
+    {
+        get => Settings.QuickAddTipDismissed;
+        set => Settings.QuickAddTipDismissed = value;
+    }
+
+    public bool PrayerTimeLandscape
+    {
+        get => Settings.PrayerTimeLandscape;
+        set => Settings.PrayerTimeLandscape = value;
+    }
 }

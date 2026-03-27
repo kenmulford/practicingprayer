@@ -14,6 +14,7 @@ public partial class AppSettingsPage : ContentPage
         base.OnAppearing();
         chkAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
         entryOverdueThreshold.Text = PrayerApp.Services.Settings.OverdueDayThreshold.ToString();
+        chkLandscapeMode.IsToggled = PrayerApp.Services.Settings.PrayerTimeLandscape;
         timePickerDefaultNotify.Time = new TimeSpan(
             PrayerApp.Services.Settings.DefaultNotifyHour,
             PrayerApp.Services.Settings.DefaultNotifyMinute, 0);
@@ -35,6 +36,9 @@ public partial class AppSettingsPage : ContentPage
         if (int.TryParse(e.NewTextValue, out var days) && days >= 1)
             PrayerApp.Services.Settings.OverdueDayThreshold = days;
     }
+
+    private void OnLandscapeModeToggled(object? sender, ToggledEventArgs e)
+        => PrayerApp.Services.Settings.PrayerTimeLandscape = e.Value;
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)
     {

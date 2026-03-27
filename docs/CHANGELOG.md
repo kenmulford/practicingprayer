@@ -8,11 +8,17 @@
 
 ## What's New (since 1.0.6 build 30)
 
+### New Features
+
+- **Portrait mode for Prayer Time** — New toggle in Settings → App Settings lets you keep Prayer Time in portrait orientation instead of landscape
+- **Quick Add tip** — First-time Quick Add users see a helpful note explaining where their prayers are saved and how to reorganize them later
+
 ### Improvements
 
 - Settings reorganized into four clear sections: App Settings, Backup & Restore, About, and Help
 - New Help page with answers to common questions about cards, prayers, tags, reminders, and data privacy
 - New About page showing app version, privacy policy, and website link
+- Help page now includes answers about portrait mode and Prayer Time orientation
 
 ### Bug Fixes
 

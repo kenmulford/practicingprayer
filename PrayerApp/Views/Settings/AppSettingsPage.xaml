@@ -55,6 +55,22 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Prayer Time -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Prayer Time"
+                           SemanticProperties.HeadingLevel="Level2"
+                           Style="{StaticResource SectionHeading}" />
+                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12" HorizontalOptions="Fill">
+                        <Label Text="Landscape Mode" VerticalOptions="Center" />
+                        <Switch x:Name="chkLandscapeMode"
+                                Grid.Column="1"
+                                AutomationId="AppSettings_Switch_Landscape"
+                                Toggled="OnLandscapeModeToggled" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
         </VerticalStackLayout>
     </ScrollView>
 

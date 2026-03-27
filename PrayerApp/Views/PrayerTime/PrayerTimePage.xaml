@@ -184,7 +184,7 @@
             Grid.Row="3"
             ExpectedStep="PrayerTimeActive"
             HeadlineText="Swipe through your cards. Tap &apos;I&apos;m done&apos; when finished."
-            SubText="You can use the auto-advance timer too." />
+            SubText="You can use the auto-advance timer too. To stay in portrait, change it in Settings." />
 
     </Grid>
 </ContentPage>
