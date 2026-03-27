@@ -25,7 +25,16 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public ObservableCollection<TagItemViewModel> Tags { get; } = new();
+        private ObservableCollection<TagItemViewModel> _tags = new();
+        /// <summary>
+        /// Tag list bound to the CollectionView. Replaced on full load to avoid iOS
+        /// UICollectionView layout desync; mutated in-place for delta refreshes.
+        /// </summary>
+        public ObservableCollection<TagItemViewModel> Tags
+        {
+            get => _tags;
+            private set => SetProperty(ref _tags, value);
+        }
         public ICommand AddCommand { get; }
 
         public TagsViewModel(ITagService tagService, INavigationService navigationService,
@@ -49,9 +58,8 @@ namespace PrayerApp.ViewModels
             try
             {
                 var tags = await _tagService.GetTagsAsync();
-                Tags.Clear();
-                foreach (var tag in tags)
-                    Tags.Add(new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService));
+                Tags = new ObservableCollection<TagItemViewModel>(
+                    tags.Select(tag => new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService)));
             }
             finally
             {

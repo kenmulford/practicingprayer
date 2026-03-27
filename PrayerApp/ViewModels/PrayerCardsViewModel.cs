@@ -20,7 +20,17 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
-        public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards { get; } = new();
+
+        private ObservableCollection<PrayerCardViewModel> _filteredPrayerCards = new();
+        /// <summary>
+        /// Filtered view of cards bound to the CollectionView. Replaced (not mutated) on each
+        /// filter pass to avoid iOS UICollectionView layout desync from rapid CollectionChanged events.
+        /// </summary>
+        public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards
+        {
+            get => _filteredPrayerCards;
+            private set => SetProperty(ref _filteredPrayerCards, value);
+        }
         private bool _isSorting;
         private bool _suppressFilterAnnounce;
         private readonly Dictionary<PrayerCardViewModel, System.ComponentModel.PropertyChangedEventHandler> _cardHandlers = new();
@@ -270,9 +280,7 @@ namespace PrayerApp.ViewModels
                     c.Title?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false);
             }
 
-            FilteredPrayerCards.Clear();
-            foreach (var card in result)
-                FilteredPrayerCards.Add(card);
+            FilteredPrayerCards = new ObservableCollection<PrayerCardViewModel>(result);
 
             if (!_suppressFilterAnnounce)
                 AnnounceFilterCountDebounced();

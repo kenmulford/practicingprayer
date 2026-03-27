@@ -52,8 +52,16 @@ namespace PrayerApp.ViewModels
         // Full unfiltered backing store — manipulated by IQueryAttributable
         public ObservableCollection<PrayerRequestDetailViewModel> AllPrayers { get; } = new();
 
-        // Filtered + sorted view that the CollectionView binds to
-        public ObservableCollection<PrayerRequestDetailViewModel> FilteredPrayers { get; } = new();
+        private ObservableCollection<PrayerRequestDetailViewModel> _filteredPrayers = new();
+        /// <summary>
+        /// Filtered + sorted view bound to the CollectionView. Replaced (not mutated) on each
+        /// filter pass to avoid iOS UICollectionView layout desync from rapid CollectionChanged events.
+        /// </summary>
+        public ObservableCollection<PrayerRequestDetailViewModel> FilteredPrayers
+        {
+            get => _filteredPrayers;
+            private set => SetProperty(ref _filteredPrayers, value);
+        }
 
         // Tag chips
         public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
@@ -360,9 +368,7 @@ namespace PrayerApp.ViewModels
                 .ThenBy(p => p.Title, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            FilteredPrayers.Clear();
-            foreach (var p in sorted)
-                FilteredPrayers.Add(p);
+            FilteredPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(sorted);
 
             if (!_suppressAnnounce)
                 _accessibilityService.Announce($"Showing {FilteredPrayers.Count} prayers");
