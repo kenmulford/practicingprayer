@@ -1,8 +1,8 @@
-# iOS UAT: Remaining Failures After Bug Fix Pass
+# iOS UAT: Remaining Failures After Bug Fix Passes
 
-**Date:** 2026-03-27
-**Build tested:** v1.0.6 (32), Release config, commit `93c412b`
-**Test result:** 47 passed, 8 failed (55 total)
+**Last updated:** 2026-03-27
+**Latest build tested:** Release config, commit `1b19734` (BUG-1 SIGABRT fix)
+**Test result:** 50 passed, 5 failed (55 total)
 
 ---
 
@@ -28,67 +28,36 @@
 
 ---
 
-## Bugs Fixed by Commit `93c412b`
+## Run History
 
-| Bug | Test | Status |
-|-----|------|--------|
-| Bug #1: SIGABRT crash during tag save | `Tags_CreateTag_AppearsInList` | **FIXED** — passes in 9s (was crashing/timing out at 67s) |
-| Bug #3: `GoToAsync("..")` unreliable after tag save | Same test | **FIXED** — navigation works reliably now |
-| Bug #5: Empty card expand on iPad | `Cards_ExpandCard_ShowsPrayers` | **FIXED** — passes in 1s |
-
----
-
-## Still Failing: 8 Tests
-
-### Failure 1: Prayer Time Action Sheet Won't Start (Bug #4)
-
-**Tests affected (3):**
-- `PrayerTime_NavigationButtons_Present`
-- `PrayerTime_AutoMode_CyclesInterval`
-- `PrayerTime_FinishButton_ExitsPrayerTime`
-
-**Error:** `$XunitDynamicSkip$ Prayer Time action sheet could not be started`
-
-**What happens:** `TryStartPrayerTime()` taps `Home_Btn_PrayerTime`, waits for the "All Requests" / "By Tags" action sheet, and tries to tap "All Requests". The action sheet either doesn't appear or its elements go stale before they can be tapped. After 2 retry attempts, the method returns `false` and the test skips.
-
-**Relevant code:** `PrayerTimeTests.cs:20-53` — `TryStartPrayerTime()` method.
-
-**Observation:** `PrayerTime_SessionStarts_ShowsCarousel` PASSED this run, meaning the action sheet *can* work — it's intermittent. The stale element suggests the action sheet UI tree rebuilds after initial display.
-
-**Note from Ken:** The tag selection screen (Prayer Time > By Tags) hangs — buttons unresponsive. This is a separate but related issue to the action sheet stale elements.
+| Commit | Result | Notes |
+|--------|--------|-------|
+| `93c412b` (BUG-1/2/3/4/5) | 47/55 | Bugs 1, 3, 5 fixed. Prayer Time still flaky. |
+| `1b19734` (BUG-1 SIGABRT) | **50/55** | All 5 Prayer Time tests now pass. No crashes. No session recoveries. |
 
 ---
 
-### Failure 2: Tag Selection Screen Hangs (related to Bug #4)
+## Bugs Confirmed Fixed
 
-**Test:** `PrayerTime_TagScoped_ShowsScopePage`
-
-**Error:** `StaleElementReferenceException` when tapping "By Tags" in the action sheet.
-
-**What happens:** The action sheet appears, `IsTextDisplayed("By Tags")` returns true, but `TapByText("By Tags")` throws because the Button element reference is stale — the element was found but is "not present in the current view anymore."
-
-**Full error excerpt:**
-```
-StaleElementReferenceException: The previously found element "Button (Element at index 0)"
-is not present in the current view anymore. Original error: No matches found for Elements
-matching predicate 'fb_uid IN {"C4070000-..."}'
-```
-
-**Ken's observation:** Even when "By Tags" is successfully tapped, the tag selection screen that opens just sits there — Cancel and Start buttons are unresponsive. This is an **app bug**, not a test issue.
-
-**Stack:** `AppExtensions.TapByText` → `element.Click()` at `AppExtensions.cs:403`
+| Bug | Test | Fix Commit | Notes |
+|-----|------|------------|-------|
+| Bug #1: SIGABRT crash during tag save | `Tags_CreateTag_AppearsInList` | `1b19734` | Native gesture cleanup. No more crashes across multiple runs. |
+| Bug #3: `GoToAsync("..")` unreliable after tag save | Same test | `93c412b` | Passes consistently (9-41s depending on run). |
+| Bug #4: Prayer Time action sheet stale element | All 5 PrayerTime tests | `1b19734` | All 5 pass now — `NavigationButtons_Present` (64s), `TagScoped` (14s), `AutoMode` (50s), `SessionStarts` (7s), `FinishButton` (55s). |
+| Bug #5: Empty card expand on iPad | `Cards_ExpandCard_ShowsPrayers` | `93c412b` | Passes in 1s. |
 
 ---
 
-### Failure 3: Unsaved Changes Guard Bypassed on iOS (Bug #2)
+## Still Failing: 5 Tests
+
+### Failure 1: Unsaved Changes Guard Bypassed on iOS (Bug #2) — APP BUG
 
 **Test:** `UnsavedChanges_EditTitle_BackShowsDiscardDialog`
-
 **Error:** `$XunitDynamicSkip$ iOS Bug #2: Unsaved changes guard bypassed on iOS back navigation — data loss risk`
 
-**What happens:** The test is currently written to skip on iOS because the bug is confirmed — `GoBack()` on a dirty prayer detail page navigates back without showing the discard confirmation dialog. Changes are silently lost.
+**What happens:** The test skips on iOS because the bug is confirmed — `GoBack()` on a dirty prayer detail page navigates back without showing the discard confirmation dialog. Changes are silently lost.
 
-**This is an app bug, not a test issue.** The test correctly identifies that iOS back navigation bypasses the unsaved changes guard. On Android, the same flow triggers the dialog.
+**This is an app bug, not a test issue.** On Android, the same flow triggers the dialog.
 
 **Investigate:**
 - `Shell.OnNavigating` — does it fire on iOS software back button?
@@ -98,33 +67,36 @@ matching predicate 'fb_uid IN {"C4070000-..."}'
 
 ---
 
-### Failure 4: Tab-Switch Unsaved Changes (cascade from #3)
+### Failure 2: Tab-Switch Unsaved Changes — Cascade from Failure 1
 
 **Test:** `UnsavedChanges_EditTitle_TabSwitchShowsDiscardDialog`
+**Error:** `WebDriverTimeoutException: Timed out after 10 seconds` — can't find "Add" toolbar item on Prayers tab.
 
-**Error:** `WebDriverTimeoutException: Timed out after 10 seconds` — can't find "Add" toolbar item on the Prayers tab.
+**What happens:** Runs after the Bug #2 skip test. The skip at line 31 of `UnsavedChangesTests.cs` throws after `EnterText("Detail_Entry_Title", "Dirty Prayer")` has already been called — leaving the app on the detail page with dirty data. The next test tries `NavigateToNewPrayer()` but the "Add" toolbar button isn't visible because the app is still stuck on/recovering from the detail page.
 
-**What happens:** This test runs after `UnsavedChanges_EditTitle_BackShowsDiscardDialog`. The prior test's skip leaves the app in an unknown state (possibly still on the detail page with dirty data). When this test tries `NavigateToNewPrayer()`, it reaches the Prayers tab but can't find the "Add" toolbar button.
+**Root cause:** This is a cascade from Bug #2's skip, not an independent failure. Fix Bug #2 and this test should pass. Alternatively, the skip in the prior test could be moved before `EnterText` to avoid dirtying the state.
 
-**Likely cause:** Cascade from the prior test's iOS skip leaving the app state dirty. The test infrastructure's `EnsureOnTab` recovery doesn't fully clean up after a skipped test that entered the detail page.
-
-**Stack:** `AppExtensions.TapToolbarItem("Add")` at `AppExtensions.cs:388` → `NavigateToNewPrayer` at `AppExtensions.cs:503` → `UnsavedChangesTests.cs:69`
+**Stack:** `TapToolbarItem("Add")` at `AppExtensions.cs:388` → `NavigateToNewPrayer` at `AppExtensions.cs:503`
 
 ---
 
-### Failure 5: Empty Card Expand — Edge Case Variant
+### Failure 3: Empty Card Expand — Edge Case Variant
 
 **Test:** `EdgeCase_EmptyCardExpand_ShowsAddPrayer`
+**Error:** `Empty card should show '+ Add prayer' button` (assertion failure after 30s)
 
-**Error:** Assertion failure (exact message not captured — likely "Empty card should show '+ Add prayer' button")
+**What happens:** Creates a brand new empty card, navigates away and back, taps it to expand, and looks for `Cards_Btn_AddPrayer`. The button is not found even after scrolling.
 
-**What happens:** This creates a brand new empty card (no prayers), taps it to expand, and looks for the "+ Add prayer" button. Unlike `Cards_ExpandCard_ShowsPrayers` (which now passes), this test creates its own card inline and the expand/button may not render correctly for a freshly-created card on iPad.
+**Key difference from passing test:** `Cards_ExpandCard_ShowsPrayers` (which passes) expands an existing card from the Quick Add system card. This test creates its own card inline. The freshly-created card's expand behavior may differ:
+- CollectionView may not have finished updating after card creation
+- The new card may be below the fold and the expand tap isn't hitting it
+- The "+ Add prayer" button DataTemplate may not render for the brand new empty card until a full page reload
 
-**Note:** `Cards_ExpandCard_ShowsPrayers` passes, so the general expand mechanism works. This edge case is specific to a just-created empty card — possibly a timing issue where the CollectionView hasn't finished updating after the new card is added.
+**Likely cause:** App timing/layout issue with freshly-created empty cards on iPad. Could also be a test timing issue — may need more delay after card creation before attempting expand.
 
 ---
 
-### Failure 6: Test Dependency — 'UI Test Prayer' Not Found (2 tests)
+### Failure 4 & 5: Test Dependency — 'UI Test Prayer' Not Found
 
 **Tests:**
 - `Cards_EditPrayerFromCard`
@@ -132,27 +104,28 @@ matching predicate 'fb_uid IN {"C4070000-..."}'
 
 **Error:** `$XunitDynamicSkip$ Precondition: 'UI Test Prayer' not found — depends on earlier QuickAdd test`
 
-**What happens:** These tests expect a prayer named "UI Test Prayer" to already exist, created by the QuickAdd tests. The QuickAdd tests (`QuickAdd_SaveWithTitle_DismissesModal`, `QuickAdd_PrayerAppearsOnCardsTab`) all passed this run, so the prayer should have been created. Possible causes:
+**What happens:** These tests expect a prayer named "UI Test Prayer" to exist (created by `QuickAdd_SaveWithTitle_DismissesModal`). All QuickAdd tests pass, but these two tests run at ~2:41 and ~3:47 respectively, while QuickAdd tests run at ~10:15+. **xUnit ran these tests before the QuickAdd tests that create the data they depend on.**
 
-1. **Test ordering:** xUnit doesn't guarantee order within a collection. These tests may run before QuickAdd tests.
-2. **Data isolation:** Each test may get a fresh app state if the session was recreated.
-3. **Cross-tab visibility:** The prayer was created via QuickAdd (Home tab) but these tests look on the Cards/Prayers tabs — the prayer may not appear until the list refreshes.
-
-**This is likely a test design issue** — tests shouldn't depend on other tests' side effects. Either make these tests self-contained (create their own prayer) or enforce ordering.
+**This is a test design issue.** xUnit doesn't guarantee execution order across test classes within a collection. Options:
+1. Make these tests self-contained — create their own prayer as a setup step
+2. Use `IClassFixture` with a shared data setup that creates the prayer once
+3. Move these tests into the QuickAdd test class so they run after the setup tests
 
 ---
 
 ## Summary
 
-| Category | Tests | Root Cause |
-|----------|-------|------------|
-| App bug: Prayer Time action sheet | 3 skipped + 1 stale element | Action sheet re-renders, tag selection hangs |
-| App bug: Unsaved changes guard | 1 skipped + 1 cascade | iOS back nav bypasses guard |
-| App bug(?): Empty card expand | 1 | Freshly-created empty card expand on iPad |
-| Test design: dependency | 2 | Tests depend on QuickAdd side effects |
+| # | Test | Category | Root Cause |
+|---|------|----------|------------|
+| 1 | `UnsavedChanges_EditTitle_BackShowsDiscardDialog` | **App bug** | iOS back nav bypasses unsaved changes guard |
+| 2 | `UnsavedChanges_EditTitle_TabSwitchShowsDiscardDialog` | **Cascade** | Dirty state from test 1's skip |
+| 3 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | **App/timing** | Freshly-created empty card expand on iPad |
+| 4 | `Cards_EditPrayerFromCard` | **Test design** | Runs before QuickAdd creates its data |
+| 5 | `Prayers_TapPrayer_ShowsViewMode` | **Test design** | Same ordering issue |
 
-**Next priority for app fixes:**
-1. Prayer Time action sheet / tag selection hang (4 tests blocked)
-2. Unsaved changes guard on iOS (2 tests blocked)
-3. Empty card expand edge case (1 test)
-4. Test dependency can be fixed in test code (2 tests)
+**Crash status:** Zero crashes, zero session recoveries across this run. The `1b19734` SIGABRT fix is holding.
+
+**Next priority:**
+1. **Bug #2** (unsaved changes guard) — app fix needed, 2 tests blocked
+2. **Test dependency** (ordering) — test code fix, 2 tests blocked
+3. **Empty card expand** — investigate if app or test timing, 1 test blocked
