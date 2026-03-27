@@ -1,8 +1,8 @@
-# iOS UAT: Remaining Failures After Bug Fix Passes
+# iOS UAT: Test Results and Bug Tracking
 
 **Last updated:** 2026-03-27
-**Latest build tested:** Release config, commit `1b19734` (BUG-1 SIGABRT fix)
-**Test result:** 50 passed, 5 failed (55 total)
+**Latest build tested:** Release config, commit `c8574d7` (Fix 5 remaining iOS UITest failures)
+**Test result:** 32 passed, 23 failed (55 total) — REGRESSION from 50/55
 
 ---
 
@@ -33,99 +33,105 @@
 | Commit | Result | Notes |
 |--------|--------|-------|
 | `93c412b` (BUG-1/2/3/4/5) | 47/55 | Bugs 1, 3, 5 fixed. Prayer Time still flaky. |
-| `1b19734` (BUG-1 SIGABRT) | **50/55** | All 5 Prayer Time tests now pass. No crashes. No session recoveries. |
+| `1b19734` (BUG-1 SIGABRT) | 50/55 | All 5 Prayer Time tests pass. No crashes. Best run. |
+| `c8574d7` (Fix remaining 5) | **32/55** | **REGRESSION.** EditGuardHelper causes cascade failure from Reminders onward. |
 
 ---
 
-## Bugs Confirmed Fixed
+## CRITICAL: Regression Introduced by `c8574d7`
 
-| Bug | Test | Fix Commit | Notes |
-|-----|------|------------|-------|
-| Bug #1: SIGABRT crash during tag save | `Tags_CreateTag_AppearsInList` | `1b19734` | Native gesture cleanup. No more crashes across multiple runs. |
-| Bug #3: `GoToAsync("..")` unreliable after tag save | Same test | `93c412b` | Passes consistently (9-41s depending on run). |
-| Bug #4: Prayer Time action sheet stale element | All 5 PrayerTime tests | `1b19734` | All 5 pass now — `NavigationButtons_Present` (64s), `TagScoped` (14s), `AutoMode` (50s), `SessionStarts` (7s), `FinishButton` (55s). |
-| Bug #5: Empty card expand on iPad | `Cards_ExpandCard_ShowsPrayers` | `93c412b` | Passes in 1s. |
+### Root Cause: `EditGuardHelper.AttachEditGuardBackButton()` Breaks Navigation
+
+**File:** `PrayerApp/Helpers/EditGuardHelper.cs` (new file in `c8574d7`)
+
+This helper replaces the native back button behavior on `PrayerDetailPage`, `PrayerCardPage`, and `TagDetailPage` with a custom `Command` that:
+1. Checks `IEditGuard.IsDirty`
+2. If dirty, calls `guard.CanLeaveAsync()` (shows discard dialog)
+3. Navigates via `Shell.Current.GoToAsync("..")`
+
+**The problem:** Even when the page is NOT dirty, the back button now uses `GoToAsync("..")` instead of the native back navigation. `GoToAsync("..")` does not behave identically to native back — it can fail to resolve correctly depending on the Shell navigation stack state.
+
+### Evidence: Cascade Failure Pattern
+
+The failure cascade starts at test #38 (`Reminders_ToggleOn_ShowsPickers`) and every test after it fails:
+
+| Test # | Test | Result | Duration | Notes |
+|--------|------|--------|----------|-------|
+| 37 | `Reminders_ToggleOff_HidesPickers` | PASS | 27s | Last passing test |
+| 38 | `Reminders_ToggleOn_ShowsPickers` | **FAIL** | 13s | Can't find "Add" toolbar — first failure |
+| 39 | `Reminders_FrequencyPicker_HasOptions` | **FAIL** | 13s | Same — can't find "Add" toolbar |
+| 40-46 | All 7 Settings tests | **FAIL** | ~93s each | Can't navigate to Settings tab |
+| 47-51 | All 5 Tag tests | **FAIL** | 5-13s | Can't navigate to Tags tab |
+| 52-55 | All 4 UnsavedChanges tests | **FAIL** | 13s | Can't navigate to Prayers tab |
+
+**All failures share the same root:** `NavigateToTab` or `TapToolbarItem` can't find expected elements because the app is stuck in an unrecoverable navigation state after a `GoToAsync("..")` call from the EditGuardHelper fails or leaves a corrupted nav stack.
+
+### What Test #37 Does That Triggers It
+
+`Reminders_ToggleOff_HidesPickers` navigates to a new prayer detail page (which now has EditGuardHelper attached), toggles reminders, then calls `GoBack()`. The `GoBack()` triggers the custom `BackButtonBehavior.Command` → `GoToAsync("..")`. If this doesn't pop back correctly, the navigation stack is corrupted and no subsequent test can find tabs or toolbar items.
+
+### Recommended Fix
+
+The `EditGuardHelper` approach has a fundamental problem: **it replaces native back with `GoToAsync("..")` for ALL back navigations, not just dirty ones.** Options:
+
+1. **Only override when dirty:** Don't set `BackButtonBehavior` at all unless/until `IsDirty` becomes true. Re-attach when dirty, remove when clean.
+2. **Use native back for clean pages:** In the Command, if `!guard.IsDirty`, call `Shell.Current.Navigation.PopAsync()` instead of `GoToAsync("..")`.
+3. **Use `Shell.Navigating` event instead:** Hook into `Shell.Current.Navigating` on the page and cancel the event when dirty, rather than replacing the back button entirely.
+
+Option 2 is the quickest fix:
+```csharp
+Command = new Command(async () =>
+{
+    if (page.BindingContext is IEditGuard guard && guard.IsDirty)
+    {
+        if (!await guard.CanLeaveAsync())
+            return;
+    }
+    // Use native pop instead of GoToAsync("..") to preserve nav stack
+    await Shell.Current.Navigation.PopAsync();
+})
+```
 
 ---
 
-## Still Failing: 5 Tests
+## Pre-Regression Bugs Still Open
 
-### Failure 1: Unsaved Changes Guard Bypassed on iOS (Bug #2) — APP BUG
+These were the 5 failures from the `1b19734` run (50/55) that `c8574d7` attempted to fix:
 
-**Test:** `UnsavedChanges_EditTitle_BackShowsDiscardDialog`
-**Error:** `$XunitDynamicSkip$ iOS Bug #2: Unsaved changes guard bypassed on iOS back navigation — data loss risk`
+### Bug #2: Unsaved Changes Guard Bypassed on iOS Back Navigation
 
-**What happens:** The test skips on iOS because the bug is confirmed — `GoBack()` on a dirty prayer detail page navigates back without showing the discard confirmation dialog. Changes are silently lost.
+**Status:** The `EditGuardHelper` was the attempted fix for this. It needs to be reworked per the options above.
 
-**This is an app bug, not a test issue.** On Android, the same flow triggers the dialog.
-
-**Investigate:**
-- `Shell.OnNavigating` — does it fire on iOS software back button?
-- `BackButtonBehavior.Command` — is it wired up in `PrayerDetailPage.xaml`?
-- iOS swipe-back gesture — does it trigger the same navigation path?
-- Consider using `Page.OnNavigatingFrom` override instead of Shell-level interception
-
----
-
-### Failure 2: Tab-Switch Unsaved Changes — Cascade from Failure 1
-
-**Test:** `UnsavedChanges_EditTitle_TabSwitchShowsDiscardDialog`
-**Error:** `WebDriverTimeoutException: Timed out after 10 seconds` — can't find "Add" toolbar item on Prayers tab.
-
-**What happens:** Runs after the Bug #2 skip test. The skip at line 31 of `UnsavedChangesTests.cs` throws after `EnterText("Detail_Entry_Title", "Dirty Prayer")` has already been called — leaving the app on the detail page with dirty data. The next test tries `NavigateToNewPrayer()` but the "Add" toolbar button isn't visible because the app is still stuck on/recovering from the detail page.
-
-**Root cause:** This is a cascade from Bug #2's skip, not an independent failure. Fix Bug #2 and this test should pass. Alternatively, the skip in the prior test could be moved before `EnterText` to avoid dirtying the state.
-
-**Stack:** `TapToolbarItem("Add")` at `AppExtensions.cs:388` → `NavigateToNewPrayer` at `AppExtensions.cs:503`
-
----
-
-### Failure 3: Empty Card Expand — Edge Case Variant
+### Empty Card Expand Edge Case
 
 **Test:** `EdgeCase_EmptyCardExpand_ShowsAddPrayer`
-**Error:** `Empty card should show '+ Add prayer' button` (assertion failure after 30s)
+**Status:** Still fails (32s). Freshly-created empty card expand on iPad doesn't show the "+ Add prayer" button.
 
-**What happens:** Creates a brand new empty card, navigates away and back, taps it to expand, and looks for `Cards_Btn_AddPrayer`. The button is not found even after scrolling.
+### Test Dependency: 'UI Test Prayer' Not Found
 
-**Key difference from passing test:** `Cards_ExpandCard_ShowsPrayers` (which passes) expands an existing card from the Quick Add system card. This test creates its own card inline. The freshly-created card's expand behavior may differ:
-- CollectionView may not have finished updating after card creation
-- The new card may be below the fold and the expand tap isn't hitting it
-- The "+ Add prayer" button DataTemplate may not render for the brand new empty card until a full page reload
-
-**Likely cause:** App timing/layout issue with freshly-created empty cards on iPad. Could also be a test timing issue — may need more delay after card creation before attempting expand.
+**Tests:** `Cards_EditPrayerFromCard`, `Prayers_TapPrayer_ShowsViewMode`
+**Status:** `Cards_EditPrayerFromCard` now PASSES (commit `c8574d7` made it self-contained). `Prayers_TapPrayer_ShowsViewMode` still fails — now with a different error (timeout at `TapByText`, not a precondition skip), likely because the test changes in `c8574d7` have a bug or are affected by the EditGuardHelper regression.
 
 ---
 
-### Failure 4 & 5: Test Dependency — 'UI Test Prayer' Not Found
+## Bugs Confirmed Fixed (Holding Across Runs)
 
-**Tests:**
-- `Cards_EditPrayerFromCard`
-- `Prayers_TapPrayer_ShowsViewMode`
+| Bug | Test | Fix Commit |
+|-----|------|------------|
+| Bug #1: SIGABRT crash during tag save | `Tags_CreateTag_AppearsInList` | `1b19734` |
+| Bug #3: `GoToAsync("..")` unreliable after tag save | Same test | `93c412b` |
+| Bug #4: Prayer Time action sheet stale element | PrayerTime tests | `1b19734` |
+| Bug #5: Empty card expand (main case) | `Cards_ExpandCard_ShowsPrayers` | `93c412b` |
 
-**Error:** `$XunitDynamicSkip$ Precondition: 'UI Test Prayer' not found — depends on earlier QuickAdd test`
-
-**What happens:** These tests expect a prayer named "UI Test Prayer" to exist (created by `QuickAdd_SaveWithTitle_DismissesModal`). All QuickAdd tests pass, but these two tests run at ~2:41 and ~3:47 respectively, while QuickAdd tests run at ~10:15+. **xUnit ran these tests before the QuickAdd tests that create the data they depend on.**
-
-**This is a test design issue.** xUnit doesn't guarantee execution order across test classes within a collection. Options:
-1. Make these tests self-contained — create their own prayer as a setup step
-2. Use `IClassFixture` with a shared data setup that creates the prayer once
-3. Move these tests into the QuickAdd test class so they run after the setup tests
+**Note:** Bug #4 (Prayer Time) regressed in this run — `NavigationButtons_Present`, `AutoMode_CyclesInterval`, and `FinishButton_ExitsPrayerTime` failed again. This may be the EditGuardHelper cascade poisoning the app state before these tests run, or it may be intermittent. The previous run (`1b19734`) had all 5 Prayer Time tests passing.
 
 ---
 
 ## Summary
 
-| # | Test | Category | Root Cause |
-|---|------|----------|------------|
-| 1 | `UnsavedChanges_EditTitle_BackShowsDiscardDialog` | **App bug** | iOS back nav bypasses unsaved changes guard |
-| 2 | `UnsavedChanges_EditTitle_TabSwitchShowsDiscardDialog` | **Cascade** | Dirty state from test 1's skip |
-| 3 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | **App/timing** | Freshly-created empty card expand on iPad |
-| 4 | `Cards_EditPrayerFromCard` | **Test design** | Runs before QuickAdd creates its data |
-| 5 | `Prayers_TapPrayer_ShowsViewMode` | **Test design** | Same ordering issue |
+**The `c8574d7` commit should be reverted or the `EditGuardHelper` reworked.** It regressed from 50/55 to 32/55 by replacing native back navigation with `GoToAsync("..")` on all detail pages. The best baseline is commit `1b19734` at 50/55.
 
-**Crash status:** Zero crashes, zero session recoveries across this run. The `1b19734` SIGABRT fix is holding.
-
-**Next priority:**
-1. **Bug #2** (unsaved changes guard) — app fix needed, 2 tests blocked
-2. **Test dependency** (ordering) — test code fix, 2 tests blocked
-3. **Empty card expand** — investigate if app or test timing, 1 test blocked
+**Priority:**
+1. Fix `EditGuardHelper` — use `PopAsync()` for clean pages, only intercept when dirty
+2. Retest from the fixed EditGuardHelper
+3. Then address the remaining 5 from the `1b19734` baseline
