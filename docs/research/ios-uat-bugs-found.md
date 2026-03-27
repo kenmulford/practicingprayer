@@ -6,6 +6,28 @@
 
 ---
 
+## Running Specific Tests
+
+Run a single test:
+```
+dotnet test PrayerApp.UITests/PrayerApp.UITests.csproj --filter "FullyQualifiedName=PrayerApp.UITests.Tests.TagTests.Tags_CreateTag_AppearsInList"
+```
+
+Run a whole test class:
+```
+dotnet test PrayerApp.UITests/PrayerApp.UITests.csproj --filter "ClassName=PrayerApp.UITests.Tests.TagTests"
+```
+
+**Workflow:** When testing a new commit with fixes, run only the targeted tests first. If they pass, then run the full suite. Don't waste 18 minutes on a full run just to find the targeted fix didn't work.
+
+Monitor progress during a background run:
+```
+grep -E '(Passed|Failed|\[FAIL\])' <output-file>
+tail -5 <output-file>
+```
+
+---
+
 ## Test Environment
 
 | Component | Version |
@@ -37,7 +59,8 @@
 | `c8574d7` (EditGuardHelper) | 32/55 | Regression — BackButtonBehavior + GoToAsync corrupts Shell. |
 | `767dc6a` (PopAsync fix) | 35/55 | Partial recovery — Reminders fixed, Settings/Tags still cascade. |
 | `fab14aa` (Revert EditGuardHelper) | 49/55 | Cascade eliminated. TabSwitch unsaved changes now passes. |
-| `8d9bdb6` (BUG-2 swipe-back) | **51/55** | **Current.** Prayer Time intermittent tests now pass. 3 remaining real failures + 1 skip. |
+| `8d9bdb6` (BUG-2 swipe-back) | **51/55** | Prayer Time intermittent tests now pass. 3 remaining real failures + 1 skip. |
+| `67baef6` (fixes after 51/55) | **54/58** | **Current.** Clean reinstall. No crashes. 2 scroll fixes still failing + 1 Android-only + 1 known skip. |
 
 ---
 
@@ -103,6 +126,29 @@ After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByTe
 
 ---
 
+### 5. Prayer Time > Select Tags — CollectionView Layout Stall (NOT A CRASH)
+
+**Context:** Prayer Time → "By Tags" → tag selection screen
+**Symptom:** Screen hangs/stalls, no crash, no user-visible error. Sim stops responding for extended periods (8+ minutes observed during test runs).
+
+**Console error (repeats for multiple index paths):**
+```
+Received layout attributes with an invalid index path. Attributes will be ignored.
+Attributes: <UICollectionViewLayoutAttributes: ...; index path: (0-11); frame = (0 569.5; 780 58.5)>;
+layout: <Microsoft_Maui_Controls_Handlers_Items2_LayoutFactory2_CustomUICollectionViewCompositionalLayout: ...>;
+data source counts: [(0:0)]
+```
+
+The CollectionView layout cache has stale items (indexes 0-11) but the data source reports 0 items `[(0:0)]`. This is a known MAUI CollectionView desync — the layout engine tries to render items that no longer exist, flooding UIKit with invalid layout attribute errors.
+
+**Impact:** Causes test timeouts on tag-related tests. May also affect real users if tag list is rapidly cleared/reloaded.
+
+**Not yet investigated:** Could be triggered by the tag scope page binding its CollectionView ItemsSource before data loads, or by a race between navigation and data population.
+
+**Additional observation:** The same CollectionView layout desync also occurs on the Cards tab (`Cards_List_Cards`) during the `EdgeCase_EmptyCardExpand` test — not limited to the tag scope page. This is a systemic MAUI CollectionView issue across multiple pages.
+
+---
+
 ### Previously Intermittent — Now Stable
 
 **Prayer Time Action Sheet (Bug #4)** — 3 tests that were intermittent in the `fab14aa` run now pass consistently:
@@ -112,17 +158,46 @@ After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByTe
 
 ---
 
+## Console Log Analysis (iOS Simulator)
+
+Captured via Console.app → Errors & Faults → PrayerApp process during targeted test runs.
+
+### Noise (safe to ignore)
+
+| Category | Error | Verdict |
+|----------|-------|---------|
+| UIKit App Config | `UIScene lifecycle will soon be required` | Apple future deprecation warning. Not actionable. |
+| GSFont | `OpenSans-Regular already exists` / `GSFontRegisterCGFont failed 305` | MAUI registers bundled font twice at startup. Cosmetic. |
+| TraitCollection | `CKBrowserSwitcherViewController overrides -traitCollection getter` | UIKit internal class (CloudKit). Not our code. |
+| AXRuntimeCommon | `Unknown client: PrayerApp` | Accessibility framework startup. Normal. |
+| animationDidStop | `Unexpectedly received animationDidStop without matching animationDidStart` | UIKit animation tracking mismatch during Shell tab navigation. Noise. |
+| UIFocus | `UIKeyboardLayoutStar implements focusItemsInRect` | Keyboard layout focus caching. Simulator-only. |
+| RTILog | `remoteTextInputSessionWithID: perform input operation requires a valid sessionID` | Keyboard input session not initialized. Appium/simulator artifact. |
+| CHHapticPattern | `hapticpatternlibrary.plist couldn't be opened — No such file` (floods console) | iPad simulator has no haptic engine. Keyboard feedback fails. Massive spam — dozens of entries per keystroke. |
+| UIKBFeedbackGenerator | `Cannot start engine` / `Engine is not running. Can't play feedback` | Same haptic issue as above. |
+
+### Relevant (app-related)
+
+| Category | Error | Impact |
+|----------|-------|--------|
+| CollectionView | `Received layout attributes with invalid index path ... data source counts: [(0:0)]` | **Bug #5.** MAUI CollectionView layout cache desync. Occurs on Cards tab and Prayer Time tag scope page. Causes UI stalls. |
+
+---
+
 ## Summary
 
 | # | Test | Category | Status |
 |---|------|----------|--------|
 | 1 | `UnsavedChanges_EditTitle_BackShowsDiscardDialog` | App bug (Bug #2) | Always skips on iOS |
-| 2 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | Test scrolling bug | **Fix applied** — element-targeted scroll |
-| 3 | `Prayers_TapPrayer_ShowsViewMode` | Test scrolling bug | **Fix applied** — scroll to text before tap |
-| 4 | `PrayerTime_TagScoped_ShowsScopePage` | Test timing bug | **Fix applied** — longer settle delay |
+| 2 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | Test scrolling bug | Fix applied — **still failing** |
+| 3 | `Prayers_TapPrayer_ShowsViewMode` | Test scrolling bug | Fix applied — **still failing** |
+| 4 | `PrayerTime_TagScoped_ShowsScopePage` | Test timing bug | **Fix applied — now passes** |
+| 5 | `AndroidTests.HardwareBack_DirtyDetail_ShowsDiscardDialog` | Android-only test | Fails on iOS — needs platform skip |
 
-**No crashes. No session recoveries. No cascade failures.**
+**No crashes on clean install. No session recoveries. No cascade failures.**
 
 **Priority:**
-1. Bug #2 (unsaved changes) — needs a non-BackButtonBehavior approach (app bug, not test bug)
-2. Verify fixes #2–#4 pass on next iOS test run
+1. Fix #2 and #3 scroll tests (still failing after first fix attempt)
+2. Skip Android-only test on iOS
+3. Bug #2 (unsaved changes) — needs a non-BackButtonBehavior approach (app bug, not test bug)
+4. Bug #5 (CollectionView desync) — investigate MAUI framework issue
