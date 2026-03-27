@@ -137,12 +137,25 @@ public class EdgeCaseTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // After expansion, the "+ Add prayer" button may be below the viewport on iPad.
-        // Use element-targeted scroll on the CollectionView for reliable scrolling.
+        // On iOS, CollectionView cell children may not appear in the flat accessibility tree.
+        // Use multiple strategies: standard find → iOS native scroll by name → text fallback.
         var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
         if (!found)
         {
+            // iOS: use mobile: scroll with name parameter — reaches inside CollectionView cells
+            found = driver.IOSScrollToNameInContainer("Cards_List_Cards", "Cards_Btn_AddPrayer");
+            if (found) found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 3);
+        }
+        if (!found)
+        {
+            // Fallback: try standard scroll
             try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"); found = true; }
             catch (WebDriverException) { /* still not found after scrolling */ }
+        }
+        if (!found)
+        {
+            // Last resort: find by button text
+            found = driver.IsTextDisplayed("+ Add prayer", timeoutSeconds: 3);
         }
         if (!found)
         {

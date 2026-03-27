@@ -283,6 +283,9 @@ namespace PrayerApp.ViewModels
             FilteredPrayerCards = new ObservableCollection<PrayerCardViewModel>(result);
 
             if (!_suppressFilterAnnounce)
+                _accessibilityService.NotifyLayoutChanged();
+
+            if (!_suppressFilterAnnounce)
                 AnnounceFilterCountDebounced();
         }
 
@@ -309,14 +312,18 @@ namespace PrayerApp.ViewModels
                 {
                     ApplySorting();
                 }
-                else if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded)
-                         && card.IsExpanded)
+                else if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded))
                 {
-                    foreach (var other in AllPrayerCards)
-                        if (other != card && other.IsExpanded)
-                            other.IsExpanded = false;
+                    if (card.IsExpanded)
+                    {
+                        foreach (var other in AllPrayerCards)
+                            if (other != card && other.IsExpanded)
+                                other.IsExpanded = false;
+                    }
 
-                    _accessibilityService.Announce($"Expanded {card.Title}");
+                    _accessibilityService.Announce(card.IsExpanded
+                        ? $"Expanded {card.Title}"
+                        : $"Collapsed {card.Title}");
                 }
             }
 

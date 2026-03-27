@@ -170,6 +170,7 @@
                     <Grid RowDefinitions="Auto, Auto, Auto"
                           Padding="4,10"
                           HorizontalOptions="Fill"
+                          SemanticProperties.Description="{Binding AccessibleSummary}"
                           SemanticProperties.Hint="Double tap to view details">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
@@ -203,7 +204,8 @@
                                  HeightRequest="0.5"
                                  Color="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
                                  Opacity="0.4"
-                                 Margin="0,8,0,0" />
+                                 Margin="0,8,0,0"
+                                 AutomationProperties.IsInAccessibleTree="false" />
 
                     </Grid>
                 </DataTemplate>

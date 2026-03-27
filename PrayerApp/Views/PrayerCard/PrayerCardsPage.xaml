@@ -102,6 +102,7 @@
                                 <Label
                                     Text="{Binding Title}"
                                     Style="{StaticResource CardTitle}"
+                                    SemanticProperties.Description="{Binding AccessibleCardHeader}"
                                     SemanticProperties.Hint="Double tap to expand or collapse. Swipe left to delete, right to edit or favorite"
                                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                     VerticalOptions="Center" />

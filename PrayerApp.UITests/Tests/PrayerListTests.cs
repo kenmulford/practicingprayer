@@ -97,10 +97,31 @@ public class PrayerListTests
         driver.EnsureUITestPrayerExists(_setup);
         driver.EnsureOnTab("Prayers", _setup);
 
-        // Prayer may be off-screen after other tests create data — scroll to find it, then tap
+        // Wait for CollectionView cells to materialize in the accessibility tree
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // On iOS, CollectionView cell contents may not appear in the flat accessibility tree.
+        // Use iOS native scroll with predicateString to reach inside cells, then tap by text.
+        bool scrolledToItem = false;
+        if (TestConfig.IsIOS)
+        {
+            scrolledToItem = driver.IOSScrollToPredicateInContainer(
+                "List_List_Prayers", "label == 'UI Test Prayer'");
+        }
+
         try
         {
-            driver.ScrollDownToText("UI Test Prayer", maxScrolls: 3, scrollableAutomationId: "List_List_Prayers").Click();
+            if (scrolledToItem)
+            {
+                // iOS native scroll found it — now tap by text
+                driver.TapByText("UI Test Prayer", timeoutSeconds: 5);
+            }
+            else
+            {
+                // Android or iOS fallback: standard scroll + click
+                driver.ScrollDownToText("UI Test Prayer", maxScrolls: 3,
+                    scrollableAutomationId: "List_List_Prayers").Click();
+            }
         }
         catch (Exception ex) when (ex is NoSuchElementException or WebDriverException)
         {

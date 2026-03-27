@@ -138,6 +138,7 @@ namespace PrayerApp.ViewModels
                 {
                     _prayer.Title = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(AccessibleSummary));
                 }
             }
         }
@@ -297,6 +298,7 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged(nameof(AnsweredAt));
                     OnPropertyChanged(nameof(AnsweredAtDisplay));
                     OnPropertyChanged(nameof(IsNotAnswered));
+                    OnPropertyChanged(nameof(AccessibleSummary));
                 }
             }
         }
@@ -308,6 +310,23 @@ namespace PrayerApp.ViewModels
                 ? $"✓ {AnsweredAt.Value:MMM d}"
                 : string.Empty;
 
+        /// <summary>
+        /// Composed accessible label for screen readers. VoiceOver reads this as a single
+        /// announcement for the prayer row: "Card Name, Prayer Title, Answered Mar 15".
+        /// </summary>
+        public string AccessibleSummary
+        {
+            get
+            {
+                var parts = new List<string>(3);
+                if (!string.IsNullOrEmpty(CardTitle)) parts.Add(CardTitle);
+                parts.Add(Title);
+                if (IsAnswered && !string.IsNullOrEmpty(AnsweredAtDisplay))
+                    parts.Add(AnsweredAtDisplay);
+                return string.Join(", ", parts);
+            }
+        }
+
         public IReadOnlyList<PrayerFrequency> FrequencyOptions { get; } =
             new ReadOnlyCollection<PrayerFrequency>(Enum.GetValues<PrayerFrequency>().ToList());
 
@@ -315,7 +334,11 @@ namespace PrayerApp.ViewModels
         public string CardTitle
         {
             get => _cardTitle;
-            set => SetProperty(ref _cardTitle, value);
+            set
+            {
+                if (SetProperty(ref _cardTitle, value))
+                    OnPropertyChanged(nameof(AccessibleSummary));
+            }
         }
 
         public ObservableCollection<PrayerCard> AvailableCards { get; } = new();
@@ -781,6 +804,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(IsNew));
             OnPropertyChanged(nameof(ShowSaveAndNew));
             OnPropertyChanged(nameof(CardTitle));
+            OnPropertyChanged(nameof(AccessibleSummary));
         }
     }
 }

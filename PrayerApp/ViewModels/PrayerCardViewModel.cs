@@ -57,6 +57,7 @@ namespace PrayerApp.ViewModels
                 {
                     _prayerCard.Title = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(AccessibleCardHeader));
                 }
             }
         }
@@ -70,6 +71,7 @@ namespace PrayerApp.ViewModels
                 {
                     _prayerCard.IsFavorite = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(AccessibleCardHeader));
                 }
             }
         }
@@ -84,6 +86,7 @@ namespace PrayerApp.ViewModels
                     _isExpanded = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(ShowBadge));
+                    OnPropertyChanged(nameof(AccessibleCardHeader));
                 }
             }
         }
@@ -125,11 +128,32 @@ namespace PrayerApp.ViewModels
         public int ActivePrayerCount
         {
             get => _activePrayerCount;
-            set => SetProperty(ref _activePrayerCount, value);
+            set
+            {
+                if (SetProperty(ref _activePrayerCount, value))
+                    OnPropertyChanged(nameof(AccessibleCardHeader));
+            }
         }
 
         /// <summary>Show the count badge when the card is collapsed.</summary>
         public bool ShowBadge => !IsExpanded;
+
+        /// <summary>
+        /// Composed accessible label for the card header. VoiceOver reads:
+        /// "Quick Add, 3 prayers, Favorited, Collapsed".
+        /// </summary>
+        public string AccessibleCardHeader
+        {
+            get
+            {
+                var desc = Title;
+                if (!IsExpanded && ActivePrayerCount > 0)
+                    desc += $", {ActivePrayerCount} prayer{(ActivePrayerCount == 1 ? "" : "s")}";
+                if (IsFavorite) desc += ", Favorited";
+                desc += IsExpanded ? ", Expanded" : ", Collapsed";
+                return desc;
+            }
+        }
 
         public ObservableCollection<PrayerRequestDetailViewModel> Prayers { get; }
 
@@ -318,6 +342,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(CanDelete));
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
+            OnPropertyChanged(nameof(AccessibleCardHeader));
         }
 
         private async Task LoadPrayersAsync()

@@ -600,6 +600,62 @@ public static class AppExtensions
         }
     }
 
+    // ── iOS CollectionView helpers ─────────────────────────────
+
+    /// <summary>
+    /// iOS-specific: Uses <c>mobile: scroll</c> with <c>predicateString</c> to scroll a
+    /// container until an element matching the predicate is visible. This reaches inside
+    /// CollectionView cells where standard <c>findElement</c> cannot.
+    /// </summary>
+    /// <returns>True if the scroll command executed without error (element found by the driver).</returns>
+    public static bool IOSScrollToPredicateInContainer(this AppiumDriver driver,
+        string containerAutomationId, string predicateString, int maxAttempts = 3)
+        => IOSScrollInContainer(driver, containerAutomationId, "predicateString", predicateString, maxAttempts);
+
+    /// <summary>
+    /// iOS-specific: Uses <c>mobile: scroll</c> with the <c>name</c> parameter to scroll a
+    /// container until an element with the given accessibility ID is visible.
+    /// </summary>
+    public static bool IOSScrollToNameInContainer(this AppiumDriver driver,
+        string containerAutomationId, string accessibilityName, int maxAttempts = 3)
+        => IOSScrollInContainer(driver, containerAutomationId, "name", accessibilityName, maxAttempts);
+
+    /// <summary>
+    /// Shared implementation for iOS <c>mobile: scroll</c> with a finder parameter
+    /// (e.g. "predicateString" or "name") that reaches inside CollectionView cells.
+    /// </summary>
+    private static bool IOSScrollInContainer(AppiumDriver driver,
+        string containerAutomationId, string finderKey, string finderValue, int maxAttempts)
+    {
+        if (!TestConfig.IsIOS) return false;
+
+        string? containerId;
+        try
+        {
+            containerId = driver.FindElement(MobileBy.AccessibilityId(containerAutomationId)).Id;
+        }
+        catch (NoSuchElementException) { return false; }
+
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            try
+            {
+                driver.ExecuteScript("mobile: scroll", new Dictionary<string, object>
+                {
+                    { "elementId", containerId },
+                    { "direction", "down" },
+                    { finderKey, finderValue }
+                });
+                return true;
+            }
+            catch (WebDriverException)
+            {
+                // Element not yet reachable — try scrolling again
+            }
+        }
+        return false;
+    }
+
     // ── Diagnostics ──────────────────────────────────────────────
 
     /// <summary>

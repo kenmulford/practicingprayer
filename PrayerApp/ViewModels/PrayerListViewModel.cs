@@ -371,6 +371,9 @@ namespace PrayerApp.ViewModels
             FilteredPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(sorted);
 
             if (!_suppressAnnounce)
+                _accessibilityService.NotifyLayoutChanged();
+
+            if (!_suppressAnnounce)
                 _accessibilityService.Announce($"Showing {FilteredPrayers.Count} prayers");
         }
 
