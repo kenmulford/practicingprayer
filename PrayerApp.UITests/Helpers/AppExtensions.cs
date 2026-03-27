@@ -14,6 +14,16 @@ public static class AppExtensions
 {
     private const string PackagePrefix = "com.multithreadedllc.prayercards:id/";
 
+    /// <summary>iOS swipe velocity in pixels/sec. Moderate speed to reliably trigger SwipeView.</summary>
+    private const int IOSSwipeVelocity = 1500;
+
+    /// <summary>Dismiss the software keyboard if showing on iOS. No-op on Android.</summary>
+    public static void DismissKeyboardIfPresent(this AppiumDriver driver)
+    {
+        if (!TestConfig.IsIOS) return;
+        try { driver.HideKeyboard(); } catch (WebDriverException) { }
+    }
+
     /// <summary>Build the correct locator for an AutomationId on the current platform.</summary>
     private static By AutomationIdLocator(string automationId)
     {
@@ -116,7 +126,7 @@ public static class AppExtensions
             if (!string.IsNullOrEmpty(text))
             {
                 element.SendKeys(text);
-                try { driver.HideKeyboard(); } catch (WebDriverException) { }
+                driver.DismissKeyboardIfPresent();
             }
         }
         else
@@ -157,6 +167,8 @@ public static class AppExtensions
     public static AppiumElement ScrollDownTo(this AppiumDriver driver, string automationId,
         int maxScrolls = 5)
     {
+        driver.DismissKeyboardIfPresent();
+
         var locator = AutomationIdLocator(automationId);
         var size = driver.Manage().Window.Size;
         for (int i = 0; i < maxScrolls; i++)
@@ -205,9 +217,7 @@ public static class AppExtensions
     /// <summary>Navigate to a Shell tab by tapping its tab bar item.</summary>
     public static void NavigateToTab(this AppiumDriver driver, string tabTitle)
     {
-        // iOS: keyboard can cover the tab bar — dismiss it first
-        if (TestConfig.IsIOS)
-            try { driver.HideKeyboard(); } catch (WebDriverException) { }
+        driver.DismissKeyboardIfPresent();
 
         // Try up to 3 times to find the tab bar, going back each time to clear
         // modals, detail pages, and deep navigation stacks.
@@ -220,6 +230,23 @@ public static class AppExtensions
 
             // Tab not found — go back to clear the current page/modal
             try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
+        }
+
+        // Try dismissing a modal (Cancel/Close/Done buttons commonly found on modals)
+        foreach (var modalButton in new[] { "Scope_Btn_Cancel", "QuickAdd_Btn_Cancel" })
+        {
+            try
+            {
+                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+                var btn = driver.FindElement(MobileBy.AccessibilityId(modalButton));
+                btn.Click();
+                Thread.Sleep(1000);
+            }
+            catch (WebDriverException) { }
+            finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+            if (TryTapTab(driver, tabTitle))
+                return;
         }
 
         // Nuclear recovery: re-activate the app (handles case where GoBack closed it)
@@ -264,7 +291,7 @@ public static class AppExtensions
     {
         setup.EnsureSessionAlive();
         driver.DismissOnboardingIfPresent(setup);
-        driver.NavigateToTab(tabTitle);
+        driver.NavigateToTab(tabTitle); // NavigateToTab handles keyboard dismiss + alert dismiss
     }
 
     /// <summary>Go back (Android back button or iOS back nav).</summary>
@@ -344,10 +371,19 @@ public static class AppExtensions
     // ── Toolbar / Text Finders ────────────────────────────────────
 
     /// <summary>Tap a Shell ToolbarItem by its text label (e.g., "Save", "Edit", "Add Card").</summary>
-    public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
+        driver.DismissKeyboardIfPresent();
+        if (TestConfig.IsIOS) Thread.Sleep(300);
+
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        var element = wait.Until(d => d.FindElement(TextLocator(text)));
+
+        // iOS Shell toolbar items render as XCUIElementTypeButton — use specific locator
+        By locator = TestConfig.IsIOS
+            ? By.XPath($"//XCUIElementTypeButton[@name='{text}' or @label='{text}']")
+            : TextLocator(text);
+
+        var element = wait.Until(d => d.FindElement(locator));
         element.Click();
         Thread.Sleep(300);
     }
@@ -386,11 +422,12 @@ public static class AppExtensions
     {
         if (TestConfig.IsIOS)
         {
-            // iOS XCUITest: "mobile: swipe" with elementId and direction
+            // iOS XCUITest: "mobile: swipe" with elementId, direction, and velocity (px/sec)
             driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
             {
                 { "elementId", element.Id },
-                { "direction", direction }
+                { "direction", direction },
+                { "velocity", IOSSwipeVelocity }
             });
         }
         else
@@ -460,6 +497,7 @@ public static class AppExtensions
     public static void NavigateToNewPrayer(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayers", setup);
+        if (TestConfig.IsIOS) Thread.Sleep(500); // Let Shell finish rendering toolbar items
         driver.TapToolbarItem("Add");
         driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 5);
     }

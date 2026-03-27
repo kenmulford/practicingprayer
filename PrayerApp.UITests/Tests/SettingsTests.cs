@@ -18,6 +18,8 @@ public class SettingsTests
     private void EnsureOnSettingsHub()
     {
         _setup.Driver.NavigateToTabRoot("Settings", "Settings_Row_AppSettings", _setup);
+        // Let Shell finish rendering all hub rows before interacting
+        if (TestConfig.IsIOS) Thread.Sleep(500);
     }
 
     /// <summary>9.1: Hub page loads — 4 rows with chevrons.</summary>
@@ -114,9 +116,10 @@ public class SettingsTests
         var driver = _setup.Driver;
 
         driver.WaitAndTap("Settings_Row_Help");
+        Thread.Sleep(1000); // CollectionView needs time to render items on iOS
 
         Assert.True(
-            driver.IsTextDisplayed("How", timeoutSeconds: 5)
+            driver.IsTextDisplayed("How", timeoutSeconds: 8)
             || driver.IsTextDisplayed("What", timeoutSeconds: 3)
             || driver.IsTextDisplayed("Can", timeoutSeconds: 3),
             "Help page should show FAQ items");

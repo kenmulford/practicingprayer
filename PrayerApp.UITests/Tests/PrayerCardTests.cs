@@ -16,10 +16,14 @@ public class PrayerCardTests
     private readonly AppiumSetup _setup;
     public PrayerCardTests(AppiumSetup setup) => _setup = setup;
 
-    /// <summary>Expand the Quick Add system card if visible.</summary>
+    /// <summary>Expand the Quick Add system card if visible and not already expanded.</summary>
     private void ExpandQuickAddCard()
     {
         var driver = _setup.Driver;
+        // Already expanded — nothing to do
+        if (driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 2))
+            return;
+
         if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
         {
             driver.TapByText("Quick Add");

@@ -139,7 +139,11 @@ public class PrayerTimeTests
                 || driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 3),
                 "Tag scope page should show Start and Cancel buttons");
 
-            driver.Tap("Scope_Btn_Cancel");
+            driver.WaitAndTap("Scope_Btn_Cancel");
+            Thread.Sleep(1000); // Wait for modal dismiss animation
+            // Verify we're back on Home (modal actually dismissed)
+            Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 5),
+                "Cancel should dismiss scope modal and return to Home");
         }
         else
         {

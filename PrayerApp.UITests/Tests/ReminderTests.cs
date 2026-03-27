@@ -1,3 +1,4 @@
+using OpenQA.Selenium;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -55,13 +56,26 @@ public class ReminderTests
             driver.Tap("Detail_Picker_Frequency");
             Thread.Sleep(500);
 
-            var hasDaily = driver.IsTextDisplayed("Daily", timeoutSeconds: 3);
-            var hasWeekly = driver.IsTextDisplayed("Weekly", timeoutSeconds: 2);
-
-            driver.DismissAlertIfPresent();
-
-            Assert.True(hasDaily || hasWeekly,
-                "Frequency picker should show options like Daily, Weekly");
+            if (TestConfig.IsIOS)
+            {
+                // iOS shows a native picker wheel — options aren't findable via text locators.
+                // Verify the picker opened by looking for the picker wheel element or Done button.
+                var pickerOpened = driver.IsTextDisplayed("Done", timeoutSeconds: 3)
+                    || driver.FindElements(By.XPath("//XCUIElementTypePickerWheel")).Count > 0;
+                Assert.True(pickerOpened,
+                    "Frequency picker should open and show a selection wheel on iOS");
+                // Dismiss the picker
+                if (driver.IsTextDisplayed("Done", timeoutSeconds: 1))
+                    driver.TapByText("Done");
+            }
+            else
+            {
+                var hasDaily = driver.IsTextDisplayed("Daily", timeoutSeconds: 3);
+                var hasWeekly = driver.IsTextDisplayed("Weekly", timeoutSeconds: 2);
+                driver.DismissAlertIfPresent();
+                Assert.True(hasDaily || hasWeekly,
+                    "Frequency picker should show options like Daily, Weekly");
+            }
         }
 
         driver.GoBack();

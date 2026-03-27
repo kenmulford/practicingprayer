@@ -25,7 +25,16 @@ public class UnsavedChangesTests
         driver.EnterText("Detail_Entry_Title", "Dirty Prayer");
         Thread.Sleep(500); // Allow IsDirty to register the change
 
-        driver.GoBack();
+        if (TestConfig.IsIOS)
+        {
+            // iOS: Navigate().Back() bypasses Shell's OnShellNavigating guard.
+            // Use tab switch instead, which triggers ShellSectionChanged and the guard catches it.
+            driver.NavigateToTab("Home");
+        }
+        else
+        {
+            driver.GoBack();
+        }
         Thread.Sleep(1000);
 
         // Check native alert OR MAUI dialog text OR still on detail page (back intercepted)
@@ -68,11 +77,10 @@ public class UnsavedChangesTests
 
         driver.EnterText("Detail_Entry_Title", "Saved Prayer NoPrompt");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(1500);
 
-        driver.GoBack();
-        Thread.Sleep(500);
-
+        // Save already navigates back to prayer list via GoToAsync("..").
+        // Verify we're on the list (no discard prompt intercepted the Save navigation).
         Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5)
                  || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
             "Should return to prayer list without discard prompt after saving");

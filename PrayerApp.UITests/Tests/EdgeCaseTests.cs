@@ -62,16 +62,17 @@ public class EdgeCaseTests
         driver.EnsureOnTab("Home", _setup);
 
         var tabs = new[] { "Home", "Prayer Cards", "Prayers", "Tags", "Settings" };
+        var delay = TestConfig.IsIOS ? 500 : 200; // iOS Shell navigation is slower
         foreach (var tab in tabs)
         {
             driver.NavigateToTab(tab);
-            Thread.Sleep(200);
+            Thread.Sleep(delay);
         }
 
         for (int i = tabs.Length - 1; i >= 0; i--)
         {
             driver.NavigateToTab(tabs[i]);
-            Thread.Sleep(200);
+            Thread.Sleep(delay);
         }
 
         driver.NavigateToTab("Home");
