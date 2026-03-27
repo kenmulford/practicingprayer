@@ -160,55 +160,92 @@ public static class AppExtensions
     // ── Scrolling ────────────────────────────────────────────────
 
     /// <summary>Scroll down until an element with the given AutomationId is found.</summary>
+    /// <param name="scrollableAutomationId">Optional: AutomationId of a scrollable container
+    /// (e.g. CollectionView) to target on iOS. When provided, iOS uses <c>mobile: scroll</c>
+    /// on that element instead of a full-screen swipe.</param>
     public static AppiumElement ScrollDownTo(this AppiumDriver driver, string automationId,
-        int maxScrolls = 5)
+        int maxScrolls = 5, string? scrollableAutomationId = null)
+        => ScrollDownUntil(driver, AutomationIdLocator(automationId),
+            $"Element '{automationId}'", maxScrolls, scrollableAutomationId);
+
+    /// <summary>Scroll down until an element with the given visible text is found.</summary>
+    public static AppiumElement ScrollDownToText(this AppiumDriver driver, string text,
+        int maxScrolls = 5, string? scrollableAutomationId = null)
+        => ScrollDownUntil(driver, TextLocator(text),
+            $"Text '{text}'", maxScrolls, scrollableAutomationId);
+
+    /// <summary>Scroll down until a locator matches a visible element.</summary>
+    private static AppiumElement ScrollDownUntil(AppiumDriver driver, By locator,
+        string description, int maxScrolls, string? scrollableAutomationId)
     {
         driver.DismissKeyboardIfPresent();
 
-        var locator = AutomationIdLocator(automationId);
-        var size = driver.Manage().Window.Size;
+        // Cache container once (iOS element-targeted scroll) and window size (Android swipe area)
+        string? containerId = null;
+        if (TestConfig.IsIOS && scrollableAutomationId != null)
+        {
+            try { containerId = driver.FindElement(MobileBy.AccessibilityId(scrollableAutomationId)).Id; }
+            catch (NoSuchElementException) { /* fall through to generic swipe */ }
+        }
+        var size = TestConfig.IsAndroid ? driver.Manage().Window.Size : default;
+
         try
         {
-        driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-        for (int i = 0; i < maxScrolls; i++)
-        {
-            try
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            for (int i = 0; i < maxScrolls; i++)
             {
-                var element = driver.FindElement(locator);
-                if (element.Displayed)
-                    return (AppiumElement)element;
-            }
-            catch (NoSuchElementException) { }
+                try
+                {
+                    var element = driver.FindElement(locator);
+                    if (element.Displayed)
+                        return (AppiumElement)element;
+                }
+                catch (NoSuchElementException) { }
 
-            if (TestConfig.IsIOS)
-            {
-                // iOS XCUITest: "mobile: swipe" with direction
-                driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
-                {
-                    { "direction", "up" }
-                });
+                ScrollDown(driver, size, containerId);
             }
-            else
-            {
-                // Android UiAutomator2: "mobile: swipeGesture" with bounding area
-                driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
-                {
-                    { "left", size.Width / 4 },
-                    { "top", size.Height / 4 },
-                    { "width", size.Width / 2 },
-                    { "height", size.Height / 2 },
-                    { "direction", "up" },
-                    { "percent", 0.5 }
-                });
-            }
-        }
         }
         finally
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
         }
 
-        throw new NoSuchElementException($"Element '{automationId}' not found after {maxScrolls} scrolls.");
+        throw new NoSuchElementException($"{description} not found after {maxScrolls} scrolls.");
+    }
+
+    /// <summary>Perform a single scroll-down gesture.</summary>
+    /// <param name="containerId">Pre-resolved element ID for iOS container-targeted scroll, or null for full-screen swipe.</param>
+    private static void ScrollDown(AppiumDriver driver, System.Drawing.Size size, string? containerId)
+    {
+        if (TestConfig.IsIOS)
+        {
+            if (containerId != null)
+            {
+                driver.ExecuteScript("mobile: scroll", new Dictionary<string, object>
+                {
+                    { "elementId", containerId },
+                    { "direction", "down" }
+                });
+                return;
+            }
+
+            driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
+            {
+                { "direction", "up" }
+            });
+        }
+        else
+        {
+            driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+            {
+                { "left", size.Width / 4 },
+                { "top", size.Height / 4 },
+                { "width", size.Width / 2 },
+                { "height", size.Height / 2 },
+                { "direction", "up" },
+                { "percent", 0.5 }
+            });
+        }
     }
 
     // ── Navigation ───────────────────────────────────────────────

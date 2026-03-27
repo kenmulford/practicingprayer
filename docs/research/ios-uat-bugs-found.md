@@ -1,8 +1,8 @@
 # iOS UAT: Test Results and Bug Tracking
 
 **Last updated:** 2026-03-27
-**Latest build tested:** Release config, commit `fab14aa` (Revert EditGuardHelper)
-**Test result:** 49 passed, 6 failed (55 total)
+**Latest build tested:** Release config, commit `8d9bdb6` (BUG-2 swipe-back + iPad PageSheet)
+**Test result:** 51 passed, 4 failed (55 total)
 
 ---
 
@@ -36,7 +36,8 @@
 | `1b19734` (BUG-1 SIGABRT) | 50/55 | All Prayer Time passes. No crashes. |
 | `c8574d7` (EditGuardHelper) | 32/55 | Regression — BackButtonBehavior + GoToAsync corrupts Shell. |
 | `767dc6a` (PopAsync fix) | 35/55 | Partial recovery — Reminders fixed, Settings/Tags still cascade. |
-| `fab14aa` (Revert EditGuardHelper) | **49/55** | **Current.** Cascade eliminated. TabSwitch unsaved changes now passes. |
+| `fab14aa` (Revert EditGuardHelper) | 49/55 | Cascade eliminated. TabSwitch unsaved changes now passes. |
+| `8d9bdb6` (BUG-2 swipe-back) | **51/55** | **Current.** Prayer Time intermittent tests now pass. 3 remaining real failures + 1 skip. |
 
 ---
 
@@ -50,7 +51,7 @@
 
 ---
 
-## Remaining Failures: 6 Tests
+## Remaining Failures: 4 Tests
 
 ### 1. Unsaved Changes Guard on iOS Back Nav — APP BUG (Bug #2)
 
@@ -69,54 +70,59 @@ iOS back navigation bypasses the unsaved changes guard. Changes are silently los
 
 ---
 
-### 2. Prayer Time Action Sheet Intermittent (Bug #4) — 3 tests
+### 2. Empty Card Expand Edge Case — 1 test (FIX APPLIED)
 
-**Tests:**
-- `PrayerTime_NavigationButtons_Present` (54s)
-- `PrayerTime_AutoMode_CyclesInterval` (95s)
-- `PrayerTime_FinishButton_ExitsPrayerTime` (53s)
-
-**Error:** `$XunitDynamicSkip$ Prayer Time action sheet could not be started`
-
-Intermittent — these passed at `1b19734` but fail here. `TryStartPrayerTime()` taps `Home_Btn_PrayerTime`, waits for the action sheet, tries to tap "All Requests" twice. The action sheet either doesn't appear or elements go stale.
-
-**Note:** `PrayerTime_SessionStarts_ShowsCarousel` and `PrayerTime_TagScoped_ShowsScopePage` PASS in this same run, proving the action sheet can work. The intermittency may be related to test ordering — when these tests run after certain other tests, the Home page state may differ.
-
----
-
-### 3. Empty Card Expand Edge Case — 1 test
-
-**Test:** `EdgeCase_EmptyCardExpand_ShowsAddPrayer` (32s)
+**Test:** `EdgeCase_EmptyCardExpand_ShowsAddPrayer` (40s)
 **Error:** Assertion — empty card doesn't show "+ Add prayer" after expand
 
-Consistent failure across all runs. Creates a new empty card, taps to expand, can't find `Cards_Btn_AddPrayer`. The main card expand test (`Cards_ExpandCard_ShowsPrayers`) passes — this is specific to freshly-created empty cards on iPad.
+Consistent failure. On iPad, expanding an empty card at the bottom of the list pushes `Cards_Btn_AddPrayer` below the viewport. The `ScrollDownTo` was using full-screen `mobile: swipe` which doesn't reliably scroll the CollectionView.
+
+**Fix:** Changed `ScrollDownTo` to use iOS `mobile: scroll` with `elementId` targeting the `Cards_List_Cards` CollectionView for element-targeted scrolling.
 
 ---
 
-### 4. Prayers_TapPrayer_ShowsViewMode — 1 test
+### 3. Prayers_TapPrayer_ShowsViewMode — 1 test (FIX APPLIED)
 
-**Test:** `Prayers_TapPrayer_ShowsViewMode` (25s)
+**Test:** `Prayers_TapPrayer_ShowsViewMode` (33s)
 **Error:** `WebDriverTimeoutException` at `TapByText` — can't find the prayer to tap
 
-This test was rewritten in `c8574d7` to create its own prayer (no longer depends on QuickAdd). The rewrite may have a bug — the prayer is created but then can't be found on the Prayers tab to tap into view mode. Needs investigation: is the prayer being created successfully? Is it visible on the list? Is the text locator matching correctly?
+After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByText` doesn't scroll. `EnsureUITestPrayerExists` uses `IsTextDisplayed` (no scroll) which can miss off-screen items.
+
+**Fix:** Added `ScrollDownToText` call before `TapByText` — scrolls `List_List_Prayers` CollectionView to find the prayer.
+
+---
+
+### 4. PrayerTime_TagScoped_ShowsScopePage — 1 test (FIX APPLIED)
+
+**Test:** `PrayerTime_TagScoped_ShowsScopePage` (12s)
+**Error:** `WebDriverTimeoutException` at `TapByText("By Tags")` — race condition
+
+`IsTextDisplayed("By Tags")` found the action sheet element, but by the time `TapByText` re-queried, the element went stale (action sheet animation still settling).
+
+**Fix:** Increased post-tap delay from 500ms to 1000ms for action sheet animation, added 300ms settle delay before tapping, increased timeout to 5s.
+
+---
+
+### Previously Intermittent — Now Stable
+
+**Prayer Time Action Sheet (Bug #4)** — 3 tests that were intermittent in the `fab14aa` run now pass consistently:
+- `PrayerTime_NavigationButtons_Present` (1m 4s)
+- `PrayerTime_AutoMode_CyclesInterval` (50s)
+- `PrayerTime_FinishButton_ExitsPrayerTime` (55s)
 
 ---
 
 ## Summary
 
-| # | Test | Category | Consistent? |
-|---|------|----------|-------------|
-| 1 | `UnsavedChanges_EditTitle_BackShowsDiscardDialog` | App bug (Bug #2) | Yes — always skips on iOS |
-| 2 | `PrayerTime_NavigationButtons_Present` | App bug (Bug #4) | Intermittent |
-| 3 | `PrayerTime_AutoMode_CyclesInterval` | App bug (Bug #4) | Intermittent |
-| 4 | `PrayerTime_FinishButton_ExitsPrayerTime` | App bug (Bug #4) | Intermittent |
-| 5 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | App/layout bug | Yes — always fails |
-| 6 | `Prayers_TapPrayer_ShowsViewMode` | Test code bug? | Yes — always fails |
+| # | Test | Category | Status |
+|---|------|----------|--------|
+| 1 | `UnsavedChanges_EditTitle_BackShowsDiscardDialog` | App bug (Bug #2) | Always skips on iOS |
+| 2 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | Test scrolling bug | **Fix applied** — element-targeted scroll |
+| 3 | `Prayers_TapPrayer_ShowsViewMode` | Test scrolling bug | **Fix applied** — scroll to text before tap |
+| 4 | `PrayerTime_TagScoped_ShowsScopePage` | Test timing bug | **Fix applied** — longer settle delay |
 
 **No crashes. No session recoveries. No cascade failures.**
 
 **Priority:**
-1. Bug #2 (unsaved changes) — needs a non-BackButtonBehavior approach
-2. Bug #4 (Prayer Time) — intermittent, may need app-side stabilization of action sheet
-3. Empty card expand — investigate iPad layout for freshly-created empty cards
-4. `Prayers_TapPrayer_ShowsViewMode` — likely test code issue in the `c8574d7` rewrite
+1. Bug #2 (unsaved changes) — needs a non-BackButtonBehavior approach (app bug, not test bug)
+2. Verify fixes #2–#4 pass on next iOS test run

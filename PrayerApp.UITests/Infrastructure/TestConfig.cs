@@ -37,6 +37,8 @@ public static class TestConfig
     public const int DelayAppRelaunch = 5000;
     /// <summary>CollectionView item materialisation.</summary>
     public const int DelayCollectionRender = 1500;
+    /// <summary>Modal/action sheet present or dismiss animation.</summary>
+    public const int DelayModalAnimation = 1000;
 
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";

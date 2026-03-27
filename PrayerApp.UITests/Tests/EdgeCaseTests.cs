@@ -124,39 +124,24 @@ public class EdgeCaseTests
         driver.NavigateToTab("Prayer Cards");
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Scroll down to find the new card — it may be below the fold on iPad
-        if (!driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 3))
+        // Scroll down to find the new card and tap to expand — it may be below the fold on iPad
+        try
         {
-            for (int i = 0; i < 3 && !driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 2); i++)
-            {
-                driver.ExecuteScript(
-                    TestConfig.IsIOS ? "mobile: swipe" : "mobile: swipeGesture",
-                    TestConfig.IsIOS
-                        ? new Dictionary<string, object> { { "direction", "up" } }
-                        : new Dictionary<string, object>
-                        {
-                            { "left", 100 }, { "top", 300 },
-                            { "width", 400 }, { "height", 600 },
-                            { "direction", "up" }, { "percent", 0.5 }
-                        });
-                Thread.Sleep(500);
-            }
+            driver.ScrollDownToText("Empty Card Test", maxScrolls: 3, scrollableAutomationId: "Cards_List_Cards").Click();
         }
-
-        Assert.True(driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 5),
-            "Could not find 'Empty Card Test' card after creation and scrolling");
-
-        // Tap the card title to expand — retry once if stale
-        try { driver.TapByText("Empty Card Test"); }
-        catch (WebDriverException) { Thread.Sleep(TestConfig.DelayAfterTap); driver.TapByText("Empty Card Test"); }
+        catch (WebDriverException)
+        {
+            Thread.Sleep(TestConfig.DelayAfterTap);
+            driver.TapByText("Empty Card Test");
+        }
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // After expansion, the "+ Add prayer" button may be below the viewport on iPad.
-        // Use ScrollDownTo with enough scroll attempts to bring it into view.
+        // Use element-targeted scroll on the CollectionView for reliable scrolling.
         var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
         if (!found)
         {
-            try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4); found = true; }
+            try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"); found = true; }
             catch (WebDriverException) { /* still not found after scrolling */ }
         }
         Assert.True(found, "Empty card should show '+ Add prayer' button");

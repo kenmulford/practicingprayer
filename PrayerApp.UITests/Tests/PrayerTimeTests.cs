@@ -146,11 +146,12 @@ public class PrayerTimeTests
         driver.EnsureOnTab("Home", _setup);
 
         driver.WaitAndTap("Home_Btn_PrayerTime");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayModalAnimation);
 
-        if (driver.IsTextDisplayed("By Tags", timeoutSeconds: 3))
+        if (driver.IsTextDisplayed("By Tags", timeoutSeconds: 5))
         {
-            driver.TapByText("By Tags");
+            Thread.Sleep(TestConfig.DelayAfterTap); // Let action sheet fully settle
+            driver.TapByText("By Tags", timeoutSeconds: 5);
 
             Assert.True(
                 driver.IsDisplayed("Scope_Btn_Start", timeoutSeconds: 5)
@@ -158,7 +159,7 @@ public class PrayerTimeTests
                 "Tag scope page should show Start and Cancel buttons");
 
             driver.WaitAndTap("Scope_Btn_Cancel");
-            Thread.Sleep(1000); // Wait for modal dismiss animation
+            Thread.Sleep(TestConfig.DelayModalAnimation);
             // Verify we're back on Home (modal actually dismissed)
             Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 5),
                 "Cancel should dismiss scope modal and return to Home");

@@ -96,7 +96,9 @@ public class PrayerListTests
         driver.EnsureUITestPrayerExists(_setup);
         driver.EnsureOnTab("Prayers", _setup);
 
-        driver.TapByText("UI Test Prayer");
+        // Prayer may be off-screen after other tests create data — scroll to find it, then tap
+        driver.ScrollDownToText("UI Test Prayer", maxScrolls: 3, scrollableAutomationId: "List_List_Prayers").Click();
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
         Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 5)
                  || driver.IsDisplayed("Detail_Btn_Share", timeoutSeconds: 3),
