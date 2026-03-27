@@ -281,7 +281,6 @@ public static class AppExtensions
             Thread.Sleep(500);
             return true;
         }
-        catch (NoSuchElementException) { return false; }
         catch (WebDriverException) { return false; }
         finally
         {
@@ -519,12 +518,19 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
 
-            // Single XPath: native AlertDialog buttons OR common button text
-            var button = driver.FindElement(By.XPath(
-                "//*[@resource-id='android:id/button1' or @resource-id='android:id/button2' " +
-                "or @text='OK' or @text='Cancel']"));
-            button.Click();
-            Thread.Sleep(300);
+            // Prefer positive button (button1 = OK/Yes) over negative (button2 = Cancel)
+            var positiveButtons = driver.FindElements(By.Id("android:id/button1"));
+            if (positiveButtons.Count > 0)
+            {
+                positiveButtons[0].Click();
+            }
+            else
+            {
+                var anyButton = driver.FindElement(By.XPath(
+                    "//*[@resource-id='android:id/button2' or @text='OK' or @text='Cancel']"));
+                anyButton.Click();
+            }
+            Thread.Sleep(TestConfig.DelayAfterDismiss);
         }
         catch (WebDriverException) { }
         finally

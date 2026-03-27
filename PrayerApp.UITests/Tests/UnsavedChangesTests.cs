@@ -23,21 +23,22 @@ public class UnsavedChangesTests
         var driver = _setup.Driver;
 
         driver.EnterText("Detail_Entry_Title", "Dirty Prayer");
-        Thread.Sleep(500); // Allow IsDirty to register the change
+        Thread.Sleep(TestConfig.DelayDirtyRegistration);
 
-        // Use GoBack — on iOS this may bypass Shell guard, but we also test tab-switch
-        // in the next test. Check if the guard fires or if GoBack just pops the page.
+        // Known iOS bug: GoBack bypasses the unsaved changes guard entirely.
+        // See docs/research/ios-uat-bugs-found.md Bug #2
+        if (TestConfig.IsIOS)
+            throw Xunit.Sdk.SkipException.ForSkip("iOS Bug #2: Unsaved changes guard bypassed on iOS back navigation — data loss risk");
+
         driver.GoBack();
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayAfterSave);
 
-        // Check native alert OR MAUI dialog text OR already back on list (GoBack bypassed guard)
         var hasAlert = driver.IsAlertPresent();
         var hasDiscardText = driver.IsTextDisplayed("Discard", timeoutSeconds: 2)
                           || driver.IsTextDisplayed("Unsaved", timeoutSeconds: 1);
         var stillOnDetail = driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 2);
-        var backOnList = driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 2);
 
-        Assert.True(hasAlert || hasDiscardText || stillOnDetail || backOnList,
+        Assert.True(hasAlert || hasDiscardText || stillOnDetail,
             "Discard changes dialog should appear when navigating away with unsaved changes");
 
         // Clean up: ensure we leave the detail page

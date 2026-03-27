@@ -143,19 +143,19 @@ public class PrayerCardTests
 
         ExpandQuickAddCard();
 
-        if (driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
-        {
-            driver.TapByText("UI Test Prayer");
+        if (!driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UI Test Prayer' not found — depends on earlier QuickAdd test");
 
-            driver.TapToolbarItem("Edit");
-            Thread.Sleep(300);
+        driver.TapByText("UI Test Prayer");
 
-            Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5),
-                "Should show title entry in edit mode");
+        driver.TapToolbarItem("Edit");
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
-            driver.GoBack();
-            driver.DismissAlertIfPresent();
-        }
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5),
+            "Should show title entry in edit mode");
+
+        driver.GoBack();
+        driver.DismissAlertIfPresent();
     }
 
     /// <summary>3.12: Delete card — create card, navigate to detail, delete, confirm.</summary>
@@ -221,21 +221,20 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
-        {
-            var cardElement = driver.FindByText("Quick Add");
-            driver.SwipeElementLeft(cardElement);
+        if (!driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'Quick Add' system card not found");
 
-            // System cards should not expose a functional Delete
-            // The ViewModel guard prevents deletion even if the swipe item appears
-            driver.IsTextDisplayed("Delete", timeoutSeconds: 2);
+        var cardElement = driver.FindByText("Quick Add");
+        driver.SwipeElementLeft(cardElement);
 
-            // Dismiss swipe — tap a non-interactive element to clear the swipe state.
-            // Avoid tapping Cards_Search on iOS as it opens the keyboard.
-            try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
-            Thread.Sleep(300);
-        }
+        // System cards should not expose a functional Delete action
+        var deleteVisible = driver.IsTextDisplayed("Delete", timeoutSeconds: 2);
 
+        // Dismiss swipe state before asserting
+        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
+        Thread.Sleep(TestConfig.DelayAfterDismiss);
+
+        Assert.False(deleteVisible, "System card 'Quick Add' should not show Delete action on swipe");
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
     }
 }

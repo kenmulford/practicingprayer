@@ -1,3 +1,4 @@
+using OpenQA.Selenium;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -38,7 +39,7 @@ public class PrayerTimeTests
                     Thread.Sleep(1000);
                     return true;
                 }
-                catch
+                catch (WebDriverException)
                 {
                     // Stale element — dismiss the action sheet and retry
                     driver.DismissAlertIfPresent();
@@ -70,7 +71,7 @@ public class PrayerTimeTests
     public void PrayerTime_SessionStarts_ShowsCarousel()
     {
         if (!TryStartPrayerTime())
-            return;
+            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
 
         var driver = _setup.Driver;
 
@@ -87,7 +88,7 @@ public class PrayerTimeTests
     public void PrayerTime_NavigationButtons_Present()
     {
         if (!TryStartPrayerTime())
-            return;
+            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
 
         var driver = _setup.Driver;
 
@@ -104,7 +105,7 @@ public class PrayerTimeTests
     public void PrayerTime_AutoMode_CyclesInterval()
     {
         if (!TryStartPrayerTime())
-            return;
+            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
 
         var driver = _setup.Driver;
 
@@ -127,7 +128,7 @@ public class PrayerTimeTests
     public void PrayerTime_FinishButton_ExitsPrayerTime()
     {
         if (!TryStartPrayerTime())
-            return;
+            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
 
         ExitPrayerTime();
 

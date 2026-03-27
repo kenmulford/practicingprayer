@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Active — UX-15 + UX-16 implemented, pending commit. Onboarding review plan drafted. iOS UITest code from Mac session needs review.
-**Last completed**: UX-15 (Quick Add tip banner) + UX-16 (portrait Prayer Time toggle)
-**Next up**: Review iOS UITest session work, then AUD-1 remaining phases
+**Status**: Active — iOS UITest review complete (bug masking removed, 5 iOS app bugs tracked).
+**Last completed**: iOS UITest code review — replaced silent passes with `Assert.Skip`/`Assert.Fail` for 5 known iOS bugs
+**Next up**: BUG-1 (critical iOS crash), then AUD-1 remaining phases
 
 ---
 
@@ -36,7 +36,12 @@ Items are listed in work order. Start at the top, work down.
 | 8   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
 | 9   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
 | 10  | ~~UX-16~~ | ~~Portrait mode option for Prayer Time~~ | Users | ✅ Done (2026-03-27) — Settings toggle + conditional orientation lock |
-| 11  | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+| 11  | BUG-1 | iOS: SIGABRT crash during tag save navigation (GoToAsync)          | UITest | **Critical.** App crashes on iOS during/after `GoToAsync("..")` in `TagDetailViewModel.SaveAsync()`. See `docs/research/ios-crash-tag-save-navigation.md`. |
+| 12  | BUG-2 | iOS: Unsaved changes guard bypassed on back navigation             | UITest | **High — data loss.** `GoBack()` on iOS from dirty prayer detail skips discard dialog. See `docs/research/ios-uat-bugs-found.md` Bug #2. |
+| 13  | BUG-3 | iOS: GoToAsync("..") unreliable after tag save                     | UITest | **Medium.** Likely same root cause as BUG-1. See `docs/research/ios-uat-bugs-found.md` Bug #3. |
+| 14  | BUG-4 | iOS: Prayer Time action sheet stale element re-render              | UITest | **Low-Medium.** Action sheet re-renders between detection and tap. See `docs/research/ios-uat-bugs-found.md` Bug #4. |
+| 15  | BUG-5 | iOS: Empty card expand layout on iPad                              | UITest | **Low-Medium.** Card expansion doesn't show Add Prayer button on iPad layout. See `docs/research/ios-uat-bugs-found.md` Bug #5. |
+| 16  | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
 ### Completed
 

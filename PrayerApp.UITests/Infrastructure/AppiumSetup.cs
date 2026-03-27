@@ -45,7 +45,7 @@ public class AppiumSetup : IAsyncLifetime
                 Thread.Sleep(2000);
             }
         }
-        catch (Exception)
+        catch (WebDriverException)
         {
             RecreateDriver();
         }
@@ -75,7 +75,7 @@ public class AppiumSetup : IAsyncLifetime
                 try { Driver.Dispose(); } catch { }
             }
         }
-        // All 3 attempts failed — SessionHealthy stays false
+        // All 3 attempts failed — driver may be unusable; next test will likely throw
     }
 
     private void CreateDriver()

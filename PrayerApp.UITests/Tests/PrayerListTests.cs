@@ -95,20 +95,16 @@ public class PrayerListTests
         _setup.Driver.EnsureOnTab("Prayers", _setup);
         var driver = _setup.Driver;
 
-        if (driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
-        {
-            driver.TapByText("UI Test Prayer");
+        if (!driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UI Test Prayer' not found — depends on earlier QuickAdd test");
 
-            Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 5)
-                     || driver.IsDisplayed("Detail_Btn_Share", timeoutSeconds: 3),
-                "View mode should show action buttons");
+        driver.TapByText("UI Test Prayer");
 
-            driver.GoBack();
-        }
-        else
-        {
-            Assert.True(driver.IsDisplayed("List_Filter_Active"));
-        }
+        Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 5)
+                 || driver.IsDisplayed("Detail_Btn_Share", timeoutSeconds: 3),
+            "View mode should show action buttons");
+
+        driver.GoBack();
     }
 
     /// <summary>4.7: Edit prayer — view mode → Edit → change details → Save.</summary>

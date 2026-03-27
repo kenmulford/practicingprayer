@@ -20,6 +20,24 @@ public static class TestConfig
     public static readonly TimeSpan ShortTimeout = TimeSpan.FromSeconds(3);
     public static readonly TimeSpan SessionTimeout = TimeSpan.FromSeconds(60);
 
+    // ── Named delay constants (milliseconds) ─────────────────────
+    // Centralised so values can be tuned per-platform in one place.
+
+    /// <summary>UI settle after tap/click.</summary>
+    public const int DelayAfterTap = 300;
+    /// <summary>Navigation after a save completes.</summary>
+    public const int DelayAfterSave = 1000;
+    /// <summary>Shell tab / page transition.</summary>
+    public const int DelayAfterNavigation = 500;
+    /// <summary>Alert / modal dismiss animation.</summary>
+    public const int DelayAfterDismiss = 300;
+    /// <summary>IsDirty property-change propagation.</summary>
+    public const int DelayDirtyRegistration = 500;
+    /// <summary>Full app restart in RecreateDriver.</summary>
+    public const int DelayAppRelaunch = 5000;
+    /// <summary>CollectionView item materialisation.</summary>
+    public const int DelayCollectionRender = 1500;
+
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
 

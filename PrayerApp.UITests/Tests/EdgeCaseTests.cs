@@ -37,7 +37,7 @@ public class EdgeCaseTests
 
     /// <summary>12.3: Very long prayer title — doesn't break layout.</summary>
     [Fact]
-    public void LongPrayerTitle_NoLayoutBreak()
+    public void EdgeCase_LongPrayerTitle_NoLayoutBreak()
     {
         var driver = _setup.Driver;
         driver.EnsureOnTab("Home", _setup);
@@ -56,7 +56,7 @@ public class EdgeCaseTests
 
     /// <summary>12.4: Rapid tab switching — no crash, no stale data.</summary>
     [Fact]
-    public void RapidTabSwitching_NoCrash()
+    public void EdgeCase_RapidTabSwitching_NoCrash()
     {
         var driver = _setup.Driver;
         driver.EnsureOnTab("Home", _setup);
@@ -82,7 +82,7 @@ public class EdgeCaseTests
 
     /// <summary>12.5: Double-tap Save — guard prevents double-save.</summary>
     [Fact]
-    public void DoubleTapSave_NoDuplicate()
+    public void EdgeCase_DoubleTapSave_NoDuplicate()
     {
         var driver = _setup.Driver;
         driver.EnsureOnTab("Prayers", _setup);
@@ -106,7 +106,7 @@ public class EdgeCaseTests
 
     /// <summary>12.2: Empty card — expand card with no prayers shows empty state.</summary>
     [Fact]
-    public void EmptyCard_ExpandShowsAddPrayer()
+    public void EdgeCase_EmptyCardExpand_ShowsAddPrayer()
     {
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
@@ -131,21 +131,25 @@ public class EdgeCaseTests
             catch { /* might already be visible */ }
         }
 
-        if (driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 5))
+        if (!driver.IsTextDisplayed("Empty Card Test", timeoutSeconds: 5))
         {
-            // Tap the card title to expand — retry once if stale
-            try { driver.TapByText("Empty Card Test"); }
-            catch { Thread.Sleep(300); driver.TapByText("Empty Card Test"); }
-            Thread.Sleep(800);
-
-            // After expansion, the "+ Add prayer" button may need scrolling into view
-            var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
-            if (!found)
-            {
-                try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 2); found = true; }
-                catch { /* still not found after scrolling */ }
-            }
-            Assert.True(found, "Empty card should show '+ Add prayer' button");
+            if (TestConfig.IsIOS)
+                throw Xunit.Sdk.SkipException.ForSkip("iOS Bug #5: Empty card not visible after scroll on iPad layout");
+            Assert.Fail("Could not find 'Empty Card Test' card after creation");
         }
+
+        // Tap the card title to expand — retry once if stale
+        try { driver.TapByText("Empty Card Test"); }
+        catch (WebDriverException) { Thread.Sleep(TestConfig.DelayAfterTap); driver.TapByText("Empty Card Test"); }
+        Thread.Sleep(800);
+
+        // After expansion, the "+ Add prayer" button may need scrolling into view
+        var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
+        if (!found)
+        {
+            try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 2); found = true; }
+            catch (WebDriverException) { /* still not found after scrolling */ }
+        }
+        Assert.True(found, "Empty card should show '+ Add prayer' button");
     }
 }

@@ -38,12 +38,17 @@ public class TagTests
         driver.TapToolbarItem("Save");
         Thread.Sleep(1500);
 
-        // Save navigates back via GoToAsync("..") — if we're not on the list yet, try navigating
-        if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5))
-            driver.NavigateToTab("Tags");
+        // GoToAsync("..") should navigate back to tag list after save.
+        // Known iOS bug: navigation sometimes fails. See ios-uat-bugs-found.md Bug #3
+        var onTagList = driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5);
 
-        Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5),
-            "Should return to tag list after saving new tag");
+        if (!onTagList && TestConfig.IsIOS)
+        {
+            driver.NavigateToTab("Tags"); // cleanup so subsequent tests work
+            Assert.Fail("iOS Bug #3: GoToAsync('..') did not navigate back to tag list after save");
+        }
+
+        Assert.True(onTagList, "Should return to tag list after saving new tag");
     }
 
     /// <summary>7.3: Edit tag — swipe to reveal Edit, navigate to detail.</summary>
@@ -88,6 +93,7 @@ public class TagTests
         driver.TapToolbarItem("Save");
         Thread.Sleep(1000);
 
+        // Explicit tab nav — GoToAsync("..") is unreliable on iOS (Bug #3)
         driver.NavigateToTab("Tags");
 
         if (driver.IsTextDisplayed("Delete Me Tag", timeoutSeconds: 5))
