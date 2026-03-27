@@ -9,7 +9,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 3: Prayer Cards Tab
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "3-PrayerCards")]
 public class PrayerCardTests
 {

@@ -10,7 +10,7 @@ namespace PrayerApp.UITests.Tests;
 /// The shared fixture only launches once, so only the initial state and skip flow are testable.
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "1-Onboarding")]
 public class OnboardingTests
 {

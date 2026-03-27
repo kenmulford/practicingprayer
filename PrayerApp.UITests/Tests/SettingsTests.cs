@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 9: Settings Hub
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "9-Settings")]
 public class SettingsTests
 {

@@ -28,6 +28,22 @@ public static class AppExtensions
         return MobileBy.AccessibilityId(automationId);
     }
 
+    /// <summary>Build a platform-correct XPath to find an element by its visible text.</summary>
+    private static By TextLocator(string text)
+    {
+        if (TestConfig.IsIOS)
+            return By.XPath($"//*[@name='{text}' or @label='{text}']");
+        return By.XPath($"//*[@text='{text}' or @content-desc='{text}']");
+    }
+
+    /// <summary>Build a platform-correct XPath to find an element containing text.</summary>
+    private static By TextContainsLocator(string text)
+    {
+        if (TestConfig.IsIOS)
+            return By.XPath($"//*[contains(@name,'{text}') or contains(@label,'{text}')]");
+        return By.XPath($"//*[contains(@text,'{text}') or contains(@content-desc,'{text}')]");
+    }
+
     // ── Element Finders ──────────────────────────────────────────
 
     /// <summary>Find an element by its AutomationId.</summary>
@@ -83,7 +99,8 @@ public static class AppExtensions
     {
         var element = driver.FindByAutomationId(automationId);
         element.Clear();
-        element.SendKeys(text);
+        if (!string.IsNullOrEmpty(text))
+            element.SendKeys(text);
     }
 
     /// <summary>Get the text content of an element.</summary>
@@ -156,19 +173,19 @@ public static class AppExtensions
         // modals, detail pages, and deep navigation stacks.
         for (int attempt = 0; attempt < 3; attempt++)
         {
-            driver.DismissAlertIfPresent();
-
             if (TryTapTab(driver, tabTitle))
                 return;
 
-            // Tab not found — go back to clear the current page/modal
+            // Tab not found — dismiss any blocking alert, then go back
+            driver.DismissAlertIfPresent();
             try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
         }
 
         // Nuclear recovery: re-activate the app (handles case where GoBack closed it)
         try
         {
-            driver.ActivateApp(TestConfig.AndroidPackage);
+            var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
+            driver.ActivateApp(appId);
             Thread.Sleep(1000);
         }
         catch (WebDriverException) { }
@@ -177,8 +194,7 @@ public static class AppExtensions
             return;
 
         // Final XPath fallback
-        var tab = driver.FindElement(By.XPath(
-            $"//*[contains(@text,'{tabTitle}') or contains(@content-desc,'{tabTitle}')]"));
+        var tab = driver.FindElement(TextContainsLocator(tabTitle));
         tab.Click();
         Thread.Sleep(500);
     }
@@ -249,30 +265,38 @@ public static class AppExtensions
     /// <summary>Check if an alert dialog is displayed and get its text.</summary>
     public static bool TryGetAlertText(this AppiumDriver driver, out string text)
     {
+        if (TestConfig.IsIOS)
+        {
+            try { text = driver.SwitchTo().Alert().Text; return true; }
+            catch (WebDriverException) { text = ""; return false; }
+        }
+
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-            var alert = driver.FindElement(By.Id("android:id/message"));
-            text = alert.Text;
+            text = driver.FindElement(By.Id("android:id/message")).Text;
             return true;
         }
-        catch (WebDriverException)
-        {
-            text = "";
-            return false;
-        }
-        finally
-        {
-            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-        }
+        catch (WebDriverException) { text = ""; return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
     }
 
     /// <summary>Tap a button in an alert dialog by its text.</summary>
     public static void TapAlertButton(this AppiumDriver driver, string buttonText)
     {
-        var button = driver.FindElement(By.XPath(
-            $"//*[@resource-id='android:id/button1' or @resource-id='android:id/button2' or @resource-id='android:id/button3'][contains(@text,'{buttonText}')]"));
-        button.Click();
+        if (TestConfig.IsIOS)
+        {
+            // iOS alerts expose buttons as XCUIElementTypeButton with @name matching the button label
+            var button = driver.FindElement(
+                By.XPath($"//XCUIElementTypeButton[@name='{buttonText}']"));
+            button.Click();
+        }
+        else
+        {
+            var button = driver.FindElement(By.XPath(
+                $"//*[@resource-id='android:id/button1' or @resource-id='android:id/button2' or @resource-id='android:id/button3'][contains(@text,'{buttonText}')]"));
+            button.Click();
+        }
         Thread.Sleep(300);
     }
 
@@ -282,8 +306,7 @@ public static class AppExtensions
     public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 5)
     {
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        var element = wait.Until(d => d.FindElement(By.XPath(
-            $"//*[@text='{text}' or @content-desc='{text}']")));
+        var element = wait.Until(d => d.FindElement(TextLocator(text)));
         element.Click();
         Thread.Sleep(300);
     }
@@ -292,7 +315,7 @@ public static class AppExtensions
     public static AppiumElement FindByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
     {
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        return (AppiumElement)wait.Until(d => d.FindElement(By.XPath($"//*[@text='{text}']")));
+        return (AppiumElement)wait.Until(d => d.FindElement(TextLocator(text)));
     }
 
     /// <summary>Find and tap any element by its visible text.</summary>
@@ -308,7 +331,7 @@ public static class AppExtensions
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
-            var element = driver.FindElement(By.XPath($"//*[@text='{text}']"));
+            var element = driver.FindElement(TextLocator(text));
             return element.Displayed;
         }
         catch (WebDriverException) { return false; }
@@ -345,6 +368,12 @@ public static class AppExtensions
     /// <summary>Check if an alert dialog is currently showing.</summary>
     public static bool IsAlertPresent(this AppiumDriver driver)
     {
+        if (TestConfig.IsIOS)
+        {
+            try { driver.SwitchTo().Alert(); return true; }
+            catch (WebDriverException) { return false; }
+        }
+
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
@@ -384,6 +413,13 @@ public static class AppExtensions
     /// <summary>Dismiss any visible alert by tapping its positive button (OK/Yes/Cancel).</summary>
     public static void DismissAlertIfPresent(this AppiumDriver driver)
     {
+        if (TestConfig.IsIOS)
+        {
+            try { driver.SwitchTo().Alert().Accept(); Thread.Sleep(300); }
+            catch (WebDriverException) { }
+            return;
+        }
+
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;

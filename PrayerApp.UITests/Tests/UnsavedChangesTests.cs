@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 5: Prayer Detail — Unsaved Changes Guard
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "5-UnsavedChanges")]
 public class UnsavedChangesTests
 {

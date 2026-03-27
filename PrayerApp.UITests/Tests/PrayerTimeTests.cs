@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 8: Prayer Time
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "8-PrayerTime")]
 public class PrayerTimeTests
 {

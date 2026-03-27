@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 6: Reminders / Notifications (UI-only — no actual notification firing)
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "6-Reminders")]
 public class ReminderTests
 {

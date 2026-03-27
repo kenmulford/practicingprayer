@@ -71,11 +71,18 @@ public static class TestConfig
         options.PlatformName = "iOS";
         options.AutomationName = "XCUITest";
         options.AddAdditionalAppiumOption("bundleId", IOSBundleId);
-        options.AddAdditionalAppiumOption("autoAcceptAlerts", true);
+        // Auto-dismiss iOS system alerts (permissions, dictation prompts).
+        // App-level alerts (DisplayAlertAsync) are NOT affected — those are
+        // handled explicitly by DismissAlertIfPresent / TapAlertButton.
+        options.AddAdditionalAppiumOption("autoDismissAlerts", true);
+        // Connect hardware keyboard so SendKeys bypasses the on-screen keyboard.
+        // This prevents accidental taps on the dictation/emoji buttons.
+        options.AddAdditionalAppiumOption("connectHardwareKeyboard", true);
+        options.AddAdditionalAppiumOption("forceSimulatorSoftwareKeyboardPresence", false);
         options.AddAdditionalAppiumOption("newCommandTimeout", 300);
 
         options.DeviceName = Environment.GetEnvironmentVariable("IOS_SIMULATOR") ?? "iPhone 17";
-        options.PlatformVersion = Environment.GetEnvironmentVariable("IOS_VERSION") ?? "26.0";
+        options.PlatformVersion = Environment.GetEnvironmentVariable("IOS_VERSION") ?? "26.4";
 
         return options;
     }

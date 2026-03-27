@@ -8,7 +8,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 7: Tags
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "7-Tags")]
 public class TagTests
 {

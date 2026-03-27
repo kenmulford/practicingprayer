@@ -9,7 +9,7 @@ namespace PrayerApp.UITests.Tests;
 /// UAT Section 12: Edge Cases
 /// </summary>
 [Collection("Appium")]
-[Trait("Platform", "Android")]
+[Trait("Platform", "CrossPlatform")]
 [Trait("Section", "12-EdgeCases")]
 public class EdgeCaseTests
 {
