@@ -17,62 +17,71 @@ public class PrayerTimeTests
     public PrayerTimeTests(AppiumSetup setup) => _setup = setup;
 
     /// <summary>Start a prayer time session via "All Requests".</summary>
+    /// <remarks>
+    /// CRITICAL iOS constraint: <c>autoDismissAlerts: true</c> in Appium capabilities causes
+    /// the XCUITest driver to auto-tap action sheet buttons ~1s after they appear. On iPad,
+    /// it picks "By Tags" (bottom option). We must find and tap "All Requests" immediately
+    /// with ZERO delays — any Thread.Sleep gives autoDismissAlerts time to fire first.
+    /// </remarks>
     private bool TryStartPrayerTime()
     {
         var driver = _setup.Driver;
 
-        // Retry the whole flow up to 3 times — iPad renders action sheets as popovers
-        // whose animation can cause WebDriver taps to hit the wrong button.
+        // Ensure prayer data exists once — without prayers, "All Requests" goes straight
+        // to the completion screen ("You've prayed through all your requests!")
+        driver.EnsureUITestPrayerExists(_setup);
+
         for (int attempt = 0; attempt < 3; attempt++)
         {
             driver.EnsureOnTab("Home", _setup);
-            if (TestConfig.IsIOS) Thread.Sleep(500);
 
             driver.WaitAndTap("Home_Btn_PrayerTime");
 
-            // iPad popovers need generous settle time — 2500ms for animation + layout
-            Thread.Sleep(TestConfig.IsIOS ? 2500 : 500);
+            // NO DELAYS — race autoDismissAlerts on iOS.
+            // Android: brief wait for action sheet animation.
+            if (!TestConfig.IsIOS) Thread.Sleep(500);
 
-            // --- Diagnostic: dump action sheet state on each attempt ---
-            if (TestConfig.IsIOS)
-                driver.DumpPageSource($"PrayerTime_ActionSheet_attempt{attempt}");
-
-            if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
+            try
             {
-                try
-                {
-                    if (TestConfig.IsIOS)
-                    {
-                        // XCUITest native tap via elementId — bypasses WebDriver's
-                        // coordinate mapping which drifts on iPad popover animations
-                        driver.TapIOSActionSheetButton("All Requests");
-                    }
-                    else
-                    {
-                        driver.TapByText("All Requests");
-                    }
-                    Thread.Sleep(1000);
+                driver.TapIOSActionSheetButton("All Requests", timeoutSeconds: 3);
+                Thread.Sleep(1000);
 
-                    // Recovery: detect if we ended up on the tag scope page
-                    if (driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 1))
-                    {
-                        driver.DumpPageSource($"PrayerTime_MisTap_attempt{attempt}");
-                        driver.Tap("Scope_Btn_Cancel");
-                        Thread.Sleep(TestConfig.DelayModalAnimation);
-                        continue;
-                    }
+                if (TryRecoverFromTagScope(driver))
+                    continue;
 
+                // Check Next first — if present, we're in a real session (fast path)
+                if (driver.IsDisplayed("PrayerTime_Btn_Next", timeoutSeconds: 1))
                     return true;
-                }
-                catch (WebDriverException)
+
+                // Next not found — might be "no prayers" completion screen (Done without Next)
+                if (driver.IsDisplayed("PrayerTime_Btn_Done", timeoutSeconds: 1))
                 {
-                    driver.DismissAlertIfPresent();
+                    driver.Tap("PrayerTime_Btn_Done");
                     Thread.Sleep(500);
                     continue;
                 }
-            }
 
-            driver.DismissAlertIfPresent();
+                // Single-prayer session: only Done visible, no Next — still valid
+                return true;
+            }
+            catch (WebDriverException)
+            {
+                driver.DismissAlertIfPresent();
+                TryRecoverFromTagScope(driver);
+                continue;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>If autoDismissAlerts sent us to the tag scope page, cancel and return true.</summary>
+    private bool TryRecoverFromTagScope(OpenQA.Selenium.Appium.AppiumDriver driver)
+    {
+        if (driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 1))
+        {
+            driver.Tap("Scope_Btn_Cancel");
+            Thread.Sleep(TestConfig.DelayModalAnimation);
+            return true;
         }
         return false;
     }
@@ -163,6 +172,12 @@ public class PrayerTimeTests
     }
 
     /// <summary>8.6: Tag-scoped session — scope page shows Cancel/Start.</summary>
+    /// <remarks>
+    /// On iOS with autoDismissAlerts, Appium auto-taps the bottom action sheet button
+    /// ("By Tags") ~1s after it appears. This test intentionally uses NO delays after
+    /// showing the action sheet — either autoDismissAlerts taps "By Tags" for us, or
+    /// we tap it manually. Either way we end up on the tag scope page.
+    /// </remarks>
     [Fact]
     public void PrayerTime_TagScoped_ShowsScopePage()
     {
@@ -170,28 +185,25 @@ public class PrayerTimeTests
         driver.EnsureOnTab("Home", _setup);
 
         driver.WaitAndTap("Home_Btn_PrayerTime");
+
+        // NO DELAYS — on iOS, autoDismissAlerts will tap "By Tags" for us.
+        // On Android, brief wait for the action sheet to appear.
+        if (!TestConfig.IsIOS) Thread.Sleep(500);
+
+        // Try to tap "By Tags" explicitly (may already be auto-tapped on iOS).
+        // Short timeout — autoDismissAlerts fires ~1s after the sheet appears.
+        try { driver.TapIOSActionSheetButton("By Tags", timeoutSeconds: 2); }
+        catch (WebDriverException) { /* autoDismissAlerts already handled it */ }
+
+        // Either way, we should now be on the tag scope page
+        Assert.True(
+            driver.IsDisplayed("Scope_Btn_Start", timeoutSeconds: 5)
+            || driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 3),
+            "Tag scope page should show Start and Cancel buttons");
+
+        driver.WaitAndTap("Scope_Btn_Cancel");
         Thread.Sleep(TestConfig.DelayModalAnimation);
-
-        if (driver.IsTextDisplayed("By Tags", timeoutSeconds: 5))
-        {
-            Thread.Sleep(TestConfig.DelayAfterTap); // Let action sheet fully settle
-            driver.TapByText("By Tags", timeoutSeconds: 5);
-
-            Assert.True(
-                driver.IsDisplayed("Scope_Btn_Start", timeoutSeconds: 5)
-                || driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 3),
-                "Tag scope page should show Start and Cancel buttons");
-
-            driver.WaitAndTap("Scope_Btn_Cancel");
-            Thread.Sleep(TestConfig.DelayModalAnimation);
-            // Verify we're back on Home (modal actually dismissed)
-            Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 5),
-                "Cancel should dismiss scope modal and return to Home");
-        }
-        else
-        {
-            driver.DismissAlertIfPresent();
-            driver.GoBack();
-        }
+        Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 5),
+            "Cancel should dismiss scope modal and return to Home");
     }
 }
