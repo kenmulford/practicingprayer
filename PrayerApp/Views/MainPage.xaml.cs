@@ -37,9 +37,23 @@ public partial class MainPage : ContentPage
             _prayerTimeNavigating = true;
             try
             {
+                if (!_homeViewModel.HasActivePrayers)
+                {
+                    await DisplayAlertAsync("No Prayer Requests",
+                        "Add a prayer card and some prayer requests to get started with Prayer Time.",
+                        "OK");
+                    return;
+                }
+
+                if (!_homeViewModel.HasTags)
+                {
+                    await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
+                    return;
+                }
+
                 var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, "All Requests", "By Tags");
                 if (action == "All Requests")
-                    await Shell.Current.GoToAsync($"{nameof(PrayerTime.PrayerTimePage)}?scope=all");
+                    await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
                 else if (action == "By Tags")
                     await Shell.Current.Navigation.PushModalAsync(
                         _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());

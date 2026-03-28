@@ -10,10 +10,11 @@ public class HomeViewModelTests
 {
     private readonly IPrayerService _prayerService = Substitute.For<IPrayerService>();
     private readonly ICardService _cardService = Substitute.For<ICardService>();
+    private readonly ITagService _tagService = Substitute.For<ITagService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
 
-    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _navigationService, _settings);
+    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _tagService, _navigationService, _settings);
 
     // ── LoadAsync ──────────────────────────────────────────────────────
 
@@ -165,5 +166,76 @@ public class HomeViewModelTests
         await ((IAsyncRelayCommand)sut.GoToOverdueCommand).ExecuteAsync(null);
 
         await _navigationService.DidNotReceive().GoToAsync(Arg.Any<string>());
+    }
+
+    // ── HasActivePrayers ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_NoPrayers_HasActivePrayersFalse()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.False(sut.HasActivePrayers);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WithPrayers_HasActivePrayersTrue()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "Active Prayer", PrayerCardId = 1 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.True(sut.HasActivePrayers);
+    }
+
+    // ── HasTags ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_NoTags_HasTagsFalse()
+    {
+        SetupDefaultMocks();
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.False(sut.HasTags);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WithTags_HasTagsTrue()
+    {
+        SetupDefaultMocks();
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "Gratitude" }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.True(sut.HasTags);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────
+
+    /// <summary>Set up minimal mocks so LoadAsync doesn't throw.</summary>
+    private void SetupDefaultMocks()
+    {
+        _settings.OverdueDayThreshold.Returns(30);
+        _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>().AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
     }
 }
