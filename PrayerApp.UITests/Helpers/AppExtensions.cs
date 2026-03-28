@@ -463,6 +463,19 @@ public static class AppExtensions
         finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
     }
 
+    /// <summary>Check if an element whose text/label <em>contains</em> the given substring is displayed.</summary>
+    public static bool IsTextContainsDisplayed(this AppiumDriver driver, string text, int timeoutSeconds = 3)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
+            var element = driver.FindElement(TextContainsLocator(text));
+            return element.Displayed;
+        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+    }
+
     // ── Swipe Gestures ──────────────────────────────────────────
 
     /// <summary>Swipe an element in the given direction.</summary>
@@ -607,6 +620,31 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
         }
+    }
+
+    // ── iOS Action Sheet helpers ───────────────────────────────
+
+    /// <summary>
+    /// iOS-specific: Tap a button in an action sheet by its exact name, using the
+    /// <c>XCUIElementTypeButton</c> type constraint. More precise than generic XPath
+    /// text search, which can mis-target during action sheet animation.
+    /// Falls back to standard <c>TapByText</c> on Android.
+    /// </summary>
+    public static void TapIOSActionSheetButton(this AppiumDriver driver, string buttonName,
+        int timeoutSeconds = 5)
+    {
+        if (!TestConfig.IsIOS)
+        {
+            driver.TapByText(buttonName, timeoutSeconds);
+            return;
+        }
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        var locator = By.XPath(
+            $"//XCUIElementTypeButton[@name='{buttonName}' or @label='{buttonName}']");
+        var element = wait.Until(d => d.FindElement(locator));
+        element.Click();
+        Thread.Sleep(300);
     }
 
     // ── iOS CollectionView helpers ─────────────────────────────

@@ -124,44 +124,103 @@ public class EdgeCaseTests
         driver.NavigateToTab("Prayer Cards");
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Scroll down to find the new card and tap to expand — it may be below the fold on iPad
-        try
+        // Find and tap the card to expand it.
+        // iOS: CollectionView flattens cells — use CONTAINS predicate to find the card,
+        // then use TapByTextContains. Android: standard text scroll works.
+        bool tapped = false;
+        if (TestConfig.IsIOS)
         {
-            driver.ScrollDownToText("Empty Card Test", maxScrolls: 3, scrollableAutomationId: "Cards_List_Cards").Click();
+            // Scroll the CollectionView to find the card cell by composed label
+            var scrolled = driver.IOSScrollToPredicateInContainer(
+                "Cards_List_Cards", "label CONTAINS 'Empty Card Test'");
+            if (scrolled)
+            {
+                driver.TapByTextContains("Empty Card Test", timeoutSeconds: 5);
+                tapped = true;
+            }
         }
-        catch (WebDriverException)
+
+        if (!tapped)
         {
-            Thread.Sleep(TestConfig.DelayAfterTap);
-            driver.TapByText("Empty Card Test");
+            // Android, or iOS fallback
+            try
+            {
+                driver.ScrollDownToText("Empty Card Test", maxScrolls: 3,
+                    scrollableAutomationId: "Cards_List_Cards").Click();
+            }
+            catch (WebDriverException)
+            {
+                Thread.Sleep(TestConfig.DelayAfterTap);
+                driver.TapByText("Empty Card Test");
+            }
         }
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // After expansion, the "+ Add prayer" button may be below the viewport on iPad.
-        // On iOS, SemanticProperties.Description makes cells atomic — child AutomationIds
-        // aren't individually exposed. Use multiple strategies with text-based fallbacks.
-        var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
-        if (!found)
+        // Verify the card expanded and shows the "Add prayer" option.
+        //
+        // iOS: CollectionView cells are atomic (SemanticProperties.Description flattening).
+        // AccessibleCardHeader composes "Empty Card Test, Expanded" but child elements
+        // like Cards_Btn_AddPrayer are invisible to Appium. Verify via composed label.
+        // Android: individual elements are accessible — check AutomationId directly.
+
+        if (TestConfig.IsIOS)
         {
-            // iOS: use CONTAINS predicate to find "Add prayer" in composed cell labels
-            found = driver.IOSScrollToPredicateInContainer(
-                "Cards_List_Cards", "label CONTAINS 'Add prayer'");
+            // Check for the card-specific expanded label (not just "Expanded" which
+            // could match any expanded card from a prior test)
+            bool expandedFound = driver.IsTextContainsDisplayed(
+                "Empty Card Test, Expanded", timeoutSeconds: 5);
+            if (!expandedFound)
+            {
+                expandedFound = driver.IOSScrollToPredicateInContainer(
+                    "Cards_List_Cards", "label CONTAINS 'Empty Card Test, Expanded'");
+            }
+
+            // Only check for "Add prayer" if we couldn't confirm expansion
+            bool addPrayerFound = false;
+            if (!expandedFound)
+            {
+                addPrayerFound = driver.IsTextContainsDisplayed("Add prayer", timeoutSeconds: 3);
+                if (!addPrayerFound)
+                {
+                    addPrayerFound = driver.IOSScrollToPredicateInContainer(
+                        "Cards_List_Cards", "label CONTAINS 'Add prayer'");
+                }
+            }
+
+            if (!expandedFound && !addPrayerFound)
+            {
+                var dumpPath = driver.DumpPageSource("EmptyCardExpand_iOS_FAIL");
+                Assert.Fail(
+                    $"iOS: Empty card should show expanded state or 'Add prayer' button. "
+                    + $"Expanded={expandedFound}, AddPrayer={addPrayerFound}. "
+                    + $"Page source: {dumpPath}");
+            }
         }
-        if (!found)
+        else
         {
-            // Fallback: try standard scroll to the button by AutomationId
-            try { driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"); found = true; }
-            catch (WebDriverException) { /* still not found after scrolling */ }
-        }
-        if (!found)
-        {
-            // Text-based fallback — exact or partial match
-            found = driver.IsTextDisplayed("+ Add prayer", timeoutSeconds: 3)
-                 || driver.IsTextDisplayed("Add prayer", timeoutSeconds: 2);
-        }
-        if (!found)
-        {
-            var dumpPath = driver.DumpPageSource("EdgeCase_EmptyCardExpand");
-            Assert.Fail($"Empty card should show '+ Add prayer' button. Page source dumped to: {dumpPath}");
+            var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
+            if (!found)
+            {
+                try
+                {
+                    driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4,
+                        scrollableAutomationId: "Cards_List_Cards");
+                    found = true;
+                }
+                catch (WebDriverException) { }
+            }
+            if (!found)
+            {
+                found = driver.IsTextDisplayed("+ Add prayer", timeoutSeconds: 3)
+                     || driver.IsTextDisplayed("Add prayer", timeoutSeconds: 2);
+            }
+            if (!found)
+            {
+                var dumpPath = driver.DumpPageSource("EmptyCardExpand_Android_FAIL");
+                Assert.Fail(
+                    $"Android: Empty card should show '+ Add prayer' button. "
+                    + $"Page source: {dumpPath}");
+            }
         }
     }
 }

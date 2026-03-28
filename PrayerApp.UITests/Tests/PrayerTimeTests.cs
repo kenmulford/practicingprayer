@@ -21,22 +21,45 @@ public class PrayerTimeTests
     {
         var driver = _setup.Driver;
 
-        // Retry the whole flow up to 2 times — the action sheet can re-render
-        // between IsTextDisplayed and TapByText, causing stale element errors.
-        for (int attempt = 0; attempt < 2; attempt++)
+        // Retry the whole flow up to 3 times — iOS action sheet animation can cause
+        // the tap to land on "By Tags" instead of "All Requests" (mis-tap during settle).
+        for (int attempt = 0; attempt < 3; attempt++)
         {
             driver.EnsureOnTab("Home", _setup);
             if (TestConfig.IsIOS) Thread.Sleep(500); // Let Home page fully render
 
             driver.WaitAndTap("Home_Btn_PrayerTime");
-            Thread.Sleep(500);
+
+            // Wait for the action sheet to fully appear and settle.
+            // iOS action sheets animate for ~400ms — 1500ms gives ample margin.
+            Thread.Sleep(TestConfig.IsIOS ? 1500 : 500);
 
             if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
             {
                 try
                 {
-                    driver.TapByText("All Requests");
+                    if (TestConfig.IsIOS)
+                    {
+                        // iOS: use typed button locator — more precise than generic XPath
+                        // which can match background labels during animation
+                        driver.TapIOSActionSheetButton("All Requests");
+                    }
+                    else
+                    {
+                        driver.TapByText("All Requests");
+                    }
                     Thread.Sleep(1000);
+
+                    // Recovery: if the tap landed on "By Tags" instead of "All Requests"
+                    // (iOS action sheet animation race), we'll be on the tag scope page
+                    if (driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 1))
+                    {
+                        // We're on the tag scope page — cancel and retry
+                        driver.Tap("Scope_Btn_Cancel");
+                        Thread.Sleep(TestConfig.DelayModalAnimation);
+                        continue;
+                    }
+
                     return true;
                 }
                 catch (WebDriverException)
