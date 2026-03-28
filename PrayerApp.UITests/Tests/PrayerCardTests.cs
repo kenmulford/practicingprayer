@@ -20,14 +20,31 @@ public class PrayerCardTests
     private void ExpandQuickAddCard()
     {
         var driver = _setup.Driver;
-        // Already expanded — nothing to do
-        if (driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 2))
-            return;
 
-        if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
+        if (TestConfig.IsIOS)
         {
-            driver.TapByText("Quick Add");
-            Thread.Sleep(500);
+            // iOS: CollectionView flattens cells — AutomationIds inside cells are invisible.
+            // Check expansion via composed label containing "Expanded".
+            if (driver.IsTextContainsDisplayed("Quick Add, Expanded", timeoutSeconds: 2))
+                return;
+
+            if (driver.IsTextContainsDisplayed("Quick Add", timeoutSeconds: 3))
+            {
+                driver.TapByTextContains("Quick Add", timeoutSeconds: 5);
+                Thread.Sleep(500);
+            }
+        }
+        else
+        {
+            // Android: AutomationIds work inside CollectionView cells
+            if (driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 2))
+                return;
+
+            if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
+            {
+                driver.TapByText("Quick Add");
+                Thread.Sleep(500);
+            }
         }
     }
 
@@ -120,7 +137,11 @@ public class PrayerCardTests
 
         ExpandQuickAddCard();
 
-        driver.WaitAndTap("Cards_Btn_AddPrayer", timeoutSeconds: 5);
+        // iOS: AutomationId invisible inside flattened CollectionView cells — use text
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Add prayer", timeoutSeconds: 5);
+        else
+            driver.WaitAndTap("Cards_Btn_AddPrayer", timeoutSeconds: 5);
         Thread.Sleep(500);
 
         Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5),
@@ -144,7 +165,11 @@ public class PrayerCardTests
         driver.EnsureOnTab("Prayer Cards", _setup);
         ExpandQuickAddCard();
 
-        driver.TapByText("UI Test Prayer");
+        // iOS: prayer text is part of composed label, not a standalone element
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("UI Test Prayer", timeoutSeconds: 5);
+        else
+            driver.TapByText("UI Test Prayer");
 
         driver.TapToolbarItem("Edit");
         Thread.Sleep(TestConfig.DelayAfterTap);
@@ -219,11 +244,18 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        if (!driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
+        // iOS: composed label may be "Quick Add, UI Test Prayer" — use CONTAINS
+        try
+        {
+            var cardElement = TestConfig.IsIOS
+                ? driver.FindByTextContains("Quick Add", timeoutSeconds: 3)
+                : driver.FindByText("Quick Add", timeoutSeconds: 3);
+            driver.SwipeElementLeft(cardElement);
+        }
+        catch (WebDriverException)
+        {
             throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'Quick Add' system card not found");
-
-        var cardElement = driver.FindByText("Quick Add");
-        driver.SwipeElementLeft(cardElement);
+        }
 
         // System cards should not expose a functional Delete action
         var deleteVisible = driver.IsTextDisplayed("Delete", timeoutSeconds: 2);

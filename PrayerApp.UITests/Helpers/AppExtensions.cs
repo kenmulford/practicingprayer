@@ -495,6 +495,13 @@ public static class AppExtensions
         return (AppiumElement)wait.Until(d => d.FindElement(TextLocator(text)));
     }
 
+    /// <summary>Find an element whose text/label contains the given substring.</summary>
+    public static AppiumElement FindByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    {
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        return (AppiumElement)wait.Until(d => d.FindElement(TextContainsLocator(text)));
+    }
+
     /// <summary>Find and tap any element by its visible text.</summary>
     public static void TapByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
     {
@@ -505,9 +512,7 @@ public static class AppExtensions
     /// <summary>Find and tap any element whose text/label <em>contains</em> the given substring.</summary>
     public static void TapByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 5)
     {
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        var element = (AppiumElement)wait.Until(d => d.FindElement(TextContainsLocator(text)));
-        element.Click();
+        driver.FindByTextContains(text, timeoutSeconds).Click();
         Thread.Sleep(300);
     }
 
