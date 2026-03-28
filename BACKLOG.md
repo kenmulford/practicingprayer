@@ -14,8 +14,8 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: All 5 iOS bugs fixed. iPad PageSheet modals added. Test ordering + scroll timing fixes applied.
-**Last completed**: BUG-1/2/3/4/5 iOS bug fixes, iPad PageSheet modals, UX-15, UX-16
+**Status**: iOS UITest suite at 56/58 (2 remaining are Prayer Time action sheet + back-nav skip). Prayer Time smart guards shipped.
+**Last completed**: UX-17 Prayer Time smart guards, iOS UITest fixes (CollectionView flattening, action sheet autoDismissAlerts)
 **Next up**: AUD-1 remaining phases, then onboarding refresh
 
 ---
@@ -64,6 +64,7 @@ Items are listed in work order. Start at the top, work down.
 | BUG-3  | iOS GoToAsync("..") reliability (same fix as BUG-1) | 2026-03-27 |
 | BUG-4  | iOS Prayer Time action sheet guard | 2026-03-27 |
 | BUG-5  | iPad card expand layout fix | 2026-03-27 |
+| UX-17  | Prayer Time smart guards (zero prayers alert + skip action sheet if no tags) | 2026-03-27 |
 
 ---
 

@@ -15,6 +15,7 @@
 
 ### Improvements
 
+- **Smarter Prayer Time launch** — tapping Prayer Time with no prayers now shows a helpful prompt instead of an empty session; when no tags exist, Prayer Time starts immediately without asking you to choose
 - Improved VoiceOver support: prayer list items and card headers now read meaningful summaries instead of individual labels
 - Subtle separator lines between prayers in the list for easier visual scanning
 - Settings reorganized into four clear sections: App Settings, Backup & Restore, About, and Help
