@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: iOS UITest suite at 56/58 (2 remaining are Prayer Time action sheet + back-nav skip). Prayer Time smart guards shipped.
-**Last completed**: UX-17 Prayer Time smart guards, iOS UITest fixes (CollectionView flattening, action sheet autoDismissAlerts)
-**Next up**: AUD-1 remaining phases, then onboarding refresh
+**Status**: iOS UITest suite at 58/58. Production readiness audit remediation in progress (Phases 1-2 done, re-audit next).
+**Last completed**: AUD-2 remediation — EmptyView on PrayerCardsPage, accessibility fixes (Pause button, TagDetail swatch), notification permission toggle, 16 new unit tests (TagsViewModel + PrayerTimeScopeViewModel), audit docs archived.
+**Next up**: Re-audit (3-agent codebase-first audit), then onboarding refresh
 
 ---
 
@@ -27,7 +27,7 @@ Items are listed in work order. Start at the top, work down.
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | ~~UX-14~~ | ~~Settings hub~~ | Ken | ✅ Done (2026-03-26) |
-| 2   | AUD-1 | Pre-submission audit remediation (52 findings, 5 phases)           | Audit  | 📋 **Plan ready** at `docs/research/pre-submission-audit.md`. Phase 1 (app store blockers) is the priority. |
+| 2   | ~~AUD-1~~ | ~~Pre-submission audit remediation~~ | Audit | ✅ Done (2026-03-27) — Phases 1+2 complete; stale audit docs archived |
 | 3   | ~~UX-15~~ | ~~Quick Add clarity + temporary prayer concept~~ | Ken | ✅ Done (2026-03-27) — Concept C: dismissible tip banner |
 | 4   | ~~TD-13~~ | ~~INavigationService abstraction~~ | — | ✅ Done (2026-03-27) |
 | 5   | ~~TD-12p3~~ | ~~VM test coverage (74 tests)~~ | — | ✅ Done (2026-03-27) |
@@ -55,6 +55,7 @@ Items are listed in work order. Start at the top, work down.
 | FB-29  | iOS tester feedback (build 29) | 2026-03-25 |
 | UX-14  | Settings hub (4 sub-pages + Help FAQ) | 2026-03-26 |
 | AUD-1  | Pre-submission audit Phases 1-3 | 2026-03-26 |
+| AUD-2  | Production readiness remediation (EmptyView, accessibility, notification toggle, 16 new tests) | 2026-03-27 |
 | TD-13  | INavigationService + IAccessibilityService | 2026-03-27 |
 | TD-12p3 | VM test coverage (74 tests, 8 VMs) | 2026-03-27 |
 | UX-15  | Quick Add tip banner (Concept C) | 2026-03-27 |

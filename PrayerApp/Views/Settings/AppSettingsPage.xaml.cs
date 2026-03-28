@@ -20,8 +20,20 @@ public partial class AppSettingsPage : ContentPage
             PrayerApp.Services.Settings.DefaultNotifyMinute, 0);
     }
 
-    private void OnAllowNotificationsToggled(object? sender, ToggledEventArgs e)
-        => PrayerApp.Services.Settings.AllowNotifications = e.Value;
+    private async void OnAllowNotificationsToggled(object? sender, ToggledEventArgs e)
+    {
+        if (!e.Value)
+        {
+            PrayerApp.Services.Settings.AllowNotifications = false;
+            return;
+        }
+
+        var notificationService = IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>();
+        var granted = await notificationService.RequestPermissionAsync();
+        PrayerApp.Services.Settings.AllowNotifications = granted;
+        if (!granted)
+            chkAllowNotifications.IsToggled = false;
+    }
 
     private void OnDefaultTimeChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {

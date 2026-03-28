@@ -144,11 +144,15 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         private set
         {
             if (SetProperty(ref _isPaused, value))
+            {
                 OnPropertyChanged(nameof(PauseButtonText));
+                OnPropertyChanged(nameof(PauseButtonDescription));
+            }
         }
     }
 
     public string PauseButtonText => IsPaused ? "▶" : "⏸";
+    public string PauseButtonDescription => IsPaused ? "Resume auto-advance" : "Pause auto-advance";
 
     private int _countdownSeconds;
     public int CountdownSeconds

@@ -56,6 +56,7 @@
                         <DataTemplate x:DataType="viewModels:ColorSwatchViewModel">
                             <Grid WidthRequest="48" HeightRequest="48" Margin="4"
                                   Loaded="OnSwatchLoaded"
+                                  SemanticProperties.Description="{Binding LightHex}"
                                   SemanticProperties.Hint="Double tap to select, long press to delete">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SelectCommand}" />
@@ -68,7 +69,7 @@
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center"
                                     InputTransparent="True"
-                                    SemanticProperties.Description="{Binding LightHex}" />
+                                    AutomationProperties.IsInAccessibleTree="false" />
                                 <!-- Selected ring -->
                                 <Ellipse
                                     Stroke="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"

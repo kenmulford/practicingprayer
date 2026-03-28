@@ -41,6 +41,20 @@
             ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
             SelectionMode="None">
+        <CollectionView.EmptyView>
+            <VerticalStackLayout HorizontalOptions="Center" Margin="24,32" Spacing="12">
+                <ActivityIndicator
+                    IsRunning="{Binding IsLoading}"
+                    IsVisible="{Binding IsLoading}"
+                    Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+                    HorizontalOptions="Center" />
+                <Label
+                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
+                    Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
+                    Style="{StaticResource MutedText}"
+                    HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </CollectionView.EmptyView>
         <CollectionView.ItemsLayout>
             <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
         </CollectionView.ItemsLayout>

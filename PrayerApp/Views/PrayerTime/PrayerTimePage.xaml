@@ -22,6 +22,7 @@
             <Button Grid.Column="1"
                     Text="{Binding PauseButtonText}"
                     AutomationId="PrayerTime_Btn_Pause"
+                    SemanticProperties.Description="{Binding PauseButtonDescription}"
                     Command="{Binding TogglePauseCommand}"
                     IsVisible="{Binding IsAutoMode}"
                     VerticalOptions="Center"

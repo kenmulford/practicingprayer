@@ -16,7 +16,11 @@
 ### Improvements
 
 - **Smarter Prayer Time launch** — tapping Prayer Time with no prayers now shows a helpful prompt instead of an empty session; when no tags exist, Prayer Time starts immediately without asking you to choose
+- **First-time prayer card guidance** — Prayer Cards tab now shows a friendly welcome message explaining how to get started when no cards exist yet
+- **Notification permission sync** — turning on notifications in Settings now immediately reflects whether the OS granted or denied the permission (toggle snaps back if denied)
 - Improved VoiceOver support: prayer list items and card headers now read meaningful summaries instead of individual labels
+- Pause/Resume auto-advance button in Prayer Time now announces its action correctly to screen readers
+- Color swatches in tag editing now read their color to screen readers on iOS
 - Subtle separator lines between prayers in the list for easier visual scanning
 - Settings reorganized into four clear sections: App Settings, Backup & Restore, About, and Help
 - New Help page with answers to common questions about cards, prayers, tags, reminders, and data privacy
