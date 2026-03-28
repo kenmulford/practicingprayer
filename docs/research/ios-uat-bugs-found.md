@@ -144,11 +144,26 @@ After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByTe
 
 **`e200d57` fix attempt did NOT resolve this.** Both PrayerTime tests failed in same run — this is not intermittent, it's consistent. "All Requests" is clearly visible on screen but the tap coordinates hit the wrong item.
 
-**CRITICAL: This is the #1 test reliability blocker.** Every PrayerTime test wastes ~2 minutes when it hits "By Tags" and hangs on the tag selection page. This needs to be fixed urgently — either:
-1. Use `FindByAccessibilityId` or `-ios predicate string` to locate "All Requests" precisely instead of text-based tap
-2. Add a much longer settle delay (2-3 seconds) after the action sheet appears before tapping
-3. Add fallback: if tag selection page is detected, go back and retry
-4. Give "All Requests" an explicit `AutomationId` in the XAML and tap by ID instead of text
+**CRITICAL: This is the #1 test reliability blocker.** Every PrayerTime test wastes ~2 minutes when it hits "By Tags" and hangs on the tag selection page.
+
+**Diagnostic findings (`8073ded` pre-tap dump):**
+- The action sheet dump never captures the action sheet itself — by the time the dump runs, the app is already on the tag scope page ("Filter by Tags" header, Cancel/Start buttons visible)
+- `IsTextDisplayed("All Requests")` returns false — the action sheet appears and gets dismissed before the text check runs
+- **Root cause theory:** On iPad, `DisplayActionSheet` renders as a **popover anchored to the Prayer Time button**. When Appium taps `Home_Btn_PrayerTime`, the popover appears directly over the button. The "By Tags" option in the popover is positioned where the button was, and a lingering touch event or tap acknowledgment hits it immediately.
+- 2-second post-detection delay was tested — eliminated animation errors but didn't fix the tap (confirms it's not a timing issue, it's a positioning issue)
+- `mobile: tap` with native elementId was tested — same result (confirms it's not a coordinate mapping issue)
+
+**ROOT CAUSE FOUND:** `autoDismissAlerts: true` in Appium capabilities (`TestConfig.cs` line 95). Appium treats the iOS `DisplayActionSheet` as a system alert and auto-dismisses it ~1 second after it appears by tapping a button — it picks "By Tags" (the last/bottom option). This happens before our test code reaches the tap.
+
+This setting exists to handle keyboard dictation prompts and permission dialogs. It cannot be changed mid-session.
+
+**Fix:** Remove ALL settle delays between tapping `Home_Btn_PrayerTime` and tapping "All Requests". The test must race `autoDismissAlerts` by finding and tapping "All Requests" immediately (within ~1s) before Appium's auto-dismiss fires. Confirmed working visually — tap lands on "All Requests" when delays are removed.
+
+**IMPORTANT — do not add delays before tapping action sheet buttons on iOS.** Any `Thread.Sleep` between showing the action sheet and tapping a button gives `autoDismissAlerts` time to auto-tap the wrong option.
+
+**ADDITIONAL ISSUE:** On a fresh install with no prayers, selecting "All Requests" goes straight to "You've prayed through all your requests!" completion screen (Finish button, no tab bar). The test then fails at `EnsureOnTab("Home")` on retry because there's no tab bar. Fix needs to:
+1. Ensure prayer data exists before starting Prayer Time tests (call `EnsureUITestPrayerExists` first)
+2. Or detect the completion screen and tap Finish before retrying
 
 ---
 
