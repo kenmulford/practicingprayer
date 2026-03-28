@@ -289,7 +289,16 @@ public static class AppExtensions
                 return;
         }
 
-        // Stage 3: re-activate the app (handles case where GoBack closed it)
+        // Stage 3: Escape Prayer Time page (tab bar is hidden there).
+        // Try tapping "I'm done" or "Finish" to exit back to Home.
+        if (TryEscapePrayerTime(driver))
+        {
+            Thread.Sleep(500);
+            if (TryTapTab(driver, tabTitle))
+                return;
+        }
+
+        // Stage 4: re-activate the app (handles case where GoBack closed it)
         try
         {
             var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
@@ -301,7 +310,7 @@ public static class AppExtensions
         if (TryTapTab(driver, tabTitle))
             return;
 
-        // Stage 4: final XPath text fallback
+        // Stage 5: final XPath text fallback
         var tab = driver.FindElement(TextContainsLocator(tabTitle));
         tab.Click();
         Thread.Sleep(500);
@@ -319,6 +328,58 @@ public static class AppExtensions
             return true;
         }
         catch (WebDriverException) { return false; }
+        finally
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+        }
+    }
+
+    /// <summary>
+    /// Try to escape the Prayer Time page by tapping "I'm done" or "Finish".
+    /// Prayer Time hides the tab bar, so NavigateToTab can't find tabs.
+    /// Returns true if an exit button was found and tapped.
+    /// </summary>
+    private static bool TryEscapePrayerTime(AppiumDriver driver)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+
+            // Try AutomationId first (works on Android)
+            foreach (var id in new[] { "PrayerTime_Btn_Finish", "PrayerTime_Btn_Done" })
+            {
+                try
+                {
+                    var btn = driver.FindElement(MobileBy.AccessibilityId(id));
+                    btn.Click();
+                    return true;
+                }
+                catch (WebDriverException) { }
+            }
+
+            // iOS fallback: text-based search (accessibility flattening hides AutomationIds)
+            foreach (var text in new[] { "Finish", "I'm done" })
+            {
+                try
+                {
+                    var btn = driver.FindElement(TextLocator(text));
+                    btn.Click();
+                    return true;
+                }
+                catch (WebDriverException) { }
+            }
+
+            // Last resort: CONTAINS search for "done"
+            try
+            {
+                var btn = driver.FindElement(TextContainsLocator("done"));
+                btn.Click();
+                return true;
+            }
+            catch (WebDriverException) { }
+
+            return false;
+        }
         finally
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
@@ -576,6 +637,30 @@ public static class AppExtensions
         driver.NavigateToTab("Prayers");
         Thread.Sleep(TestConfig.DelayCollectionRender);
         driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 5);
+    }
+
+    /// <summary>
+    /// Ensures a tag named "UITest Tag" exists. Creates it via Tags tab if missing.
+    /// Needed for tests that require the action sheet (prayers + tags must both exist).
+    /// </summary>
+    public static void EnsureUITestTagExists(this AppiumDriver driver, AppiumSetup setup)
+    {
+        driver.EnsureOnTab("Tags", setup);
+        if (driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 3))
+            return;
+
+        // Create via Tags tab toolbar
+        driver.TapToolbarItem("Add");
+        driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 5);
+        driver.EnterText("TagDetail_Entry_Name", "UITest Tag");
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+
+        // Verify we're back on tag list (iOS Bug #3: GoToAsync("..") may fail)
+        if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5) && TestConfig.IsIOS)
+            driver.NavigateToTab("Tags");
+
+        Thread.Sleep(TestConfig.DelayCollectionRender);
     }
 
     /// <summary>Navigate to a new prayer form in edit mode (Prayers tab → Add toolbar).</summary>

@@ -1,4 +1,5 @@
 using OpenQA.Selenium;
+using OpenQA.Selenium.Appium;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -16,66 +17,80 @@ public class PrayerTimeTests
     private readonly AppiumSetup _setup;
     public PrayerTimeTests(AppiumSetup setup) => _setup = setup;
 
-    /// <summary>Start a prayer time session via "All Requests".</summary>
+    /// <summary>Start a prayer time session (no-tags path: direct navigation).</summary>
     /// <remarks>
-    /// CRITICAL iOS constraint: <c>autoDismissAlerts: true</c> in Appium capabilities causes
-    /// the XCUITest driver to auto-tap action sheet buttons ~1s after they appear. On iPad,
-    /// it picks "By Tags" (bottom option). We must find and tap "All Requests" immediately
-    /// with ZERO delays — any Thread.Sleep gives autoDismissAlerts time to fire first.
+    /// Commit 84d4b11 added smart guards to Prayer Time:
+    /// - No prayers → "No Prayer Requests" alert (blocked at Home)
+    /// - Prayers exist, no tags → skips action sheet, goes directly to Prayer Time
+    /// - Prayers + tags → shows action sheet
+    ///
+    /// In the test environment we create one prayer but no tags, so Prayer Time
+    /// launches directly — no action sheet, no autoDismissAlerts race.
     /// </remarks>
     private bool TryStartPrayerTime()
     {
         var driver = _setup.Driver;
 
-        // Ensure prayer data exists once — without prayers, "All Requests" goes straight
-        // to the completion screen ("You've prayed through all your requests!")
+        // Ensure prayer data exists — without prayers, the guard shows an alert instead
         driver.EnsureUITestPrayerExists(_setup);
 
         for (int attempt = 0; attempt < 3; attempt++)
         {
             driver.EnsureOnTab("Home", _setup);
 
+            // Dismiss any lingering alert (e.g. "No Prayer Requests" from a prior attempt)
+            driver.DismissAlertIfPresent();
+
             driver.WaitAndTap("Home_Btn_PrayerTime");
 
-            // NO DELAYS — race autoDismissAlerts on iOS.
-            // Android: brief wait for action sheet animation.
-            if (!TestConfig.IsIOS) Thread.Sleep(500);
+            // Two paths after tapping Prayer Time:
+            // 1. No tags → navigates directly to Prayer Time (no action sheet)
+            // 2. Tags exist → shows action sheet with "All Requests" / "By Tags"
+            // Diagnostic data shows action sheet stays open (autoDismissAlerts
+            // does NOT auto-tap it), so we must explicitly tap "All Requests".
 
+            // Try to tap "All Requests" on the action sheet. Use AccessibilityId
+            // + Click() instead of mobile: tap — iPad popover coordinates can drift.
+            // If no tags, there's no action sheet and this fails fast.
             try
             {
-                driver.TapIOSActionSheetButton("All Requests", timeoutSeconds: 3);
-                Thread.Sleep(1000);
-
-                if (TryRecoverFromTagScope(driver))
-                    continue;
-
-                // Check if we're in a real prayer session — try AutomationId then text
-                bool inSession = driver.IsDisplayed("PrayerTime_Btn_Next", timeoutSeconds: 1)
-                    || driver.IsTextDisplayed("›", timeoutSeconds: 1)
-                    || driver.IsTextDisplayed("I'm done", timeoutSeconds: 1);
-                if (inSession)
-                    return true;
-
-                // Not in session — might be "no prayers" completion screen
-                bool onCompletion = driver.IsDisplayed("PrayerTime_Btn_Finish", timeoutSeconds: 1)
-                    || driver.IsTextDisplayed("Finish", timeoutSeconds: 1);
-                if (onCompletion)
-                {
-                    if (driver.IsDisplayed("PrayerTime_Btn_Finish", timeoutSeconds: 1))
-                        driver.Tap("PrayerTime_Btn_Finish");
-                    else
-                        driver.TapByText("Finish");
-                    Thread.Sleep(500);
-                    continue;
-                }
-
-                // Fallback: assume we're in a session
-                return true;
+                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+                var allReqBtn = driver.FindElement(MobileBy.AccessibilityId("All Requests"));
+                allReqBtn.Click();
             }
             catch (WebDriverException)
             {
+                // No action sheet — either direct navigation (no tags) or alert appeared
                 driver.DismissAlertIfPresent();
-                TryRecoverFromTagScope(driver);
+            }
+            finally
+            {
+                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+            }
+            Thread.Sleep(TestConfig.DelayModalAnimation);
+
+            // Check if we landed on tag scope page (tapped "By Tags" by mistake)
+            if (TryRecoverFromTagScope(driver))
+                continue;
+
+            // Check if we're in a real prayer session
+            bool inSession = driver.IsDisplayed("PrayerTime_Btn_Next", timeoutSeconds: 3)
+                || driver.IsDisplayed("PrayerTime_Btn_Done", timeoutSeconds: 1)
+                || driver.IsTextDisplayed("›", timeoutSeconds: 1)
+                || driver.IsTextDisplayed("I'm done", timeoutSeconds: 1);
+            if (inSession)
+                return true;
+
+            // Might be on the "all prayed" completion screen
+            bool onCompletion = driver.IsDisplayed("PrayerTime_Btn_Finish", timeoutSeconds: 1)
+                || driver.IsTextDisplayed("Finish", timeoutSeconds: 1);
+            if (onCompletion)
+            {
+                if (driver.IsDisplayed("PrayerTime_Btn_Finish", timeoutSeconds: 1))
+                    driver.Tap("PrayerTime_Btn_Finish");
+                else
+                    driver.TapByText("Finish");
+                Thread.Sleep(500);
                 continue;
             }
         }
@@ -103,21 +118,44 @@ public class PrayerTimeTests
     {
         var driver = _setup.Driver;
 
+        // Diagnostic: capture Prayer Time page state before attempting exit
+        if (TestConfig.IsIOS)
+            driver.DumpPageSource("PrayerTime_BeforeExit");
+
         // Try AutomationId first (works on Android)
         if (driver.IsDisplayed("PrayerTime_Btn_Finish", timeoutSeconds: 2))
+        {
             driver.Tap("PrayerTime_Btn_Finish");
+        }
         else if (driver.IsDisplayed("PrayerTime_Btn_Done", timeoutSeconds: 2))
+        {
             driver.Tap("PrayerTime_Btn_Done");
+        }
         // iOS fallback: text-based search for the button labels
         else if (driver.IsTextDisplayed("Finish", timeoutSeconds: 2))
+        {
             driver.TapByText("Finish");
+        }
         else if (driver.IsTextDisplayed("I'm done", timeoutSeconds: 2))
+        {
             driver.TapByText("I'm done");
+        }
         else if (driver.IsTextContainsDisplayed("done", timeoutSeconds: 2))
+        {
             driver.TapByTextContains("done");
+        }
         else
+        {
+            // Nothing found — dump page source for debugging
+            if (TestConfig.IsIOS)
+                driver.DumpPageSource("PrayerTime_ExitFailed");
             driver.GoBack();
+        }
         Thread.Sleep(500);
+
+        // Diagnostic: capture state after exit attempt
+        if (TestConfig.IsIOS)
+            driver.DumpPageSource("PrayerTime_AfterExit");
     }
 
     /// <summary>8.1: Prayer Time session starts — carousel and nav buttons visible.</summary>
@@ -125,7 +163,7 @@ public class PrayerTimeTests
     public void PrayerTime_SessionStarts_ShowsCarousel()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
+            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
 
         var driver = _setup.Driver;
 
@@ -145,7 +183,7 @@ public class PrayerTimeTests
     public void PrayerTime_NavigationButtons_Present()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
+            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
 
         var driver = _setup.Driver;
 
@@ -166,7 +204,7 @@ public class PrayerTimeTests
     public void PrayerTime_AutoMode_CyclesInterval()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
+            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
 
         var driver = _setup.Driver;
 
@@ -203,7 +241,7 @@ public class PrayerTimeTests
     public void PrayerTime_FinishButton_ExitsPrayerTime()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Prayer Time action sheet could not be started — see ios-uat-bugs-found.md Bug #4");
+            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
 
         ExitPrayerTime();
 
@@ -215,15 +253,21 @@ public class PrayerTimeTests
 
     /// <summary>8.6: Tag-scoped session — scope page shows Cancel/Start.</summary>
     /// <remarks>
+    /// Commit 84d4b11: action sheet only appears when both prayers AND tags exist.
+    /// This test ensures a tag exists so the action sheet is shown.
     /// On iOS with autoDismissAlerts, Appium auto-taps the bottom action sheet button
-    /// ("By Tags") ~1s after it appears. This test intentionally uses NO delays after
-    /// showing the action sheet — either autoDismissAlerts taps "By Tags" for us, or
+    /// ("By Tags") ~1s after it appears — either autoDismissAlerts taps it for us, or
     /// we tap it manually. Either way we end up on the tag scope page.
     /// </remarks>
     [Fact]
     public void PrayerTime_TagScoped_ShowsScopePage()
     {
         var driver = _setup.Driver;
+
+        // Both prayers and tags must exist for the action sheet to appear
+        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureUITestTagExists(_setup);
+
         driver.EnsureOnTab("Home", _setup);
 
         driver.WaitAndTap("Home_Btn_PrayerTime");
