@@ -64,7 +64,8 @@ tail -5 <output-file>
 | `d6b7c57` (CollectionView fix) | **54/58** | CollectionView desync fixed (no more layout errors). Scroll tests still fail — locator issue, not scroll. PrayerTime intermittent = action sheet mis-tap. |
 | `43500b0` (diagnostic logging) | **54/58** | Diagnostics confirm: CollectionView cell contents invisible in iOS accessibility tree. Both scroll test failures are the same root cause. |
 | `8073ded` (accessibility fix + build fix) | **54/58** | Accessibility semantics added but CollectionView still flattens cells into one element. Root cause identified: need `IsInAccessibleTree` per-cell. |
-| `e437ec2` (accessibility flattening fix) | **54/58** | **Current.** Still flattened — diagnostic dump still shows `name="Quick Add, UI Test Prayer"` as single element. `IsInAccessibleTree` approach not working. PrayerTime mis-tap also persists (separate issue). |
+| `e437ec2` (accessibility flattening fix) | **54/58** | Still flattened — diagnostic dump still shows `name="Quick Add, UI Test Prayer"` as single element. `IsInAccessibleTree` approach not working. PrayerTime mis-tap also persists (separate issue). |
+| `08c9191` (CONTAINS predicates) | **55/58** | **Current.** `Prayers_TapPrayer_ShowsViewMode` now passes! CONTAINS predicate works with flattened labels. `EmptyCardExpand` still fails (AutomationId locator, not text). PrayerTime mis-tap still intermittent. |
 
 ---
 
@@ -110,11 +111,11 @@ Consistent failure. On iPad, expanding an empty card at the bottom of the list p
 
 **Diagnostic page source dump (`43500b0`):** After expanding the card, the page source shows `Cards_List_Cards` with card titles ("Quick Add", "Empty Card Test") but **no child elements inside the expanded card**. `Cards_Btn_AddPrayer` does not exist anywhere in the accessibility tree. The CollectionView only exposes top-level cell labels — expanded content (buttons, sub-views) is invisible to Appium/XCUITest.
 
-**Post-accessibility fix (`76cf6c2` + `8073ded`):** Still fails. See "Root Cause" section below — CollectionView flattens all cells into one element.
+**Post-accessibility fix (`76cf6c2` + `8073ded`):** Still fails. See "Root Cause" section below — CollectionView flattens all cells into one element. Note: this test uses `FindByAccessibilityId("Cards_Btn_AddPrayer")` — an AutomationId locator, not a text search. The CONTAINS predicate fix that solved test #3 doesn't apply here because it's not searching by text label.
 
 ---
 
-### 3. Prayers_TapPrayer_ShowsViewMode — 1 test (FIX APPLIED)
+### 3. Prayers_TapPrayer_ShowsViewMode — ✅ FIXED (`08c9191`)
 
 **Test:** `Prayers_TapPrayer_ShowsViewMode` (33s)
 **Error:** `WebDriverTimeoutException` at `TapByText` — can't find the prayer to tap
@@ -125,7 +126,7 @@ After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByTe
 
 **Diagnostic page source dump (`43500b0`):** The `List_List_Prayers` CollectionView is visible in the page source but **contains zero prayer items** — only scroll bar elements. Either `EnsureUITestPrayerExists` didn't create the prayer, or the CollectionView is not rendering its item cells in the iOS accessibility tree. Same root cause as EmptyCardExpand: MAUI CollectionView cell contents are invisible to Appium/XCUITest.
 
-**Post-accessibility fix (`76cf6c2` + `8073ded`):** Still fails. See "Root Cause" section below — CollectionView flattens all cells into one element.
+**FIXED (`08c9191`):** CONTAINS predicate searches within the flattened label text instead of looking for an individual element. Works with the flattened accessibility tree.
 
 ---
 
@@ -232,7 +233,7 @@ Captured via Console.app → Errors & Faults → PrayerApp process during target
 |---|------|----------|--------|
 | 1 | `UnsavedChanges_EditTitle_BackShowsDiscardDialog` | App bug (Bug #2) | Always skips on iOS |
 | 2 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | Test scrolling bug | Fix applied — **still failing** |
-| 3 | `Prayers_TapPrayer_ShowsViewMode` | Test scrolling bug | Fix applied — **still failing** |
+| 3 | `Prayers_TapPrayer_ShowsViewMode` | Test locator bug | **✅ Fixed** — CONTAINS predicate (`08c9191`) |
 | 4 | `PrayerTime_TagScoped_ShowsScopePage` | Test timing bug | **Fix applied — now passes** |
 | 5 | `AndroidTests.HardwareBack_DirtyDetail_ShowsDiscardDialog` | Android-only test | Fails on iOS — needs platform skip |
 
