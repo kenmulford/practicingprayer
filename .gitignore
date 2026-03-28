@@ -367,3 +367,4 @@ FodyWeavers.xsd
 /.claude
 *.keystore
 .DS_Store
+/screenshots

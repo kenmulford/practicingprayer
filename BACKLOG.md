@@ -42,6 +42,7 @@ Items are listed in work order. Start at the top, work down.
 | 14  | ~~BUG-4~~ | ~~iOS: Prayer Time action sheet stale element~~ | UITest | ✅ Done (2026-03-27) — `_prayerTimeNavigating` guard prevents double-tap |
 | 15  | ~~BUG-5~~ | ~~iOS: Empty card expand layout on iPad~~ | UITest | ✅ Done (2026-03-27) — `ItemSizingStrategy="MeasureAllItems"` on PrayerCards CollectionView |
 | 16  | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+| 17  | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
 
 ### Completed
 
