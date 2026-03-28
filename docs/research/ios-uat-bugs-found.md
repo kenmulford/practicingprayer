@@ -161,9 +161,11 @@ This setting exists to handle keyboard dictation prompts and permission dialogs.
 
 **IMPORTANT — do not add delays before tapping action sheet buttons on iOS.** Any `Thread.Sleep` between showing the action sheet and tapping a button gives `autoDismissAlerts` time to auto-tap the wrong option.
 
-**ADDITIONAL ISSUE:** On a fresh install with no prayers, selecting "All Requests" goes straight to "You've prayed through all your requests!" completion screen (Finish button, no tab bar). The test then fails at `EnsureOnTab("Home")` on retry because there's no tab bar. Fix needs to:
-1. Ensure prayer data exists before starting Prayer Time tests (call `EnsureUITestPrayerExists` first)
-2. Or detect the completion screen and tap Finish before retrying
+**ADDITIONAL ISSUE — fresh install:** On a fresh install with no prayers, selecting "All Requests" goes straight to "You've prayed through all your requests!" completion screen (Finish button, no tab bar). Fix: ensure prayer data exists before starting Prayer Time tests.
+
+**ADDITIONAL ISSUE — ExitPrayerTime fails:** After successfully entering Prayer Time (confirmed visually — carousel showing "1 of 2", nav buttons, "I'm done" all visible), `ExitPrayerTime()` can't find `PrayerTime_Btn_Finish` or `PrayerTime_Btn_Done` via AutomationId. Same accessibility tree flattening issue — the buttons exist in XAML with correct AutomationIds but aren't exposed to XCUITest. Falls back to `GoBack()` which doesn't work on the Prayer Time page, leaving the app stuck. Next test then fails at `EnsureOnTab("Home")` because there's no tab bar.
+
+**Fix needed:** Either add CONTAINS-style text locator for "I'm done" / "Finish" as fallback in `ExitPrayerTime()`, or fix the accessibility tree exposure on the Prayer Time page.
 
 ---
 
