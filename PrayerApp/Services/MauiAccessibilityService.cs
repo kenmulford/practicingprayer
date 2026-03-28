@@ -14,4 +14,13 @@ public class MauiAccessibilityService : IAccessibilityService
         else
             MainThread.BeginInvokeOnMainThread(() => SemanticScreenReader.Announce(message));
     }
+
+    public void NotifyLayoutChanged()
+    {
+#if IOS
+        MainThread.BeginInvokeOnMainThread(() =>
+            UIKit.UIAccessibility.PostNotification(
+                UIKit.UIAccessibilityPostNotification.LayoutChanged, null));
+#endif
+    }
 }

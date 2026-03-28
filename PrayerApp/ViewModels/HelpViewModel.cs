@@ -17,7 +17,7 @@ public class HelpViewModel
                 accessibilityService),
 
             new("How do I add a prayer request?",
-                "Open a prayer card by tapping its name, then tap \"+ Add prayer\" at the bottom of the expanded card. Fill in a title and any details, then tap Save.",
+                "Open a prayer card by tapping its name, then tap \"+ Add prayer\" at the bottom of the expanded card. Fill in a title and any details, then tap Save (to return to the card) or Save + to save and add another prayer request on the same card.",
                 accessibilityService),
 
             new("What is Quick Add?",
@@ -34,12 +34,12 @@ public class HelpViewModel
                 accessibilityService),
 
             new("What does the star icon do?",
-                "The star marks a card as a favorite. Favorited cards sort to the top of your card list so they're always easy to find.",
+                "The star marks a card as a favorite. You can see this by swiping from left to right over a specific prayer card. Favorited cards sort to the top of your card list so they're always easy to find.",
                 accessibilityService),
 
             // Prayer Time
             new("How does Prayer Time work?",
-                "Prayer Time presents your prayers one at a time in a focused, landscape view. Swipe or tap the arrows to move between prayers. When you're done, tap \"I'm Done\" to end the session.",
+                "Prayer Time presents your prayers one at a time in a focused view. Swipe or tap the arrows to move between prayers. When you're done, tap \"I'm Done\" to end the session. By default, Prayer Time launches in landscape mode. You can change this in settings.",
                 accessibilityService),
 
             new("What is auto-mode in Prayer Time?",

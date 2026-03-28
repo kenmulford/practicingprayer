@@ -18,6 +18,7 @@ namespace PrayerApp.ViewModels
         private PrayerTag _tag = new();
         private string _selectedColorHex = TagColorPalette.Swatches[0].Light;
         private string _firstDefaultHex = string.Empty;
+        private CancellationTokenSource _cts = new();
 
         // Dirty-tracking originals (set after load/save)
         private string _originalName = string.Empty;
@@ -102,13 +103,30 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Called by TagDetailPage.OnDisappearing to stop any in-flight async work.
+        /// Prevents ObservableCollection modifications after the page's native
+        /// handlers have been torn down (which causes SIGABRT on iOS).
+        /// Disposes the old CTS and creates a fresh one so the ViewModel can be
+        /// reused if the page is navigated to again.
+        /// </summary>
+        internal void CancelPendingWork()
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = new CancellationTokenSource();
+        }
+
         private async Task LoadSwatchesAsync()
         {
+            var token = _cts.Token;
             var userColors = await _userColorService.GetColorsAsync();
+            if (token.IsCancellationRequested) return;
 
             Swatches.Clear();
             foreach (var uc in userColors)
             {
+                if (token.IsCancellationRequested) return;
                 var darkHex = TagColorPalette.GetDarkVariant(uc.HexValue) ?? uc.HexValue;
                 Swatches.Add(new ColorSwatchViewModel(
                     uc.HexValue, darkHex, string.Empty, this,
@@ -169,6 +187,12 @@ namespace PrayerApp.ViewModels
             await _tagService.SaveTagAsync(_tag);
             CaptureOriginals();
             _accessibilityService.Announce("Tag saved");
+
+            // Cancel any in-flight async work (LoadSwatchesAsync, etc.) BEFORE
+            // navigating. This prevents ObservableCollection modifications during
+            // page teardown — the root cause of the iOS SIGABRT crash (BUG-1).
+            CancelPendingWork();
+
             await _navigationService.GoToAsync("..");
         }
 

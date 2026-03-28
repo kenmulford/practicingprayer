@@ -57,6 +57,13 @@ public partial class PrayerDetailPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+#if IOS
+        // Disable swipe-back gesture on edit pages. Shell.Navigating does not fire
+        // for iOS swipe-back (dotnet/maui#15813), so the unsaved changes guard is
+        // bypassed. Disabling the gesture forces users to use the back button,
+        // which fires Shell.Navigating → IEditGuard check → confirmation dialog.
+        Platforms.iOS.Helpers.SwipeBackHelper.DisableSwipeBack(this);
+#endif
 
         if (BindingContext is PrayerRequestDetailViewModel vm)
         {
@@ -103,6 +110,14 @@ public partial class PrayerDetailPage : ContentPage
                 ToolbarItems.Add(_saveAndNewToolbarItem);
             ToolbarItems.Add(_saveToolbarItem);
         }
+    }
+
+    protected override void OnDisappearing()
+    {
+#if IOS
+        Platforms.iOS.Helpers.SwipeBackHelper.EnableSwipeBack(this);
+#endif
+        base.OnDisappearing();
     }
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)

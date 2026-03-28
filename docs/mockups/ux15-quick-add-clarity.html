@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX-15: Quick Add Clarity — Concept Comparison</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --card-bg: #FFFFFF;
+    --primary: #4A90D9;
+    --primary-hover: #3A7BC8;
+    --text: #2C3E50;
+    --muted: #8B9CAF;
+    --border: #E8E4DF;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+    --radius: 8px;
+    --tip-bg: #FFF8F0;
+    --tip-border: #F0D9B5;
+    --tip-text: #7A6240;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    color: var(--text);
+    background: #F0EEEB;
+    padding: 24px;
+    line-height: 1.5;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .page-subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  /* --- Concept grid --- */
+  .concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .concept {
+    max-width: 420px;
+    flex: 1 1 360px;
+  }
+
+  .concept-header {
+    margin-bottom: 12px;
+  }
+
+  .concept-header h2 {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .concept-header p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  .trade-offs {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    border-left: 3px solid var(--border);
+    padding-left: 10px;
+    line-height: 1.5;
+  }
+
+  .trade-offs strong { color: var(--text); }
+
+  /* --- Phone frame --- */
+  .phone {
+    width: 375px;
+    max-width: 100%;
+    border: 2px solid #D0CCC7;
+    border-radius: 28px;
+    overflow: hidden;
+    background: var(--bg);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    margin-top: 10px;
+  }
+
+  .phone-status-bar {
+    height: 44px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .phone-content {
+    padding: 0 20px 32px;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone-home-bar {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+
+  .phone-home-bar span {
+    width: 120px;
+    height: 4px;
+    background: #D0CCC7;
+    border-radius: 2px;
+  }
+
+  /* --- Modal header --- */
+  .modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+
+  .modal-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* --- Card / form area --- */
+  .form-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--muted);
+    outline: none;
+  }
+
+  .helper-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.45;
+  }
+
+  /* --- Tip banner (Concept C) --- */
+  .tip-banner {
+    background: var(--tip-bg);
+    border: 1px solid var(--tip-border);
+    border-radius: var(--radius);
+    padding: 10px 32px 10px 12px;
+    margin-bottom: 16px;
+    position: relative;
+    font-size: 13px;
+    color: var(--tip-text);
+    line-height: 1.4;
+  }
+
+  .tip-banner .dismiss {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: var(--tip-text);
+    cursor: pointer;
+    opacity: 0.6;
+    line-height: 1;
+  }
+
+  /* --- Card picker (Concept B) --- */
+  .card-picker {
+    margin-top: 14px;
+  }
+
+  .card-picker-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .card-picker-select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238B9CAF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+
+  /* --- Buttons --- */
+  .button-row {
+    display: flex;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 16px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px 0;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    border: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border: 1.5px solid var(--primary);
+  }
+
+  /* --- Responsive stacking --- */
+  @media (max-width: 900px) {
+    .concepts { flex-direction: column; align-items: center; }
+    .concept { max-width: 420px; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>UX-15: Quick Add Clarity</h1>
+<p class="page-subtitle">Three concepts for helping users understand where Quick Add prayers go</p>
+
+<div class="concepts">
+
+  <!-- ===== CONCEPT A ===== -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Concept A — Inline Helper Text</h2>
+      <p>A small muted paragraph below the title field explains the destination and how to reorganize later.</p>
+      <div class="trade-offs">
+        <strong>Pros:</strong> Zero extra UI; always visible; no interaction needed.<br>
+        <strong>Cons:</strong> Static text may be ignored over time; no way to change destination.<br>
+        <strong>Best for:</strong> Minimal change, purely informational.
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-status-bar">9:41</div>
+      <div class="phone-content">
+        <div class="modal-title">Quick Add</div>
+        <div style="height: 16px;"></div>
+        <div class="form-card">
+          <label class="form-label">Prayer Title</label>
+          <input class="form-input" type="text" placeholder="Enter prayer title" disabled>
+          <p class="helper-text">
+            This prayer will be saved to your <strong>Quick Add</strong> card.
+            You can move it to a different card anytime from the prayer detail screen.
+          </p>
+        </div>
+        <div class="button-row">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">Add</button>
+        </div>
+      </div>
+      <div class="phone-home-bar"><span></span></div>
+    </div>
+  </div>
+
+  <!-- ===== CONCEPT B ===== -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Concept B — Header + Card Picker</h2>
+      <p>A warm subtitle sets context, and an optional card picker (defaulting to Quick Add) lets users choose a destination right away.</p>
+      <div class="trade-offs">
+        <strong>Pros:</strong> Solves the clarity problem AND lets power users skip reorganizing later; Quick Add becomes a universal "add prayer" entry point.<br>
+        <strong>Cons:</strong> Adds UI weight; picker may confuse new users who don't have cards yet; more implementation work.<br>
+        <strong>Best for:</strong> Turning Quick Add into a flexible shortcut.
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-status-bar">9:41</div>
+      <div class="phone-content">
+        <div class="modal-title">Quick Add</div>
+        <p class="modal-subtitle">Quickly jot down what's on your heart</p>
+        <div class="form-card">
+          <label class="form-label">Prayer Title</label>
+          <input class="form-input" type="text" placeholder="Enter prayer title" disabled>
+          <div class="card-picker">
+            <label class="card-picker-label">Save to card (optional)</label>
+            <select class="card-picker-select" disabled>
+              <option>Quick Add</option>
+              <option>Family</option>
+              <option>Work &amp; Career</option>
+              <option>Health</option>
+            </select>
+          </div>
+        </div>
+        <div class="button-row">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">Add</button>
+        </div>
+      </div>
+      <div class="phone-home-bar"><span></span></div>
+    </div>
+  </div>
+
+  <!-- ===== CONCEPT C ===== -->
+  <div class="concept">
+    <div class="concept-header">
+      <h2>Concept C — Contextual Tip Banner</h2>
+      <p>A warm-toned coaching banner at the top of the form explains the behavior. Dismissible so it doesn't clutter repeat visits.</p>
+      <div class="trade-offs">
+        <strong>Pros:</strong> Friendly and non-intrusive; disappears once understood; warm tone fits the journal aesthetic.<br>
+        <strong>Cons:</strong> Once dismissed, new info is gone (unless it reappears); slight vertical space cost.<br>
+        <strong>Best for:</strong> Onboarding-style guidance that fades away.
+      </div>
+    </div>
+    <div class="phone">
+      <div class="phone-status-bar">9:41</div>
+      <div class="phone-content">
+        <div class="modal-title">Quick Add</div>
+        <div style="height: 12px;"></div>
+        <div class="tip-banner">
+          Prayers saved here go to your <strong>Quick Add</strong> card. You can reorganize them later.
+          <button class="dismiss" aria-label="Dismiss">&times;</button>
+        </div>
+        <div class="form-card">
+          <label class="form-label">Prayer Title</label>
+          <input class="form-input" type="text" placeholder="Enter prayer title" disabled>
+        </div>
+        <div class="button-row">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">Add</button>
+        </div>
+      </div>
+      <div class="phone-home-bar"><span></span></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

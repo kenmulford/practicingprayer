@@ -12,9 +12,10 @@ public class QuickAddViewModelTests
     private readonly IPrayerService _prayerService = Substitute.For<IPrayerService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
+    private readonly ISettings _settings = Substitute.For<ISettings>();
 
     private QuickAddViewModel CreateSut() =>
-        new(_cardService, _prayerService, _navigationService, _accessibilityService);
+        new(_cardService, _prayerService, _navigationService, _accessibilityService, _settings);
 
     [Fact]
     public void Constructor_SetsDefaultTitle()
@@ -71,5 +72,36 @@ public class QuickAddViewModelTests
         await ((IAsyncRelayCommand)sut.CancelCommand).ExecuteAsync(null);
 
         await _navigationService.Received(1).PopModalAsync();
+    }
+
+    [Fact]
+    public void ShowTip_TipNotDismissed_ReturnsTrue()
+    {
+        _settings.QuickAddTipDismissed.Returns(false);
+        var sut = CreateSut();
+
+        Assert.True(sut.ShowTip);
+    }
+
+    [Fact]
+    public void ShowTip_TipAlreadyDismissed_ReturnsFalse()
+    {
+        _settings.QuickAddTipDismissed.Returns(true);
+        var sut = CreateSut();
+
+        Assert.False(sut.ShowTip);
+    }
+
+    [Fact]
+    public void DismissTipCommand_SetsShowTipFalseAndPersists()
+    {
+        _settings.QuickAddTipDismissed.Returns(false);
+        var sut = CreateSut();
+        Assert.True(sut.ShowTip);
+
+        sut.DismissTipCommand.Execute(null);
+
+        Assert.False(sut.ShowTip);
+        _settings.Received().QuickAddTipDismissed = true;
     }
 }

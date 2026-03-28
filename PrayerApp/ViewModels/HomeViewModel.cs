@@ -29,6 +29,7 @@ public class HomeViewModel : ObservableObject
 {
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
+    private readonly ITagService _tagService;
     private readonly INavigationService _navigationService;
     private readonly ISettings _settings;
 
@@ -74,13 +75,28 @@ public class HomeViewModel : ObservableObject
 
     public ObservableCollection<SuggestedPrayerViewModel> SuggestedPrayers { get; } = new();
 
+    private bool _hasActivePrayers;
+    public bool HasActivePrayers
+    {
+        get => _hasActivePrayers;
+        private set => SetProperty(ref _hasActivePrayers, value);
+    }
+
+    private bool _hasTags;
+    public bool HasTags
+    {
+        get => _hasTags;
+        private set => SetProperty(ref _hasTags, value);
+    }
+
     public ICommand GoToOverdueCommand { get; }
 
     public HomeViewModel(IPrayerService prayerService, ICardService cardService,
-        INavigationService navigationService, ISettings settings)
+        ITagService tagService, INavigationService navigationService, ISettings settings)
     {
         _prayerService = prayerService;
         _cardService = cardService;
+        _tagService = tagService;
         _navigationService = navigationService;
         _settings = settings;
         GoToOverdueCommand = new AsyncRelayCommand(GoToOverdueAsync);
@@ -89,6 +105,7 @@ public class HomeViewModel : ObservableObject
     public HomeViewModel() : this(
         IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
     { }
@@ -99,6 +116,7 @@ public class HomeViewModel : ObservableObject
         {
             _prayerService.InvalidateCache();
             _cardService.InvalidateCache();
+            _tagService.InvalidateCache();
             var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
             OverdueCount = overdue.Count;
             OnPropertyChanged(nameof(OverdueEmptyDescription));
@@ -112,6 +130,13 @@ public class HomeViewModel : ObservableObject
                 var cardTitle = cardLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
                 SuggestedPrayers.Add(new SuggestedPrayerViewModel(p.Id, cardTitle, p.Title, _navigationService));
             }
+
+            // Prayer Time readiness — activePrayers reuses warm cache; tags hits DB once
+            var activePrayers = await _prayerService.GetAllActivePrayersAsync();
+            HasActivePrayers = activePrayers.Count > 0;
+
+            var tags = await _tagService.GetTagsAsync();
+            HasTags = tags.Count > 0;
 
             // Last prayed date
             var lastDate = await _prayerService.GetLastInteractionDateAsync();

@@ -13,4 +13,6 @@ public interface ISettings
     int DefaultNotifyHour { get; set; }
     int DefaultNotifyMinute { get; set; }
     bool AllowNotifications { get; set; }
+    bool QuickAddTipDismissed { get; set; }
+    bool PrayerTimeLandscape { get; set; }
 }

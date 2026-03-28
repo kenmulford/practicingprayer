@@ -42,6 +42,8 @@ namespace PrayerApp
                     ViewCompat.SetBackgroundTintList(editText, ColorStateList.ValueOf(Android.Graphics.Color.Transparent));
                 }
             });
+#elif IOS
+            Platforms.iOS.Handlers.ModalPageSheetHandler.Configure();
 #endif
 
             // register explicit routes for child pages
@@ -85,9 +87,12 @@ namespace PrayerApp
 
         private async void OnShellNavigating(object? sender, ShellNavigatingEventArgs args)
         {
+            // iOS swipe-back gesture may fire as Unknown — include it so the
+            // unsaved-changes guard isn't bypassed on iOS back navigation.
             if (args.Source is not (ShellNavigationSource.Pop
                 or ShellNavigationSource.ShellItemChanged
-                or ShellNavigationSource.ShellSectionChanged))
+                or ShellNavigationSource.ShellSectionChanged
+                or ShellNavigationSource.Unknown))
                 return;
 
             if (CurrentPage?.BindingContext is IEditGuard guard && guard.IsDirty)

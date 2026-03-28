@@ -36,7 +36,9 @@
             Grid.Row="1"
             x:Name="cardCollection"
             AutomationId="Cards_List_Cards"
+            AutomationProperties.IsInAccessibleTree="false"
             ItemsSource="{Binding FilteredPrayerCards}"
+            ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
             SelectionMode="None">
         <CollectionView.ItemsLayout>
@@ -101,6 +103,7 @@
                                 <Label
                                     Text="{Binding Title}"
                                     Style="{StaticResource CardTitle}"
+                                    SemanticProperties.Description="{Binding AccessibleCardHeader}"
                                     SemanticProperties.Hint="Double tap to expand or collapse. Swipe left to delete, right to edit or favorite"
                                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                     VerticalOptions="Center" />
@@ -150,49 +153,29 @@
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
                                         <VerticalStackLayout Spacing="0">
-                                            <SwipeView Threshold="80">
-                                                <SwipeView.LeftItems>
-                                                    <SwipeItems Mode="Reveal">
-                                                        <SwipeItem
-                                                            BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                                                            Command="{Binding EditPrayerCommand}"
-                                                            SemanticProperties.Description="Edit prayer"
-                                                            Text="Edit" />
-                                                    </SwipeItems>
-                                                </SwipeView.LeftItems>
-                                                <SwipeView.RightItems>
-                                                    <SwipeItems Mode="Reveal">
-                                                        <SwipeItem
-                                                            BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
-                                                            Command="{Binding DeleteCommand}"
-                                                            SemanticProperties.Description="Delete prayer"
-                                                            Text="Delete" />
-                                                    </SwipeItems>
-                                                </SwipeView.RightItems>
-
-                                                <!-- Prayer row -->
-                                                <Grid
-                                                    Padding="16,10,12,10"
-                                                    ColumnDefinitions="*,Auto">
-                                                    <Grid.GestureRecognizers>
-                                                        <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
-                                                    </Grid.GestureRecognizers>
-                                                    <Label
-                                                        Text="{Binding Title}"
-                                                        FontSize="16"
-                                                        SemanticProperties.Hint="Double tap to view. Swipe left to delete, right to edit"
-                                                        TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
-                                                        TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
-                                                        VerticalOptions="Center" />
-                                                    <Label
-                                                        Grid.Column="1"
-                                                        Text="{Binding AnsweredAtDisplay}"
-                                                        Style="{StaticResource SuccessBadge}"
-                                                        IsVisible="{Binding IsAnswered}"
-                                                        VerticalOptions="Start"
-                                                        Margin="6,0,0,0" />
-                                                </Grid>
-                                            </SwipeView>
+                                            <!-- No SwipeView here — nested swipes conflict with the card-level swipe.
+                                                 Users edit/delete prayers from the prayer detail page or the Prayers tab. -->
+                                            <Grid
+                                                Padding="16,10,12,10"
+                                                ColumnDefinitions="*,Auto">
+                                                <Grid.GestureRecognizers>
+                                                    <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
+                                                </Grid.GestureRecognizers>
+                                                <Label
+                                                    Text="{Binding Title}"
+                                                    FontSize="16"
+                                                    SemanticProperties.Hint="Double tap to view"
+                                                    TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                                                    TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                                                    VerticalOptions="Center" />
+                                                <Label
+                                                    Grid.Column="1"
+                                                    Text="{Binding AnsweredAtDisplay}"
+                                                    Style="{StaticResource SuccessBadge}"
+                                                    IsVisible="{Binding IsAnswered}"
+                                                    VerticalOptions="Start"
+                                                    Margin="6,0,0,0" />
+                                            </Grid>
                                             <BoxView Style="{StaticResource DividerLine}" />
                                         </VerticalStackLayout>
                                     </DataTemplate>

@@ -98,6 +98,20 @@ namespace PrayerApp.Services
                 _notificationService.RequestPermissionAsync().SafeFireAndForget();
         }
 
+        /// <summary>True once the user dismisses the Quick Add tip banner.</summary>
+        public static bool QuickAddTipDismissed
+        {
+            get => Preferences.Get(nameof(QuickAddTipDismissed), false);
+            set => Preferences.Set(nameof(QuickAddTipDismissed), value);
+        }
+
+        /// <summary>Whether Prayer Time locks to landscape orientation. Default true (landscape).</summary>
+        public static bool PrayerTimeLandscape
+        {
+            get => Preferences.Get(nameof(PrayerTimeLandscape), true);
+            set => Preferences.Set(nameof(PrayerTimeLandscape), value);
+        }
+
         public static void ClearSettings()
         {
             // reset "first run" flag

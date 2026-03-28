@@ -19,7 +19,8 @@ public partial class PrayerTimePage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        _orientationService.LockLandscape();
+        if (PrayerApp.Services.Settings.PrayerTimeLandscape)
+            _orientationService.LockLandscape();
         _onboardingService.Advance(); // PrayerTime → PrayerTimeActive
 
         // Pause auto-mode when the window is backgrounded; resume when it returns
