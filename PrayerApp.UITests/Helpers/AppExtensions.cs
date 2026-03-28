@@ -625,9 +625,11 @@ public static class AppExtensions
     // ── iOS Action Sheet helpers ───────────────────────────────
 
     /// <summary>
-    /// iOS-specific: Tap a button in an action sheet by its exact name, using the
-    /// <c>XCUIElementTypeButton</c> type constraint. More precise than generic XPath
-    /// text search, which can mis-target during action sheet animation.
+    /// iOS-specific: Tap a button in an action sheet using <c>mobile: tap</c> with the
+    /// element's native ID. On iPad, action sheets render as popovers whose animation
+    /// causes WebDriver's <c>Click()</c> to send stale coordinates. Using <c>mobile: tap</c>
+    /// with <c>elementId</c> delegates coordinate resolution to XCUITest, which taps the
+    /// element's actual current position.
     /// Falls back to standard <c>TapByText</c> on Android.
     /// </summary>
     public static void TapIOSActionSheetButton(this AppiumDriver driver, string buttonName,
@@ -642,8 +644,14 @@ public static class AppExtensions
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
         var locator = By.XPath(
             $"//XCUIElementTypeButton[@name='{buttonName}' or @label='{buttonName}']");
-        var element = wait.Until(d => d.FindElement(locator));
-        element.Click();
+        var element = (AppiumElement)wait.Until(d => d.FindElement(locator));
+
+        // Use XCUITest native tap instead of WebDriver Click() — immune to
+        // iPad popover animation coordinate drift
+        driver.ExecuteScript("mobile: tap", new Dictionary<string, object>
+        {
+            { "elementId", element.Id }
+        });
         Thread.Sleep(300);
     }
 

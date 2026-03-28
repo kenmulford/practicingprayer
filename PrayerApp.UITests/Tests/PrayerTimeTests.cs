@@ -21,18 +21,21 @@ public class PrayerTimeTests
     {
         var driver = _setup.Driver;
 
-        // Retry the whole flow up to 3 times — iOS action sheet animation can cause
-        // the tap to land on "By Tags" instead of "All Requests" (mis-tap during settle).
+        // Retry the whole flow up to 3 times — iPad renders action sheets as popovers
+        // whose animation can cause WebDriver taps to hit the wrong button.
         for (int attempt = 0; attempt < 3; attempt++)
         {
             driver.EnsureOnTab("Home", _setup);
-            if (TestConfig.IsIOS) Thread.Sleep(500); // Let Home page fully render
+            if (TestConfig.IsIOS) Thread.Sleep(500);
 
             driver.WaitAndTap("Home_Btn_PrayerTime");
 
-            // Wait for the action sheet to fully appear and settle.
-            // iOS action sheets animate for ~400ms — 1500ms gives ample margin.
-            Thread.Sleep(TestConfig.IsIOS ? 1500 : 500);
+            // iPad popovers need generous settle time — 2500ms for animation + layout
+            Thread.Sleep(TestConfig.IsIOS ? 2500 : 500);
+
+            // --- Diagnostic: dump action sheet state on each attempt ---
+            if (TestConfig.IsIOS)
+                driver.DumpPageSource($"PrayerTime_ActionSheet_attempt{attempt}");
 
             if (driver.IsTextDisplayed("All Requests", timeoutSeconds: 3))
             {
@@ -40,8 +43,8 @@ public class PrayerTimeTests
                 {
                     if (TestConfig.IsIOS)
                     {
-                        // iOS: use typed button locator — more precise than generic XPath
-                        // which can match background labels during animation
+                        // XCUITest native tap via elementId — bypasses WebDriver's
+                        // coordinate mapping which drifts on iPad popover animations
                         driver.TapIOSActionSheetButton("All Requests");
                     }
                     else
@@ -50,11 +53,10 @@ public class PrayerTimeTests
                     }
                     Thread.Sleep(1000);
 
-                    // Recovery: if the tap landed on "By Tags" instead of "All Requests"
-                    // (iOS action sheet animation race), we'll be on the tag scope page
+                    // Recovery: detect if we ended up on the tag scope page
                     if (driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 1))
                     {
-                        // We're on the tag scope page — cancel and retry
+                        driver.DumpPageSource($"PrayerTime_MisTap_attempt{attempt}");
                         driver.Tap("Scope_Btn_Cancel");
                         Thread.Sleep(TestConfig.DelayModalAnimation);
                         continue;
@@ -64,7 +66,6 @@ public class PrayerTimeTests
                 }
                 catch (WebDriverException)
                 {
-                    // Stale element — dismiss the action sheet and retry
                     driver.DismissAlertIfPresent();
                     Thread.Sleep(500);
                     continue;
