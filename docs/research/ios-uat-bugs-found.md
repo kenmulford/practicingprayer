@@ -65,7 +65,8 @@ tail -5 <output-file>
 | `43500b0` (diagnostic logging) | **54/58** | Diagnostics confirm: CollectionView cell contents invisible in iOS accessibility tree. Both scroll test failures are the same root cause. |
 | `8073ded` (accessibility fix + build fix) | **54/58** | Accessibility semantics added but CollectionView still flattens cells into one element. Root cause identified: need `IsInAccessibleTree` per-cell. |
 | `e437ec2` (accessibility flattening fix) | **54/58** | Still flattened — diagnostic dump still shows `name="Quick Add, UI Test Prayer"` as single element. `IsInAccessibleTree` approach not working. PrayerTime mis-tap also persists (separate issue). |
-| `08c9191` (CONTAINS predicates) | **55/58** | **Current.** `Prayers_TapPrayer_ShowsViewMode` now passes! CONTAINS predicate works with flattened labels. `EmptyCardExpand` still fails (AutomationId locator, not text). PrayerTime mis-tap still intermittent. |
+| `08c9191` (CONTAINS predicates) | **55/58** | `Prayers_TapPrayer_ShowsViewMode` now passes! CONTAINS predicate works with flattened labels. `EmptyCardExpand` still fails (AutomationId locator, not text). PrayerTime mis-tap still intermittent. |
+| `e200d57` (EmptyCard + action sheet fix) | **56/58** | **Current.** Both scroll tests now pass! EmptyCardExpand fixed. PrayerTime action sheet mis-tap NOT fixed — both PT tests failed. Tap consistently lands on "By Tags" instead of "All Requests". |
 
 ---
 
@@ -139,7 +140,15 @@ After other tests create data, "UI Test Prayer" gets pushed off-screen. `TapByTe
 
 **Fix:** Increased post-tap delay from 500ms to 1000ms for action sheet animation, added 300ms settle delay before tapping, increased timeout to 5s.
 
-**Root cause update:** `TryStartPrayerTime()` only handles "All Requests" — it does not handle "By Tags". The intermittent failures are caused by the tap landing on "By Tags" instead of "All Requests" because the action sheet is still animating when the tap fires. Once on the tag selection page with no tags selected, the test stalls. "All Requests" is always present in the action sheet — it's not a detection issue, it's a mis-tap targeting issue during animation.
+**Root cause update:** `TryStartPrayerTime()` only handles "All Requests" — it does not handle "By Tags". The failures are caused by the tap landing on "By Tags" instead of "All Requests" because the action sheet is still animating when the tap fires. Once on the tag selection page with no tags selected, the test stalls and times out (~2 min wasted per failure).
+
+**`e200d57` fix attempt did NOT resolve this.** Both PrayerTime tests failed in same run — this is not intermittent, it's consistent. "All Requests" is clearly visible on screen but the tap coordinates hit the wrong item.
+
+**CRITICAL: This is the #1 test reliability blocker.** Every PrayerTime test wastes ~2 minutes when it hits "By Tags" and hangs on the tag selection page. This needs to be fixed urgently — either:
+1. Use `FindByAccessibilityId` or `-ios predicate string` to locate "All Requests" precisely instead of text-based tap
+2. Add a much longer settle delay (2-3 seconds) after the action sheet appears before tapping
+3. Add fallback: if tag selection page is detected, go back and retry
+4. Give "All Requests" an explicit `AutomationId` in the XAML and tap by ID instead of text
 
 ---
 
@@ -232,7 +241,7 @@ Captured via Console.app → Errors & Faults → PrayerApp process during target
 | # | Test | Category | Status |
 |---|------|----------|--------|
 | 1 | `UnsavedChanges_EditTitle_BackShowsDiscardDialog` | App bug (Bug #2) | Always skips on iOS |
-| 2 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | Test scrolling bug | Fix applied — **still failing** |
+| 2 | `EdgeCase_EmptyCardExpand_ShowsAddPrayer` | Test locator bug | **✅ Fixed** — `e200d57` |
 | 3 | `Prayers_TapPrayer_ShowsViewMode` | Test locator bug | **✅ Fixed** — CONTAINS predicate (`08c9191`) |
 | 4 | `PrayerTime_TagScoped_ShowsScopePage` | Test timing bug | **Fix applied — now passes** |
 | 5 | `AndroidTests.HardwareBack_DirtyDetail_ShowsDiscardDialog` | Android-only test | Fails on iOS — needs platform skip |
