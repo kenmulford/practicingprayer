@@ -227,7 +227,7 @@ namespace PrayerApp.ViewModels
 
         private async Task ViewPrayersAsync()
         {
-            await _navigationService.GoToAsync($"//PrayersPage?tagId={_tag.Id}");
+            await _navigationService.GoToAsync($"{Routes.PrayersTab}?tagId={_tag.Id}");
         }
     }
 

@@ -13,13 +13,16 @@ namespace PrayerApp.ViewModels
 {
     public class PrayerCardsViewModel : ObservableObject, IQueryAttributable
     {
-        private List<PrayerCard> _prayerCards;
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
+        private readonly ITagService _tagService;
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
+        private Dictionary<int, HashSet<int>> _cardTagIds = new();
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
+        public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
+        public bool HasTags => AvailableTags.Count > 0;
 
         private ObservableCollection<PrayerCardViewModel> _filteredPrayerCards = new();
         /// <summary>
@@ -63,15 +66,15 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService)
+            IAccessibilityService accessibilityService, ITagService tagService)
         {
             _cardService = cardService;
             _prayerService = prayerService;
             _onboardingService = onboardingService;
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
+            _tagService = tagService;
 
-            _prayerCards = new List<PrayerCard>();
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
 
             // register commands
@@ -83,12 +86,46 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ITagService>())
         { }
 
         #endregion
 
         #region Private Methods
+
+        private async Task BuildCardTagLookupAsync()
+        {
+            var allJunctions = await PrayerCardTag.LoadAllAsync();
+            var allPrayers = await _prayerService.GetAllPrayersAsync();
+
+            // Build set of unanswered prayer IDs
+            var unansweredIds = allPrayers
+                .Where(p => !p.IsAnswered)
+                .Select(p => p.Id)
+                .ToHashSet();
+
+            // Build prayer-to-card lookup
+            var prayerToCard = allPrayers.ToDictionary(p => p.Id, p => p.PrayerCardId);
+
+            // Build cardId → Set<tagId> from unanswered prayers only
+            var lookup = new Dictionary<int, HashSet<int>>();
+            foreach (var row in allJunctions.Where(r => r.PrayerRequestId > 0 && unansweredIds.Contains(r.PrayerRequestId)))
+            {
+                if (prayerToCard.TryGetValue(row.PrayerRequestId, out var cardId))
+                {
+                    if (!lookup.ContainsKey(cardId))
+                        lookup[cardId] = new HashSet<int>();
+                    lookup[cardId].Add(row.PrayerTagId);
+                }
+            }
+
+            _cardTagIds = lookup;
+        }
+
+        private PrayerCardViewModel CreateCardViewModel(PrayerCard pc) =>
+            new(pc, _cardService, _prayerService, _onboardingService,
+                _navigationService, _accessibilityService);
 
         private async Task NewPrayerCardAsync()
         {
@@ -174,7 +211,7 @@ namespace PrayerApp.ViewModels
             {
                 var card = await PrayerCard.LoadAsync(int.Parse(cardIdString ?? "0"));
                 if (card is null) return;
-                var newCard = new PrayerCardViewModel(card);
+                var newCard = CreateCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
 
@@ -200,9 +237,8 @@ namespace PrayerApp.ViewModels
             {
                 _cardService.InvalidateCache();
                 var cards = await _cardService.GetCardsAsync();
-                _prayerCards = cards.ToList();
 
-                var viewModels = _prayerCards.Select(pc => new PrayerCardViewModel(pc)).ToList();
+                var viewModels = cards.Select(pc => CreateCardViewModel(pc)).ToList();
                 foreach (var vm in viewModels)
                 {
                     SubscribeToPropertyChanges(vm);
@@ -215,6 +251,19 @@ namespace PrayerApp.ViewModels
                 {
                     AllPrayerCards.Add(vm);
                 }
+
+                // Build tag filter data
+                _tagService.InvalidateCache();
+                await BuildCardTagLookupAsync();
+
+                var tags = await _tagService.GetTagsAsync();
+                AvailableTags.Clear();
+                foreach (var tag in tags)
+                {
+                    var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
+                    AvailableTags.Add(chip);
+                }
+                OnPropertyChanged(nameof(HasTags));
 
                 ApplySorting();
             }
@@ -280,13 +329,26 @@ namespace PrayerApp.ViewModels
                     c.Title?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false);
             }
 
+            // Tag chip filter
+            var selectedTagIds = AvailableTags
+                .Where(c => c.IsSelected)
+                .Select(c => c.Tag.Id)
+                .ToHashSet();
+
+            if (selectedTagIds.Count > 0)
+            {
+                result = result.Where(c =>
+                    _cardTagIds.TryGetValue(c.Id, out var tagIds) &&
+                    selectedTagIds.Overlaps(tagIds));
+            }
+
             FilteredPrayerCards = new ObservableCollection<PrayerCardViewModel>(result);
 
             if (!_suppressFilterAnnounce)
+            {
                 _accessibilityService.NotifyLayoutChanged();
-
-            if (!_suppressFilterAnnounce)
                 AnnounceFilterCountDebounced();
+            }
         }
 
         private void AnnounceFilterCountDebounced()
@@ -367,7 +429,7 @@ namespace PrayerApp.ViewModels
             // Add new cards
             foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
             {
-                var vm = new PrayerCardViewModel(card);
+                var vm = CreateCardViewModel(card);
                 SubscribeToPropertyChanges(vm);
                 AllPrayerCards.Add(vm);
             }
@@ -380,6 +442,27 @@ namespace PrayerApp.ViewModels
                 if (vm.IsExpanded)
                     vm.ReloadPrayers();
             }
+
+            // Rebuild tag filter data
+            _tagService.InvalidateCache();
+            await BuildCardTagLookupAsync();
+
+            var tags = await _tagService.GetTagsAsync();
+            var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
+            var freshTagIds = tags.Select(t => t.Id).ToHashSet();
+
+            // Remove deleted tags
+            var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
+            foreach (var chip in chipsToRemove)
+                AvailableTags.Remove(chip);
+
+            // Add new tags
+            foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
+            {
+                var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
+                AvailableTags.Add(chip);
+            }
+            OnPropertyChanged(nameof(HasTags));
 
             ApplySorting();
         }

@@ -249,11 +249,13 @@ namespace PrayerApp
             var cardService = services.GetRequiredService<ICardService>();
             await cardService.GetOrCreateQuickAddCardAsync();
 
+            // Load active prayers once — reused for recently-notified tagging and M-11 renewal
+            var prayerService = services.GetRequiredService<IPrayerService>();
+            var activePrayers = await prayerService.GetAllActivePrayersAsync();
+
             // Tag prayers that were recently notified (within last 24h based on schedule)
             try
             {
-                var prayerService = services.GetRequiredService<IPrayerService>();
-                var activePrayers = await prayerService.GetAllActivePrayersAsync();
                 var recentIds = NotificationHelper.GetRecentlyNotifiedPrayerIds(activePrayers, DateTime.Now);
 
                 var systemTag = await tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
@@ -268,6 +270,19 @@ namespace PrayerApp
             {
                 System.Diagnostics.Debug.WriteLine($"Recently-notified tagging failed: {ex}");
             }
+
+#if ANDROID
+            // M-11: Renew monthly notification one-shots on Android launch
+            try
+            {
+                var notificationService = services.GetRequiredService<INotificationService>();
+                await notificationService.RenewMonthlyNotificationsAsync(activePrayers);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Monthly notification renewal failed: {ex}");
+            }
+#endif
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)

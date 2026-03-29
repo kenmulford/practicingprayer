@@ -268,6 +268,65 @@ public class NotificationServiceTests
         Assert.True(result > DateTime.Now);
     }
 
+    // ── RenewMonthlyNotificationsAsync ────────────────────────────────────
+
+    [Fact]
+    public async Task RenewMonthly_SchedulesMonthlyPrayers()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 9, NotifyMinute = 0, NotifyDayOfMonth = 15 },
+            new() { Id = 2, CanNotify = true, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 10, NotifyMinute = 30, NotifyDayOfMonth = 1 }
+        };
+
+        await _service.RenewMonthlyNotificationsAsync(prayers);
+
+        await _center.Received(2).ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task RenewMonthly_SkipsNonMonthlyPrayers()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Daily, NotifyHour = 9, NotifyMinute = 0 },
+            new() { Id = 2, CanNotify = true, PrayerFrequency = PrayerFrequency.Weekly, NotifyHour = 9, NotifyMinute = 0 }
+        };
+
+        await _service.RenewMonthlyNotificationsAsync(prayers);
+
+        await _center.DidNotReceive().ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task RenewMonthly_SkipsCanNotifyFalse()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = false, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 9, NotifyMinute = 0, NotifyDayOfMonth = 15 }
+        };
+
+        await _service.RenewMonthlyNotificationsAsync(prayers);
+
+        await _center.DidNotReceive().ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task RenewMonthly_EmptyList_NoCalls()
+    {
+        await _service.RenewMonthlyNotificationsAsync(new List<Prayer>());
+
+        await _center.DidNotReceive().ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
     [Fact]
     public void GetNextDayOfWeek_SameDayFutureTime_ReturnsSameDay()
     {

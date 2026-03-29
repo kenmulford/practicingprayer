@@ -10,7 +10,7 @@
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
         </Grid.GestureRecognizers>
@@ -24,8 +24,57 @@
                    SemanticProperties.Hint="Search prayer cards by name"
                    BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
 
+        <!-- Tag filter chips -->
+        <ScrollView Grid.Row="1"
+                    Orientation="Horizontal"
+                    IsVisible="{Binding HasTags}"
+                    HorizontalScrollBarVisibility="Never"
+                    Margin="12,0">
+            <HorizontalStackLayout
+                BindableLayout.ItemsSource="{Binding AvailableTags}"
+                Spacing="6"
+                Padding="0,2,0,6">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="viewModels:TagFilterChipViewModel">
+                        <Border Padding="10,4"
+                                StrokeThickness="1.5"
+                                SemanticProperties.Hint="Double tap to toggle filter">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12" />
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ToggleCommand}" />
+                            </Border.GestureRecognizers>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                    <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
+                                    <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="{Binding Tag.Name}"
+                                   FontSize="12"
+                                   VerticalOptions="Center">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="False">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </HorizontalStackLayout>
+        </ScrollView>
+
         <!-- Loading indicator -->
-        <ActivityIndicator Grid.Row="1"
+        <ActivityIndicator Grid.Row="2"
                            IsRunning="{Binding IsLoading}"
                            IsVisible="{Binding IsLoading}"
                            Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
@@ -33,7 +82,7 @@
                            VerticalOptions="Center" />
 
         <CollectionView
-            Grid.Row="1"
+            Grid.Row="2"
             x:Name="cardCollection"
             AutomationId="Cards_List_Cards"
             AutomationProperties.IsInAccessibleTree="false"
@@ -221,14 +270,14 @@
 
         <!-- CreateCard step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="2"
+            Grid.Row="3"
             ExpectedStep="CreateCard"
             HeadlineText="Tap 'Add Card' to create your first prayer card"
             SubText="Give it a name — a person, a topic, or a place." />
 
         <!-- AddRequest step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="3"
+            Grid.Row="4"
             ExpectedStep="AddRequest"
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />

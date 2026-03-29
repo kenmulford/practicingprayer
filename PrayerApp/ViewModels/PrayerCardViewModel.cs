@@ -197,6 +197,19 @@ namespace PrayerApp.ViewModels
             LoadActivePrayerCountAsync().SafeFireAndForget();
         }
 
+        /// <summary>
+        /// Constructor for creating a card VM with injected services and a PrayerCard model.
+        /// Used by PrayerCardsViewModel to avoid dependency on IPlatformApplication in tests.
+        /// </summary>
+        public PrayerCardViewModel(PrayerCard pc, ICardService cardService, IPrayerService prayerService,
+            IOnboardingService onboardingService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
+            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService)
+        {
+            _prayerCard = pc;
+            LoadActivePrayerCountAsync().SafeFireAndForget();
+        }
+
         private async Task LoadActivePrayerCountAsync()
         {
             // When prayers are already loaded locally, derive count without a service call

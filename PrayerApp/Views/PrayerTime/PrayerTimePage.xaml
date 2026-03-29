@@ -91,6 +91,8 @@
                             <Label Text="{Binding CardTitle}"
                                    FontSize="16"
                                    FontAttributes="Bold"
+                                   MaxLines="3"
+                                   LineBreakMode="TailTruncation"
                                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource PrimaryDark}}"
                                    Margin="0,8,0,0" />
 

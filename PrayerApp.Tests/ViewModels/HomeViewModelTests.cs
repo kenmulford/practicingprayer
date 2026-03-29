@@ -58,24 +58,81 @@ public class HomeViewModelTests
         Assert.Equal("You're all caught up!", sut.OverdueHeadline);
     }
 
+    // ── Active Card Count ────────────────────────────────────────────
+
     [Fact]
-    public async Task LoadAsync_PopulatesSuggestedPrayers_MaxFive()
+    public async Task LoadAsync_SetsActiveCardCount_ExcludesEmptyCards()
     {
-        _settings.OverdueDayThreshold.Returns(30);
-        var prayers = Enumerable.Range(1, 8)
-            .Select(i => new Prayer { Id = i, Title = $"P{i}", PrayerCardId = 1 })
-            .ToList();
-        _prayerService.GetOverduePrayersAsync(30).Returns(prayers.AsReadOnly());
+        SetupDefaultMocks();
+        // 3 cards total, but only cards 1 and 2 have active prayers
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>
         {
-            new() { Id = 1, Title = "General" }
+            new() { Id = 1, Title = "Family" },
+            new() { Id = 2, Title = "Work" },
+            new() { Id = 3, Title = "Empty Card" }
         }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 },
+            new() { Id = 2, Title = "P2", PrayerCardId = 1 },
+            new() { Id = 3, Title = "P3", PrayerCardId = 2 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal(2, sut.ActiveCardCount);
+        Assert.True(sut.HasActiveCards);
+    }
+
+    // ── Unanswered Count ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_SetsUnansweredCount()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 },
+            new() { Id = 2, Title = "P2", PrayerCardId = 1 },
+            new() { Id = 3, Title = "P3", PrayerCardId = 2 },
+            new() { Id = 4, Title = "P4", PrayerCardId = 2 },
+            new() { Id = 5, Title = "P5", PrayerCardId = 3 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal(5, sut.UnansweredCount);
+        Assert.True(sut.HasUnanswered);
+    }
+
+    // ── Last Prayed Date Components ───────────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_SetsLastPrayedDateComponents()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)new DateTime(2026, 3, 27));
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal("MAR", sut.LastPrayedMonth);
+        Assert.Equal("27", sut.LastPrayedDay);
+        Assert.True(sut.HasLastPrayed);
+    }
+
+    [Fact]
+    public async Task LoadAsync_NullLastPrayed_HasLastPrayedFalse()
+    {
+        SetupDefaultMocks();
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
 
         var sut = CreateSut();
         await sut.LoadAsync();
 
-        Assert.Equal(5, sut.SuggestedPrayers.Count);
+        Assert.False(sut.HasLastPrayed);
     }
 
     [Fact]
@@ -93,45 +150,90 @@ public class HomeViewModelTests
         _cardService.Received(1).InvalidateCache();
     }
 
-    // ── FormatLastPrayed ──────────────────────────────────────────────
+    // ── Singular/Plural Labels ────────────────────────────────────────
 
     [Fact]
-    public void FormatLastPrayed_Null_ReturnsNever()
+    public async Task ActiveCardLabel_Singular()
     {
-        Assert.Equal("Never", HomeViewModel.FormatLastPrayed(null));
-    }
+        SetupDefaultMocks();
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 }
+        }.AsReadOnly());
 
-    [Fact]
-    public void FormatLastPrayed_Today_ReturnsToday()
-    {
-        Assert.Equal("Today", HomeViewModel.FormatLastPrayed(DateTime.Now));
-    }
-
-    [Fact]
-    public void FormatLastPrayed_Yesterday_ReturnsYesterday()
-    {
-        Assert.Equal("Yesterday", HomeViewModel.FormatLastPrayed(DateTime.Now.AddDays(-1.5)));
-    }
-
-    // ── OverdueEmptyDescription ───────────────────────────────────────
-
-    [Fact]
-    public void OverdueEmptyDescription_UsesSetting()
-    {
-        _settings.OverdueDayThreshold.Returns(7);
         var sut = CreateSut();
+        await sut.LoadAsync();
 
-        Assert.Contains("7 days", sut.OverdueEmptyDescription);
+        Assert.Equal(1, sut.ActiveCardCount);
+        Assert.Equal("Active Card", sut.ActiveCardLabel);
     }
 
     [Fact]
-    public void OverdueEmptyDescription_SingularDay()
+    public async Task ActiveCardLabel_Plural()
     {
-        _settings.OverdueDayThreshold.Returns(1);
-        var sut = CreateSut();
+        SetupDefaultMocks();
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 },
+            new() { Id = 2, Title = "P2", PrayerCardId = 2 }
+        }.AsReadOnly());
 
-        Assert.Contains("1 day", sut.OverdueEmptyDescription);
-        Assert.DoesNotContain("days", sut.OverdueEmptyDescription);
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal(2, sut.ActiveCardCount);
+        Assert.Equal("Active Cards", sut.ActiveCardLabel);
+    }
+
+    [Fact]
+    public async Task UnansweredLabel_Singular()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal(1, sut.UnansweredCount);
+        Assert.Equal("Unanswered Prayer", sut.UnansweredLabel);
+    }
+
+    [Fact]
+    public async Task UnansweredLabel_Plural()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 },
+            new() { Id = 2, Title = "P2", PrayerCardId = 1 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal(2, sut.UnansweredCount);
+        Assert.Equal("Unanswered Prayers", sut.UnansweredLabel);
+    }
+
+    // ── Navigation Commands ───────────────────────────────────────────
+
+    [Fact]
+    public async Task GoToCardsCommand_NavigatesToCardsPage()
+    {
+        var sut = CreateSut();
+        await ((IAsyncRelayCommand)sut.GoToCardsCommand).ExecuteAsync(null);
+        await _navigationService.Received(1).GoToAsync(Routes.PrayerCardsTab);
+    }
+
+    [Fact]
+    public async Task GoToPrayersCommand_NavigatesToPrayersPage()
+    {
+        var sut = CreateSut();
+        await ((IAsyncRelayCommand)sut.GoToPrayersCommand).ExecuteAsync(null);
+        await _navigationService.Received(1).GoToAsync(Routes.PrayersTab);
     }
 
     // ── GoToOverdueCommand ────────────────────────────────────────────
@@ -155,7 +257,7 @@ public class HomeViewModelTests
 
         await ((IAsyncRelayCommand)sut.GoToOverdueCommand).ExecuteAsync(null);
 
-        await _navigationService.Received(1).GoToAsync("//PrayersPage?filter=overdue");
+        await _navigationService.Received(1).GoToAsync($"{Routes.PrayersTab}?filter=overdue");
     }
 
     [Fact]

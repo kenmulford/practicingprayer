@@ -540,6 +540,8 @@
     <Style x:Key="CardTitle" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="FontSize" Value="17" />
         <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="MaxLines" Value="3" />
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
     </Style>
 
     <!-- ── BoxView variant ───────────────────────────────────────────────── -->

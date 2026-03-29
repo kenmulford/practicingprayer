@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: Build 1.0.6b34 released. iOS UITest suite at 58/58. 237 unit tests passing. Production readiness audit + remediation complete.
-**Last completed**: VM test coverage expansion (237 total), production readiness remediation, screenshots updated.
-**Next up**: Onboarding refresh, then UX-12 (SVG icons)
+**Status**: UX-21, M-11, F-19, F-20 all implemented (251 unit tests passing). F-21 added to backlog.
+**Last completed**: F-20 (home page 2x2 metric grid), UX-21, M-11, F-19
+**Next up**: F-21 planning (Prayer Time from search results), then UX-18 (iPad layout)
 
 ---
 
@@ -26,19 +26,21 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | UX-21 | Card title multi-line display (up to 3 lines)                      | Ken    | Allow card titles to wrap up to 3 lines instead of truncating. Review everywhere a card title is displayed: cards list, prayer detail, prayer time, etc.                                                                                       |
-| 2   | F-20  | Home page metrics redesign                                         | Ken    | New dashboard metrics: # of prayer cards, # of unanswered prayers, last prayer time date (3-letter month small type + day-of-month large font). **Requires plan + design prototype + approval before implementation.**                         |
-| 3   | F-19  | Filter cards by tag (contains unanswered prayer with tag)          | Ken    | Filter the prayer cards list to show only cards that contain at least one unanswered prayer request tagged with the selected tag.                                                                                                               |
-| 4   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
-| 5   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
-| 6   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store — top priority once released. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
-| 7   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships. Research at `docs/research/INV-4-android-update-research.md`.                                                  |
-| 8   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+| 1   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
+| 2   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
+| 3   | UX-22 | Update Android screenshots for Play Store                          | Ken    | New screenshots needed for Play Store listing reflecting current UI.                                                                                                                                                                           |
+| 4   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store — top priority once released. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
+| 5   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships. Research at `docs/research/INV-4-android-update-research.md`.                                                  |
+| 6   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| F-20    | Home page metrics redesign (2x2 grid: cards, unanswered, last prayed, overdue) | 2026-03-29 |
+| UX-21   | Card title multi-line display (up to 3 lines, all locations) | 2026-03-29 |
+| F-19    | Filter cards by tag (unanswered prayers, tag chips on Cards page) | 2026-03-29 |
+| M-11    | Monthly notification renewal on Android app launch | 2026-03-29 |
 | TD-12p4 | VM test coverage (237 total tests) | 2026-03-29 |
 | AUD-2   | Production readiness remediation (EmptyView, accessibility, notification toggle) | 2026-03-29 |
 | UX-17   | Prayer Time smart guards (zero prayers alert + skip action sheet if no tags) | 2026-03-28 |
@@ -206,4 +208,4 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 
 ---
 
-_Last updated: 2026-03-29 (housekeeping — backlog reorganized, completed docs archived, changelog reset for 1.0.6b34)_
+_Last updated: 2026-03-29 (session — UX-21, M-11, F-19, F-20 implemented; F-21 added; /simplify pass; 251 tests)_

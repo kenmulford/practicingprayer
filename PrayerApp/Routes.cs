@@ -15,4 +15,8 @@ public static class Routes
     public const string BackupPage = "BackupPage";
     public const string AboutPage = "AboutPage";
     public const string HelpPage = "HelpPage";
+
+    // Shell tab routes (absolute navigation)
+    public const string PrayerCardsTab = "//PrayerCardsPage";
+    public const string PrayersTab = "//PrayersPage";
 }

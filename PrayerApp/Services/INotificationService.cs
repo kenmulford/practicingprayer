@@ -8,4 +8,5 @@ public interface INotificationService
     Task ClearAllAsync();
     Task ScheduleAsync(Prayer prayer);
     Task CancelAsync(int notificationId, PrayerFrequency frequency = PrayerFrequency.OneTime);
+    Task RenewMonthlyNotificationsAsync(IEnumerable<Prayer> activePrayers);
 }

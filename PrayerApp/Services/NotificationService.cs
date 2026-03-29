@@ -127,6 +127,15 @@ public class NotificationService : INotificationService
         }
     }
 
+    public async Task RenewMonthlyNotificationsAsync(IEnumerable<Prayer> activePrayers)
+    {
+        foreach (var prayer in activePrayers
+            .Where(p => p.CanNotify && p.PrayerFrequency == PrayerFrequency.Monthly))
+        {
+            await ScheduleAsync(prayer);
+        }
+    }
+
     internal static DateTime GetNextDayOfWeek(DayOfWeek targetDay, int hour, int minute)
     {
         var now = DateTime.Now;

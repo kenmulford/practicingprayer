@@ -28,83 +28,121 @@
                             HorizontalOptions="Fill" />
                 </Grid>
 
-                <!-- Last prayed stat -->
-                <Label Text="{Binding LastPrayedDisplay, StringFormat='Last prayed: {0}'}"
-                       FontSize="13"
-                       Style="{StaticResource MutedText}"
-                       HorizontalOptions="Center" />
+                <!-- 2x2 Metric Grid -->
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
 
-                <!-- Unified overdue card — always visible; content changes based on HasOverdue -->
-                <Border Style="{StaticResource PrayerCardBorder}" Padding="16,14">
-                    <VerticalStackLayout Spacing="0">
-
-                        <!-- Header row: count + chevron (tappable when overdue) -->
-                        <Grid ColumnDefinitions="*,Auto">
-                            <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding GoToOverdueCommand}" />
-                            </Grid.GestureRecognizers>
-
-                            <Label Text="{Binding OverdueHeadline}"
-                                   FontSize="18"
-                                   FontAttributes="Bold"
-                                   SemanticProperties.HeadingLevel="Level1"
-                                   SemanticProperties.Hint="Double tap to view overdue prayers"
-                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
-                                   VerticalOptions="Center" />
-
-                            <!-- Chevron only visible when there are overdue items -->
-                            <Label Grid.Column="1"
-                                   Text="›"
-                                   FontSize="22"
-                                   IsVisible="{Binding HasOverdue}"
-                                   AutomationProperties.IsInAccessibleTree="false"
-                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                                   VerticalOptions="Center" />
-                        </Grid>
-
-                        <!-- Zero-state description — only shown when all caught up -->
-                        <Label Text="{Binding OverdueEmptyDescription}"
-                               IsVisible="{Binding HasOverdue, Converter={StaticResource InverseBool}}"
-                               Style="{StaticResource MutedText}"
-                               FontSize="13"
-                               Margin="0,8,0,0" />
-
-                        <!-- List section — only shown when there are overdue requests -->
-                        <VerticalStackLayout IsVisible="{Binding HasOverdue}" Spacing="0">
-
-                            <BoxView Style="{StaticResource DividerLine}" Margin="0,12,0,8" />
-
-                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding SuggestedPrayers}"
-                                                 Spacing="0">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate x:DataType="viewModels:SuggestedPrayerViewModel">
-                                        <Grid ColumnDefinitions="Auto,*"
-                                              ColumnSpacing="10"
-                                              Padding="0,6">
-                                            <Grid.GestureRecognizers>
-                                                <TapGestureRecognizer Command="{Binding SelectCommand}" />
-                                            </Grid.GestureRecognizers>
-                                            <Label Text="{Binding CardTitle}"
-                                                   FontSize="11"
-                                                   Style="{StaticResource MutedText}"
-                                                   VerticalOptions="Center"
-                                                   WidthRequest="90" />
-                                            <Label Grid.Column="1"
-                                                   Text="{Binding PrayerTitle}"
-                                                   FontSize="14"
-                                                   FontAttributes="Bold"
-                                                   SemanticProperties.Hint="Double tap to view"
-                                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
-                                                   VerticalOptions="Center" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </VerticalStackLayout>
-
+                    <!-- Active Cards metric -->
+                    <Border Grid.Row="0" Grid.Column="0"
+                            AutomationId="Home_Metric_Cards"
+                            Style="{StaticResource PrayerCardBorder}" Padding="14,12">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToCardsCommand}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                            <Label Text="{Binding ActiveCardCount}"
+                                   IsVisible="{Binding HasActiveCards}"
+                                   FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="No active cards"
+                                   IsVisible="{Binding HasActiveCards, Converter={StaticResource InverseBool}}"
+                                   FontSize="13" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
+                            <Label Text="{Binding ActiveCardLabel}"
+                                   FontSize="11" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+                            <Label Text="{Binding ActiveCardTapHint}"
+                                   FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                         </VerticalStackLayout>
+                    </Border>
 
-                    </VerticalStackLayout>
-                </Border>
+                    <!-- Unanswered Prayers metric -->
+                    <Border Grid.Row="0" Grid.Column="1"
+                            AutomationId="Home_Metric_Unanswered"
+                            Style="{StaticResource PrayerCardBorder}" Padding="14,12">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToPrayersCommand}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                            <Label Text="{Binding UnansweredCount}"
+                                   IsVisible="{Binding HasUnanswered}"
+                                   FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="No prayers yet"
+                                   IsVisible="{Binding HasUnanswered, Converter={StaticResource InverseBool}}"
+                                   FontSize="13" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
+                            <Label Text="{Binding UnansweredLabel}"
+                                   FontSize="11" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+                            <Label Text="{Binding UnansweredTapHint}"
+                                   FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Last Prayed date metric -->
+                    <Border x:Name="LastPrayedCard" Grid.Row="1" Grid.Column="0"
+                            AutomationId="Home_Metric_LastPrayed"
+                            Style="{StaticResource PrayerCardBorder}" Padding="14,12">
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="0">
+                            <Label Text="{Binding LastPrayedMonth}"
+                                   IsVisible="{Binding HasLastPrayed}"
+                                   FontSize="11" FontAttributes="Bold" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            <Label Text="{Binding LastPrayedDay}"
+                                   IsVisible="{Binding HasLastPrayed}"
+                                   FontSize="32" FontAttributes="Bold" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="Not yet"
+                                   IsVisible="{Binding HasLastPrayed, Converter={StaticResource InverseBool}}"
+                                   FontSize="13" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
+                            <Label Text="Last Prayed"
+                                   FontSize="11" HorizontalOptions="Center" Margin="0,2,0,0"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+                            <Label Text="{Binding LastPrayedTapHint}"
+                                   FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Overdue metric (gold highlight when has overdue) -->
+                    <Border Grid.Row="1" Grid.Column="1"
+                            AutomationId="Home_Metric_Overdue"
+                            Style="{StaticResource PrayerCardBorder}" Padding="14,12">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToOverdueCommand}" />
+                        </Border.GestureRecognizers>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding HasOverdue}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource OverdueLight}, Dark={StaticResource OverdueDark}}" />
+                                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                            <Label Text="{Binding OverdueCount}"
+                                   IsVisible="{Binding HasOverdue}"
+                                   FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
+                            <VerticalStackLayout IsVisible="{Binding HasOverdue, Converter={StaticResource InverseBool}}"
+                                                 HorizontalOptions="Center" Spacing="0">
+                                <Label Text="&#x2713;" FontSize="20" HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource SuccessGreen}, Dark={StaticResource SuccessGreenDark}}" />
+                                <Label Text="All caught up!" FontSize="12" HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+                            </VerticalStackLayout>
+                            <Label Text="Overdue"
+                                   FontSize="11" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+                            <Label Text="View in Prayers &#x2192;"
+                                   IsVisible="{Binding HasOverdue}"
+                                   FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                </Grid>
 
             </VerticalStackLayout>
         </ScrollView>
