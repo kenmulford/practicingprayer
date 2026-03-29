@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: iOS UITest suite at 58/58. Production readiness audit remediation in progress (Phases 1-2 done, re-audit next).
-**Last completed**: AUD-2 remediation — EmptyView on PrayerCardsPage, accessibility fixes (Pause button, TagDetail swatch), notification permission toggle, 16 new unit tests (TagsViewModel + PrayerTimeScopeViewModel), audit docs archived.
-**Next up**: Re-audit (3-agent codebase-first audit), then onboarding refresh
+**Status**: Build 1.0.6b34 released. iOS UITest suite at 58/58. 237 unit tests passing. Production readiness audit + remediation complete.
+**Last completed**: VM test coverage expansion (237 total), production readiness remediation, screenshots updated.
+**Next up**: Onboarding refresh, then UX-12 (SVG icons)
 
 ---
 
@@ -26,63 +26,41 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | ~~UX-14~~ | ~~Settings hub~~ | Ken | ✅ Done (2026-03-26) |
-| 2   | ~~AUD-1~~ | ~~Pre-submission audit remediation~~ | Audit | ✅ Done (2026-03-27) — Phases 1+2 complete; stale audit docs archived |
-| 3   | ~~UX-15~~ | ~~Quick Add clarity + temporary prayer concept~~ | Ken | ✅ Done (2026-03-27) — Concept C: dismissible tip banner |
-| 4   | ~~TD-13~~ | ~~INavigationService abstraction~~ | — | ✅ Done (2026-03-27) |
-| 5   | ~~TD-12p3~~ | ~~VM test coverage (74 tests)~~ | — | ✅ Done (2026-03-27) |
-| 6   | UX-12 | Replace emoji glyphs with SVG icons                                | Ken    | Emoji glyphs don't render on iOS (OpenSans lacks emoji, system fallback fails). Locations: `OnboardingWelcomePopup` (was 🙏), `OnboardingCompletePopup` (was ✨).                                                                              |
-| 7   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
-| 8   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                                                      |
-| 9   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships.                                                                                                                |
-| 10  | ~~UX-16~~ | ~~Portrait mode option for Prayer Time~~ | Users | ✅ Done (2026-03-27) — Settings toggle + conditional orientation lock |
-| 11  | ~~BUG-1~~ | ~~iOS: SIGABRT crash during tag save navigation~~ | UITest | ✅ Done (2026-03-27) — Native gesture cleanup in OnDisappearing + WeakReference in closure + CancellationToken for async work |
-| 12  | ~~BUG-2~~ | ~~iOS: Unsaved changes guard bypassed on back nav~~ | UITest | ✅ Done (2026-03-27) — Disabled iOS swipe-back gesture on IEditGuard pages via `InteractivePopGestureRecognizer` (dotnet/maui#15813) |
-| 13  | ~~BUG-3~~ | ~~iOS: GoToAsync("..") unreliable after tag save~~ | UITest | ✅ Done (2026-03-27) — Same fix as BUG-1 |
-| 14  | ~~BUG-4~~ | ~~iOS: Prayer Time action sheet stale element~~ | UITest | ✅ Done (2026-03-27) — `_prayerTimeNavigating` guard prevents double-tap |
-| 15  | ~~BUG-5~~ | ~~iOS: Empty card expand layout on iPad~~ | UITest | ✅ Done (2026-03-27) — `ItemSizingStrategy="MeasureAllItems"` on PrayerCards CollectionView |
-| 16  | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
-| 17  | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
+| 1   | UX-21 | Card title multi-line display (up to 3 lines)                      | Ken    | Allow card titles to wrap up to 3 lines instead of truncating. Review everywhere a card title is displayed: cards list, prayer detail, prayer time, etc.                                                                                       |
+| 2   | F-20  | Home page metrics redesign                                         | Ken    | New dashboard metrics: # of prayer cards, # of unanswered prayers, last prayer time date (3-letter month small type + day-of-month large font). **Requires plan + design prototype + approval before implementation.**                         |
+| 3   | F-19  | Filter cards by tag (contains unanswered prayer with tag)          | Ken    | Filter the prayer cards list to show only cards that contain at least one unanswered prayer request tagged with the selected tag.                                                                                                               |
+| 4   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
+| 5   | M-11  | Monthly notification renewal on app launch                         | —      | Android pre-schedules 12 one-shot notifications. On startup, top up if fewer than 6 future notifications remain. iOS uses native repeating trigger (no action needed).                                                                         |
+| 6   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store — top priority once released. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
+| 7   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships. Research at `docs/research/INV-4-android-update-research.md`.                                                  |
+| 8   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
-### Completed
+### Recently Completed (this release cycle)
 
-| ID     | Item                           | Completed  |
-| ------ | ------------------------------ | ---------- |
-| A11Y-1 | Accessibility Phase 1          | 2026-03-25 |
-| A11Y-2 | Accessibility Phase 2          | 2026-03-25 |
-| A11Y-3 | Accessibility Phase 3          | 2026-03-25 |
-| TD-12  | MVVM architecture audit (Phases 1+2+4) | 2026-03-25 |
-| TD-8   | ViewModel constructor injection | 2026-03-25 |
-| FB-29  | iOS tester feedback (build 29) | 2026-03-25 |
-| UX-14  | Settings hub (4 sub-pages + Help FAQ) | 2026-03-26 |
-| AUD-1  | Pre-submission audit Phases 1-3 | 2026-03-26 |
-| AUD-2  | Production readiness remediation (EmptyView, accessibility, notification toggle, 16 new tests) | 2026-03-27 |
-| TD-13  | INavigationService + IAccessibilityService | 2026-03-27 |
+| ID      | Item                           | Completed  |
+| ------- | ------------------------------ | ---------- |
+| TD-12p4 | VM test coverage (237 total tests) | 2026-03-29 |
+| AUD-2   | Production readiness remediation (EmptyView, accessibility, notification toggle) | 2026-03-29 |
+| UX-17   | Prayer Time smart guards (zero prayers alert + skip action sheet if no tags) | 2026-03-28 |
+| BUG-1   | iOS tag save navigation crash fix | 2026-03-27 |
+| BUG-2   | iOS unsaved changes guard (swipe-back disabled on edit pages) | 2026-03-27 |
+| BUG-3   | iOS GoToAsync("..") reliability (same fix as BUG-1) | 2026-03-27 |
+| BUG-4   | iOS Prayer Time action sheet guard | 2026-03-27 |
+| BUG-5   | iPad card expand layout fix | 2026-03-27 |
+| UX-16   | Portrait mode toggle for Prayer Time | 2026-03-27 |
+| UX-15   | Quick Add tip banner (Concept C) | 2026-03-27 |
+| TD-13   | INavigationService + IAccessibilityService | 2026-03-27 |
 | TD-12p3 | VM test coverage (74 tests, 8 VMs) | 2026-03-27 |
-| UX-15  | Quick Add tip banner (Concept C) | 2026-03-27 |
-| UX-16  | Portrait mode toggle for Prayer Time | 2026-03-27 |
-| BUG-1  | iOS tag save navigation crash fix | 2026-03-27 |
-| BUG-2  | iOS unsaved changes guard (swipe-back disabled on edit pages) | 2026-03-27 |
-| BUG-3  | iOS GoToAsync("..") reliability (same fix as BUG-1) | 2026-03-27 |
-| BUG-4  | iOS Prayer Time action sheet guard | 2026-03-27 |
-| BUG-5  | iPad card expand layout fix | 2026-03-27 |
-| UX-17  | Prayer Time smart guards (zero prayers alert + skip action sheet if no tags) | 2026-03-27 |
+| AUD-1   | Pre-submission audit Phases 1-3 | 2026-03-26 |
+| UX-14   | Settings hub (4 sub-pages + Help FAQ) | 2026-03-26 |
+| A11Y-1/2/3 | Accessibility Phases 1-3 | 2026-03-25 |
+| TD-12   | MVVM architecture audit (Phases 1+2+4) | 2026-03-25 |
+| TD-8    | ViewModel constructor injection | 2026-03-25 |
+| FB-29   | iOS tester feedback (build 29) | 2026-03-25 |
 
 ---
 
 ## Detailed Descriptions
-
-### TD-8 Refactor ViewModels to constructor injection
-
-All ViewModels resolve services via `IPlatformApplication.Current!.Services.GetRequiredService<>()` inside the default constructor. This couples them to the MAUI runtime — they cannot be instantiated in a test context.
-
-**Fix:** Add constructor overloads (or replace the default constructor) that accept injected services. Register ViewModels with DI in `MauiProgram.cs` and update XAML pages to resolve them from the container rather than using `<viewModels:XViewModel />` in XAML.
-
-**Affects all ViewModels:** `PrayerRequestDetailViewModel`, `PrayerCardViewModel`, `HomeViewModel`, `PrayerTimeViewModel`, `TagDetailViewModel`, `SettingsViewModel`
-
-**Unlocks:** Full ViewModel unit test coverage including notification scheduling hooks, mark-answered flow, onboarding state transitions
-
----
 
 ### F-10 Deep-link share
 
@@ -228,4 +206,4 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 
 ---
 
-_Last updated: 2026-03-24 (session 27 — Warm Journal style refresh, navbar UX, safe area compliance; build 1.0.5b28)_
+_Last updated: 2026-03-29 (housekeeping — backlog reorganized, completed docs archived, changelog reset for 1.0.6b34)_
