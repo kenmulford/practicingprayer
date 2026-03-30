@@ -2,9 +2,18 @@
 
 ## Status
 
-Deferred — do not implement until app is live in the App Store / Play Store.
+**Ready to implement — Phase 1 (iOS).** App is live in both stores (1.0.6). Website infrastructure deployed.
 
-**Last updated:** 2026-03-29 — Ken's design review. Added isImported schema, imported icon, sharing restrictions on system cards, import landing behavior. Tasks 1 and 7 already done.
+**Last updated:** 2026-03-30 — Phased approach: iOS Universal Links first, Android App Links later. All shared code (schema, DeepLinkService, UI, outbound sharing) is cross-platform. Implementation plan at `.claude/plans/wild-gathering-meadow.md`.
+
+### Phased Approach
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| Phase 1 | Schema, DeepLinkService, UI, iOS Universal Links, Settings, tests | **Ready** |
+| Phase 2 | Android `IntentFilter` + `AutoVerify` + lifecycle handler (~15 min) | Deferred |
+
+On Android during Phase 1: outbound sharing works, inbound links fall through to website fallback page.
 
 ---
 
@@ -12,11 +21,9 @@ Deferred — do not implement until app is live in the App Store / Play Store.
 
 Users want to share individual prayer requests and prayer cards with others. Recipients who have the app installed get the content auto-saved; recipients without the app see a plain-text fallback in the message.
 
-**Approach: Dual scheme strategy**
-- **Custom URI scheme (`prayercards://`)** — works offline, no domain needed, good for initial launch
-- **Universal Links / App Links (`https://practicingprayer.app/share/...`)** — future upgrade when we have a domain, better UX (clickable in messages, verified ownership)
-
-Start with custom scheme. Upgrade to https later by adding domain verification without changing the internal routing.
+**Approach: Universal Links / App Links directly**
+- **`https://practicingprayerapp.com/share/...`** — domain owned, AASA + assetlinks.json deployed, website fallback page live
+- No custom URI scheme needed — go straight to verified https links
 
 **Decisions from brainstorming + Ken's review (2026-03-29):**
 - Both cards and individual requests are shareable
