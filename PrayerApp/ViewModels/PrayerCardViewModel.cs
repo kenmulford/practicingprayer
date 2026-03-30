@@ -311,6 +311,7 @@ namespace PrayerApp.ViewModels
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
             var text = deepLinkService.BuildCardShareText(_prayerCard, activePrayers);
             await Share.RequestAsync(new ShareTextRequest { Title = _prayerCard.Title, Text = text });
+            _onboardingService.Advance(); // ShareIntro → SharePrayer (if active)
         }
 
         #endregion

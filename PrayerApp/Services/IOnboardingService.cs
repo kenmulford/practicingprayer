@@ -5,8 +5,10 @@ namespace PrayerApp.Services;
 public interface IOnboardingService
 {
     OnboardingStep CurrentStep { get; }
-    /// <summary>True when step is Welcome through PrayerTimeActive inclusive; false for None and Complete.</summary>
+    /// <summary>True when step is Welcome through PrayerTimeHighlight inclusive; false for None and Complete.</summary>
     bool IsActive { get; }
+    /// <summary>True when the current session is a share-tutorial-only flow for existing users.</summary>
+    bool IsShareTutorial { get; }
     /// <summary>In-memory only. Prevents welcome popup re-showing on each OnAppearing.</summary>
     bool WelcomeShownThisSession { get; }
     void Advance();

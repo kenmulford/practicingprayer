@@ -18,6 +18,7 @@ public partial class OnboardingCompletePopup : Popup
         BtnDone.Clicked += async (_, _) =>
         {
             PrayerApp.Services.Settings.OnboardingComplete = true;
+            PrayerApp.Services.Settings.ShareTutorialShown = true;
             await CloseAsync(CancellationToken.None);
         };
     }

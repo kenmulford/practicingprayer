@@ -12,7 +12,6 @@ public class PrayerTimeViewModelTests
     private readonly ICardService _cardService = Substitute.For<ICardService>();
     private readonly ITagService _tagService = Substitute.For<ITagService>();
     private readonly IPrayerInteractionService _interactionService = Substitute.For<IPrayerInteractionService>();
-    private readonly IOnboardingService _onboardingService = Substitute.For<IOnboardingService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
@@ -24,7 +23,7 @@ public class PrayerTimeViewModelTests
 
     private PrayerTimeViewModel CreateSut() =>
         new(_prayerService, _cardService, _tagService, _interactionService,
-            _onboardingService, _navigationService, _accessibilityService, _settings);
+            _navigationService, _accessibilityService, _settings);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -64,13 +63,12 @@ public class PrayerTimeViewModelTests
     // ── EndSessionCommand ─────────────────────────────────────────────
 
     [Fact]
-    public async Task EndSessionCommand_AdvancesOnboardingAndNavigatesBack()
+    public async Task EndSessionCommand_NavigatesBack()
     {
         var sut = CreateSut();
 
         await ((IAsyncRelayCommand)sut.EndSessionCommand).ExecuteAsync(null);
 
-        _onboardingService.Received(1).Advance();
         await _navigationService.Received(1).GoToAsync("..");
     }
 

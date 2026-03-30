@@ -65,4 +65,10 @@ public class SettingsService : ISettings
         get => Settings.HideSharedWithMe;
         set => Settings.HideSharedWithMe = value;
     }
+
+    public bool ShareTutorialShown
+    {
+        get => Settings.ShareTutorialShown;
+        set => Settings.ShareTutorialShown = value;
+    }
 }

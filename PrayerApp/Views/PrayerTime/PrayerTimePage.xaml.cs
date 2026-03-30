@@ -6,14 +6,12 @@ namespace PrayerApp.Views.PrayerTime;
 public partial class PrayerTimePage : ContentPage
 {
     private readonly IOrientationService _orientationService;
-    private readonly IOnboardingService _onboardingService;
 
-    public PrayerTimePage(PrayerTimeViewModel vm, IOrientationService orientationService, IOnboardingService onboardingService)
+    public PrayerTimePage(PrayerTimeViewModel vm, IOrientationService orientationService)
     {
         InitializeComponent();
         BindingContext = vm;
         _orientationService = orientationService;
-        _onboardingService = onboardingService;
     }
 
     protected override void OnAppearing()
@@ -21,7 +19,6 @@ public partial class PrayerTimePage : ContentPage
         base.OnAppearing();
         if (PrayerApp.Services.Settings.PrayerTimeLandscape)
             _orientationService.LockLandscape();
-        _onboardingService.Advance(); // PrayerTime → PrayerTimeActive
 
         // Pause auto-mode when the window is backgrounded; resume when it returns
         if (Window is not null)

@@ -18,7 +18,6 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly ICardService _cardService;
     private readonly ITagService _tagService;
     private readonly IPrayerInteractionService _interactionService;
-    private readonly IOnboardingService _onboardingService;
     private readonly INavigationService _navigationService;
     private readonly IAccessibilityService _accessibilityService;
     private readonly ISettings _settings;
@@ -190,14 +189,13 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     public ICommand TogglePauseCommand { get; }
 
     public PrayerTimeViewModel(IPrayerService prayerService, ICardService cardService,
-        ITagService tagService, IPrayerInteractionService interactionService, IOnboardingService onboardingService,
+        ITagService tagService, IPrayerInteractionService interactionService,
         INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings)
     {
         _prayerService = prayerService;
         _cardService = cardService;
         _tagService = tagService;
         _interactionService = interactionService;
-        _onboardingService = onboardingService;
         _navigationService = navigationService;
         _accessibilityService = accessibilityService;
         _settings = settings;
@@ -217,7 +215,6 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IPrayerInteractionService>(),
-        IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
@@ -358,7 +355,6 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private async Task EndSessionAsync()
     {
         StopAutoMode();
-        _onboardingService.Advance(); // PrayerTimeActive → Complete
         await _navigationService.GoToAsync("..");
     }
 

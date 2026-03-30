@@ -10,7 +10,7 @@
             <RoundRectangle CornerRadius="12,12,0,0" />
         </Border.StrokeShape>
 
-        <Grid RowDefinitions="Auto,Auto,Auto" Padding="16,12,16,16" RowSpacing="4">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" Padding="16,12,16,16" RowSpacing="4">
 
             <!-- Step indicator -->
             <Label x:Name="StepLabel"
@@ -48,6 +48,21 @@
                         BorderWidth="0"
                         VerticalOptions="End" />
             </Grid>
+
+            <!-- Got It button (PrayerTimeHighlight only) -->
+            <Button x:Name="GotItButton"
+                    Grid.Row="3"
+                    Text="Got it!"
+                    AutomationId="Banner_Btn_GotIt"
+                    IsVisible="False"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    CornerRadius="8"
+                    HeightRequest="40"
+                    Margin="0,8,0,0"
+                    HorizontalOptions="Fill" />
         </Grid>
     </Border>
 </ContentView>

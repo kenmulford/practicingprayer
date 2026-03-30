@@ -49,6 +49,7 @@ public partial class OnboardingBanner : ContentView
     {
         InitializeComponent();
         SkipButton.Clicked += (_, _) => _onboardingService?.Skip();
+        GotItButton.Clicked += (_, _) => _onboardingService?.Advance();
     }
 
     // Subscribe when handler is attached (unsubscribe first to prevent double-subscribe on re-parent)
@@ -91,18 +92,29 @@ public partial class OnboardingBanner : ContentView
                     _onboardingService.CurrentStep == ExpectedStep;
 
         if (IsVisible)
+        {
             UpdateStepLabel();
+            // Show "Got it!" button only on PrayerTimeHighlight
+            GotItButton.IsVisible = ExpectedStep == OnboardingStep.PrayerTimeHighlight;
+        }
     }
 
     private void UpdateStepLabel()
     {
+        if (_onboardingService?.IsShareTutorial == true)
+        {
+            StepLabel.Text = "NEW FEATURE";
+            return;
+        }
+
         var stepNumber = ExpectedStep switch
         {
             OnboardingStep.CreateCard or OnboardingStep.NameCard => 1,
             OnboardingStep.AddRequest or OnboardingStep.NameRequest => 2,
-            OnboardingStep.PrayerTime or OnboardingStep.PrayerTimeActive => 3,
+            OnboardingStep.ShareIntro or OnboardingStep.SharePrayer => 3,
+            OnboardingStep.PrayerTimeHighlight => 4,
             _ => 0
         };
-        StepLabel.Text = stepNumber > 0 ? $"STEP {stepNumber} OF 3" : string.Empty;
+        StepLabel.Text = stepNumber > 0 ? $"STEP {stepNumber} OF 4" : string.Empty;
     }
 }

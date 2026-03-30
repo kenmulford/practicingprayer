@@ -567,6 +567,7 @@ namespace PrayerApp.ViewModels
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
             var text = deepLinkService.BuildRequestShareText(_prayer);
             await Share.RequestAsync(new ShareTextRequest { Title = Title, Text = text });
+            _onboardingService.Advance(); // SharePrayer → PrayerTimeHighlight (if active)
         }
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)

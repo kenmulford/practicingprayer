@@ -11,7 +11,7 @@
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
         </Grid.GestureRecognizers>
@@ -337,6 +337,13 @@
             ExpectedStep="AddRequest"
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />
+
+        <!-- ShareIntro step banner -->
+        <onboarding:OnboardingBanner
+            Grid.Row="5"
+            ExpectedStep="ShareIntro"
+            HeadlineText="Share a card — swipe right on any card to reveal the Share action"
+            SubText="Tap Share to send it via text, email, or any messaging app." />
 
     </Grid>
 </ContentPage>

@@ -10,7 +10,7 @@
              x:Name="page"
              Title="Prayer Request"
              SafeAreaEdges="Container">
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*,Auto,Auto">
         <ScrollView Grid.Row="0">
         <VerticalStackLayout Padding="12,8" Spacing="16">
             <VerticalStackLayout.GestureRecognizers>
@@ -310,6 +310,13 @@
             Grid.Row="1"
             ExpectedStep="NameRequest"
             HeadlineText="Enter your prayer request and tap Save" />
+
+        <!-- SharePrayer step banner -->
+        <onboarding:OnboardingBanner
+            Grid.Row="2"
+            ExpectedStep="SharePrayer"
+            HeadlineText="You can also share individual prayers — tap Share below"
+            SubText="The recipient gets the prayer saved directly into their app." />
 
     </Grid>
 </ContentPage>

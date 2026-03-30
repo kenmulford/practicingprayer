@@ -147,12 +147,12 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- Onboarding coaching banner — PrayerTime step -->
+        <!-- Onboarding coaching banner — PrayerTimeHighlight step -->
         <onboarding:OnboardingBanner
             Grid.Row="1"
-            ExpectedStep="PrayerTime"
-            HeadlineText="Tap 'Prayer Time' when you're ready to pray"
-            SubText="Choose 'All Requests' to get started" />
+            ExpectedStep="PrayerTimeHighlight"
+            HeadlineText="One last thing — Prayer Time lets you pray through your requests one by one"
+            SubText="Tap the Prayer Time button above when you're ready. No rush!" />
 
     </Grid>
 </ContentPage>
