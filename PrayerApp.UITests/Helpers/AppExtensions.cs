@@ -549,21 +549,29 @@ public static class AppExtensions
     /// <summary>Swipe an element in the given direction.</summary>
     private static void SwipeElement(AppiumDriver driver, AppiumElement element, string direction)
     {
+        var location = element.Location;
+        var size = element.Size;
+        var centerX = location.X + size.Width / 2;
+        var centerY = location.Y + size.Height / 2;
+
         if (TestConfig.IsIOS)
         {
-            // iOS XCUITest: "mobile: swipe" with elementId, direction, and velocity (px/sec)
-            driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
+            // Use coordinate-based drag for reliable SwipeView triggering on iOS.
+            // mobile: swipe with elementId doesn't always reach the inner SwipeView content.
+            int dx = direction switch { "left" => -200, "right" => 200, _ => 0 };
+            int dy = direction switch { "up" => -200, "down" => 200, _ => 0 };
+            driver.ExecuteScript("mobile: dragFromToForDuration", new Dictionary<string, object>
             {
-                { "elementId", element.Id },
-                { "direction", direction },
-                { "velocity", IOSSwipeVelocity }
+                { "fromX", centerX },
+                { "fromY", centerY },
+                { "toX", centerX + dx },
+                { "toY", centerY + dy },
+                { "duration", 0.3 }
             });
         }
         else
         {
             // Android UiAutomator2: "mobile: swipeGesture" with bounding area
-            var location = element.Location;
-            var size = element.Size;
             driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
             {
                 { "left", location.X },
@@ -668,6 +676,33 @@ public static class AppExtensions
             driver.NavigateToTab("Tags");
 
         Thread.Sleep(TestConfig.DelayCollectionRender);
+    }
+
+    /// <summary>
+    /// Find a card cell element by name, suitable for swiping. On iOS, CollectionView
+    /// flattens cells so text search returns a tiny inner label — this finds the parent
+    /// XCUIElementTypeCell container which has enough height for reliable swipe gestures.
+    /// </summary>
+    public static AppiumElement? FindCardCell(this AppiumDriver driver, string cardName, int timeoutSeconds = 5)
+    {
+        try
+        {
+            if (TestConfig.IsIOS)
+            {
+                // Find the Cell that contains the card name text
+                var xpath = $"//XCUIElementTypeCell[.//XCUIElementTypeStaticText[contains(@name, '{cardName}')]]";
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
+                var cell = (AppiumElement)driver.FindElement(By.XPath(xpath));
+                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+                return cell;
+            }
+            return (AppiumElement)driver.FindElement(TextLocator(cardName));
+        }
+        catch (WebDriverException)
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+            return null;
+        }
     }
 
     /// <summary>
