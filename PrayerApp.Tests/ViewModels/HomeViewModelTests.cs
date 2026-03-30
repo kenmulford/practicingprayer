@@ -55,7 +55,7 @@ public class HomeViewModelTests
 
         Assert.Equal(0, sut.OverdueCount);
         Assert.False(sut.HasOverdue);
-        Assert.Equal("You're all caught up!", sut.OverdueHeadline);
+        Assert.Equal("All requests have been recently prayed for.", sut.OverdueHeadline);
     }
 
     // ── Active Card Count ────────────────────────────────────────────

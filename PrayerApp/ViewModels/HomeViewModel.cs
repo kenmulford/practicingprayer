@@ -33,7 +33,7 @@ public class HomeViewModel : ObservableObject
 
     public string OverdueHeadline => OverdueCount switch
     {
-        0 => "You're all caught up!",
+        0 => "All requests have been recently prayed for.",
         1 => "1 Overdue",
         _ => $"{OverdueCount} Overdue"
     };

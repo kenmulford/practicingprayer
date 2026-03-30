@@ -129,7 +129,7 @@
                                                  HorizontalOptions="Center" Spacing="0">
                                 <Label Text="&#x2713;" FontSize="20" HorizontalOptions="Center"
                                        TextColor="{AppThemeBinding Light={StaticResource SuccessGreen}, Dark={StaticResource SuccessGreenDark}}" />
-                                <Label Text="All caught up!" FontSize="12" HorizontalOptions="Center"
+                                <Label Text="All requests have been recently prayed for." FontSize="12" HorizontalOptions="Center"
                                        TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             </VerticalStackLayout>
                             <Label Text="Overdue"
