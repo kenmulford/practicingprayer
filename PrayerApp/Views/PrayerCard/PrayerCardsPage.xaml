@@ -112,16 +112,12 @@
             <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
 
                 <!-- Card wrapper with swipe for Favorite/Edit/Delete -->
+                <!-- Swipe actions hidden on system cards. iOS MAUI bug: only first SwipeItem
+                     per side renders when using IsVisible binding — Share/Delete appear alone.
+                     Reorder so the primary action (Share, Delete) is first per side. -->
                 <SwipeView Threshold="80">
                     <SwipeView.LeftItems>
                         <SwipeItems Mode="Reveal">
-                            <SwipeItem
-                                BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
-                                IconImageSource="star_solid_full.png"
-                                Command="{Binding ToggleFavoriteCommand}"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                SemanticProperties.Description="Toggle favorite"
-                                Text="Favorite" />
                             <SwipeItem
                                 BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
                                 IconImageSource="share_from_square_solid_full.png"
@@ -129,6 +125,13 @@
                                 IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Share card"
                                 Text="Share" />
+                            <SwipeItem
+                                BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                                IconImageSource="star_solid_full.png"
+                                Command="{Binding ToggleFavoriteCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                SemanticProperties.Description="Toggle favorite"
+                                Text="Favorite" />
                         </SwipeItems>
                     </SwipeView.LeftItems>
                     <SwipeView.RightItems>

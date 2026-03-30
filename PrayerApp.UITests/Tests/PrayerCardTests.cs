@@ -218,24 +218,38 @@ public class PrayerCardTests
     [Fact]
     public void Cards_SwipeRight_ShowsFavoriteAction()
     {
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
+        // Swipe actions are disabled on system cards — must use a user card
+        driver.EnsureUITestCardExists(_setup);
+        driver.EnsureOnTab("Prayer Cards", _setup);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        AppiumElement? cardElement = null;
+        try
         {
-            var cardElement = driver.FindByText("Quick Add");
-            driver.SwipeElementRight(cardElement);
-
-            Assert.True(
-                driver.IsTextDisplayed("Favorite", timeoutSeconds: 2)
-                || driver.IsTextDisplayed("Share", timeoutSeconds: 2),
-                "Swipe right should reveal Favorite and Share actions");
-
-            // Dismiss swipe — tap a non-interactive element to clear the swipe state.
-            // Avoid tapping Cards_Search on iOS as it opens the keyboard.
-            try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
-            Thread.Sleep(300);
+            cardElement = TestConfig.IsIOS
+                ? driver.FindByTextContains("UITest Card,", timeoutSeconds: 5)
+                : driver.FindByText("UITest Card", timeoutSeconds: 5);
         }
+        catch (WebDriverException) { }
+
+        if (cardElement is null)
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found");
+
+        driver.SwipeElementRight(cardElement);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
+
+        // iOS MAUI bug: only first SwipeItem per side renders with IsVisible binding.
+        // Share is first (primary action), so check for Share; Favorite may not appear on iOS.
+        Assert.True(
+            driver.IsTextDisplayed("Share", timeoutSeconds: 3)
+            || driver.IsTextDisplayed("Favorite", timeoutSeconds: 2),
+            "Swipe right on user card should reveal Share (or Favorite) action");
+
+        // Dismiss swipe state
+        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
+        Thread.Sleep(300);
     }
 
     /// <summary>3.16: Tag filter chips — visible when tags exist in the system.</summary>
@@ -272,28 +286,32 @@ public class PrayerCardTests
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Find the user card
+        // Must target a user card — system cards (Quick Add, Shared with me) hide Share.
+        // On iOS, find the composed cell label (e.g. "UITest Card, Expanded") rather than
+        // a child text element — swiping on small inner labels is unreliable.
         AppiumElement? cardElement = null;
         try
         {
-            cardElement = TestConfig.IsIOS
-                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 5)
-                : driver.FindByText("UITest Card", timeoutSeconds: 5);
+            if (TestConfig.IsIOS)
+            {
+                // iOS CollectionView flattens cells — the card header has a composed label
+                cardElement = driver.FindByTextContains("UITest Card,", timeoutSeconds: 5);
+            }
+            else
+            {
+                cardElement = driver.FindByText("UITest Card", timeoutSeconds: 5);
+            }
         }
-        catch (WebDriverException)
-        {
-            // Fall back to "General" seed card
-            try { cardElement = driver.FindByText("General", timeoutSeconds: 3); }
-            catch (WebDriverException) { }
-        }
+        catch (WebDriverException) { }
 
         if (cardElement is null)
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: no user card found to test Share swipe");
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found to test Share swipe");
 
         driver.SwipeElementRight(cardElement);
+        Thread.Sleep(TestConfig.DelayAfterNavigation); // iOS SwipeView reveal animation
 
         Assert.True(
-            driver.IsTextDisplayed("Share", timeoutSeconds: 2),
+            driver.IsTextDisplayed("Share", timeoutSeconds: 3),
             "Swipe right on user card should reveal Share action");
 
         // Dismiss swipe state
@@ -341,31 +359,33 @@ public class PrayerCardTests
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
+        // On iOS, target the composed cell label for reliable swiping (see Share swipe test)
         AppiumElement? cardElement = null;
         try
         {
-            cardElement = TestConfig.IsIOS
-                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 5)
-                : driver.FindByText("UITest Card", timeoutSeconds: 5);
+            if (TestConfig.IsIOS)
+                cardElement = driver.FindByTextContains("UITest Card,", timeoutSeconds: 5);
+            else
+                cardElement = driver.FindByText("UITest Card", timeoutSeconds: 5);
         }
-        catch (WebDriverException)
-        {
-            try { cardElement = driver.FindByText("General", timeoutSeconds: 3); }
-            catch (WebDriverException) { }
-        }
+        catch (WebDriverException) { }
 
         if (cardElement is null)
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: no user card found to test Share button");
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found to test Share button");
 
         driver.SwipeElementLeft(cardElement);
         if (driver.IsTextDisplayed("Edit", timeoutSeconds: 2))
         {
             driver.TapByText("Edit");
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
         }
 
-        Assert.True(driver.IsDisplayed("Card_Btn_Share", timeoutSeconds: 5),
-            "Card edit page should show Share button for non-system cards");
+        // Share button is only visible on non-system cards (CanShare = !IsSystem)
+        var hasShare = driver.IsDisplayed("Card_Btn_Share", timeoutSeconds: 5);
+        if (!hasShare) driver.DumpPageSource("Cards_EditPage_ShareButton");
+
+        Assert.True(hasShare,
+            "Card edit page should show Share button for non-system cards (UITest Card)");
 
         driver.GoBack();
         driver.DismissAlertIfPresent();

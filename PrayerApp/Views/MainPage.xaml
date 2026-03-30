@@ -34,6 +34,8 @@
                     <!-- Active Cards metric -->
                     <Border Grid.Row="0" Grid.Column="0"
                             AutomationId="Home_Metric_Cards"
+                            SemanticProperties.Description="{Binding ActiveCardLabel}"
+                            SemanticProperties.Hint="Tap to view prayer cards"
                             Style="{StaticResource PrayerCardBorder}" Padding="14,12">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding GoToCardsCommand}" />
@@ -59,6 +61,8 @@
                     <!-- Unanswered Prayers metric -->
                     <Border Grid.Row="0" Grid.Column="1"
                             AutomationId="Home_Metric_Unanswered"
+                            SemanticProperties.Description="{Binding UnansweredLabel}"
+                            SemanticProperties.Hint="Tap to view unanswered prayers"
                             Style="{StaticResource PrayerCardBorder}" Padding="14,12">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding GoToPrayersCommand}" />
@@ -84,6 +88,7 @@
                     <!-- Last Prayed date metric -->
                     <Border x:Name="LastPrayedCard" Grid.Row="1" Grid.Column="0"
                             AutomationId="Home_Metric_LastPrayed"
+                            SemanticProperties.Description="Last Prayed"
                             Style="{StaticResource PrayerCardBorder}" Padding="14,12">
                         <VerticalStackLayout HorizontalOptions="Center" Spacing="0">
                             <Label Text="Last Prayed"
@@ -110,6 +115,8 @@
                     <!-- Overdue metric (gold highlight when has overdue) -->
                     <Border Grid.Row="1" Grid.Column="1"
                             AutomationId="Home_Metric_Overdue"
+                            SemanticProperties.Description="Overdue prayers"
+                            SemanticProperties.Hint="Tap to view overdue prayers"
                             Style="{StaticResource PrayerCardBorder}" Padding="14,12">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding GoToOverdueCommand}" />
