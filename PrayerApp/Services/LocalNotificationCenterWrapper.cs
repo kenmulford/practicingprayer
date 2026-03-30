@@ -43,6 +43,17 @@ public class LocalNotificationCenterWrapper : ILocalNotificationCenter
     public void CancelAll() =>
         LocalNotificationCenter.Current.CancelAll();
 
+    public void ClearAllPending()
+    {
+        LocalNotificationCenter.Current.CancelAll();
+
+#if IOS
+        // Also clear native UNCalendarNotificationTrigger monthly notifications
+        // which are scheduled outside the plugin via UNUserNotificationCenter directly
+        UNUserNotificationCenter.Current.RemoveAllPendingNotificationRequests();
+#endif
+    }
+
     public void Cancel(params int[] notificationIds) =>
         LocalNotificationCenter.Current.Cancel(notificationIds);
 

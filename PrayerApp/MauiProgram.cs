@@ -271,18 +271,19 @@ namespace PrayerApp
                 System.Diagnostics.Debug.WriteLine($"Recently-notified tagging failed: {ex}");
             }
 
-#if ANDROID
-            // M-11: Renew monthly notification one-shots on Android launch
+            // Reconcile notifications: clear orphans from deleted prayers or prior
+            // app versions, then reschedule all prayers with CanNotify=true.
+            // On Android this also renews the 12 monthly one-shot notifications (M-11).
+            // On iOS this clears native UNCalendarNotificationTrigger orphans.
             try
             {
                 var notificationService = services.GetRequiredService<INotificationService>();
-                await notificationService.RenewMonthlyNotificationsAsync(activePrayers);
+                await notificationService.ReconcileNotificationsAsync(activePrayers);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Monthly notification renewal failed: {ex}");
+                System.Diagnostics.Debug.WriteLine($"Notification reconciliation failed: {ex}");
             }
-#endif
 
 #if DEBUG
             if (PrayerApp.Services.Settings.FirstRun)

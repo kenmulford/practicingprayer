@@ -9,6 +9,12 @@ public interface ILocalNotificationCenter
     Task<bool> RequestNotificationPermission();
     Task<bool> AreNotificationsEnabled();
     void CancelAll();
+    /// <summary>
+    /// Clears all pending notifications from both Plugin.LocalNotification and
+    /// native iOS UNUserNotificationCenter. Used for startup reconciliation to
+    /// eliminate orphaned notifications from deleted prayers or prior app versions.
+    /// </summary>
+    void ClearAllPending();
     Task ShowAsync(int notificationId, string title, string description,
                    DateTime notifyTime, NotifyRepeat repeat, TimeSpan? repeatInterval);
     Task ScheduleMonthlyAsync(int notificationId, string title, string description,

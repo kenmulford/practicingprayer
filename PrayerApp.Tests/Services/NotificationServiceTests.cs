@@ -327,6 +327,56 @@ public class NotificationServiceTests
             Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
     }
 
+    // ── ReconcileNotificationsAsync ───────────────────────────────────────
+
+    [Fact]
+    public async Task Reconcile_ClearsAllThenReschedulesNotifyPrayers()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Daily, NotifyHour = 9, NotifyMinute = 0 },
+            new() { Id = 2, CanNotify = true, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 10, NotifyMinute = 0, NotifyDayOfMonth = 15 },
+            new() { Id = 3, CanNotify = false, PrayerFrequency = PrayerFrequency.Weekly, NotifyHour = 8, NotifyMinute = 0 }
+        };
+
+        await _service.ReconcileNotificationsAsync(prayers);
+
+        // ClearAllPending called first
+        _center.Received(1).ClearAllPending();
+        // Only prayers with CanNotify=true get scheduled (ids 1 and 2)
+        // Each ScheduleAsync call cancels then schedules, so we check the schedule calls
+        // Prayer 1 (Daily) goes through ShowAsync
+        await _center.Received(1).ShowAsync(
+            Arg.Is(1), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<DateTime>(), Arg.Any<NotifyRepeat>(), Arg.Any<TimeSpan?>());
+        // Prayer 2 (Monthly) goes through ScheduleMonthlyAsync
+        await _center.Received(1).ScheduleMonthlyAsync(
+            Arg.Is(2), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task Reconcile_SkipsWhenNotificationsDisabled()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Daily, NotifyHour = 9, NotifyMinute = 0 }
+        };
+
+        await _serviceDisabled.ReconcileNotificationsAsync(prayers);
+
+        _center.DidNotReceive().ClearAllPending();
+    }
+
+    [Fact]
+    public async Task Reconcile_EmptyList_StillClearsOrphans()
+    {
+        await _service.ReconcileNotificationsAsync(new List<Prayer>());
+
+        // Should still clear to remove any orphaned notifications
+        _center.Received(1).ClearAllPending();
+    }
+
     [Fact]
     public void GetNextDayOfWeek_SameDayFutureTime_ReturnsSameDay()
     {
