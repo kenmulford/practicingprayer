@@ -2,16 +2,16 @@
 
 ## Status
 
-**Phase 1 (iOS) complete.** Phase 2 (Android) deferred until Google Play publishes the app.
+**Complete.** Both phases implemented. Android App Links verification activates when app is published on Google Play.
 
-**Last updated:** 2026-03-30 — Phase 1 implemented: schema (IsImported), DeepLinkService, iOS Universal Links (Entitlements + lifecycle), share UI (buttons + swipe), imported icon, HideSharedWithMe setting, 16 new unit tests, 3 new UITests. All shared code is cross-platform — Phase 2 only needs Android IntentFilter + lifecycle handler.
+**Last updated:** 2026-03-30 — Phase 1 + Phase 2 implemented. Android `IntentFilter` with `AutoVerify` + `OnCreate`/`OnNewIntent` lifecycle handlers added. `assetlinks.json` already deployed on website.
 
 ### Phased Approach
 
 | Phase | Scope | Status |
 |-------|-------|--------|
 | Phase 1 | Schema, DeepLinkService, UI, iOS Universal Links, Settings, tests | **Done** (2026-03-30) |
-| Phase 2 | Android `IntentFilter` + `AutoVerify` + lifecycle handler (~15 min) | Deferred — blocked on Google Play publication |
+| Phase 2 | Android `IntentFilter` + `AutoVerify` + lifecycle handler | **Done** (2026-03-30) |
 
 On Android during Phase 1: outbound sharing works, inbound links fall through to website fallback page.
 

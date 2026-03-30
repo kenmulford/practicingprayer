@@ -15,8 +15,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: 1.0.6 released to stores. Now on 1.0.7b39. 275 unit tests, 65 UITests. F-10 Phase 1 (iOS) implemented.
-**Last completed**: F-10 Phase 1 (iOS Universal Links, DeepLinkService, share UI, imported icon, settings), divider color fix
-**Next up**: F-10 Phase 2 (Android App Links — deferred until Google Play publishes), then F-21, UX-18
+**Last completed**: F-10 Phase 1 + Phase 2 (deep-link share, both platforms), divider color fix, website Play Store URL prep
+**Next up**: F-21 planning (Prayer Time from search results), then UX-18 (iPad layout)
 
 ---
 
@@ -29,7 +29,7 @@ Items are listed in work order. Start at the top, work down.
 | 1   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
 | 2   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
 | 3   | UX-22 | Update Android screenshots for Play Store                          | Ken    | New screenshots needed for Play Store listing reflecting current UI.                                                                                                                                                                           |
-| 4   | F-10  | Deep-link share — Phase 2: Android App Links                      | —      | Phase 1 (iOS) done. Phase 2: Android `IntentFilter` + `AutoVerify` + lifecycle handler (~15 min). Blocked on Google Play publication. Plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
+| 4   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. Verify inbound links work post-launch. Plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
 | 5   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships. Research at `docs/research/INV-4-android-update-research.md`.                                                  |
 | 6   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 

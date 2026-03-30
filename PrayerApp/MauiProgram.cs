@@ -62,10 +62,21 @@ namespace PrayerApp
 #endif
             });
 
-            // F-10: Deep link handling via platform lifecycle events (Universal Links)
+            // F-10: Deep link handling via platform lifecycle events
             builder.ConfigureLifecycleEvents(events =>
             {
-#if IOS
+#if ANDROID
+                events.AddAndroid(android =>
+                {
+                    // Cold launch — Intent arrives with the activity
+                    android.OnCreate((activity, _) =>
+                        HandleAndroidIntent(activity.Intent));
+
+                    // Warm launch — app already running, new link tapped
+                    android.OnNewIntent((activity, intent) =>
+                        HandleAndroidIntent(intent));
+                });
+#elif IOS
                 events.AddiOS(ios =>
                 {
                     // Warm launch via Universal Link (app already running)
@@ -259,6 +270,15 @@ namespace PrayerApp
                 e.SetObserved();
             };
         }
+
+#if ANDROID
+        private static void HandleAndroidIntent(Android.Content.Intent? intent)
+        {
+            if (intent?.Action != Android.Content.Intent.ActionView || intent.Data is null)
+                return;
+            HandleDeepLink(intent.Data.ToString());
+        }
+#endif
 
         /// <summary>
         /// Processes an incoming Universal Link / App Link URI.
