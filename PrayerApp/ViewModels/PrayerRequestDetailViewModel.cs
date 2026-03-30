@@ -357,6 +357,7 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        public bool IsImported => _prayer.IsImported;
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
@@ -563,9 +564,8 @@ namespace PrayerApp.ViewModels
 
         private async Task ShareAsync()
         {
-            var text = string.IsNullOrWhiteSpace(Details)
-                ? Title
-                : $"{Title}\n\n{Details}";
+            var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+            var text = deepLinkService.BuildRequestShareText(_prayer);
             await Share.RequestAsync(new ShareTextRequest { Title = Title, Text = text });
         }
 

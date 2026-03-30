@@ -89,6 +89,8 @@
     <Compile Include="../PrayerApp/Services/IColorPickerService.cs" />
     <Compile Include="../PrayerApp/Services/IOrientationService.cs" />
     <Compile Include="../PrayerApp/Services/IBackupService.cs" />
+    <Compile Include="../PrayerApp/Services/IDeepLinkService.cs" />
+    <Compile Include="../PrayerApp/Services/DeepLinkService.cs" />
 
     <!-- Service implementations (no MAUI dependencies) -->
     <Compile Include="../PrayerApp/Services/DiagnosticLog.cs" />

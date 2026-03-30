@@ -23,11 +23,19 @@
                 <VerticalStackLayout Spacing="12">
 
                     <!-- Title -->
-                    <Label Text="{Binding Title}"
-                           FontSize="22"
-                           FontAttributes="Bold"
-                           SemanticProperties.HeadingLevel="Level1"
-                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="{Binding Title}"
+                               FontSize="22"
+                               FontAttributes="Bold"
+                               SemanticProperties.HeadingLevel="Level1"
+                               TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                        <Image Source="imported.png"
+                               HeightRequest="18"
+                               WidthRequest="18"
+                               IsVisible="{Binding IsImported}"
+                               VerticalOptions="Center"
+                               SemanticProperties.Description="Imported prayer" />
+                    </HorizontalStackLayout>
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
 

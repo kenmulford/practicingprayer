@@ -2,16 +2,16 @@
 
 ## Status
 
-**Ready to implement — Phase 1 (iOS).** App is live in both stores (1.0.6). Website infrastructure deployed.
+**Phase 1 (iOS) complete.** Phase 2 (Android) deferred until Google Play publishes the app.
 
-**Last updated:** 2026-03-30 — Phased approach: iOS Universal Links first, Android App Links later. All shared code (schema, DeepLinkService, UI, outbound sharing) is cross-platform. Implementation plan at `.claude/plans/wild-gathering-meadow.md`.
+**Last updated:** 2026-03-30 — Phase 1 implemented: schema (IsImported), DeepLinkService, iOS Universal Links (Entitlements + lifecycle), share UI (buttons + swipe), imported icon, HideSharedWithMe setting, 16 new unit tests, 3 new UITests. All shared code is cross-platform — Phase 2 only needs Android IntentFilter + lifecycle handler.
 
 ### Phased Approach
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| Phase 1 | Schema, DeepLinkService, UI, iOS Universal Links, Settings, tests | **Ready** |
-| Phase 2 | Android `IntentFilter` + `AutoVerify` + lifecycle handler (~15 min) | Deferred |
+| Phase 1 | Schema, DeepLinkService, UI, iOS Universal Links, Settings, tests | **Done** (2026-03-30) |
+| Phase 2 | Android `IntentFilter` + `AutoVerify` + lifecycle handler (~15 min) | Deferred — blocked on Google Play publication |
 
 On Android during Phase 1: outbound sharing works, inbound links fall through to website fallback page.
 

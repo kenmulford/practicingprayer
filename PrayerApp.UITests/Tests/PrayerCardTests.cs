@@ -1,4 +1,5 @@
 using OpenQA.Selenium;
+using OpenQA.Selenium.Appium;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -256,6 +257,109 @@ public class PrayerCardTests
             driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 5)
             || driver.IsTextContainsDisplayed("UITest Tag", timeoutSeconds: 3),
             "Tag filter chip should be visible on Prayer Cards page when tags exist");
+    }
+
+    /// <summary>3.17: Share action — swipe right on user card reveals Share.</summary>
+    [Fact]
+    public void Cards_SwipeRight_ShowsShareAction()
+    {
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+
+        // Need a non-system card; "UITest Card" or "General" should exist from prior tests
+        AppiumElement? cardElement = null;
+        try
+        {
+            cardElement = TestConfig.IsIOS
+                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 3)
+                : driver.FindByText("UITest Card", timeoutSeconds: 3);
+        }
+        catch (WebDriverException)
+        {
+            // Fall back to "General" seed card
+            try { cardElement = driver.FindByText("General", timeoutSeconds: 3); }
+            catch (WebDriverException) { }
+        }
+
+        if (cardElement is null)
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: no user card found to test Share swipe");
+
+        driver.SwipeElementRight(cardElement);
+
+        Assert.True(
+            driver.IsTextDisplayed("Share", timeoutSeconds: 2),
+            "Swipe right on user card should reveal Share action");
+
+        // Dismiss swipe state
+        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
+        Thread.Sleep(300);
+    }
+
+    /// <summary>3.18: Share action hidden on system card — Quick Add should not show Share.</summary>
+    [Fact]
+    public void Cards_SystemCard_ShareNotAvailable()
+    {
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+
+        try
+        {
+            var cardElement = TestConfig.IsIOS
+                ? driver.FindByTextContains("Quick Add", timeoutSeconds: 3)
+                : driver.FindByText("Quick Add", timeoutSeconds: 3);
+            driver.SwipeElementRight(cardElement);
+        }
+        catch (WebDriverException)
+        {
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'Quick Add' system card not found");
+        }
+
+        // System cards should not expose Share action
+        var shareVisible = driver.IsTextDisplayed("Share", timeoutSeconds: 2);
+
+        // Dismiss swipe state
+        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
+        Thread.Sleep(TestConfig.DelayAfterDismiss);
+
+        Assert.False(shareVisible, "System card 'Quick Add' should not show Share action on swipe");
+    }
+
+    /// <summary>3.19: Share button on card edit page — visible for user cards.</summary>
+    [Fact]
+    public void Cards_EditPage_ShowsShareButton()
+    {
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+
+        // Find a user card and navigate to edit via swipe → Edit
+        AppiumElement? cardElement = null;
+        try
+        {
+            cardElement = TestConfig.IsIOS
+                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 3)
+                : driver.FindByText("UITest Card", timeoutSeconds: 3);
+        }
+        catch (WebDriverException)
+        {
+            try { cardElement = driver.FindByText("General", timeoutSeconds: 3); }
+            catch (WebDriverException) { }
+        }
+
+        if (cardElement is null)
+            throw Xunit.Sdk.SkipException.ForSkip("Precondition: no user card found to test Share button");
+
+        driver.SwipeElementRight(cardElement);
+        if (driver.IsTextDisplayed("Edit", timeoutSeconds: 2))
+        {
+            driver.TapByText("Edit");
+            Thread.Sleep(500);
+        }
+
+        Assert.True(driver.IsDisplayed("Card_Btn_Share", timeoutSeconds: 5),
+            "Card edit page should show Share button for non-system cards");
+
+        driver.GoBack();
+        driver.DismissAlertIfPresent();
     }
 
     /// <summary>3.15: System card protection — Quick Add card's Delete action is guarded.</summary>

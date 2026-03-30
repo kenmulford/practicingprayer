@@ -1,6 +1,7 @@
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.LifecycleEvents;
 using PrayerApp.Models;
 using Plugin.LocalNotification;
 using PrayerApp.Services;
@@ -61,6 +62,33 @@ namespace PrayerApp
 #endif
             });
 
+            // F-10: Deep link handling via platform lifecycle events (Universal Links)
+            builder.ConfigureLifecycleEvents(events =>
+            {
+#if IOS
+                events.AddiOS(ios =>
+                {
+                    // Warm launch via Universal Link (app already running)
+                    ios.ContinueUserActivity((app, activity, handler) =>
+                    {
+                        if (activity.ActivityType == Foundation.NSUserActivityType.BrowsingWeb)
+                            HandleDeepLink(activity.WebPageUrl?.ToString());
+                        return true;
+                    });
+
+                    // Scene-based launch (iPadOS multi-window, cold + warm)
+                    ios.SceneWillConnect((scene, session, options) =>
+                    {
+                        var activity = options.UserActivities?
+                            .ToArray<Foundation.NSUserActivity>()
+                            .FirstOrDefault(a =>
+                                a.ActivityType == Foundation.NSUserActivityType.BrowsingWeb);
+                        HandleDeepLink(activity?.WebPageUrl?.ToString());
+                    });
+                });
+#endif
+            });
+
 #if ANDROID
             PrayerApp.Platforms.Android.Handlers.TextInputTimePickerHandler.Configure();
 #elif IOS
@@ -113,6 +141,8 @@ namespace PrayerApp
             // Navigation + accessibility abstractions (enable VM unit testing)
             builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
             builder.Services.AddSingleton<IAccessibilityService, MauiAccessibilityService>();
+            // Deep link sharing service
+            builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
@@ -228,6 +258,30 @@ namespace PrayerApp
                     Console.Error.WriteLine(e.Exception.ToString());
                 e.SetObserved();
             };
+        }
+
+        /// <summary>
+        /// Processes an incoming Universal Link / App Link URI.
+        /// Waits for DB initialization, then delegates to DeepLinkService.
+        /// </summary>
+        private static void HandleDeepLink(string? url)
+        {
+            if (string.IsNullOrEmpty(url) || !url.StartsWith("https://practicingprayerapp.com/share"))
+                return;
+
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await App.InitTask;
+                    var svc = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+                    await svc.HandleAsync(url);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeepLink] HandleDeepLink failed: {ex.Message}");
+                }
+            });
         }
 
         /// <summary>

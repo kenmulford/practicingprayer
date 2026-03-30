@@ -38,6 +38,9 @@ namespace PrayerApp.Models
         [Column("IsSystem")]
         public bool IsSystem { get; set; }
 
+        [Column("IsImported")]
+        public bool IsImported { get; set; } = false;
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

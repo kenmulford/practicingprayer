@@ -126,6 +126,12 @@
                                 IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Edit card"
                                 Text="Edit" />
+                            <SwipeItem
+                                BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                                Command="{Binding ShareCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                SemanticProperties.Description="Share card"
+                                Text="Share" />
                         </SwipeItems>
                     </SwipeView.LeftItems>
                     <SwipeView.RightItems>
@@ -156,10 +162,10 @@
 
                         <VerticalStackLayout Spacing="0">
 
-                            <!-- Card header: title + badge + favorite star -->
+                            <!-- Card header: title + imported icon + badge + favorite star -->
                             <Grid
                                 Padding="12,10"
-                                ColumnDefinitions="*,Auto,Auto">
+                                ColumnDefinitions="*,Auto,Auto,Auto">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding ToggleExpandedCommand}" />
                                 </Grid.GestureRecognizers>
@@ -170,9 +176,19 @@
                                     SemanticProperties.Hint="Double tap to expand or collapse. Swipe left to delete, right to edit or favorite"
                                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                     VerticalOptions="Center" />
+                                <!-- Imported icon (shared content) -->
+                                <Image
+                                    Grid.Column="1"
+                                    Source="imported.png"
+                                    HeightRequest="16"
+                                    WidthRequest="16"
+                                    IsVisible="{Binding IsImported}"
+                                    VerticalOptions="Center"
+                                    Margin="4,0"
+                                    SemanticProperties.Description="Imported card" />
                                 <!-- Active prayer count badge (collapsed only) -->
                                 <Border
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     IsVisible="{Binding ShowBadge}"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
                                     StrokeShape="RoundRectangle 10"
@@ -193,7 +209,7 @@
                                         VerticalOptions="Center" />
                                 </Border>
                                 <Label
-                                    Grid.Column="2"
+                                    Grid.Column="3"
                                     Text="★"
                                     FontSize="16"
                                     SemanticProperties.Description="Favorited"
@@ -220,7 +236,7 @@
                                                  Users edit/delete prayers from the prayer detail page or the Prayers tab. -->
                                             <Grid
                                                 Padding="16,10,12,10"
-                                                ColumnDefinitions="*,Auto">
+                                                ColumnDefinitions="*,Auto,Auto">
                                                 <Grid.GestureRecognizers>
                                                     <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
                                                 </Grid.GestureRecognizers>
@@ -231,15 +247,30 @@
                                                     TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                                     TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
                                                     VerticalOptions="Center" />
-                                                <Label
+                                                <Image
                                                     Grid.Column="1"
+                                                    Source="imported.png"
+                                                    HeightRequest="14"
+                                                    WidthRequest="14"
+                                                    IsVisible="{Binding IsImported}"
+                                                    VerticalOptions="Center"
+                                                    Margin="4,0"
+                                                    SemanticProperties.Description="Imported prayer" />
+                                                <Label
+                                                    Grid.Column="2"
                                                     Text="{Binding AnsweredAtDisplay}"
                                                     Style="{StaticResource SuccessBadge}"
                                                     IsVisible="{Binding IsAnswered}"
                                                     VerticalOptions="Start"
                                                     Margin="6,0,0,0" />
                                             </Grid>
-                                            <BoxView Style="{StaticResource DividerLine}" />
+                                            <!-- Inline color binding — style-only AppThemeBinding
+                                                 doesn't reliably propagate to all BindableLayout children -->
+                                            <BoxView Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}"
+                                                     Opacity="0.4"
+                                                     HeightRequest="1"
+                                                     HorizontalOptions="Fill"
+                                                     AutomationProperties.IsInAccessibleTree="False" />
                                         </VerticalStackLayout>
                                     </DataTemplate>
                                 </BindableLayout.ItemTemplate>

@@ -30,6 +30,7 @@ namespace PrayerApp.ViewModels
         public ICommand ToggleExpandedCommand { get; }
         public ICommand ToggleFavoriteCommand { get; }
         public ICommand AddPrayerCommand { get; }
+        public ICommand ShareCommand { get; }
 
         #region Properties
 
@@ -92,8 +93,10 @@ namespace PrayerApp.ViewModels
         }
 
         public bool IsSystem => _prayerCard.IsSystem;
+        public bool IsImported => _prayerCard.IsImported;
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
+        public bool CanShare => !IsSystem;
 
         public bool IsDirty => Title != _originalTitle;
 
@@ -179,6 +182,7 @@ namespace PrayerApp.ViewModels
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
+            ShareCommand = new AsyncRelayCommand(ShareAsync);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
@@ -299,6 +303,16 @@ namespace PrayerApp.ViewModels
             await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?newForCard={_prayerCard.Id}");
         }
 
+        private async Task ShareAsync()
+        {
+            if (_prayerCard.IsSystem) return;
+            var allPrayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
+            var activePrayers = allPrayers.Where(p => !p.IsAnswered).ToList();
+            var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+            var text = deepLinkService.BuildCardShareText(_prayerCard, activePrayers);
+            await Share.RequestAsync(new ShareTextRequest { Title = _prayerCard.Title, Text = text });
+        }
+
         #endregion
 
         #region Implemented Contract Methods
@@ -351,8 +365,10 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
             OnPropertyChanged(nameof(IsSystem));
+            OnPropertyChanged(nameof(IsImported));
             OnPropertyChanged(nameof(IsNew));
             OnPropertyChanged(nameof(CanDelete));
+            OnPropertyChanged(nameof(CanShare));
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
             OnPropertyChanged(nameof(AccessibleCardHeader));

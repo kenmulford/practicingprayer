@@ -19,6 +19,7 @@ namespace PrayerApp.ViewModels
         private readonly ITagService _tagService;
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
+        private readonly ISettings _settings;
         private Dictionary<int, HashSet<int>> _cardTagIds = new();
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
         public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
@@ -66,7 +67,7 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, ITagService tagService)
+            IAccessibilityService accessibilityService, ITagService tagService, ISettings settings)
         {
             _cardService = cardService;
             _prayerService = prayerService;
@@ -74,6 +75,7 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _tagService = tagService;
+            _settings = settings;
 
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
 
@@ -87,7 +89,8 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<ITagService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
         { }
 
         #endregion
@@ -321,6 +324,10 @@ namespace PrayerApp.ViewModels
         private void ApplyFilter()
         {
             IEnumerable<PrayerCardViewModel> result = AllPrayerCards;
+
+            // Hide "Shared with me" system card when setting is enabled
+            if (_settings.HideSharedWithMe)
+                result = result.Where(c => !(c.IsSystem && c.Title == CardService.SharedWithMeTitle));
 
             if (!string.IsNullOrWhiteSpace(_searchText))
             {

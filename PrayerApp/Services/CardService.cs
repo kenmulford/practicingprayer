@@ -8,6 +8,9 @@ namespace PrayerApp.Services;
 
 public class CardService : ICardService
 {
+    public const string QuickAddTitle = "Quick Add";
+    public const string SharedWithMeTitle = "Shared with me";
+
     private IReadOnlyList<PrayerCard>? _cache;
 
     public async Task<IReadOnlyList<PrayerCard>> GetCardsAsync()
@@ -22,17 +25,23 @@ public class CardService : ICardService
         return _cache;
     }
 
-    public async Task<PrayerCard> GetOrCreateQuickAddCardAsync()
+    public Task<PrayerCard> GetOrCreateQuickAddCardAsync()
+        => GetOrCreateSystemCardAsync(QuickAddTitle);
+
+    public Task<PrayerCard> GetOrCreateSharedCardAsync()
+        => GetOrCreateSystemCardAsync(SharedWithMeTitle);
+
+    private async Task<PrayerCard> GetOrCreateSystemCardAsync(string title)
     {
         var cards = await GetCardsAsync();
-        var systemCard = cards.FirstOrDefault(c => c.IsSystem);
-        if (systemCard is not null)
-            return systemCard;
+        var existing = cards.FirstOrDefault(c => c.IsSystem && c.Title == title);
+        if (existing is not null)
+            return existing;
 
-        var newCard = new PrayerCard { Title = "Quick Add", IsSystem = true };
-        await newCard.SaveAsync();
+        var card = new PrayerCard { Title = title, IsSystem = true };
+        await card.SaveAsync();
         _cache = null;
-        return newCard;
+        return card;
     }
 
     public async Task<PrayerCard> SaveCardAsync(PrayerCard card)

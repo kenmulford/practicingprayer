@@ -14,6 +14,7 @@ public class PrayerCardsViewModelTests
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ITagService _tagService = Substitute.For<ITagService>();
+    private readonly ISettings _settings = Substitute.For<ISettings>();
 
     public PrayerCardsViewModelTests()
     {
@@ -23,7 +24,7 @@ public class PrayerCardsViewModelTests
     }
 
     private PrayerCardsViewModel CreateSut() =>
-        new(_cardService, _prayerService, _onboardingService, _navigationService, _accessibilityService, _tagService);
+        new(_cardService, _prayerService, _onboardingService, _navigationService, _accessibilityService, _tagService, _settings);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -262,6 +263,47 @@ public class PrayerCardsViewModelTests
     }
 
     // ── Helper ──────────────────────────────────────────────────────────
+
+    // ── HideSharedWithMe filter ────────────────────────────────────────
+
+    [Fact]
+    public async Task ApplyFilter_HideSharedWithMe_FiltersSharedCard()
+    {
+        var quickAdd = new PrayerCard { Id = 1, Title = "Quick Add", IsSystem = true };
+        var userCard = new PrayerCard { Id = 2, Title = "Family" };
+        var sharedCard = new PrayerCard { Id = 3, Title = "Shared with me", IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { quickAdd, userCard, sharedCard }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _settings.HideSharedWithMe.Returns(true);
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal(2, sut.FilteredPrayerCards.Count);
+        Assert.DoesNotContain(sut.FilteredPrayerCards, c => c.Title == "Shared with me");
+        Assert.Contains(sut.FilteredPrayerCards, c => c.Title == "Quick Add");
+        Assert.Contains(sut.FilteredPrayerCards, c => c.Title == "Family");
+    }
+
+    [Fact]
+    public async Task ApplyFilter_HideSharedWithMeFalse_ShowsAllCards()
+    {
+        var quickAdd = new PrayerCard { Id = 1, Title = "Quick Add", IsSystem = true };
+        var sharedCard = new PrayerCard { Id = 2, Title = "Shared with me", IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { quickAdd, sharedCard }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _settings.HideSharedWithMe.Returns(false);
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Equal(2, sut.FilteredPrayerCards.Count);
+        Assert.Contains(sut.FilteredPrayerCards, c => c.Title == "Shared with me");
+    }
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)
     {

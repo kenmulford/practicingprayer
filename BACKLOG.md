@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.0.6 released to stores. Now on 1.0.7b38. 254 unit tests, 62 UITests. F-10 plan updated with Universal Links + website config done.
-**Last completed**: UX-23, notification reconciliation, home page bug fixes, F-10 plan review, 4 new UAT tests, website share page
-**Next up**: F-21 planning (Prayer Time from search results), then UX-18 (iPad layout)
+**Status**: 1.0.6 released to stores. Now on 1.0.7b39. 275 unit tests, 65 UITests. F-10 Phase 1 (iOS) implemented.
+**Last completed**: F-10 Phase 1 (iOS Universal Links, DeepLinkService, share UI, imported icon, settings), divider color fix
+**Next up**: F-10 Phase 2 (Android App Links — deferred until Google Play publishes), then F-21, UX-18
 
 ---
 
@@ -29,7 +29,7 @@ Items are listed in work order. Start at the top, work down.
 | 1   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
 | 2   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
 | 3   | UX-22 | Update Android screenshots for Play Store                          | Ken    | New screenshots needed for Play Store listing reflecting current UI.                                                                                                                                                                           |
-| 4   | F-10  | Deep-link share — create card/request via tapped link              | —      | **Deferred** until app is in the store — top priority once released. Full plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
+| 4   | F-10  | Deep-link share — Phase 2: Android App Links                      | —      | Phase 1 (iOS) done. Phase 2: Android `IntentFilter` + `AutoVerify` + lifecycle handler (~15 min). Blocked on Google Play publication. Plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
 | 5   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships. Research at `docs/research/INV-4-android-update-research.md`.                                                  |
 | 6   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
@@ -37,6 +37,7 @@ Items are listed in work order. Start at the top, work down.
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| F-10p1  | Deep-link share Phase 1: iOS Universal Links, DeepLinkService, share UI, imported icon, settings, divider fix | 2026-03-30 |
 | UAT-1   | 4 new UITests: home metric visibility, Cards/Prayers tap navigation, tag chip visibility | 2026-03-30 |
 | UX-23   | Auto-focus first field on new card/tag/prayer forms | 2026-03-29 |
 | F-20    | Home page metrics redesign (2x2 grid: cards, unanswered, last prayed, overdue) + bug fixes | 2026-03-30 |
@@ -210,4 +211,4 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 
 ---
 
-_Last updated: 2026-03-30 (session — UX-23, notification reconciliation, F-20 bug fixes, F-10 plan review, 4 UAT tests, website share page; 254 unit tests, 62 UITests; build 1.0.7b38)_
+_Last updated: 2026-03-30 (session — F-10 Phase 1 iOS implementation, divider color fix, 4 new unit tests, 3 new UITests; 275 unit tests, 65 UITests; build 1.0.7b39)_
