@@ -4,7 +4,7 @@
 
 Deferred — do not implement until app is live in the App Store / Play Store.
 
-**Last updated:** Session 24 (2026-03-24) — Rewritten to use `maui-deep-linking` skill patterns, MAUI lifecycle events, and lessons from notification work.
+**Last updated:** 2026-03-29 — Ken's design review. Added isImported schema, imported icon, sharing restrictions on system cards, import landing behavior. Tasks 1 and 7 already done.
 
 ---
 
@@ -18,12 +18,17 @@ Users want to share individual prayer requests and prayer cards with others. Rec
 
 Start with custom scheme. Upgrade to https later by adding domain verification without changing the internal routing.
 
-**Decisions from brainstorming:**
+**Decisions from brainstorming + Ken's review (2026-03-29):**
 - Both cards and individual requests are shareable
-- Cards → auto-save silently as a new card with all active requests
-- Requests → auto-save into a "Shared with me" system card (same pattern as Quick Add card)
+- **System cards (Quick Add, Shared with me) cannot be shared** — share buttons hidden/disabled
+- Cards → auto-save as a new card with `IsImported=true` and all active requests (also `IsImported=true`)
+- Requests → auto-save into a "Shared with me" system card with `IsImported=true`
+- Imported cards/prayers show a cloud-download icon (FontAwesome Free `cloud-arrow-down` SVG)
+- **Card import landing:** navigate to cards list with the newly imported card expanded
 - System card: cannot be deleted, can be hidden via Settings, sorts first
 - Share message includes both deep link URI and plain-text fallback
+- Tags are NOT shared (personal organization)
+- Notifications are NOT shared (`CanNotify=false`, defaults on import)
 - Move-to-card already implemented (F-17) — no work needed
 
 ---
@@ -44,25 +49,48 @@ Recipient taps link
 
 ---
 
-## Task 1: DB + Model — Add `IsSystem` to `PrayerCard`
+## Task 1a: DB + Model — `IsSystem` on `PrayerCard` — ALREADY DONE
+
+`PrayerCard.IsSystem` already exists. Quick Add card uses it. The "Shared with me" card will be a second system card distinguished by title (matches existing Quick Add pattern).
+
+## Task 1b: DB + Model — Add `IsImported` to `PrayerCard` and `Prayer`
 
 **`PrayerApp/Models/PrayerCard.cs`**
 ```csharp
-[Column("IsSystem")]
-public bool IsSystem { get; set; } = false;
+[Column("IsImported")]
+public bool IsImported { get; set; } = false;
+```
+
+**`PrayerApp/Models/Prayer.cs`**
+```csharp
+[Column("IsImported")]
+public bool IsImported { get; set; } = false;
 ```
 
 **`PrayerApp/Services/DBService.cs`** — `UpdateSchema()`
 ```csharp
-try { await _db!.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsSystem INTEGER DEFAULT 0"); }
+try { await _db!.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsImported INTEGER DEFAULT 0"); }
+catch { /* column already exists */ }
+try { await _db!.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN IsImported INTEGER DEFAULT 0"); }
 catch { /* column already exists */ }
 ```
 
-**Note:** Quick Add card already uses a `Title`-based lookup. Consider migrating it to use `IsSystem` with a `SystemCardType` enum to distinguish Quick Add vs Shared With Me.
+## Task 1c: Imported icon asset
+
+**Icon:** FontAwesome Free `cloud-arrow-down` SVG (provided by Ken). Save as `Resources/Images/imported.svg`.
+
+**Display locations:**
+- **PrayerCardsPage accordion header** — to the left of the active prayer count badge, only when `IsImported=true`
+- **PrayerListPage prayer row** — inline with prayer title when the prayer's `IsImported=true`
+- **PrayerDetailPage view mode** — near the title when viewing an imported prayer
+
+**Styling:** Use `AppThemeBinding` with existing color tokens for light/dark theming. Suggested: `Primary` in light mode, `PrimaryDark` in dark mode (matches the warm journal aesthetic).
+
+**Spacing:** Ensure the icon doesn't collide with card title text or count badge. Use `Margin` or `Spacing` in the header Grid.
 
 ---
 
-## Task 2: `ICardService` + `CardService` — System card support
+## Task 2: `ICardService` + `CardService` — Shared card support
 
 Follow the existing `GetOrCreateQuickAddCardAsync()` pattern:
 
@@ -73,8 +101,8 @@ Task<PrayerCard> GetOrCreateSharedCardAsync();
 // CardService.cs
 public async Task<PrayerCard> GetOrCreateSharedCardAsync()
 {
-    var all = await PrayerCard.LoadAllAsync();
-    var existing = all.FirstOrDefault(c => c.IsSystem && c.Title == "Shared with me");
+    var cards = await GetCardsAsync();
+    var existing = cards.FirstOrDefault(c => c.IsSystem && c.Title == "Shared with me");
     if (existing is not null) return existing;
 
     var card = new PrayerCard { Title = "Shared with me", IsSystem = true };
@@ -83,6 +111,8 @@ public async Task<PrayerCard> GetOrCreateSharedCardAsync()
     return card;
 }
 ```
+
+**Note:** Uses `GetCardsAsync()` (cached) instead of `PrayerCard.LoadAllAsync()` (uncached) — matches current codebase pattern.
 
 ---
 
@@ -107,9 +137,9 @@ public interface IDeepLinkService
 - Card URI: `prayercards://card?title=<encoded>&requests=<base64url-json>`
 
 **Inbound (receiving):**
-- `HandleAsync(string uri)`: parse URI, create card/prayer, navigate to it
-- `request` host → decode title/notes → `GetOrCreateSharedCardAsync()` → create Prayer → navigate to prayer detail
-- `card` host → decode title + request list → create PrayerCard → create Prayers → navigate to card
+- `HandleAsync(string uri)`: parse URI, create card/prayer with `IsImported=true`, navigate
+- `request` host → decode title/notes → `GetOrCreateSharedCardAsync()` → create Prayer (`IsImported=true`, `CanNotify=false`) → navigate to prayer detail
+- `card` host → decode title + request list → create PrayerCard (`IsImported=true`) → create Prayers (`IsImported=true`, `CanNotify=false`) → navigate to cards list with new card expanded
 
 **Registration in `MauiProgram.cs`:**
 ```csharp
@@ -206,6 +236,10 @@ static void HandleDeepLink(string? url)
 
 ## Task 6: Share buttons on UI
 
+### Sharing restrictions
+- **System cards cannot be shared** (Quick Add, Shared with me) — hide share buttons when `IsSystem=true`
+- Prayers inside system cards CAN be shared individually (just not the card itself)
+
 ### Prayer request sharing (update existing)
 
 **`PrayerApp/ViewModels/PrayerRequestDetailViewModel.cs`**
@@ -216,37 +250,50 @@ static void HandleDeepLink(string? url)
 
 **`PrayerApp/ViewModels/PrayerCardViewModel.cs`**
 - Add `ShareCommand` → loads active prayers, calls `BuildCardShareText`, opens share sheet
-- Add `IsSystem` / `IsNotSystem` properties
+- `ShareCommand` disabled/hidden when `IsSystem=true`
 
 **`PrayerApp/Views/PrayerCard/PrayerCardPage.xaml`**
-- Add Share button to action grid (3-column: Delete | Share | Save)
-- Hide Delete when `IsSystem`
+- Add Share button to action grid — hidden when `IsSystem`
+- Delete also hidden when `IsSystem` (already the case)
 
 **`PrayerApp/Views/PrayerCard/PrayerCardsPage.xaml`**
-- Add Share SwipeItem to left-swipe group
+- Add Share SwipeItem to left-swipe group — hidden when `IsSystem`
 
 ---
 
-## Task 7: System card display rules
+## Task 7: System card display rules — ALREADY DONE (partially)
 
-**`PrayerApp/ViewModels/PrayerCardsViewModel.cs`** — `ApplySorting()`
-- System cards sort first: `.OrderByDescending(c => c.IsSystem).ThenByDescending(c => c.IsFavorite).ThenBy(c => c.Title)`
-- Filter out when `Settings.HideSharedWithMe` is true
+**`PrayerCardsViewModel.ApplySorting()`** already sorts system cards first:
+```csharp
+.OrderByDescending(pc => pc.IsSystem)
+.ThenByDescending(pc => pc.IsFavorite)
+.ThenBy(pc => pc.Title)
+```
+
+**Remaining work:** Add filter to hide "Shared with me" when `Settings.HideSharedWithMe` is true. Add this to `ApplyFilter()`:
+```csharp
+if (_settings.HideSharedWithMe)
+    result = result.Where(c => c.Title != "Shared with me" || !c.IsSystem);
+```
+
+**Note:** `PrayerCardsViewModel` currently doesn't inject `ISettings`. Would need to add it (same pattern as `ITagService` was added for F-19).
 
 ---
 
 ## Task 8: Settings — Hide "Shared with me"
 
-**`PrayerApp/Services/Settings.cs`**
+**`PrayerApp/Services/Settings.cs`** + **`ISettings.cs`**
 ```csharp
-public static bool HideSharedWithMe
+public bool HideSharedWithMe
 {
     get => Preferences.Get(nameof(HideSharedWithMe), false);
     set => Preferences.Set(nameof(HideSharedWithMe), value);
 }
 ```
 
-**`PrayerApp/Views/Settings.xaml`** — Add toggle row matching existing notification pattern.
+**`PrayerApp/Views/Settings/AppSettingsPage.xaml`** — Add toggle row in the App Settings sub-page (not the old monolithic Settings page, which was replaced by the Settings hub in UX-14).
+
+**Note:** Only show this toggle if the "Shared with me" card exists (no point showing it before any shares are received). Use a `HasSharedCard` property on the SettingsViewModel.
 
 ---
 
@@ -265,22 +312,76 @@ Update `PrayerApp.Tests.csproj` with `<Compile Include>` for `DeepLinkService.cs
 
 ---
 
-## Future: Upgrade to Universal Links / App Links
+## Website Configuration — DONE (2026-03-29)
 
-When we have a domain (e.g., `practicingprayer.app`):
+The following files have been created in the `prayerapp-site` repo (`practicingprayerapp.com`):
 
-1. **Android:** Add `IntentFilter` with `DataScheme = "https"`, `DataHost = "practicingprayer.app"`, `AutoVerify = true`. Host `/.well-known/assetlinks.json` with app SHA-256.
-2. **iOS:** Add `applinks:practicingprayer.app` to `Entitlements.plist`. Host `/.well-known/apple-app-site-association` with team ID + bundle ID.
-3. **Both:** Keep custom `prayercards://` scheme as fallback. `HandleDeepLink` routes both schemes through the same `DeepLinkService.HandleAsync`.
-4. **iOS limitation:** Universal Links must be tested on a physical device (not simulator). AASA changes can take 24h to propagate via Apple's CDN.
+| File | Purpose | Status |
+|------|---------|--------|
+| `public/.well-known/apple-app-site-association` | iOS Universal Links verification | Created |
+| `public/.well-known/assetlinks.json` | Android App Links verification | Created |
+| `public/_headers` | Ensures `.well-known` files served as `application/json` | Created |
+| `public/_redirects` | Routes `/share/*` sub-paths to fallback page | Created |
+| `src/app/share/page.tsx` | Fallback page for users without the app | Created |
 
-This is additive — no breaking changes to the custom scheme path.
+**Share fallback page:** Shows app icon, "A prayer was shared with you" message, App Store + Google Play download badges, and "Learn more" link. Uses existing site theme variables — verified working in both light and dark mode.
+
+### Pre-implementation deployment checklist
+
+Before implementing F-10 app-side code, verify these files are live in production:
+
+- [ ] Deploy site: `cd prayerapp-site && wrangler deploy`
+- [ ] Verify AASA: `curl -I https://practicingprayerapp.com/.well-known/apple-app-site-association` — should return `200` with `Content-Type: application/json`
+- [ ] Verify Asset Links: `curl -I https://practicingprayerapp.com/.well-known/assetlinks.json` — should return `200` with `Content-Type: application/json`
+- [ ] Verify share fallback: visit `https://practicingprayerapp.com/share` — should show download page
+- [ ] Verify sub-path redirect: visit `https://practicingprayerapp.com/share/r/test` — should show same download page
+- [ ] Apple AASA validation: https://search.developer.apple.com/appsearch-validation-tool/ (can take up to 24h to propagate)
+- [ ] Google Asset Links validation: https://developers.google.com/digital-asset-links/tools/generator
+
+---
+
+## Implementation Note: Go Straight to Universal Links
+
+Since the domain and `.well-known` files are already deployed, **skip the custom `prayercards://` scheme entirely.** Use `https://practicingprayerapp.com/share/...` links from day one.
+
+**App-side changes for https links (replaces Tasks 4 + 5 custom scheme approach):**
+1. **Android:** `IntentFilter` with `DataScheme = "https"`, `DataHost = "practicingprayerapp.com"`, `DataPathPrefix = "/share"`, `AutoVerify = true`
+2. **iOS:** Add `applinks:practicingprayerapp.com` to `Entitlements.plist`
+3. **DeepLinkService:** Parse `https://practicingprayerapp.com/share/r/...` and `https://practicingprayerapp.com/share/c/...` URIs
+4. **Lifecycle handlers:** Match on `practicingprayerapp.com` host instead of `prayercards://` scheme
+
+**iOS note:** Universal Links must be tested on a physical device (not simulator). AASA changes can take up to 24h to propagate via Apple's CDN.
+
+---
+
+## Design Notes (added 2026-03-29)
+
+### Tags and shared content
+- **Shared prayers do NOT carry tags.** Tags are personal organization — the sender's tags are meaningless to the recipient. Shared prayers arrive untagged.
+- The recipient can tag shared prayers after receiving them (same as any other prayer).
+- The F-19 tag chip filter on PrayerCardsPage will naturally work with the "Shared with me" card — if the recipient tags a shared prayer, the card appears when that tag is selected.
+
+### Notifications and shared content
+- **Shared prayers arrive with `CanNotify=false`.** The recipient can enable notifications manually.
+- Notification reconciliation on app launch (`ReconcileNotificationsAsync`) ensures shared prayers don't create orphan notifications.
+
+### Navigation after receiving a share
+- Use `Routes.PrayerCardsTab` and `Routes.PrayersTab` constants (added in this session) instead of hardcoded strings.
+- After creating the shared prayer/card, navigate to it using existing Shell navigation patterns.
+
+### Card creation via `CreateCardViewModel`
+- `PrayerCardsViewModel` now uses `CreateCardViewModel(PrayerCard)` factory (added for F-19 testability). The shared card should be added via this factory to maintain consistency.
+
+### Home page metrics
+- F-20 home page metrics (Active Cards, Unanswered Prayers) will automatically include the "Shared with me" card if it has active prayers. No special handling needed.
 
 ---
 
 ## Removed from Plan
 
 - **Move-to-card (was Task 9):** Already implemented as F-17 via card picker on prayer edit form.
+- **Tags in shared data:** Tags are personal organization and should not be included in shared links.
+- **Notification settings in shared data:** Shared prayers arrive with CanNotify=false — recipient controls their own reminders.
 
 ---
 
@@ -298,8 +399,11 @@ adb shell am start -W -a android.intent.action.VIEW \
 **Manual checks:**
 1. Share a prayer → share sheet shows deep link + plain text
 2. Share a card → share sheet includes all active prayers
-3. Open a shared request link → "Shared with me" card created, prayer inside
-4. Open a shared card link → new card created with all prayers
-5. Cold launch via link → app starts, DB inits, content saved + navigated
-6. Settings toggle hides/shows "Shared with me" card
-7. System card cannot be deleted
+3. Share button NOT visible on Quick Add or Shared With Me cards
+4. Open a shared request link → "Shared with me" card created, prayer inside, `IsImported=true`
+5. Open a shared card link → new card created with `IsImported=true`, lands on cards list with card expanded
+6. Imported icon (cloud-arrow-down) visible on imported cards and prayers
+7. Imported prayers have `CanNotify=false` (no notification scheduled)
+8. Cold launch via link → app starts, DB inits, content saved + navigated
+9. Settings toggle hides/shows "Shared with me" card
+10. System card cannot be deleted
