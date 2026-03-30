@@ -39,6 +39,9 @@
                             <TapGestureRecognizer Command="{Binding GoToCardsCommand}" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                            <Label Text="{Binding ActiveCardLabel}"
+                                   FontSize="11" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding ActiveCardCount}"
                                    IsVisible="{Binding HasActiveCards}"
                                    FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"
@@ -47,9 +50,6 @@
                                    IsVisible="{Binding HasActiveCards, Converter={StaticResource InverseBool}}"
                                    FontSize="13" HorizontalOptions="Center"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
-                            <Label Text="{Binding ActiveCardLabel}"
-                                   FontSize="11" HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding ActiveCardTapHint}"
                                    FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
@@ -64,6 +64,9 @@
                             <TapGestureRecognizer Command="{Binding GoToPrayersCommand}" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                            <Label Text="{Binding UnansweredLabel}"
+                                   FontSize="11" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding UnansweredCount}"
                                    IsVisible="{Binding HasUnanswered}"
                                    FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"
@@ -72,9 +75,6 @@
                                    IsVisible="{Binding HasUnanswered, Converter={StaticResource InverseBool}}"
                                    FontSize="13" HorizontalOptions="Center"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
-                            <Label Text="{Binding UnansweredLabel}"
-                                   FontSize="11" HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding UnansweredTapHint}"
                                    FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
@@ -86,6 +86,9 @@
                             AutomationId="Home_Metric_LastPrayed"
                             Style="{StaticResource PrayerCardBorder}" Padding="14,12">
                         <VerticalStackLayout HorizontalOptions="Center" Spacing="0">
+                            <Label Text="Last Prayed"
+                                   FontSize="11" HorizontalOptions="Center" Margin="0,0,0,4"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding LastPrayedMonth}"
                                    IsVisible="{Binding HasLastPrayed}"
                                    FontSize="11" FontAttributes="Bold" HorizontalOptions="Center"
@@ -98,9 +101,6 @@
                                    IsVisible="{Binding HasLastPrayed, Converter={StaticResource InverseBool}}"
                                    FontSize="13" HorizontalOptions="Center"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
-                            <Label Text="Last Prayed"
-                                   FontSize="11" HorizontalOptions="Center" Margin="0,2,0,0"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding LastPrayedTapHint}"
                                    FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
@@ -121,6 +121,9 @@
                             </DataTrigger>
                         </Border.Triggers>
                         <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
+                            <Label Text="Overdue"
+                                   FontSize="11" HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding OverdueCount}"
                                    IsVisible="{Binding HasOverdue}"
                                    FontSize="28" FontAttributes="Bold" HorizontalOptions="Center"
@@ -132,9 +135,6 @@
                                 <Label Text="All requests have been recently prayed for." FontSize="12" HorizontalOptions="Center"
                                        TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             </VerticalStackLayout>
-                            <Label Text="Overdue"
-                                   FontSize="11" HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="View in Prayers &#x2192;"
                                    IsVisible="{Binding HasOverdue}"
                                    FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
