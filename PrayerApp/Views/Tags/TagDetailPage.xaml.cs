@@ -30,6 +30,8 @@ namespace PrayerApp.Views.Tags
 #if IOS
             Platforms.iOS.Helpers.SwipeBackHelper.DisableSwipeBack(this);
 #endif
+            if (BindingContext is TagDetailViewModel vm && !vm.IsExisting)
+                Dispatcher.DispatchAsync(() => NameEntry.Focus());
         }
 
         protected override void OnDisappearing()

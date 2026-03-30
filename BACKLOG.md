@@ -14,8 +14,8 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: UX-21, M-11, F-19, F-20 all implemented (251 unit tests passing). F-21 added to backlog.
-**Last completed**: F-20 (home page 2x2 metric grid), UX-21, M-11, F-19
+**Status**: UX-21, M-11, F-19, F-20 implemented + notification reconciliation (254 unit tests passing). Build 1.0.6b35 released.
+**Last completed**: Cross-platform notification reconciliation on app launch (replaces Android-only M-11 monthly renewal)
 **Next up**: F-21 planning (Prayer Time from search results), then UX-18 (iPad layout)
 
 ---
@@ -37,10 +37,11 @@ Items are listed in work order. Start at the top, work down.
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| UX-23   | Auto-focus first field on new card/tag/prayer forms | 2026-03-29 |
 | F-20    | Home page metrics redesign (2x2 grid: cards, unanswered, last prayed, overdue) | 2026-03-29 |
 | UX-21   | Card title multi-line display (up to 3 lines, all locations) | 2026-03-29 |
 | F-19    | Filter cards by tag (unanswered prayers, tag chips on Cards page) | 2026-03-29 |
-| M-11    | Monthly notification renewal on Android app launch | 2026-03-29 |
+| M-11    | Cross-platform notification reconciliation on app launch (replaces Android-only monthly renewal) | 2026-03-29 |
 | TD-12p4 | VM test coverage (237 total tests) | 2026-03-29 |
 | AUD-2   | Production readiness remediation (EmptyView, accessibility, notification toggle) | 2026-03-29 |
 | UX-17   | Prayer Time smart guards (zero prayers alert + skip action sheet if no tags) | 2026-03-28 |
@@ -208,4 +209,4 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 
 ---
 
-_Last updated: 2026-03-29 (session — UX-21, M-11, F-19, F-20 implemented; F-21 added; /simplify pass; 251 tests)_
+_Last updated: 2026-03-29 (session — UX-21, F-19, F-20, M-11+reconciliation; 254 tests; build 1.0.6b35)_
