@@ -8,6 +8,7 @@ public class DeepLinkServiceTests
 {
     private readonly IDBService _db;
     private readonly ICardService _cardService;
+    private readonly IPrayerService _prayerService;
     private readonly INavigationService _nav;
     private readonly DeepLinkService _service;
 
@@ -18,8 +19,12 @@ public class DeepLinkServiceTests
         Prayer.SetDBService(_db);
 
         _cardService = Substitute.For<ICardService>();
+        _prayerService = Substitute.For<IPrayerService>();
         _nav = Substitute.For<INavigationService>();
-        _service = new DeepLinkService(_cardService, _nav);
+        // Default: user accepts import confirmation
+        _nav.DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
+        _service = new DeepLinkService(_cardService, _prayerService, _nav);
     }
 
     // ── BuildRequestShareText ────────────────────────────────────────────────
@@ -119,7 +124,7 @@ public class DeepLinkServiceTests
     }
 
     [Fact]
-    public async Task HandleAsync_Request_NavigatesToPrayersTab()
+    public async Task HandleAsync_Request_NavigatesToCardsTabWithImportedFlag()
     {
         var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
         _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
@@ -127,7 +132,20 @@ public class DeepLinkServiceTests
 
         await _service.HandleAsync("https://practicingprayerapp.com/share/r?title=Test");
 
-        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab);
+        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
+    }
+
+    [Fact]
+    public async Task HandleAsync_Request_InvalidatesCaches()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        await _service.HandleAsync("https://practicingprayerapp.com/share/r?title=Test");
+
+        _cardService.Received(1).InvalidateCache();
+        _prayerService.Received(1).InvalidateCache();
     }
 
     // ── HandleAsync — Card ───────────────────────────────────────────────────
@@ -172,7 +190,7 @@ public class DeepLinkServiceTests
 
         await _service.HandleAsync($"https://practicingprayerapp.com/share/c?title=Test&requests={base64}");
 
-        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab);
+        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
 
     // ── HandleAsync — Invalid URIs ───────────────────────────────────────────
@@ -199,6 +217,36 @@ public class DeepLinkServiceTests
     {
         await _service.HandleAsync("https://practicingprayerapp.com/share/r?notes=something");
 
+        await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_Request_Declined_DoesNotSave()
+    {
+        _nav.DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(false);
+
+        await _service.HandleAsync("https://practicingprayerapp.com/share/r?title=Test");
+
+        await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_Card_Declined_DoesNotSave()
+    {
+        _nav.DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(false);
+
+        var requestsJson = System.Text.Json.JsonSerializer.Serialize(new[]
+        {
+            new { title = "Prayer 1", notes = "" }
+        });
+        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(requestsJson))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        await _service.HandleAsync($"https://practicingprayerapp.com/share/c?title=Test&requests={base64}");
+
+        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
         await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
     }
 

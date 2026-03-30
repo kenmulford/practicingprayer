@@ -202,6 +202,12 @@ namespace PrayerApp.ViewModels
                     matched?.RemovePrayer(prayerId);
                 }
             }
+            else if (query.ContainsKey("imported"))
+            {
+                // Deep link import — caches already invalidated by DeepLinkService.
+                // Full refresh needed because a new card/prayer was created externally.
+                RefreshAsync().SafeFireAndForget();
+            }
         }
 
         #endregion

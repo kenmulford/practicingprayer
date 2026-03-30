@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
@@ -116,18 +117,14 @@
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
                                 BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                                IconImageSource="star_solid_full.png"
                                 Command="{Binding ToggleFavoriteCommand}"
                                 IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Toggle favorite"
-                                Text="★" />
-                            <SwipeItem
-                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                                Command="{Binding SelectCardCommand}"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                SemanticProperties.Description="Edit card"
-                                Text="Edit" />
+                                Text="Favorite" />
                             <SwipeItem
                                 BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                                IconImageSource="share_from_square_solid_full.png"
                                 Command="{Binding ShareCommand}"
                                 IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Share card"
@@ -136,6 +133,13 @@
                     </SwipeView.LeftItems>
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
+                            <SwipeItem
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+                                IconImageSource="pen_to_square_solid_full.png"
+                                Command="{Binding SelectCardCommand}"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                SemanticProperties.Description="Edit card"
+                                Text="Edit" />
                             <SwipeItem
                                 BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
                                 IconImageSource="trash_can_solid_full.png"
@@ -158,14 +162,18 @@
                             <DataTrigger TargetType="Border" Binding="{Binding IsExpanded}" Value="True">
                                 <Setter Property="Margin" Value="0,8" />
                             </DataTrigger>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSystem}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding
+                                    Light={StaticResource SystemCardLight}, Dark={StaticResource SystemCardDark}}" />
+                            </DataTrigger>
                         </Border.Triggers>
 
                         <VerticalStackLayout Spacing="0">
 
-                            <!-- Card header: title + imported icon + badge + favorite star -->
+                            <!-- Card header: title + system badge + imported icon + count badge + favorite star -->
                             <Grid
                                 Padding="12,10"
-                                ColumnDefinitions="*,Auto,Auto,Auto">
+                                ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding ToggleExpandedCommand}" />
                                 </Grid.GestureRecognizers>
@@ -173,22 +181,35 @@
                                     Text="{Binding Title}"
                                     Style="{StaticResource CardTitle}"
                                     SemanticProperties.Description="{Binding AccessibleCardHeader}"
-                                    SemanticProperties.Hint="Double tap to expand or collapse. Swipe left to delete, right to edit or favorite"
+                                    SemanticProperties.Hint="Double tap to expand or collapse. Swipe left to edit or delete, right to favorite or share"
                                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                     VerticalOptions="Center" />
+                                <!-- System badge -->
+                                <Label
+                                    Grid.Column="1"
+                                    Text="System"
+                                    FontSize="10"
+                                    IsVisible="{Binding IsSystem}"
+                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                                    VerticalOptions="Center"
+                                    Margin="6,0,0,0" />
                                 <!-- Imported icon (shared content) -->
                                 <Image
-                                    Grid.Column="1"
+                                    Grid.Column="2"
                                     Source="imported.png"
-                                    HeightRequest="16"
-                                    WidthRequest="16"
+                                    HeightRequest="18"
+                                    WidthRequest="18"
                                     IsVisible="{Binding IsImported}"
                                     VerticalOptions="Center"
                                     Margin="4,0"
-                                    SemanticProperties.Description="Imported card" />
+                                    SemanticProperties.Description="Imported card">
+                                    <Image.Behaviors>
+                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                    </Image.Behaviors>
+                                </Image>
                                 <!-- Active prayer count badge (collapsed only) -->
                                 <Border
-                                    Grid.Column="2"
+                                    Grid.Column="3"
                                     IsVisible="{Binding ShowBadge}"
                                     BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
                                     StrokeShape="RoundRectangle 10"
@@ -209,7 +230,7 @@
                                         VerticalOptions="Center" />
                                 </Border>
                                 <Label
-                                    Grid.Column="3"
+                                    Grid.Column="4"
                                     Text="★"
                                     FontSize="16"
                                     SemanticProperties.Description="Favorited"
@@ -250,12 +271,16 @@
                                                 <Image
                                                     Grid.Column="1"
                                                     Source="imported.png"
-                                                    HeightRequest="14"
-                                                    WidthRequest="14"
+                                                    HeightRequest="16"
+                                                    WidthRequest="16"
                                                     IsVisible="{Binding IsImported}"
                                                     VerticalOptions="Center"
                                                     Margin="4,0"
-                                                    SemanticProperties.Description="Imported prayer" />
+                                                    SemanticProperties.Description="Imported prayer">
+                                                    <Image.Behaviors>
+                                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                                    </Image.Behaviors>
+                                                </Image>
                                                 <Label
                                                     Grid.Column="2"
                                                     Text="{Binding AnsweredAtDisplay}"

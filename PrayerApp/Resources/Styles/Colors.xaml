@@ -40,6 +40,8 @@
     <Color x:Key="OverdueLight">#FFF8E7</Color>
     <Color x:Key="OverdueDark">#1a1810</Color>
     <Color x:Key="CardBorderDark">#2a2e26</Color>
+    <Color x:Key="SystemCardLight">#F0F3EC</Color>
+    <Color x:Key="SystemCardDark">#1e201b</Color>
 
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>

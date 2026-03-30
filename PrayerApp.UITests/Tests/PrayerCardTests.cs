@@ -196,11 +196,11 @@ public class PrayerCardTests
         driver.TapToolbarItem("Save");
         Thread.Sleep(1000);
 
-        // Swipe to reveal Edit, navigate to detail, delete
+        // Swipe left to reveal Edit, navigate to detail, delete
         if (driver.IsTextDisplayed("Delete Me Card", timeoutSeconds: 5))
         {
             var cardElement = driver.FindByText("Delete Me Card");
-            driver.SwipeElementRight(cardElement);
+            driver.SwipeElementLeft(cardElement);
 
             if (driver.IsTextDisplayed("Edit", timeoutSeconds: 2))
             {
@@ -214,7 +214,7 @@ public class PrayerCardTests
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
     }
 
-    /// <summary>3.14: Favorite card — swipe right reveals Favorite and Edit actions.</summary>
+    /// <summary>3.14: Favorite card — swipe right reveals Favorite and Share actions.</summary>
     [Fact]
     public void Cards_SwipeRight_ShowsFavoriteAction()
     {
@@ -227,9 +227,9 @@ public class PrayerCardTests
             driver.SwipeElementRight(cardElement);
 
             Assert.True(
-                driver.IsTextDisplayed("★", timeoutSeconds: 2)
-                || driver.IsTextDisplayed("Edit", timeoutSeconds: 2),
-                "Swipe right should reveal Favorite and Edit actions");
+                driver.IsTextDisplayed("Favorite", timeoutSeconds: 2)
+                || driver.IsTextDisplayed("Share", timeoutSeconds: 2),
+                "Swipe right should reveal Favorite and Share actions");
 
             // Dismiss swipe — tap a non-interactive element to clear the swipe state.
             // Avoid tapping Cards_Search on iOS as it opens the keyboard.
@@ -331,7 +331,7 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        // Find a user card and navigate to edit via swipe → Edit
+        // Find a user card and navigate to edit via swipe left → Edit
         AppiumElement? cardElement = null;
         try
         {
@@ -348,7 +348,7 @@ public class PrayerCardTests
         if (cardElement is null)
             throw Xunit.Sdk.SkipException.ForSkip("Precondition: no user card found to test Share button");
 
-        driver.SwipeElementRight(cardElement);
+        driver.SwipeElementLeft(cardElement);
         if (driver.IsTextDisplayed("Edit", timeoutSeconds: 2))
         {
             driver.TapByText("Edit");

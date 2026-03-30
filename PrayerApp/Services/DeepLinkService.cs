@@ -11,11 +11,13 @@ public class DeepLinkService : IDeepLinkService
     private const string Footer = "(Shared via Practicing Prayer)";
 
     private readonly ICardService _cardService;
+    private readonly IPrayerService _prayerService;
     private readonly INavigationService _nav;
 
-    public DeepLinkService(ICardService cardService, INavigationService nav)
+    public DeepLinkService(ICardService cardService, IPrayerService prayerService, INavigationService nav)
     {
         _cardService = cardService;
+        _prayerService = prayerService;
         _nav = nav;
     }
 
@@ -78,19 +80,29 @@ public class DeepLinkService : IDeepLinkService
         if (string.IsNullOrWhiteSpace(title))
             return;
 
+        var detail = query["notes"];
+        var preview = string.IsNullOrWhiteSpace(detail) ? title : $"{title}\n\n{detail}";
+        var confirmed = await _nav.DisplayConfirmAsync(
+            "Prayer Shared With You",
+            $"{preview}\n\nSave to your prayer journal?",
+            "Save", "Decline");
+        if (!confirmed) return;
+
         var sharedCard = await _cardService.GetOrCreateSharedCardAsync();
 
         var prayer = new Prayer
         {
             PrayerCardId = sharedCard.Id,
             Title = title,
-            Details = query["notes"],
+            Details = detail,
             IsImported = true,
             CanNotify = false
         };
         await prayer.SaveAsync();
 
-        await _nav.GoToAsync(Routes.PrayerCardsTab);
+        _cardService.InvalidateCache();
+        _prayerService.InvalidateCache();
+        await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
 
     private async Task HandleCardAsync(System.Collections.Specialized.NameValueCollection query)
@@ -118,13 +130,20 @@ public class DeepLinkService : IDeepLinkService
         if (requests is null || requests.Length == 0)
             return;
 
+        var prayerCount = requests.Length;
+        var preview = $"\"{title}\" with {prayerCount} prayer{(prayerCount == 1 ? "" : "s")}";
+        var confirmed = await _nav.DisplayConfirmAsync(
+            "Prayer Card Shared With You",
+            $"{preview}\n\nSave to your prayer journal?",
+            "Save", "Decline");
+        if (!confirmed) return;
+
         var card = new PrayerCard
         {
             Title = title,
             IsImported = true
         };
         await card.SaveAsync();
-        _cardService.InvalidateCache();
 
         foreach (var req in requests)
         {
@@ -139,7 +158,9 @@ public class DeepLinkService : IDeepLinkService
             await prayer.SaveAsync();
         }
 
-        await _nav.GoToAsync(Routes.PrayerCardsTab);
+        _cardService.InvalidateCache();
+        _prayerService.InvalidateCache();
+        await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
 
     private static string ToBase64Url(byte[] data)

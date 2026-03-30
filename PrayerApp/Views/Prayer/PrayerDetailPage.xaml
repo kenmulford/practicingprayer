@@ -6,6 +6,7 @@
              x:DataType="viewModels:PrayerRequestDetailViewModel"
              xmlns:models="clr-namespace:PrayerApp.Models"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Name="page"
              Title="Prayer Request"
              SafeAreaEdges="Container">
@@ -30,11 +31,15 @@
                                SemanticProperties.HeadingLevel="Level1"
                                TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                         <Image Source="imported.png"
-                               HeightRequest="18"
-                               WidthRequest="18"
+                               HeightRequest="20"
+                               WidthRequest="20"
                                IsVisible="{Binding IsImported}"
                                VerticalOptions="Center"
-                               SemanticProperties.Description="Imported prayer" />
+                               SemanticProperties.Description="Imported prayer">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </Image.Behaviors>
+                        </Image>
                     </HorizontalStackLayout>
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
