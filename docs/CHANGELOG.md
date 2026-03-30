@@ -13,6 +13,7 @@
 - **Home page dashboard** — At-a-glance metrics show your active prayer cards, unanswered prayers, last prayer date, and overdue count. Tap any metric to jump straight to the details or start praying.
 - **Share prayers and cards** — Share individual prayer requests or entire prayer cards with others via any messaging app. Recipients with the app get the content saved automatically; others see a plain-text version of the prayer. Shared content is marked with a cloud icon so you know what was received from someone else.
 - **"Shared with me" card** — Prayers received from others are organized in a dedicated card. You can hide it from the Settings page when not needed.
+- **Mark answered during Prayer Time** — A new "✓ Answered" button during prayer sessions lets you capture answered prayers in the moment, then automatically advances to the next request.
 
 ### Improvements
 

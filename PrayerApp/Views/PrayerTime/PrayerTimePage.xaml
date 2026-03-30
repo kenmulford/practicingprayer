@@ -138,9 +138,9 @@
 
         </Grid>
 
-        <!-- Row 2: [I'm done] [*] [←] [→] [*] [Auto] -->
+        <!-- Row 2: [I'm done] [✓ Answered] [*] [←] [→] [Auto] -->
         <Grid Grid.Row="2"
-              ColumnDefinitions="Auto, *, Auto, Auto, *, Auto"
+              ColumnDefinitions="Auto, Auto, *, Auto, Auto, Auto"
               Padding="0,8"
               IsVisible="{Binding HasCompleted, Converter={StaticResource InverseBool}}">
 
@@ -152,7 +152,17 @@
                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                     Style="{StaticResource CircleNavButton}"
                     FontSize="11" />
-            <Button Grid.Column="2"
+            <Button Grid.Column="1"
+                    Text="✓ Answered"
+                    AutomationId="PrayerTime_Btn_MarkAnswered"
+                    SemanticProperties.Description="Mark this prayer as answered"
+                    Command="{Binding MarkAnsweredCommand}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource SuccessGreen}, Dark={StaticResource SuccessGreenDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"
+                    Style="{StaticResource CircleNavButton}"
+                    FontSize="11"
+                    Margin="8,0,0,0" />
+            <Button Grid.Column="3"
                     Text="←"
                     AutomationId="PrayerTime_Btn_Previous"
                     SemanticProperties.Description="Previous prayer"
@@ -161,7 +171,7 @@
                     BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                     Style="{StaticResource CircleNavButton}" />
-            <Button Grid.Column="3"
+            <Button Grid.Column="4"
                     Text="→"
                     AutomationId="PrayerTime_Btn_Next"
                     SemanticProperties.Description="Next prayer"

@@ -20,6 +20,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly IPrayerInteractionService _interactionService;
     private readonly INavigationService _navigationService;
     private readonly IAccessibilityService _accessibilityService;
+    private readonly INotificationService _notificationService;
     private readonly ISettings _settings;
     private CancellationTokenSource _loadCts = new();
     private int? _recentlyNotifiedTagId;
@@ -184,13 +185,15 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     public ICommand NextCommand { get; }
     public ICommand PreviousCommand { get; }
     public ICommand EndSessionCommand { get; }
+    public ICommand MarkAnsweredCommand { get; }
     public ICommand ToggleAutoModeCommand { get; }
     public ICommand CycleIntervalCommand { get; }
     public ICommand TogglePauseCommand { get; }
 
     public PrayerTimeViewModel(IPrayerService prayerService, ICardService cardService,
         ITagService tagService, IPrayerInteractionService interactionService,
-        INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings)
+        INavigationService navigationService, IAccessibilityService accessibilityService,
+        INotificationService notificationService, ISettings settings)
     {
         _prayerService = prayerService;
         _cardService = cardService;
@@ -198,6 +201,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         _interactionService = interactionService;
         _navigationService = navigationService;
         _accessibilityService = accessibilityService;
+        _notificationService = notificationService;
         _settings = settings;
 
         _selectedIntervalSeconds = _settings.AutoModeIntervalSeconds;
@@ -205,6 +209,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         NextCommand = new AsyncRelayCommand(NextAsync);
         PreviousCommand = new RelayCommand(Previous);
         EndSessionCommand = new AsyncRelayCommand(EndSessionAsync);
+        MarkAnsweredCommand = new AsyncRelayCommand(MarkAnsweredAsync);
         ToggleAutoModeCommand = new RelayCommand(ToggleAutoMode);
         CycleIntervalCommand = new RelayCommand(CycleInterval);
         TogglePauseCommand = new RelayCommand(TogglePause);
@@ -217,6 +222,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         IPlatformApplication.Current!.Services.GetRequiredService<IPrayerInteractionService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
     { }
 
@@ -350,6 +356,31 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     {
         if (HasPrevious)
             CurrentIndex--;
+    }
+
+    private async Task MarkAnsweredAsync()
+    {
+        if (HasCompleted || CurrentIndex < 0 || CurrentIndex >= Entries.Count) return;
+        var entry = Entries[CurrentIndex];
+        if (entry.IsSentinel) return;
+
+        try
+        {
+            var prayer = await Prayer.LoadAsync(entry.PrayerId);
+            if (prayer is null) return;
+
+            prayer.IsAnswered = true;
+            prayer.AnsweredAt = DateTime.Now;
+            await _prayerService.SavePrayerAsync(prayer);
+            await _notificationService.CancelAsync(prayer.Id, prayer.PrayerFrequency);
+
+            _accessibilityService.Announce($"{entry.PrayerTitle} marked as answered");
+            await NextAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"MarkAnswered failed: {ex.Message}");
+        }
     }
 
     private async Task EndSessionAsync()

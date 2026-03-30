@@ -14,6 +14,7 @@ public class PrayerTimeViewModelTests
     private readonly IPrayerInteractionService _interactionService = Substitute.For<IPrayerInteractionService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
+    private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
 
     public PrayerTimeViewModelTests()
@@ -23,7 +24,7 @@ public class PrayerTimeViewModelTests
 
     private PrayerTimeViewModel CreateSut() =>
         new(_prayerService, _cardService, _tagService, _interactionService,
-            _navigationService, _accessibilityService, _settings);
+            _navigationService, _accessibilityService, _notificationService, _settings);
 
     // ── Construction ──────────────────────────────────────────────────
 

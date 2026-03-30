@@ -547,7 +547,7 @@ namespace PrayerApp.ViewModels
         private async Task MarkAnsweredAsync()
         {
             IsAnswered = true;
-            await _notificationService.CancelAsync(_prayer.Id);
+            await _notificationService.CancelAsync(_prayer.Id, _prayer.PrayerFrequency);
             await _prayerService.SavePrayerAsync(_prayer);
             CaptureOriginals(); // Reset dirty state before navigation
 
