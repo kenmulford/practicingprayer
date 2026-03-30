@@ -237,6 +237,27 @@ public class PrayerCardTests
         }
     }
 
+    /// <summary>3.16: Tag filter chips — visible when tags exist in the system.</summary>
+    [Fact]
+    public void Cards_TagChips_VisibleWhenTagsExist()
+    {
+        var driver = _setup.Driver;
+
+        // Ensure at least one tag exists
+        driver.EnsureUITestTagExists(_setup);
+
+        // Navigate to Cards tab
+        driver.EnsureOnTab("Prayer Cards", _setup);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // Tag chips are rendered via BindableLayout — no AutomationId on individual chips.
+        // Verify by checking that the tag name text is displayed on the page.
+        Assert.True(
+            driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 5)
+            || driver.IsTextContainsDisplayed("UITest Tag", timeoutSeconds: 3),
+            "Tag filter chip should be visible on Prayer Cards page when tags exist");
+    }
+
     /// <summary>3.15: System card protection — Quick Add card's Delete action is guarded.</summary>
     [Fact]
     public void Cards_SystemCard_DeleteNotAvailable()
