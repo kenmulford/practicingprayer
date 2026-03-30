@@ -225,15 +225,7 @@ public class PrayerCardTests
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        AppiumElement? cardElement = null;
-        try
-        {
-            cardElement = TestConfig.IsIOS
-                ? driver.FindByTextContains("UITest Card,", timeoutSeconds: 5)
-                : driver.FindByText("UITest Card", timeoutSeconds: 5);
-        }
-        catch (WebDriverException) { }
-
+        var cardElement = driver.FindCardCell("UITest Card");
         if (cardElement is null)
             throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found");
 
@@ -286,24 +278,8 @@ public class PrayerCardTests
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Must target a user card — system cards (Quick Add, Shared with me) hide Share.
-        // On iOS, find the composed cell label (e.g. "UITest Card, Expanded") rather than
-        // a child text element — swiping on small inner labels is unreliable.
-        AppiumElement? cardElement = null;
-        try
-        {
-            if (TestConfig.IsIOS)
-            {
-                // iOS CollectionView flattens cells — the card header has a composed label
-                cardElement = driver.FindByTextContains("UITest Card,", timeoutSeconds: 5);
-            }
-            else
-            {
-                cardElement = driver.FindByText("UITest Card", timeoutSeconds: 5);
-            }
-        }
-        catch (WebDriverException) { }
-
+        // Find the card cell container — swiping on inner text labels is unreliable on iOS
+        var cardElement = driver.FindCardCell("UITest Card");
         if (cardElement is null)
             throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found to test Share swipe");
 
@@ -359,17 +335,8 @@ public class PrayerCardTests
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // On iOS, target the composed cell label for reliable swiping (see Share swipe test)
-        AppiumElement? cardElement = null;
-        try
-        {
-            if (TestConfig.IsIOS)
-                cardElement = driver.FindByTextContains("UITest Card,", timeoutSeconds: 5);
-            else
-                cardElement = driver.FindByText("UITest Card", timeoutSeconds: 5);
-        }
-        catch (WebDriverException) { }
-
+        // Find the card cell container — swiping on inner text labels is unreliable on iOS
+        var cardElement = driver.FindCardCell("UITest Card");
         if (cardElement is null)
             throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found to test Share button");
 

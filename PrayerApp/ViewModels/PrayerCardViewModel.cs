@@ -177,12 +177,12 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
-            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
-            SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsSystem);
+            SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync, () => !IsSystem);
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
-            ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
+            ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync, () => !IsSystem);
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
-            ShareCommand = new AsyncRelayCommand(ShareAsync);
+            ShareCommand = new AsyncRelayCommand(ShareAsync, () => !IsSystem);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }

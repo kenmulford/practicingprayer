@@ -111,27 +111,24 @@
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
 
-                <!-- Card wrapper with swipe for Favorite/Edit/Delete -->
-                <!-- Swipe actions hidden on system cards. iOS MAUI bug: only first SwipeItem
-                     per side renders when using IsVisible binding — Share/Delete appear alone.
-                     Reorder so the primary action (Share, Delete) is first per side. -->
+                <!-- Card wrapper with swipe actions. No IsVisible on SwipeItems —
+                     iOS MAUI bug only renders the first item per side when IsVisible is bound.
+                     System card protection is handled by CanExecute on each command. -->
                 <SwipeView Threshold="80">
                     <SwipeView.LeftItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItem
                                 BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
-                                IconImageSource="share_from_square_solid_full.png"
-                                Command="{Binding ShareCommand}"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                SemanticProperties.Description="Share card"
-                                Text="Share" />
-                            <SwipeItem
-                                BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
                                 IconImageSource="star_solid_full.png"
                                 Command="{Binding ToggleFavoriteCommand}"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Toggle favorite"
                                 Text="Favorite" />
+                            <SwipeItem
+                                BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
+                                IconImageSource="share_from_square_solid_full.png"
+                                Command="{Binding ShareCommand}"
+                                SemanticProperties.Description="Share card"
+                                Text="Share" />
                         </SwipeItems>
                     </SwipeView.LeftItems>
                     <SwipeView.RightItems>
@@ -140,14 +137,12 @@
                                 BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
                                 IconImageSource="pen_to_square_solid_full.png"
                                 Command="{Binding SelectCardCommand}"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Edit card"
                                 Text="Edit" />
                             <SwipeItem
                                 BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
                                 IconImageSource="trash_can_solid_full.png"
                                 Command="{Binding DeleteCommand}"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
                                 SemanticProperties.Description="Delete card"
                                 Text="Delete" />
                         </SwipeItems>
