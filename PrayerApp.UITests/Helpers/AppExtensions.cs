@@ -272,8 +272,8 @@ public static class AppExtensions
             try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
         }
 
-        // Stage 2: Try dismissing a known modal (Cancel buttons that block tab access)
-        foreach (var modalButton in new[] { "Scope_Btn_Cancel", "QuickAdd_Btn_Cancel" })
+        // Stage 2: Try dismissing a known modal (Cancel/Skip buttons that block tab access)
+        foreach (var modalButton in new[] { "Welcome_Btn_Skip", "Banner_Btn_Skip", "Banner_Btn_GotIt", "Scope_Btn_Cancel", "QuickAdd_Btn_Cancel" })
         {
             try
             {
@@ -404,29 +404,49 @@ public static class AppExtensions
     /// Dismiss onboarding if currently showing. Idempotent — safe to call multiple times.
     /// Taps "Skip tour" on the welcome popup, "Skip" on a mid-flow banner, or "Got it!"
     /// on the final PrayerTimeHighlight step, then "Done" on the completion popup.
+    /// Retries up to 3 times with increasing wait to handle slow popup rendering.
     /// </summary>
     public static void DismissOnboardingIfPresent(this AppiumDriver driver, AppiumSetup setup)
     {
         if (setup.OnboardingHandled) return;
 
-        // Check for dismissal buttons — welcome popup, mid-onboarding banner, or final "Got it!"
-        string? dismissButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
-            : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2) ? "Banner_Btn_Skip"
-            : driver.IsDisplayed("Banner_Btn_GotIt", timeoutSeconds: 2) ? "Banner_Btn_GotIt"
-            : null;
-
-        if (dismissButton != null)
+        // Retry loop — the welcome popup renders asynchronously from OnAppearing
+        // and may not be visible immediately, especially on slow emulators.
+        for (int attempt = 0; attempt < 3; attempt++)
         {
-            driver.Tap(dismissButton);
-            Thread.Sleep(1000);
+            // Check for dismissal buttons — welcome popup, mid-onboarding banner, or final "Got it!"
+            string? dismissButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
+                : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2) ? "Banner_Btn_Skip"
+                : driver.IsDisplayed("Banner_Btn_GotIt", timeoutSeconds: 2) ? "Banner_Btn_GotIt"
+                : null;
 
-            if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
+            if (dismissButton != null)
             {
-                driver.Tap("Complete_Btn_Done");
-                Thread.Sleep(500);
+                driver.Tap(dismissButton);
+                Thread.Sleep(1000);
+
+                if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
+                {
+                    driver.Tap("Complete_Btn_Done");
+                    Thread.Sleep(500);
+                }
+
+                setup.OnboardingHandled = true;
+                return;
             }
+
+            // If tab bar is already accessible, no popup is blocking — we're good
+            if (driver.IsDisplayed("Home", timeoutSeconds: 1))
+            {
+                setup.OnboardingHandled = true;
+                return;
+            }
+
+            // Wait before retry to give the popup time to render
+            Thread.Sleep(1000);
         }
 
+        // After retries, mark handled to avoid infinite loops in future calls
         setup.OnboardingHandled = true;
     }
 
