@@ -402,20 +402,22 @@ public static class AppExtensions
 
     /// <summary>
     /// Dismiss onboarding if currently showing. Idempotent — safe to call multiple times.
-    /// Taps "Skip tour" on the welcome popup, then "Done" on the completion popup.
+    /// Taps "Skip tour" on the welcome popup, "Skip" on a mid-flow banner, or "Got it!"
+    /// on the final PrayerTimeHighlight step, then "Done" on the completion popup.
     /// </summary>
     public static void DismissOnboardingIfPresent(this AppiumDriver driver, AppiumSetup setup)
     {
         if (setup.OnboardingHandled) return;
 
-        // Check for skip buttons — welcome popup or mid-onboarding banner
-        string? skipButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
+        // Check for dismissal buttons — welcome popup, mid-onboarding banner, or final "Got it!"
+        string? dismissButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
             : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2) ? "Banner_Btn_Skip"
+            : driver.IsDisplayed("Banner_Btn_GotIt", timeoutSeconds: 2) ? "Banner_Btn_GotIt"
             : null;
 
-        if (skipButton != null)
+        if (dismissButton != null)
         {
-            driver.Tap(skipButton);
+            driver.Tap(dismissButton);
             Thread.Sleep(1000);
 
             if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
@@ -665,6 +667,34 @@ public static class AppExtensions
         if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5) && TestConfig.IsIOS)
             driver.NavigateToTab("Tags");
 
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+    }
+
+    /// <summary>
+    /// Ensures a user-created card named "UITest Card" exists. Creates it via the
+    /// Prayer Cards tab toolbar if missing. Needed for tests that require a non-system card.
+    /// </summary>
+    public static void EnsureUITestCardExists(this AppiumDriver driver, AppiumSetup setup)
+    {
+        driver.EnsureOnTab("Prayer Cards", setup);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        bool found = TestConfig.IsIOS
+            ? driver.IsTextContainsDisplayed("UITest Card", timeoutSeconds: 3)
+            : driver.IsTextDisplayed("UITest Card", timeoutSeconds: 3);
+
+        if (found) return;
+
+        // Create via toolbar Add Card
+        driver.TapToolbarItem("Add Card");
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
+        driver.EnterText("Card_Entry_Title", "UITest Card");
+        driver.DismissKeyboardIfPresent();
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+
+        // Return to card list
+        driver.EnsureOnTab("Prayer Cards", setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
     }
 

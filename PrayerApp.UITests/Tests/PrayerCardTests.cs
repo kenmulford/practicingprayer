@@ -247,14 +247,16 @@ public class PrayerCardTests
         // Ensure at least one tag exists
         driver.EnsureUITestTagExists(_setup);
 
-        // Navigate to Cards tab
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Tag chips are rendered via BindableLayout — no AutomationId on individual chips.
-        // Verify by checking that the tag name text is displayed on the page.
+        // Scroll to find by text if not immediately visible.
+        if (!driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 5))
+            driver.ScrollDownToText("UITest Tag", maxScrolls: 2);
+
         Assert.True(
-            driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 5)
+            driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 3)
             || driver.IsTextContainsDisplayed("UITest Tag", timeoutSeconds: 3),
             "Tag filter chip should be visible on Prayer Cards page when tags exist");
     }
@@ -263,16 +265,20 @@ public class PrayerCardTests
     [Fact]
     public void Cards_SwipeRight_ShowsShareAction()
     {
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        // Need a non-system card; "UITest Card" or "General" should exist from prior tests
+        // Ensure a user-created card exists before testing share swipe
+        driver.EnsureUITestCardExists(_setup);
+        driver.EnsureOnTab("Prayer Cards", _setup);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // Find the user card
         AppiumElement? cardElement = null;
         try
         {
             cardElement = TestConfig.IsIOS
-                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 3)
-                : driver.FindByText("UITest Card", timeoutSeconds: 3);
+                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 5)
+                : driver.FindByText("UITest Card", timeoutSeconds: 5);
         }
         catch (WebDriverException)
         {
@@ -328,16 +334,19 @@ public class PrayerCardTests
     [Fact]
     public void Cards_EditPage_ShowsShareButton()
     {
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        // Find a user card and navigate to edit via swipe left → Edit
+        // Ensure a user-created card exists before testing share button
+        driver.EnsureUITestCardExists(_setup);
+        driver.EnsureOnTab("Prayer Cards", _setup);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
         AppiumElement? cardElement = null;
         try
         {
             cardElement = TestConfig.IsIOS
-                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 3)
-                : driver.FindByText("UITest Card", timeoutSeconds: 3);
+                ? driver.FindByTextContains("UITest Card", timeoutSeconds: 5)
+                : driver.FindByText("UITest Card", timeoutSeconds: 5);
         }
         catch (WebDriverException)
         {

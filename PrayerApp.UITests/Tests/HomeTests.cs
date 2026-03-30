@@ -35,7 +35,11 @@ public class HomeTests
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
-        Assert.True(driver.IsDisplayed("Home_Metric_Cards", timeoutSeconds: 5),
+        // Home content is inside a ScrollView — scroll if not immediately visible
+        if (!driver.IsDisplayed("Home_Metric_Cards", timeoutSeconds: 5))
+            driver.ScrollDownTo("Home_Metric_Cards", maxScrolls: 2);
+
+        Assert.True(driver.IsDisplayed("Home_Metric_Cards", timeoutSeconds: 3),
             "Active Cards metric should be visible");
         Assert.True(driver.IsDisplayed("Home_Metric_Unanswered", timeoutSeconds: 3),
             "Unanswered Prayers metric should be visible");
@@ -52,7 +56,7 @@ public class HomeTests
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
-        driver.Tap("Home_Metric_Cards");
+        driver.WaitAndTap("Home_Metric_Cards", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(
@@ -71,7 +75,7 @@ public class HomeTests
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
-        driver.Tap("Home_Metric_Unanswered");
+        driver.WaitAndTap("Home_Metric_Unanswered", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(
