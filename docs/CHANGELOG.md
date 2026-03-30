@@ -2,11 +2,11 @@
 
 > App store release notes, maintained continuously. Reset when a new version/build tag is created.
 >
-> **Current baseline:** `1.0.6b36`
+> **Current baseline:** `1.0.7b38`
 
 ---
 
-## What's New (since 1.0.6 build 35)
+## What's New (since 1.0.6)
 
 ### New Features
 
