@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.0.7b43. 283 unit tests, 63 UITests. Release candidate — bug fixes complete, screenshots next.
-**Last completed**: Remove HideSharedWithMe setting, disable Share on empty cards, action chips, deep-link suppression
-**Next up**: UX-22 (Android Play Store screenshots)
+**Status**: 1.0.7b43. 283 unit tests, 63 UITests. Release candidate.
+**Last completed**: UX-22 (Android screenshots), remove HideSharedWithMe, disable Share on empty cards, UX-24, UX-25
+**Next up**: UX-26 (Prayer Time answered button), then F-21 planning
 
 ---
 
@@ -26,7 +26,7 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | UX-22 | Update Android screenshots for Play Store                          | Ken    | New screenshots needed for Play Store listing reflecting current UI.                                                                                                                                                                           |
+| 1   | UX-26 | Prayer Time "Answered" button — needs label context, not just a green check | Ken    | The "✓ Answered" button in Prayer Time shows only a green check with no text context. Looks incomplete. Needs better label or visual treatment. |
 | 2   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
 | 3   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
 | 4   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. Verify inbound links work post-launch. Plan at `docs/plans/F10-deep-link-share.md`.                                                              |
@@ -38,6 +38,7 @@ Items are listed in work order. Start at the top, work down.
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| UX-22   | Android Play Store screenshots — 16 screenshots (phone + 10" tablet, light + dark) | 2026-03-31 |
 | UX-25   | Deep-link entry point — suppress onboarding for share imports, remove share tutorial steps | 2026-03-30 |
 | UX-24   | Prayer card action chips — styled Favorite/Share/Edit/Delete buttons on expanded cards | 2026-03-30 |
 | BUG-6   | URL encoding on shared requests/cards — Base64 payload, smart quote normalization | 2026-03-30 |
