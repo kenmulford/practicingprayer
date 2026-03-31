@@ -9,7 +9,7 @@ public partial class AppSettingsPage : ContentPage
         InitializeComponent();
     }
 
-    protected override async void OnAppearing()
+    protected override void OnAppearing()
     {
         base.OnAppearing();
         chkAllowNotifications.IsToggled = PrayerApp.Services.Settings.AllowNotifications;
@@ -18,14 +18,6 @@ public partial class AppSettingsPage : ContentPage
         timePickerDefaultNotify.Time = new TimeSpan(
             PrayerApp.Services.Settings.DefaultNotifyHour,
             PrayerApp.Services.Settings.DefaultNotifyMinute, 0);
-
-        // Only show the sharing section if a "Shared with me" card exists
-        var cardService = IPlatformApplication.Current!.Services.GetRequiredService<ICardService>();
-        var cards = await cardService.GetCardsAsync();
-        var hasSharedCard = cards.Any(c => c.IsSystem && c.Title == CardService.SharedWithMeTitle);
-        sharingSection.IsVisible = hasSharedCard;
-        if (hasSharedCard)
-            chkHideSharedWithMe.IsToggled = PrayerApp.Services.Settings.HideSharedWithMe;
     }
 
     private async void OnAllowNotificationsToggled(object? sender, ToggledEventArgs e)
@@ -59,9 +51,6 @@ public partial class AppSettingsPage : ContentPage
 
     private void OnLandscapeModeToggled(object? sender, ToggledEventArgs e)
         => PrayerApp.Services.Settings.PrayerTimeLandscape = e.Value;
-
-    private void OnHideSharedWithMeToggled(object? sender, ToggledEventArgs e)
-        => PrayerApp.Services.Settings.HideSharedWithMe = e.Value;
 
     private void OnBackgroundTapped(object? sender, TappedEventArgs e)
     {

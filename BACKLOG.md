@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.0.7b42. 282 unit tests, 63 UITests. Action chips, deep-link onboarding suppression, share tutorial removed.
-**Last completed**: BUG-6 (URL encoding), UX-24 (action chips), UX-25 (deep-link entry suppression + share tutorial removal), favorite visual state + deferred sort
-**Next up**: F-21 planning (Prayer Time from search results)
+**Status**: 1.0.7b43. 283 unit tests, 63 UITests. Release candidate — bug fixes complete, screenshots next.
+**Last completed**: Remove HideSharedWithMe setting, disable Share on empty cards, action chips, deep-link suppression
+**Next up**: UX-22 (Android Play Store screenshots)
 
 ---
 

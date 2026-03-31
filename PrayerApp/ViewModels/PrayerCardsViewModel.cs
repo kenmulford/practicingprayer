@@ -331,10 +331,6 @@ namespace PrayerApp.ViewModels
         {
             IEnumerable<PrayerCardViewModel> result = AllPrayerCards;
 
-            // Hide "Shared with me" system card when setting is enabled
-            if (_settings.HideSharedWithMe)
-                result = result.Where(c => !(c.IsSystem && c.Title == CardService.SharedWithMeTitle));
-
             if (!string.IsNullOrWhiteSpace(_searchText))
             {
                 var q = _searchText.Trim();

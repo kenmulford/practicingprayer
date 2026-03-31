@@ -162,4 +162,38 @@ public class PrayerCardViewModelTests
         await _navigationService.Received(1).DisplayConfirmAsync(
             "Unsaved Changes", Arg.Any<string>(), "Discard", "Cancel");
     }
+
+    // ── CanShare ────────────────────────────────────────────────────
+
+    [Fact]
+    public void CanShare_NewCard_ZeroPrayers_ReturnsFalse()
+    {
+        var sut = CreateSut();
+        // ActivePrayerCount defaults to 0, IsSystem defaults to false
+        Assert.False(sut.CanShare);
+    }
+
+    [Fact]
+    public void CanShare_HasActivePrayers_ReturnsTrue()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 3;
+
+        Assert.True(sut.CanShare);
+    }
+
+    [Fact]
+    public void CanShare_ActivePrayerCountChange_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = false;
+        sut.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PrayerCardViewModel.CanShare)) raised = true;
+        };
+
+        sut.ActivePrayerCount = 2;
+
+        Assert.True(raised);
+    }
 }

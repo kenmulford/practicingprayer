@@ -98,7 +98,7 @@ namespace PrayerApp.ViewModels
         public bool IsImported => _prayerCard.IsImported;
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
-        public bool CanShare => !IsSystem;
+        public bool CanShare => !IsSystem && ActivePrayerCount > 0;
         public bool ShowActionChips => IsExpanded && !IsSystem;
         public string FavoriteLabel => IsFavorite ? "Favorited" : "Favorite";
 
@@ -138,7 +138,11 @@ namespace PrayerApp.ViewModels
             set
             {
                 if (SetProperty(ref _activePrayerCount, value))
+                {
+                    OnPropertyChanged(nameof(CanShare));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
+                    ((IRelayCommand)ShareCommand).NotifyCanExecuteChanged();
+                }
             }
         }
 
@@ -186,7 +190,7 @@ namespace PrayerApp.ViewModels
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync, () => !IsSystem);
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
-            ShareCommand = new AsyncRelayCommand(ShareAsync, () => !IsSystem);
+            ShareCommand = new AsyncRelayCommand(ShareAsync, () => CanShare);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }

@@ -60,9 +60,4 @@ public class SettingsService : ISettings
         set => Settings.PrayerTimeLandscape = value;
     }
 
-    public bool HideSharedWithMe
-    {
-        get => Settings.HideSharedWithMe;
-        set => Settings.HideSharedWithMe = value;
-    }
 }

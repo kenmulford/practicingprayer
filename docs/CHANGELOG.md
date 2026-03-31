@@ -29,3 +29,5 @@
 
 - **Consistent divider lines** — Fixed an issue where the bottom prayer requests in an expanded card showed a different colored separator line
 - **Cleaner share messages** — Shared prayer links no longer show garbled URL-encoded text in text messages. Smart quotes and special characters are handled gracefully
+- **Share button disabled on empty cards** — The Share action is now dimmed and untappable on cards with no active prayer requests, preventing empty shares
+- **Removed "Hide Shared with me" setting** — The setting could make shared prayers inaccessible. The "Shared with me" card now always appears when you have imported content

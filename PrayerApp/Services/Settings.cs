@@ -112,13 +112,6 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(PrayerTimeLandscape), value);
         }
 
-        /// <summary>Whether the "Shared with me" system card is hidden from the Cards page.</summary>
-        public static bool HideSharedWithMe
-        {
-            get => Preferences.Get(nameof(HideSharedWithMe), false);
-            set => Preferences.Set(nameof(HideSharedWithMe), value);
-        }
-
         public static void ClearSettings()
         {
             // reset "first run" flag

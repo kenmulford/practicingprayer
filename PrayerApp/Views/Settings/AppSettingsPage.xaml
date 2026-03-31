@@ -71,24 +71,6 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Sharing -->
-            <Border x:Name="sharingSection"
-                    Style="{StaticResource PrayerCardBorder}" Padding="16"
-                    IsVisible="False">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Sharing"
-                           SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
-                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12" HorizontalOptions="Fill">
-                        <Label Text="Hide &quot;Shared with me&quot; card" VerticalOptions="Center" />
-                        <Switch x:Name="chkHideSharedWithMe"
-                                Grid.Column="1"
-                                AutomationId="AppSettings_Switch_HideShared"
-                                Toggled="OnHideSharedWithMeToggled" />
-                    </Grid>
-                </VerticalStackLayout>
-            </Border>
-
         </VerticalStackLayout>
     </ScrollView>
 

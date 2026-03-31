@@ -243,10 +243,18 @@
                                 </HorizontalStackLayout>
                             </Border>
 
-                            <!-- Share -->
+                            <!-- Share (disabled when card has 0 active prayers) -->
                             <Border Style="{StaticResource ActionChip}"
                                     AutomationId="Cards_Btn_Share"
                                     SemanticProperties.Description="Share card">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding CanShare}"
+                                                 Value="False">
+                                        <Setter Property="Opacity" Value="0.4" />
+                                        <Setter Property="InputTransparent" Value="True" />
+                                    </DataTrigger>
+                                </Border.Triggers>
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding ShareCommand}" />
                                 </Border.GestureRecognizers>
