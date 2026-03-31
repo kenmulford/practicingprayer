@@ -15,8 +15,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: 1.0.7b43. 283 unit tests, 63 UITests. Release candidate.
-**Last completed**: UX-27 (screen flash/flicker fix)
-**Next up**: UX-26 (Prayer Time answered button), then F-21 planning
+**Last completed**: UX-26 (Prayer Time button styles)
+**Next up**: F-21 planning
 
 ---
 
@@ -26,18 +26,18 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | UX-26 | Prayer Time "Answered" button — needs label context, not just a green check | Ken    | The "✓ Answered" button in Prayer Time shows only a green check with no text context. Looks incomplete. Needs better label or visual treatment. |
-| 2   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
-| 3   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Full-width card below 2x2 metric grid. Shows prayers answered on same month+day in prior years (not today). Header: "Answered prayers from [Month Day]". Lists prayer titles. Hidden when empty, no tap action. Plan at `.claude/plans/reactive-swimming-bunny.md`. **Ready to implement.** |
-| 4   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
-| 5   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. Publish submitted 2026-03-31 (up to 7 days for review). iOS sharing confirmed working. Verify Android inbound links post-launch. Plan at `docs/plans/F10-deep-link-share.md`. |
-| 6   | F-24  | Card groups & archiving — organizational layer above PrayerCard    | Ken    | Users will amass 50-100+ cards over time and need higher-level organization. Groups/folders/collections that cards belong to. Includes card archiving (hide/retire cards with 0 open requests, manual archive action). Imported, archived, active cards all fit here. Needs full UI/UX planning: list views, multi-select + assign, new entry points. **Large feature — requires plan before implementation.** |
-| 7   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+| 1   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
+| 2   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Full-width card below 2x2 metric grid. Shows prayers answered on same month+day in prior years (not today). Header: "Answered prayers from [Month Day]". Lists prayer titles. Hidden when empty, no tap action. Plan at `.claude/plans/reactive-swimming-bunny.md`. **Ready to implement.** |
+| 3   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
+| 4   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. Publish submitted 2026-03-31 (up to 7 days for review). iOS sharing confirmed working. Verify Android inbound links post-launch. Plan at `docs/plans/F10-deep-link-share.md`. |
+| 5   | F-24  | Card groups & archiving — organizational layer above PrayerCard    | Ken    | Users will amass 50-100+ cards over time and need higher-level organization. Groups/folders/collections that cards belong to. Includes card archiving (hide/retire cards with 0 open requests, manual archive action). Imported, archived, active cards all fit here. Needs full UI/UX planning: list views, multi-select + assign, new entry points. **Large feature — requires plan before implementation.** |
+| 6   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| UX-26   | Prayer Time button styles — "✓ Answered" (WarmGold pill) and "I'm done" (secondary pill) replacing cramped circles | 2026-03-31 |
 | UX-27   | Screen flash/flicker on page load — slide-only animation, Android window background fix | 2026-03-31 |
 | UX-22   | Android Play Store screenshots — 16 screenshots (phone + 10" tablet, light + dark) | 2026-03-31 |
 | UX-25   | Deep-link entry point — suppress onboarding for share imports, remove share tutorial steps | 2026-03-30 |
