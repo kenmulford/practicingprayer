@@ -196,52 +196,44 @@ public class PrayerCardTests
         driver.TapToolbarItem("Save");
         Thread.Sleep(1000);
 
-        // Swipe left to reveal Edit, navigate to detail, delete
+        // Expand the card, tap inline Delete button
         if (driver.IsTextDisplayed("Delete Me Card", timeoutSeconds: 5))
         {
-            var cardElement = driver.FindByText("Delete Me Card");
-            driver.SwipeElementLeft(cardElement);
-
-            if (driver.IsTextDisplayed("Edit", timeoutSeconds: 2))
-            {
-                driver.TapByText("Edit");
-                driver.WaitAndTap("Card_Btn_Delete", timeoutSeconds: 5);
-                driver.DismissAlertIfPresent();
-                Thread.Sleep(500);
-            }
+            driver.TapByText("Delete Me Card");
+            Thread.Sleep(TestConfig.DelayAfterTap);
+            driver.WaitAndTap("Cards_Btn_Delete", timeoutSeconds: 5);
+            driver.DismissAlertIfPresent();
+            Thread.Sleep(500);
         }
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
     }
 
-    /// <summary>3.14: Favorite card — swipe right reveals Favorite and Share actions.</summary>
+    /// <summary>3.14: Inline action buttons — expanding a user card shows Favorite, Share, Edit, Delete.</summary>
     [Fact]
-    public void Cards_SwipeRight_ShowsFavoriteAction()
+    public void Cards_ExpandedCard_ShowsActionButtons()
     {
         var driver = _setup.Driver;
 
-        // Swipe actions are disabled on system cards — must use a user card
         driver.EnsureUITestCardExists(_setup);
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        var cardElement = driver.FindCardCell("UITest Card");
-        if (cardElement is null)
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found");
+        // Expand the card by tapping it
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("UITest Card");
+        else
+            driver.TapByText("UITest Card");
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
-        driver.SwipeElementRight(cardElement);
-        Thread.Sleep(TestConfig.DelayAfterNavigation);
-
-        // iOS MAUI bug: only first SwipeItem per side renders with IsVisible binding.
-        // Share is first (primary action), so check for Share; Favorite may not appear on iOS.
-        Assert.True(
-            driver.IsTextDisplayed("Share", timeoutSeconds: 3)
-            || driver.IsTextDisplayed("Favorite", timeoutSeconds: 2),
-            "Swipe right on user card should reveal Share (or Favorite) action");
-
-        // Dismiss swipe state
-        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
-        Thread.Sleep(300);
+        Assert.True(driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 5),
+            "Expanded user card should show Favorite button");
+        Assert.True(driver.IsDisplayed("Cards_Btn_Share", timeoutSeconds: 3),
+            "Expanded user card should show Share button");
+        Assert.True(driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 3),
+            "Expanded user card should show Edit button");
+        Assert.True(driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 3),
+            "Expanded user card should show Delete button");
     }
 
     /// <summary>3.16: Tag filter chips — visible when tags exist in the system.</summary>
@@ -267,125 +259,83 @@ public class PrayerCardTests
             "Tag filter chip should be visible on Prayer Cards page when tags exist");
     }
 
-    /// <summary>3.17: Share action — swipe right on user card reveals Share.</summary>
+    /// <summary>3.17: Edit button — tapping Edit navigates to card edit page.</summary>
     [Fact]
-    public void Cards_SwipeRight_ShowsShareAction()
+    public void Cards_EditButton_NavigatesToEditPage()
     {
         var driver = _setup.Driver;
 
-        // Ensure a user-created card exists before testing share swipe
         driver.EnsureUITestCardExists(_setup);
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Find the card cell container — swiping on inner text labels is unreliable on iOS
-        var cardElement = driver.FindCardCell("UITest Card");
-        if (cardElement is null)
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found to test Share swipe");
+        // Expand the card to reveal action buttons
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("UITest Card");
+        else
+            driver.TapByText("UITest Card");
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
-        driver.SwipeElementRight(cardElement);
-        Thread.Sleep(TestConfig.DelayAfterNavigation); // iOS SwipeView reveal animation
+        driver.WaitAndTap("Cards_Btn_Edit", timeoutSeconds: 5);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-        Assert.True(
-            driver.IsTextDisplayed("Share", timeoutSeconds: 3),
-            "Swipe right on user card should reveal Share action");
+        Assert.True(driver.IsDisplayed("Card_Entry_Title", timeoutSeconds: 5),
+            "Tapping Edit should navigate to card edit page");
 
-        // Dismiss swipe state
-        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
-        Thread.Sleep(300);
+        driver.GoBack();
+        driver.DismissAlertIfPresent();
     }
 
-    /// <summary>3.18: Share action hidden on system card — Quick Add should not show Share.</summary>
+    /// <summary>3.18: System card protection — Quick Add should not show action buttons when expanded.</summary>
     [Fact]
     public void Cards_SystemCard_ShareNotAvailable()
     {
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
+        // Expand the Quick Add system card
         try
         {
-            var cardElement = TestConfig.IsIOS
-                ? driver.FindByTextContains("Quick Add", timeoutSeconds: 3)
-                : driver.FindByText("Quick Add", timeoutSeconds: 3);
-            driver.SwipeElementRight(cardElement);
+            if (TestConfig.IsIOS)
+                driver.TapByTextContains("Quick Add");
+            else
+                driver.TapByText("Quick Add");
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
         catch (WebDriverException)
         {
             throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'Quick Add' system card not found");
         }
 
-        // System cards should not expose Share action
-        var shareVisible = driver.IsTextDisplayed("Share", timeoutSeconds: 2);
-
-        // Dismiss swipe state
-        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
-        Thread.Sleep(TestConfig.DelayAfterDismiss);
-
-        Assert.False(shareVisible, "System card 'Quick Add' should not show Share action on swipe");
+        // System cards should not show action buttons
+        Assert.False(driver.IsDisplayed("Cards_Btn_Share", timeoutSeconds: 2),
+            "System card should not show Share button");
     }
 
-    /// <summary>3.19: Share button on card edit page — visible for user cards.</summary>
-    [Fact]
-    public void Cards_EditPage_ShowsShareButton()
-    {
-        var driver = _setup.Driver;
-
-        // Ensure a user-created card exists before testing share button
-        driver.EnsureUITestCardExists(_setup);
-        driver.EnsureOnTab("Prayer Cards", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // Find the card cell container — swiping on inner text labels is unreliable on iOS
-        var cardElement = driver.FindCardCell("UITest Card");
-        if (cardElement is null)
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UITest Card' not found to test Share button");
-
-        driver.SwipeElementLeft(cardElement);
-        if (driver.IsTextDisplayed("Edit", timeoutSeconds: 2))
-        {
-            driver.TapByText("Edit");
-            Thread.Sleep(TestConfig.DelayAfterNavigation);
-        }
-
-        // Share button is only visible on non-system cards (CanShare = !IsSystem)
-        var hasShare = driver.IsDisplayed("Card_Btn_Share", timeoutSeconds: 5);
-        if (!hasShare) driver.DumpPageSource("Cards_EditPage_ShareButton");
-
-        Assert.True(hasShare,
-            "Card edit page should show Share button for non-system cards (UITest Card)");
-
-        driver.GoBack();
-        driver.DismissAlertIfPresent();
-    }
-
-    /// <summary>3.15: System card protection — Quick Add card's Delete action is guarded.</summary>
+    /// <summary>3.15: System card protection — Quick Add card's Delete button is hidden.</summary>
     [Fact]
     public void Cards_SystemCard_DeleteNotAvailable()
     {
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        // iOS: composed label may be "Quick Add, UI Test Prayer" — use CONTAINS
+        // Expand the Quick Add system card
         try
         {
-            var cardElement = TestConfig.IsIOS
-                ? driver.FindByTextContains("Quick Add", timeoutSeconds: 3)
-                : driver.FindByText("Quick Add", timeoutSeconds: 3);
-            driver.SwipeElementLeft(cardElement);
+            if (TestConfig.IsIOS)
+                driver.TapByTextContains("Quick Add");
+            else
+                driver.TapByText("Quick Add");
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
         catch (WebDriverException)
         {
             throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'Quick Add' system card not found");
         }
 
-        // System cards should not expose a functional Delete action
-        var deleteVisible = driver.IsTextDisplayed("Delete", timeoutSeconds: 2);
-
-        // Dismiss swipe state before asserting
-        try { driver.TapByText("Prayer Cards", timeoutSeconds: 2); } catch (WebDriverException) { }
-        Thread.Sleep(TestConfig.DelayAfterDismiss);
-
-        Assert.False(deleteVisible, "System card 'Quick Add' should not show Delete action on swipe");
+        // System cards should not show action buttons
+        Assert.False(driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 2),
+            "System card should not show Delete button");
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
     }
 }
