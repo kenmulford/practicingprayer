@@ -23,31 +23,35 @@ public class DeepLinkService : IDeepLinkService
 
     public string BuildRequestShareText(Prayer prayer)
     {
-        var uri = $"{BaseUrl}/r?title={Uri.EscapeDataString(prayer.Title)}";
-        if (!string.IsNullOrWhiteSpace(prayer.Details))
-            uri += $"&notes={Uri.EscapeDataString(prayer.Details)}";
+        var title = NormalizeQuotes(prayer.Title);
+        var details = prayer.Details is not null ? NormalizeQuotes(prayer.Details) : null;
 
-        var fallback = string.IsNullOrWhiteSpace(prayer.Details)
-            ? prayer.Title
-            : $"{prayer.Title}\n{prayer.Details}";
+        var json = JsonSerializer.Serialize(new { title, notes = details ?? "" });
+        var base64 = ToBase64Url(Encoding.UTF8.GetBytes(json));
+        var uri = $"{BaseUrl}/r?d={base64}";
+
+        var fallback = string.IsNullOrWhiteSpace(details)
+            ? title
+            : $"{title}\n{details}";
 
         return $"{uri}\n\n{fallback}\n\n{Footer}";
     }
 
     public string BuildCardShareText(PrayerCard card, IEnumerable<Prayer> prayers)
     {
-        var requestList = prayers.Select(p => new { title = p.Title, notes = p.Details ?? "" }).ToArray();
-        var json = JsonSerializer.Serialize(requestList);
+        var title = NormalizeQuotes(card.Title);
+        var requestList = prayers.Select(p => new { title = NormalizeQuotes(p.Title), notes = p.Details is not null ? NormalizeQuotes(p.Details) : "" }).ToArray();
+        var json = JsonSerializer.Serialize(new { title, requests = requestList });
         var base64 = ToBase64Url(Encoding.UTF8.GetBytes(json));
 
-        var uri = $"{BaseUrl}/c?title={Uri.EscapeDataString(card.Title)}&requests={base64}";
+        var uri = $"{BaseUrl}/c?d={base64}";
 
+        var prayerCount = requestList.Length;
         var sb = new StringBuilder();
         sb.AppendLine(uri);
         sb.AppendLine();
-        sb.AppendLine(card.Title);
-        foreach (var p in prayers)
-            sb.AppendLine($"- {p.Title}");
+        sb.AppendLine(title);
+        sb.AppendLine($"+ {prayerCount} request{(prayerCount == 1 ? "" : "s")}");
         sb.AppendLine();
         sb.Append(Footer);
 
@@ -76,11 +80,35 @@ public class DeepLinkService : IDeepLinkService
 
     private async Task HandleRequestAsync(System.Collections.Specialized.NameValueCollection query)
     {
-        var title = query["title"];
+        string? title, detail;
+
+        // New format: compact Base64 payload in ?d= parameter
+        var payload = query["d"];
+        if (!string.IsNullOrWhiteSpace(payload))
+        {
+            try
+            {
+                var json = Encoding.UTF8.GetString(FromBase64Url(payload));
+                var data = JsonSerializer.Deserialize<SharedRequest>(json);
+                title = NormalizeQuotes(data?.Title);
+                detail = string.IsNullOrEmpty(data?.Notes) ? null : NormalizeQuotes(data.Notes);
+            }
+            catch (Exception ex) when (ex is FormatException or JsonException)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared request data: {ex.Message}");
+                return;
+            }
+        }
+        else
+        {
+            // Legacy format: ?title=&notes= query params (backward compatibility)
+            title = query["title"];
+            detail = query["notes"];
+        }
+
         if (string.IsNullOrWhiteSpace(title))
             return;
 
-        var detail = query["notes"];
         var preview = string.IsNullOrWhiteSpace(detail) ? title : $"{title}\n\n{detail}";
         var confirmed = await _nav.DisplayConfirmAsync(
             "Prayer Shared With You",
@@ -107,25 +135,48 @@ public class DeepLinkService : IDeepLinkService
 
     private async Task HandleCardAsync(System.Collections.Specialized.NameValueCollection query)
     {
-        var title = query["title"];
+        string? title;
+        SharedRequest[]? requests;
+
+        // New format: compact Base64 payload in ?d= parameter
+        var payload = query["d"];
+        if (!string.IsNullOrWhiteSpace(payload))
+        {
+            try
+            {
+                var json = Encoding.UTF8.GetString(FromBase64Url(payload));
+                var data = JsonSerializer.Deserialize<SharedCard>(json);
+                title = NormalizeQuotes(data?.Title);
+                requests = data?.Requests;
+            }
+            catch (Exception ex) when (ex is FormatException or JsonException)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared card data: {ex.Message}");
+                return;
+            }
+        }
+        else
+        {
+            // Legacy format: ?title=&requests= query params (backward compatibility)
+            title = query["title"];
+            var requestsBase64 = query["requests"];
+            if (string.IsNullOrWhiteSpace(requestsBase64))
+                return;
+
+            try
+            {
+                var json = Encoding.UTF8.GetString(FromBase64Url(requestsBase64));
+                requests = JsonSerializer.Deserialize<SharedRequest[]>(json);
+            }
+            catch (Exception ex) when (ex is FormatException or JsonException)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared card data: {ex.Message}");
+                return;
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(title))
             return;
-
-        var requestsBase64 = query["requests"];
-        if (string.IsNullOrWhiteSpace(requestsBase64))
-            return;
-
-        SharedRequest[]? requests;
-        try
-        {
-            var json = Encoding.UTF8.GetString(FromBase64Url(requestsBase64));
-            requests = JsonSerializer.Deserialize<SharedRequest[]>(json);
-        }
-        catch (Exception ex) when (ex is FormatException or JsonException)
-        {
-            System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared card data: {ex.Message}");
-            return;
-        }
 
         if (requests is null || requests.Length == 0)
             return;
@@ -150,8 +201,8 @@ public class DeepLinkService : IDeepLinkService
             var prayer = new Prayer
             {
                 PrayerCardId = card.Id,
-                Title = req.Title ?? "",
-                Details = string.IsNullOrEmpty(req.Notes) ? null : req.Notes,
+                Title = NormalizeQuotes(req.Title) ?? "",
+                Details = string.IsNullOrEmpty(req.Notes) ? null : NormalizeQuotes(req.Notes),
                 IsImported = true,
                 CanNotify = false
             };
@@ -177,7 +228,22 @@ public class DeepLinkService : IDeepLinkService
         return Convert.FromBase64String(base64);
     }
 
+    /// <summary>Replace smart/curly quotes with ASCII equivalents so URLs and text stay clean.</summary>
+    private static string? NormalizeQuotes(string? text)
+    {
+        if (text is null) return null;
+        return text
+            .Replace('\u2018', '\'')  // left single quote
+            .Replace('\u2019', '\'')  // right single quote
+            .Replace('\u201C', '"')   // left double quote
+            .Replace('\u201D', '"');   // right double quote
+    }
+
     private record SharedRequest(
         [property: JsonPropertyName("title")] string? Title,
         [property: JsonPropertyName("notes")] string? Notes);
+
+    private record SharedCard(
+        [property: JsonPropertyName("title")] string? Title,
+        [property: JsonPropertyName("requests")] SharedRequest[]? Requests);
 }

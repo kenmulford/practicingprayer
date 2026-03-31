@@ -43,51 +43,120 @@ public class DeepLinkServiceTests
     }
 
     [Fact]
-    public void BuildRequestShareText_EncodesSpecialCharacters()
+    public void BuildRequestShareText_UrlIsSafe_NoRawSpecialChars()
     {
-        var prayer = new Prayer { Title = "John & Jane's prayer", Details = "Details with spaces" };
+        var prayer = new Prayer { Title = "John & Jane\u2019s prayer", Details = "Details with spaces" };
 
         var result = _service.BuildRequestShareText(prayer);
 
-        // URI portion should be encoded (no raw & or spaces in the URL line)
         var lines = result.Split('\n');
         var uriLine = lines.First(l => l.StartsWith("https://"));
+        // URL should be compact Base64 — no raw spaces, quotes, or ampersands
         Assert.DoesNotContain(" ", uriLine);
-        // Fallback text should contain the readable title
+        Assert.DoesNotContain("'", uriLine);
+        Assert.DoesNotContain("&", uriLine.Split('?').Last().Split('=').First()); // no & in param name
+        // Fallback text should have readable ASCII apostrophes
         Assert.Contains("John & Jane's prayer", result);
     }
 
     [Fact]
-    public void BuildRequestShareText_NullDetails_OmitsNotesParam()
+    public void BuildRequestShareText_UsesBase64Payload_NotQueryParams()
+    {
+        var prayer = new Prayer { Title = "Mom\u2019s surgery", Details = "Please pray for healing" };
+
+        var result = _service.BuildRequestShareText(prayer);
+        var uriLine = result.Split('\n').First(l => l.StartsWith("https://"));
+
+        // URL should use compact Base64 payload, not long query params
+        Assert.Contains("/share/r?d=", uriLine);
+        Assert.DoesNotContain("title=", uriLine);
+        Assert.DoesNotContain("notes=", uriLine);
+        // No raw smart quotes or percent-encoded multibyte chars in URL
+        Assert.DoesNotContain("\u2019", uriLine);
+        Assert.DoesNotContain("%E2%80%99", uriLine);
+    }
+
+    [Fact]
+    public void BuildRequestShareText_NormalizesSmartQuotes_InFallbackText()
+    {
+        var prayer = new Prayer { Title = "Mom\u2019s surgery" };
+
+        var result = _service.BuildRequestShareText(prayer);
+
+        // Fallback body should have readable ASCII apostrophes
+        var fallbackLines = result.Split('\n').Where(l => !l.StartsWith("https://")).ToList();
+        var fallback = string.Join('\n', fallbackLines);
+        Assert.Contains("Mom's surgery", fallback);
+    }
+
+    [Fact]
+    public async Task HandleAsync_Request_Base64Payload_RoundTrips()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        // Build a share URL the new way (Base64 payload)
+        var prayer = new Prayer { Title = "Mom\u2019s surgery", Details = "Please pray" };
+        var shareText = _service.BuildRequestShareText(prayer);
+        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
+
+        await _service.HandleAsync(uriLine);
+
+        // Smart quote should be normalized to ASCII on save
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
+            p.Title == "Mom's surgery" &&
+            p.Details == "Please pray"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_Request_LegacyQueryParams_StillWorks()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        // Old-format URL with title/notes query params still works
+        await _service.HandleAsync("https://practicingprayerapp.com/share/r?title=Test%20Prayer&notes=Details");
+
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
+            p.Title == "Test Prayer" &&
+            p.Details == "Details"));
+    }
+
+    [Fact]
+    public void BuildRequestShareText_NullDetails_StillBuildsValidUrl()
     {
         var prayer = new Prayer { Title = "Simple prayer", Details = null };
 
         var result = _service.BuildRequestShareText(prayer);
 
-        var lines = result.Split('\n');
-        var uriLine = lines.First(l => l.StartsWith("https://"));
-        Assert.DoesNotContain("notes=", uriLine);
+        var uriLine = result.Split('\n').First(l => l.StartsWith("https://"));
+        Assert.Contains("/share/r?d=", uriLine);
+        // Fallback should not include details
+        Assert.DoesNotContain("null", result.ToLowerInvariant());
     }
 
     // ── BuildCardShareText ───────────────────────────────────────────────────
 
     [Fact]
-    public void BuildCardShareText_IncludesAllActivePrayers()
+    public void BuildCardShareText_ShowsTitleAndRequestCount()
     {
         var card = new PrayerCard { Title = "Family Prayers" };
         var prayers = new List<Prayer>
         {
-            new() { Title = "Mom's health" },
-            new() { Title = "Dad's job" }
+            new() { Title = "Mom\u2019s health" },
+            new() { Title = "Dad\u2019s job" }
         };
 
         var result = _service.BuildCardShareText(card, prayers);
 
-        Assert.Contains("https://practicingprayerapp.com/share/c?", result);
+        Assert.Contains("https://practicingprayerapp.com/share/c?d=", result);
         Assert.Contains("Family Prayers", result);
-        Assert.Contains("Mom's health", result);
-        Assert.Contains("Dad's job", result);
+        Assert.Contains("+ 2 requests", result);
         Assert.Contains("Shared via Practicing Prayer", result);
+        // Individual prayers should NOT be in fallback (keeps message clean)
+        Assert.DoesNotContain("Mom", result.Split('\n').Where(l => l.StartsWith("- ")).FirstOrDefault() ?? "");
     }
 
     [Fact]
@@ -111,9 +180,12 @@ public class DeepLinkServiceTests
         _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
 
-        var uri = "https://practicingprayerapp.com/share/r?title=Test%20Prayer&notes=Please%20pray";
+        // Build a share URL using the service, then handle it (roundtrip test)
+        var prayer = new Prayer { Title = "Test Prayer", Details = "Please pray" };
+        var shareText = _service.BuildRequestShareText(prayer);
+        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
 
-        await _service.HandleAsync(uri);
+        await _service.HandleAsync(uriLine);
 
         await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
             p.Title == "Test Prayer" &&
@@ -130,7 +202,11 @@ public class DeepLinkServiceTests
         _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
 
-        await _service.HandleAsync("https://practicingprayerapp.com/share/r?title=Test");
+        var prayer = new Prayer { Title = "Test" };
+        var shareText = _service.BuildRequestShareText(prayer);
+        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
+
+        await _service.HandleAsync(uriLine);
 
         await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
@@ -142,7 +218,11 @@ public class DeepLinkServiceTests
         _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
 
-        await _service.HandleAsync("https://practicingprayerapp.com/share/r?title=Test");
+        var prayer = new Prayer { Title = "Test" };
+        var shareText = _service.BuildRequestShareText(prayer);
+        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
+
+        await _service.HandleAsync(uriLine);
 
         _cardService.Received(1).InvalidateCache();
         _prayerService.Received(1).InvalidateCache();
