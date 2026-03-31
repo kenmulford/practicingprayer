@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.0.6 released to stores. Now on 1.0.7b39. 275 unit tests, 65 UITests. F-10 Phase 1 (iOS) implemented.
-**Last completed**: F-10 Phase 1 + Phase 2 (deep-link share, both platforms), divider color fix, website Play Store URL prep
-**Next up**: F-21 planning (Prayer Time from search results), then UX-18 (iPad layout)
+**Status**: 1.0.7b40. 278 unit tests, 65 UITests. F-10 both phases implemented, onboarding revamped, mark-answered in prayer time.
+**Last completed**: Mark Answered in Prayer Time, onboarding share tutorial, UITest onboarding fix (49/65 passing, remainder are pre-existing state/ordering issues)
+**Next up**: BUG-6 URL encoding fix (instafix), then F-21 planning
 
 ---
 
@@ -26,19 +26,22 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
-| 2   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
-| 3   | UX-22 | Update Android screenshots for Play Store                          | Ken    | New screenshots needed for Play Store listing reflecting current UI.                                                                                                                                                                           |
-| 4   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. Verify inbound links work post-launch. Plan at `docs/plans/F10-deep-link-share.md`.                                                                                                                         |
-| 5   | INV-4 | In-app update notification — Android Play Core                     | —      | **Blocked:** `Xamarin.Google.Android.Play.App.Update` conflicts with MAUI AndroidX pin. Resume when a compatible binding ships. Research at `docs/research/INV-4-android-update-research.md`.                                                  |
-| 6   | F-22  | Card archiving — hide/retire cards with 0 open requests            | Ken    | Users should be able to say "this isn't relevant anymore" and archive a card without closing every request. Auto-archive when 0 open requests? Manual archive action? **Requires plan before implementation.**                                  |
-| 7   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Home page widget showing prayers answered on the same month/day in prior years. Hide if empty. Needs new query method on Prayer model. **Requires plan before implementation.**                                                                 |
-| 8   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
+| 1   | BUG-6 | URL encoding on shared requests/cards                              | Ken    | Apostrophes and special chars break the deep-link URL and make the text message look broken. Need `Uri.EscapeDataString()` on JSON payload before Base64, and proper handling on decode. **Instafix.**                                          |
+| 2   | UX-24 | Prayer card expanded icons — styling/positioning cleanup            | Ken    | The icons on expanded prayer cards work but look awkward/clunky. Need proper styling, positioning, spacing. **Requires plan.**                                                                                                                  |
+| 3   | UX-25 | Deep-link entry point — suppress onboarding for share imports      | Ken    | Users entering via share link have a specific goal (import). Current onboarding/new-features popup conflicts with that goal. Need: (1) detect share-link entry, (2) suppress onboarding until import completes, (3) surface new-features on next natural launch. **Requires plan.** |
+| 4   | UX-22 | Update Android screenshots for Play Store                          | Ken    | New screenshots needed for Play Store listing reflecting current UI.                                                                                                                                                                           |
+| 5   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
+| 6   | UX-18 | iPad layout — make screens more spacious/useful                    | Ken    | iPad layout feels crammed for no good reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts.                                                                                     |
+| 7   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. Verify inbound links work post-launch. Plan at `docs/plans/F10-deep-link-share.md`.                                                              |
+| 8   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Home page widget showing prayers answered on the same month/day in prior years. Hide if empty. Needs new query method on Prayer model. **Requires plan before implementation.**                                                                 |
+| 9   | F-24  | Card groups & archiving — organizational layer above PrayerCard    | Ken    | Users will amass 50-100+ cards over time and need higher-level organization. Groups/folders/collections that cards belong to. Includes card archiving (hide/retire cards with 0 open requests, manual archive action). Imported, archived, active cards all fit here. Needs full UI/UX planning: list views, multi-select + assign, new entry points. **Large feature — requires plan before implementation.** |
+| 10  | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping.                                                                                                                             |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| INV-4   | In-app update notification — Android Play Core (**archived**: blocked on compatible binding, no ETA) | 2026-03-30 |
 | F-10p1  | Deep-link share Phase 1: iOS Universal Links, DeepLinkService, share UI, imported icon, settings, divider fix | 2026-03-30 |
 | UAT-1   | 4 new UITests: home metric visibility, Cards/Prayers tap navigation, tag chip visibility | 2026-03-30 |
 | UX-23   | Auto-focus first field on new card/tag/prayer forms | 2026-03-29 |
@@ -213,4 +216,4 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 
 ---
 
-_Last updated: 2026-03-30 (session — F-10 Phase 1 iOS implementation, divider color fix, 4 new unit tests, 3 new UITests; 275 unit tests, 65 UITests; build 1.0.7b39)_
+_Last updated: 2026-03-30 (session — mark answered in prayer time, onboarding revamp, UITest onboarding fix, backlog reorg; 278 unit tests, 65 UITests; build 1.0.7b40)_
