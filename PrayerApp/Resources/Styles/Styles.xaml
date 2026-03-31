@@ -454,6 +454,20 @@
         </Setter>
     </Style>
 
+    <!-- ActionChip: rounded action button for card actions (expanded view).
+         Intentionally button-like: taller padding, rounder corners than tag pills. -->
+    <Style x:Key="ActionChip" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ChipBgLight}, Dark={StaticResource ChipBgDark}}" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="14" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ── Base styles for BasedOn (compiled XAML does not support {x:Type} as a resource key) ── -->
 
     <!-- ButtonBase mirrors the implicit Button style so named variants can BasedOn it. -->

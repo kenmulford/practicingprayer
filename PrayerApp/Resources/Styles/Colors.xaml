@@ -22,6 +22,7 @@
     <Color x:Key="SuccessGreen">#2E7D32</Color>
     <Color x:Key="SuccessGreenDark">#66BB6A</Color>
     <Color x:Key="DangerRed">#CD5C5C</Color>
+    <Color x:Key="DangerRedDark">#E07070</Color>
 
     <!-- Warm Journal theme — semantic surface colors -->
     <Color x:Key="PageLight">#FAF8F3</Color>
@@ -42,6 +43,14 @@
     <Color x:Key="CardBorderDark">#2a2e26</Color>
     <Color x:Key="SystemCardLight">#F0F3EC</Color>
     <Color x:Key="SystemCardDark">#1e201b</Color>
+
+    <!-- Action chip backgrounds -->
+    <Color x:Key="ChipBgLight">#F0F0F0</Color>
+    <Color x:Key="ChipBgDark">#2A2E26</Color>
+    <Color x:Key="ChipFavoritedBgLight">#F5EDD4</Color>
+    <Color x:Key="ChipFavoritedBgDark">#3A3420</Color>
+    <Color x:Key="ChipDangerBgLight">#FDE8E8</Color>
+    <Color x:Key="ChipDangerBgDark">#3A1B1B</Color>
 
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>

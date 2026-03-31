@@ -80,18 +80,10 @@ public partial class MainPage : ContentPage
         await App.InitTask; // ensure DB seeding is complete before loading data
         await _homeViewModel.LoadAsync();
 
-        // If user returned to home while still on ShareIntro or SharePrayer,
-        // advance to PrayerTimeHighlight so they don't get stuck
-        if (_onboardingService.CurrentStep is OnboardingStep.ShareIntro or OnboardingStep.SharePrayer)
-        {
-            while (_onboardingService.CurrentStep != OnboardingStep.PrayerTimeHighlight
-                   && _onboardingService.IsActive)
-                _onboardingService.Advance();
-        }
-
-        // Show welcome popup on first visit — one-shot guard prevents re-showing on back navigation
+        // Show welcome popup on first visit — skip if user entered via share link
         if (_onboardingService.CurrentStep == OnboardingStep.Welcome
-            && !_onboardingService.WelcomeShownThisSession)
+            && !_onboardingService.WelcomeShownThisSession
+            && !_onboardingService.IsDeepLinkSession)
         {
             _onboardingService.MarkWelcomeShown();
             try

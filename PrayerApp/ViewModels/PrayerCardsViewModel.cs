@@ -382,8 +382,7 @@ namespace PrayerApp.ViewModels
         {
             void Handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
             {
-                if (e.PropertyName == nameof(PrayerCardViewModel.Title)
-                    || e.PropertyName == nameof(PrayerCardViewModel.IsFavorite))
+                if (e.PropertyName == nameof(PrayerCardViewModel.Title))
                 {
                     ApplySorting();
                 }
@@ -394,6 +393,12 @@ namespace PrayerApp.ViewModels
                         foreach (var other in AllPrayerCards)
                             if (other != card && other.IsExpanded)
                                 other.IsExpanded = false;
+                    }
+                    else
+                    {
+                        // Re-sort on collapse so favorite changes take effect
+                        // at a natural transition point (not while user is interacting)
+                        ApplySorting();
                     }
 
                     _accessibilityService.Announce(card.IsExpanded

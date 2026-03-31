@@ -289,6 +289,11 @@ namespace PrayerApp
             if (string.IsNullOrEmpty(url) || !url.StartsWith("https://practicingprayerapp.com/share"))
                 return;
 
+            // Suppress onboarding for this session — must happen before UI dispatch
+            // so MainPage.OnAppearing sees the flag when it checks.
+            var onboarding = IPlatformApplication.Current?.Services?.GetService<IOnboardingService>();
+            onboarding?.MarkDeepLinkSession();
+
             MainThread.BeginInvokeOnMainThread(async () =>
             {
                 try

@@ -17,6 +17,9 @@
 
 ### Improvements
 
+- **Card action buttons** — Expanded prayer cards now show styled Favorite, Share, Edit, and Delete buttons directly on the card. No more hidden swipe gestures to discover.
+- **Favorite visual feedback** — The Favorite button shows a warm highlight when active and the label changes to "Favorited." Cards re-sort smoothly when you collapse them, not while you're interacting.
+- **Smoother share link experience** — Opening the app from a shared prayer link now goes straight to the import without interruption. Onboarding waits for your next visit.
 - **Multi-line card titles** — Prayer card names now display up to 3 lines instead of cutting off, across all screens (cards list, prayer list, Prayer Time, and home page)
 - **Filter cards by tag** — New tag chip filter on the Prayer Cards page lets you find cards that contain unanswered prayers with a specific tag
 - **Reliable reminders** — Prayer reminders now automatically sync on every app launch, preventing orphaned or missing notifications after updates, restores, or deleted prayers

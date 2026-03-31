@@ -11,7 +11,7 @@
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
         </Grid.GestureRecognizers>
@@ -153,7 +153,7 @@
                                 IsVisible="{Binding IsSystem}"
                                 TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                                 VerticalOptions="Center"
-                                Margin="6,0,0,0" />
+                                Margin="6,0,6,0" />
                             <!-- Imported icon (shared content) -->
                             <Image
                                 Grid.Column="2"
@@ -203,68 +203,120 @@
 
                         <BoxView Style="{StaticResource DividerLine}" />
 
-                        <!-- Inline action buttons (expanded, non-system cards only) -->
+                        <!-- Card action chips — visible when expanded, hidden for system cards -->
                         <HorizontalStackLayout
-                            IsVisible="{Binding IsExpanded}"
-                            Spacing="0"
-                            Padding="4,4"
-                            HorizontalOptions="Fill">
-                            <!-- Favorite -->
-                            <ImageButton
-                                Source="star_solid_full.png"
-                                Command="{Binding ToggleFavoriteCommand}"
-                                AutomationId="Cards_Btn_Favorite"
-                                SemanticProperties.Description="Toggle favorite"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                BackgroundColor="Transparent"
-                                WidthRequest="40" HeightRequest="40"
-                                Padding="8">
-                                <ImageButton.Behaviors>
-                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
-                                </ImageButton.Behaviors>
-                            </ImageButton>
+                            AutomationId="Cards_ActionChips"
+                            IsVisible="{Binding ShowActionChips}"
+                            Spacing="8"
+                            Padding="12,4,12,8">
+
+                            <!-- ★ Favorite — gold background when active, default when not -->
+                            <Border Style="{StaticResource ActionChip}"
+                                    AutomationId="Cards_Btn_Favorite"
+                                    SemanticProperties.Description="Toggle favorite">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding IsFavorite}"
+                                                 Value="True">
+                                        <Setter Property="BackgroundColor"
+                                                Value="{AppThemeBinding Light={StaticResource ChipFavoritedBgLight}, Dark={StaticResource ChipFavoritedBgDark}}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleFavoriteCommand}" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="4">
+                                    <Image Source="star_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           VerticalOptions="Center">
+                                        <Image.Behaviors>
+                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                                Light={StaticResource WarmGold},
+                                                Dark={StaticResource WarmGoldDark}}" />
+                                        </Image.Behaviors>
+                                    </Image>
+                                    <Label Text="{Binding FavoriteLabel}"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding
+                                               Light={StaticResource Tertiary},
+                                               Dark={StaticResource TextPrimaryDark}}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+
                             <!-- Share -->
-                            <ImageButton
-                                Source="share_from_square_solid_full.png"
-                                Command="{Binding ShareCommand}"
-                                AutomationId="Cards_Btn_Share"
-                                SemanticProperties.Description="Share card"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                BackgroundColor="Transparent"
-                                WidthRequest="40" HeightRequest="40"
-                                Padding="8">
-                                <ImageButton.Behaviors>
-                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
-                                </ImageButton.Behaviors>
-                            </ImageButton>
+                            <Border Style="{StaticResource ActionChip}"
+                                    AutomationId="Cards_Btn_Share"
+                                    SemanticProperties.Description="Share card">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ShareCommand}" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="4">
+                                    <Image Source="share_from_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           VerticalOptions="Center">
+                                        <Image.Behaviors>
+                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                                Light={StaticResource Primary},
+                                                Dark={StaticResource PrimaryDark}}" />
+                                        </Image.Behaviors>
+                                    </Image>
+                                    <Label Text="Share" FontSize="12"
+                                           TextColor="{AppThemeBinding
+                                               Light={StaticResource Tertiary},
+                                               Dark={StaticResource TextPrimaryDark}}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+
                             <!-- Edit -->
-                            <ImageButton
-                                Source="pen_to_square_solid_full.png"
-                                Command="{Binding SelectCardCommand}"
-                                AutomationId="Cards_Btn_Edit"
-                                SemanticProperties.Description="Edit card"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                BackgroundColor="Transparent"
-                                WidthRequest="40" HeightRequest="40"
-                                Padding="8">
-                                <ImageButton.Behaviors>
-                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
-                                </ImageButton.Behaviors>
-                            </ImageButton>
-                            <!-- Delete -->
-                            <ImageButton
-                                Source="trash_can_solid_full.png"
-                                Command="{Binding DeleteCommand}"
-                                AutomationId="Cards_Btn_Delete"
-                                SemanticProperties.Description="Delete card"
-                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
-                                BackgroundColor="Transparent"
-                                WidthRequest="40" HeightRequest="40"
-                                Padding="8">
-                                <ImageButton.Behaviors>
-                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}" />
-                                </ImageButton.Behaviors>
-                            </ImageButton>
+                            <Border Style="{StaticResource ActionChip}"
+                                    AutomationId="Cards_Btn_Edit"
+                                    SemanticProperties.Description="Edit card">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectCardCommand}" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="4">
+                                    <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           VerticalOptions="Center">
+                                        <Image.Behaviors>
+                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                                Light={StaticResource Primary},
+                                                Dark={StaticResource PrimaryDark}}" />
+                                        </Image.Behaviors>
+                                    </Image>
+                                    <Label Text="Edit" FontSize="12"
+                                           TextColor="{AppThemeBinding
+                                               Light={StaticResource Tertiary},
+                                               Dark={StaticResource TextPrimaryDark}}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+
+                            <!-- Delete (danger styling) -->
+                            <Border Style="{StaticResource ActionChip}"
+                                    AutomationId="Cards_Btn_Delete"
+                                    SemanticProperties.Description="Delete card"
+                                    BackgroundColor="{AppThemeBinding
+                                        Light={StaticResource ChipDangerBgLight},
+                                        Dark={StaticResource ChipDangerBgDark}}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding DeleteCommand}" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="4">
+                                    <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           VerticalOptions="Center">
+                                        <Image.Behaviors>
+                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                                Light={StaticResource DangerRed},
+                                                Dark={StaticResource DangerRedDark}}" />
+                                        </Image.Behaviors>
+                                    </Image>
+                                    <Label Text="Delete" FontSize="12"
+                                           TextColor="{AppThemeBinding
+                                               Light={StaticResource DangerRed},
+                                               Dark={StaticResource DangerRedDark}}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
                         </HorizontalStackLayout>
 
                         <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
@@ -356,13 +408,6 @@
             ExpectedStep="AddRequest"
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />
-
-        <!-- ShareIntro step banner -->
-        <onboarding:OnboardingBanner
-            Grid.Row="5"
-            ExpectedStep="ShareIntro"
-            HeadlineText="Share a card — swipe right on any card to reveal the Share action"
-            SubText="Tap Share to send it via text, email, or any messaging app." />
 
     </Grid>
 </ContentPage>

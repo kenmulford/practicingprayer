@@ -112,13 +112,6 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(PrayerTimeLandscape), value);
         }
 
-        /// <summary>Whether the share tutorial has been shown to an existing user after update.</summary>
-        public static bool ShareTutorialShown
-        {
-            get => Preferences.Get(nameof(ShareTutorialShown), false);
-            set => Preferences.Set(nameof(ShareTutorialShown), value);
-        }
-
         /// <summary>Whether the "Shared with me" system card is hidden from the Cards page.</summary>
         public static bool HideSharedWithMe
         {

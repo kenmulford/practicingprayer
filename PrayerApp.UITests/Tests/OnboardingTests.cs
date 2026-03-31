@@ -52,40 +52,7 @@ public class OnboardingTests
 
     // ── Post-dismissal: onboarding banners should be hidden ──────
 
-    /// <summary>1.8: ShareIntro banner not visible on Cards tab after onboarding is complete.</summary>
-    [Fact]
-    public void Onboarding_ShareIntro_BannerNotVisibleAfterDismiss()
-    {
-        var driver = _setup.Driver;
-        driver.EnsureOnTab("Prayer Cards", _setup);
-
-        Assert.False(driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2),
-            "ShareIntro onboarding banner should not be visible after onboarding is complete");
-    }
-
-    /// <summary>1.9: SharePrayer banner not visible on prayer detail after onboarding is complete.</summary>
-    [Fact]
-    public void Onboarding_SharePrayer_BannerNotVisibleAfterDismiss()
-    {
-        var driver = _setup.Driver;
-        driver.EnsureUITestPrayerExists(_setup);
-        driver.EnsureOnTab("Prayers", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // Tap into a prayer detail
-        if (driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 5))
-        {
-            driver.TapByText("UI Test Prayer");
-            Thread.Sleep(TestConfig.DelayAfterNavigation);
-        }
-
-        Assert.False(driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2),
-            "SharePrayer onboarding banner should not be visible after onboarding is complete");
-
-        driver.GoBack();
-    }
-
-    /// <summary>1.10: PrayerTimeHighlight "Got it!" button not visible on Home after onboarding is complete.</summary>
+    /// <summary>1.8: PrayerTimeHighlight "Got it!" button not visible on Home after onboarding is complete.</summary>
     [Fact]
     public void Onboarding_GotItButton_NotVisibleAfterDismiss()
     {

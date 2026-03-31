@@ -72,6 +72,7 @@ namespace PrayerApp.ViewModels
                 {
                     _prayerCard.IsFavorite = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(FavoriteLabel));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
                 }
             }
@@ -87,6 +88,7 @@ namespace PrayerApp.ViewModels
                     _isExpanded = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(ShowBadge));
+                    OnPropertyChanged(nameof(ShowActionChips));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
                 }
             }
@@ -97,6 +99,8 @@ namespace PrayerApp.ViewModels
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
         public bool CanShare => !IsSystem;
+        public bool ShowActionChips => IsExpanded && !IsSystem;
+        public string FavoriteLabel => IsFavorite ? "Favorited" : "Favorite";
 
         public bool IsDirty => Title != _originalTitle;
 
@@ -291,10 +295,20 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private bool _isFavoriteSaving;
         private async Task ToggleFavoriteAsync()
         {
-            IsFavorite = !IsFavorite;
-            await _cardService.SaveCardAsync(_prayerCard);
+            if (_isFavoriteSaving) return;
+            _isFavoriteSaving = true;
+            try
+            {
+                IsFavorite = !IsFavorite;
+                await _cardService.SaveCardAsync(_prayerCard);
+            }
+            finally
+            {
+                _isFavoriteSaving = false;
+            }
         }
 
         private async Task AddPrayerAsync()
@@ -311,7 +325,7 @@ namespace PrayerApp.ViewModels
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
             var text = deepLinkService.BuildCardShareText(_prayerCard, activePrayers);
             await Share.RequestAsync(new ShareTextRequest { Title = _prayerCard.Title, Text = text });
-            _onboardingService.Advance(); // ShareIntro → SharePrayer (if active)
+            _onboardingService.Advance();
         }
 
         #endregion

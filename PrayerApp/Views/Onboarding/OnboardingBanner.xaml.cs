@@ -101,20 +101,13 @@ public partial class OnboardingBanner : ContentView
 
     private void UpdateStepLabel()
     {
-        if (_onboardingService?.IsShareTutorial == true)
-        {
-            StepLabel.Text = "NEW FEATURE";
-            return;
-        }
-
         var stepNumber = ExpectedStep switch
         {
             OnboardingStep.CreateCard or OnboardingStep.NameCard => 1,
             OnboardingStep.AddRequest or OnboardingStep.NameRequest => 2,
-            OnboardingStep.ShareIntro or OnboardingStep.SharePrayer => 3,
-            OnboardingStep.PrayerTimeHighlight => 4,
+            OnboardingStep.PrayerTimeHighlight => 3,
             _ => 0
         };
-        StepLabel.Text = stepNumber > 0 ? $"STEP {stepNumber} OF 4" : string.Empty;
+        StepLabel.Text = stepNumber > 0 ? $"STEP {stepNumber} OF 3" : string.Empty;
     }
 }

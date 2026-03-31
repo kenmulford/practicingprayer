@@ -16,5 +16,4 @@ public interface ISettings
     bool QuickAddTipDismissed { get; set; }
     bool PrayerTimeLandscape { get; set; }
     bool HideSharedWithMe { get; set; }
-    bool ShareTutorialShown { get; set; }
 }
