@@ -89,6 +89,10 @@ namespace PrayerApp.Services
 
             await EnsurePrayerCardColumnsAsync();
 
+            // F-24: CardBox table + PrayerCard box columns + data migration
+            await _db.CreateTableAsync<CardBox>();
+            await EnsureCardBoxMigrationAsync();
+
             try
             {
                 await _db.ExecuteAsync("DROP TABLE IF EXISTS PrayerRequestTag");
@@ -307,6 +311,23 @@ namespace PrayerApp.Services
                 "DELETE FROM PrayerInteraction WHERE PrayerId = ?", prayerId);
         }
 
+        public async Task UnassignBoxFromCardsAsync(int boxId)
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            await _db.ExecuteAsync(
+                "UPDATE PrayerCard SET BoxId = 0 WHERE BoxId = ?", boxId);
+        }
+
+        public async Task<List<PrayerCard>> GetCardsByBoxIdAsync(int boxId)
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            return await _db.Table<PrayerCard>()
+                .Where(c => c.BoxId == boxId)
+                .ToListAsync();
+        }
+
         public async Task SeedDataAsync()
         {
             await EnsureInitializedAsync();
@@ -495,6 +516,83 @@ namespace PrayerApp.Services
             }
 
             System.Diagnostics.Debug.WriteLine("[BUG-21 Migration] Migration complete.");
+        }
+
+        /// <summary>
+        /// F-24: Seeds System + Archived boxes, adds BoxId/IsArchived/SystemKey columns to PrayerCard,
+        /// and migrates existing system/imported cards into the System box.
+        /// </summary>
+        private async Task EnsureCardBoxMigrationAsync()
+        {
+            if (_db == null) return;
+
+            // Load all boxes once for both seed checks
+            var allBoxes = await _db.Table<CardBox>().ToListAsync();
+
+            // 1. Seed System box if not exists
+            var systemBox = allBoxes.FirstOrDefault(b => b.SystemKey == CardBox.SystemKeySystem);
+            if (systemBox == null)
+            {
+                systemBox = new CardBox
+                {
+                    Name = "System",
+                    IsSystem = true,
+                    SystemKey = CardBox.SystemKeySystem,
+                    SortOrder = 900,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                };
+                await _db.InsertAsync(systemBox);
+            }
+
+            // 2. Seed Archived box if not exists
+            var archivedBox = allBoxes.FirstOrDefault(b => b.SystemKey == CardBox.SystemKeyArchived);
+            if (archivedBox == null)
+            {
+                archivedBox = new CardBox
+                {
+                    Name = "Archived",
+                    IsSystem = true,
+                    SystemKey = CardBox.SystemKeyArchived,
+                    SortOrder = 999,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                };
+                await _db.InsertAsync(archivedBox);
+            }
+
+            // 3. Persist ArchivedFolderId in Settings for zero-query runtime lookups
+            Settings.ArchivedFolderId = archivedBox.Id;
+
+            // 4. Add new columns to PrayerCard
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN BoxId INTEGER DEFAULT 0"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN SystemKey TEXT"); } catch { }
+
+            // 4. Migrate system and imported cards into the System box (one-time)
+            // Only cards with BoxId=0 need migration — already-assigned cards are left alone.
+            try
+            {
+                await _db.ExecuteAsync(
+                    "UPDATE PrayerCard SET BoxId = ? WHERE BoxId = 0 AND (IsSystem = 1 OR IsImported = 1)",
+                    systemBox.Id);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] System card migration: {ex.Message}");
+            }
+
+            // 5. Set SystemKey on known system cards (idempotent — uses WHERE SystemKey IS NULL)
+            try
+            {
+                await _db.ExecuteAsync(
+                    "UPDATE PrayerCard SET SystemKey = 'quick_add' WHERE IsSystem = 1 AND Title = 'Quick Add' AND SystemKey IS NULL");
+                await _db.ExecuteAsync(
+                    "UPDATE PrayerCard SET SystemKey = 'shared_with_me' WHERE IsSystem = 1 AND Title = 'Shared with me' AND SystemKey IS NULL");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] SystemKey backfill: {ex.Message}");
+            }
         }
 
         /// <summary>Maps a single row from PRAGMA table_info(...) for column existence checks.</summary>

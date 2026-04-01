@@ -38,6 +38,10 @@ namespace PrayerApp.Services
         Task<DateTime?> GetMaxInteractionDateAsync();
         Task<int> DeleteInteractionsByPrayerIdAsync(int prayerId);
 
+        // CardBox queries
+        Task UnassignBoxFromCardsAsync(int boxId);
+        Task<List<PrayerApp.Models.PrayerCard>> GetCardsByBoxIdAsync(int boxId);
+
         Task SeedDataAsync();
 
         Task UpdateSchema();

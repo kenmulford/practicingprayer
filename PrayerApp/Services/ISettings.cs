@@ -15,4 +15,10 @@ public interface ISettings
     bool AllowNotifications { get; set; }
     bool QuickAddTipDismissed { get; set; }
     bool PrayerTimeLandscape { get; set; }
+
+    /// <summary>
+    /// The CardBox.Id of the Archived folder. Written once during DB migration.
+    /// All "is archived?" checks use card.BoxId == ArchivedFolderId.
+    /// </summary>
+    int ArchivedFolderId { get; set; }
 }

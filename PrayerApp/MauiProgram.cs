@@ -131,6 +131,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<IPrayerService, PrayerService>();
             // Register prayer interaction service as singleton
             builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
+            // Register box service as singleton
+            builder.Services.AddSingleton<IBoxService, BoxService>();
             // Register local notification center wrapper (wraps Plugin.LocalNotification static)
             builder.Services.AddSingleton<ILocalNotificationCenter, LocalNotificationCenterWrapper>();
             // Register notification service — Settings.AllowNotifications supplied here so
@@ -233,6 +235,7 @@ namespace PrayerApp
             PrayerCardTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
             PrayerInteraction.SetDBService(myDBService);
+            CardBox.SetDBService(myDBService);
 
             // Kick off seeding asynchronously — no blocking on the startup thread.
             // DBService internally awaits its own schema init before any query runs,
@@ -323,6 +326,16 @@ namespace PrayerApp
 
             var tagService = services.GetRequiredService<ITagService>();
             await tagService.SeedSystemTagsAsync();
+
+            // Ensure system boxes (System, Archived) exist — resilience fallback
+            var boxService = services.GetRequiredService<IBoxService>();
+            await boxService.SeedSystemBoxesAsync();
+
+            // Ensure ArchivedFolderId setting is in sync (covers edge cases where
+            // DBService migration wrote it but the box was re-created by seed)
+            var archivedBox = await boxService.GetSystemBoxAsync(CardBox.SystemKeyArchived);
+            if (archivedBox != null)
+                Settings.ArchivedFolderId = archivedBox.Id;
 
             // Ensure the system "Quick Add" card exists
             var cardService = services.GetRequiredService<ICardService>();

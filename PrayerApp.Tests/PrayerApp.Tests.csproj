@@ -44,11 +44,13 @@
     <Compile Include="../PrayerApp/Models/PrayerInteraction.cs" />
     <Compile Include="../PrayerApp/Models/OnboardingStep.cs" />
     <Compile Include="../PrayerApp/Models/UserColor.cs" />
+    <Compile Include="../PrayerApp/Models/CardBox.cs" />
 
     <!-- Helpers -->
     <Compile Include="../PrayerApp/Helpers/TaskExtensions.cs" />
     <Compile Include="../PrayerApp/Helpers/NotificationHelper.cs" />
     <Compile Include="../PrayerApp/Helpers/TagColorPalette.cs" />
+    <Compile Include="../PrayerApp/Helpers/BoxStrings.cs" />
 
     <!-- ViewModel interfaces -->
     <Compile Include="../PrayerApp/ViewModels/IEditGuard.cs" />
@@ -91,6 +93,8 @@
     <Compile Include="../PrayerApp/Services/IBackupService.cs" />
     <Compile Include="../PrayerApp/Services/IDeepLinkService.cs" />
     <Compile Include="../PrayerApp/Services/DeepLinkService.cs" />
+    <Compile Include="../PrayerApp/Services/IBoxService.cs" />
+    <Compile Include="../PrayerApp/Services/BoxService.cs" />
 
     <!-- Service implementations (no MAUI dependencies) -->
     <Compile Include="../PrayerApp/Services/DiagnosticLog.cs" />

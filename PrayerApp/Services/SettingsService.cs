@@ -60,4 +60,9 @@ public class SettingsService : ISettings
         set => Settings.PrayerTimeLandscape = value;
     }
 
+    public int ArchivedFolderId
+    {
+        get => Settings.ArchivedFolderId;
+        set => Settings.ArchivedFolderId = value;
+    }
 }

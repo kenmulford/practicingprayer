@@ -112,6 +112,13 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(PrayerTimeLandscape), value);
         }
 
+        /// <summary>CardBox.Id of the Archived folder. Written during DB migration, read at runtime.</summary>
+        public static int ArchivedFolderId
+        {
+            get => Preferences.Get(nameof(ArchivedFolderId), 0);
+            set => Preferences.Set(nameof(ArchivedFolderId), value);
+        }
+
         public static void ClearSettings()
         {
             // reset "first run" flag

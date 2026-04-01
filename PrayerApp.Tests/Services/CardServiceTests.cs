@@ -237,6 +237,45 @@ public class CardServiceTests
         await _db.Received(2).GetAllAsync<PrayerCard>();
     }
 
+    // ── AssignBoxAsync ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AssignBoxAsync_SetsBoxIdAndSaves()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.AssignBoxAsync(card, boxId: 5);
+
+        Assert.Equal(5, card.BoxId);
+        await _db.Received(1).UpdateAsync(Arg.Is<PrayerCard>(c => c.BoxId == 5));
+    }
+
+    [Fact]
+    public async Task AssignBoxAsync_Unboxed_SetsBoxIdZero()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 5 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.AssignBoxAsync(card, boxId: 0);
+
+        Assert.Equal(0, card.BoxId);
+    }
+
+    [Fact]
+    public async Task AssignBoxAsync_InvalidatesCache()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        await _service.GetCardsAsync(); // populate cache
+
+        var card = new PrayerCard { Id = 1, Title = "Test" };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        await _service.AssignBoxAsync(card, boxId: 5);
+
+        await _service.GetCardsAsync(); // should re-query
+        await _db.Received(2).GetAllAsync<PrayerCard>();
+    }
+
     // ── GetOrCreateQuickAddCardAsync — title matching ────────────────────────
 
     [Fact]

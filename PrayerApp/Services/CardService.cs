@@ -26,19 +26,19 @@ public class CardService : ICardService
     }
 
     public Task<PrayerCard> GetOrCreateQuickAddCardAsync()
-        => GetOrCreateSystemCardAsync(QuickAddTitle);
+        => GetOrCreateSystemCardAsync(QuickAddTitle, PrayerCard.SystemKeyQuickAdd);
 
     public Task<PrayerCard> GetOrCreateSharedCardAsync()
-        => GetOrCreateSystemCardAsync(SharedWithMeTitle);
+        => GetOrCreateSystemCardAsync(SharedWithMeTitle, PrayerCard.SystemKeySharedWithMe);
 
-    private async Task<PrayerCard> GetOrCreateSystemCardAsync(string title)
+    private async Task<PrayerCard> GetOrCreateSystemCardAsync(string title, string systemKey)
     {
         var cards = await GetCardsAsync();
         var existing = cards.FirstOrDefault(c => c.IsSystem && c.Title == title);
         if (existing is not null)
             return existing;
 
-        var card = new PrayerCard { Title = title, IsSystem = true };
+        var card = new PrayerCard { Title = title, IsSystem = true, SystemKey = systemKey };
         await card.SaveAsync();
         _cache = null;
         return card;
@@ -49,6 +49,13 @@ public class CardService : ICardService
         await card.SaveAsync();
         _cache = null;
         return card;
+    }
+
+    public async Task AssignBoxAsync(PrayerCard card, int boxId)
+    {
+        card.BoxId = boxId;
+        await card.SaveAsync();
+        _cache = null;
     }
 
     public async Task DeleteCardAsync(PrayerCard card)
