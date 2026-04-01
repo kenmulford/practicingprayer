@@ -150,7 +150,8 @@
 
                 <!-- Card body — inline action buttons replace SwipeView for reliability on iOS -->
                 <Border Style="{StaticResource PrayerCardBorder}"
-                        Padding="0">
+                        Padding="0"
+                        Loaded="OnCardBorderLoaded">
                     <Border.Triggers>
                         <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
                             <Setter Property="Stroke" Value="{AppThemeBinding
@@ -172,8 +173,7 @@
                     </Border.Triggers>
                     <Border.Behaviors>
                         <toolkit:TouchBehavior LongPressDuration="500"
-                                               ShouldMakeChildrenInputTransparent="False"
-                                               Loaded="OnCardLongPressBehaviorLoaded" />
+                                               ShouldMakeChildrenInputTransparent="False" />
                     </Border.Behaviors>
 
                     <VerticalStackLayout Spacing="0">
