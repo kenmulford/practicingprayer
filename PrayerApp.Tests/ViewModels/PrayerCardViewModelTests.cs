@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using NSubstitute;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
@@ -13,16 +14,20 @@ public class PrayerCardViewModelTests
     private readonly IOnboardingService _onboardingService = Substitute.For<IOnboardingService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
+    private readonly IBoxService _boxService = Substitute.For<IBoxService>();
     private readonly IDBService _db = Substitute.For<IDBService>();
 
     public PrayerCardViewModelTests()
     {
         PrayerCard.SetDBService(_db);
         Prayer.SetDBService(_db);
+        CardBox.SetDBService(_db);
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
     }
 
     private PrayerCardViewModel CreateSut() =>
-        new(_cardService, _prayerService, _onboardingService, _navigationService, _accessibilityService);
+        new(_cardService, _prayerService, _onboardingService, _navigationService,
+            _accessibilityService, _boxService);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -195,5 +200,98 @@ public class PrayerCardViewModelTests
         sut.ActivePrayerCount = 2;
 
         Assert.True(raised);
+    }
+
+    // ── Box Picker (Collection assignment) ────────────────────────────
+
+    [Fact]
+    public async Task LoadBoxPickerAsync_PopulatesAvailableBoxes_WithLooseCardsFirst()
+    {
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" },
+            new() { Id = 6, Name = "Ministry" },
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadBoxPickerAsync();
+
+        Assert.Equal(3, sut.AvailableBoxes.Count); // Loose Cards + 2 user boxes, no system
+        Assert.Equal(BoxStrings.Unorganized, sut.AvailableBoxes[0].Name);
+        Assert.Equal(0, sut.AvailableBoxes[0].BoxId);
+        Assert.Equal("Family", sut.AvailableBoxes[1].Name);
+        Assert.Equal("Ministry", sut.AvailableBoxes[2].Name);
+    }
+
+    [Fact]
+    public async Task LoadBoxPickerAsync_SetsSelectedBoxToCurrentBoxId()
+    {
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" }
+        }.AsReadOnly());
+
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 5 };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService);
+        await sut.LoadBoxPickerAsync();
+
+        Assert.NotNull(sut.SelectedBox);
+        Assert.Equal(5, sut.SelectedBox!.BoxId);
+    }
+
+    [Fact]
+    public async Task LoadBoxPickerAsync_DefaultsToLooseCards_WhenBoxIdIsZero()
+    {
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" }
+        }.AsReadOnly());
+
+        var sut = CreateSut(); // new PrayerCard has BoxId=0
+        await sut.LoadBoxPickerAsync();
+
+        Assert.NotNull(sut.SelectedBox);
+        Assert.Equal(0, sut.SelectedBox!.BoxId);
+    }
+
+    [Fact]
+    public async Task SaveAsync_SetsBoxIdFromSelectedBox()
+    {
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.Title = "Test Card";
+        await sut.LoadBoxPickerAsync();
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 5);
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 5));
+    }
+
+    [Fact]
+    public void BoxPickerItem_EqualsByBoxId()
+    {
+        var a = new BoxPickerItem(5, "Family");
+        var b = new BoxPickerItem(5, "Different Name");
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+    }
+
+    [Fact]
+    public void BoxPickerItem_NotEqual_DifferentBoxId()
+    {
+        var a = new BoxPickerItem(5, "Family");
+        var b = new BoxPickerItem(6, "Family");
+
+        Assert.NotEqual(a, b);
     }
 }

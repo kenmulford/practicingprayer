@@ -137,7 +137,7 @@ namespace PrayerApp.ViewModels
 
         private PrayerCardViewModel CreateCardViewModel(PrayerCard pc) =>
             new(pc, _cardService, _prayerService, _onboardingService,
-                _navigationService, _accessibilityService);
+                _navigationService, _accessibilityService, _boxService);
 
         private async Task NewPrayerCardAsync()
         {

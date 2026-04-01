@@ -10,14 +10,20 @@ public partial class PrayerCardPage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
 #if IOS
         Platforms.iOS.Helpers.SwipeBackHelper.DisableSwipeBack(this);
 #endif
-        if (BindingContext is PrayerCardViewModel vm && vm.IsNew)
-            Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+        if (BindingContext is PrayerCardViewModel vm)
+        {
+            // Load boxes for the picker (new cards won't have ApplyQueryAttributes trigger this)
+            if (vm.AvailableBoxes.Count == 0)
+                await vm.LoadBoxPickerAsync();
+            if (vm.IsNew)
+                Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+        }
     }
 
     protected override void OnDisappearing()
