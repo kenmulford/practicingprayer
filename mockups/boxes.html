@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F-24 Folders Mockup — Practicing Prayer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --page-bg:#FAF8F3; --card-bg:#FFFFFF; --surface:#F0F3EC; --primary:#6B7D5A;
+    --primary-dark:#3F4A34; --warm-gold:#C4A052; --btn-secondary:#E8EDE3;
+    --text-primary:#2c3326; --text-secondary:#6b7165; --text-muted:#9ba595;
+    --divider:#dde3d8; --chip-bg:#E8EDE3; --system-bg:#F0F3EC;
+    --danger:#c0392b; --danger-bg:#fdf0ef;
+    --banner-bg:#f5edd8; --banner-border:#d4b87a;
+    --shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  }
+  body.dark {
+    --page-bg:#0d0e0c; --card-bg:#181a16; --surface:#1c1e19; --primary:#8fa87a;
+    --primary-dark:#b8ccaa; --warm-gold:#d4b06a; --btn-secondary:#252820;
+    --text-primary:#dce0d5; --text-secondary:#9ba595; --text-muted:#6b7165;
+    --divider:#2a2d26; --chip-bg:#252820; --system-bg:#1a1d17;
+    --danger-bg:#2a1212;
+    --banner-bg:#2a2014; --banner-border:#6b5020;
+    --shadow:0 1px 3px rgba(0,0,0,.3);
+  }
+
+  body { background:#e8e5df; font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif; display:flex; flex-direction:column; align-items:center; padding:24px 16px 48px; min-height:100vh; }
+  body.dark { background:#1a1a1a; }
+
+  .controls { display:flex; gap:10px; margin-bottom:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .controls label { font-size:12px; font-weight:600; color:#555; letter-spacing:.02em; }
+  body.dark .controls label { color:#aaa; }
+  .tg { display:flex; background:#fff; border-radius:8px; padding:2px; border:1px solid #d0ccc5; gap:1px; }
+  body.dark .tg { background:#2a2a2a; border-color:#444; }
+  .tg button { padding:5px 12px; border:none; border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; background:transparent; color:#666; transition:all .15s; }
+  body.dark .tg button { color:#aaa; }
+  .tg button.active { background:#6B7D5A; color:#fff; }
+
+  .screen-nav { display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; justify-content:center; }
+  .screen-nav button { padding:6px 10px; border:1px solid #c0bab0; border-radius:8px; font-size:11px; font-weight:600; cursor:pointer; background:#fff; color:#555; transition:all .15s; }
+  body.dark .screen-nav button { background:#2a2a2a; border-color:#444; color:#aaa; }
+  .screen-nav button.active { background:#6B7D5A; color:#fff; border-color:#6B7D5A; }
+
+  .phone { width:393px; height:852px; background:var(--page-bg); border-radius:50px; overflow:hidden; box-shadow:0 25px 80px rgba(0,0,0,.22),0 0 0 10px #1a1a1a,0 0 0 11px #333; position:relative; }
+  .screen { position:absolute; inset:0; display:none; flex-direction:column; background:var(--page-bg); }
+  .screen.active { display:flex; }
+
+  .status-bar { background:var(--page-bg); padding:14px 24px 6px; display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:600; color:var(--text-primary); flex-shrink:0; position:relative; }
+  .notch { width:120px; height:34px; background:#000; border-radius:0 0 22px 22px; position:absolute; top:0; left:50%; transform:translateX(-50%); }
+
+  .nav-bar { background:var(--surface); border-bottom:1px solid var(--divider); padding:10px 16px; display:flex; align-items:center; flex-shrink:0; gap:4px; min-height:50px; }
+  .nav-back { font-size:13px; font-weight:600; color:var(--primary); cursor:pointer; padding:4px 4px 4px 0; white-space:nowrap; border:none; background:transparent; }
+  .nav-title { font-size:18px; font-weight:700; color:var(--text-primary); flex:1; letter-spacing:-.01em; text-align:center; }
+  .nav-title.left { text-align:left; }
+  .nav-actions { display:flex; gap:4px; align-items:center; }
+  .nav-btn { height:34px; border-radius:10px; border:none; background:transparent; cursor:pointer; font-size:13px; font-weight:600; color:var(--primary); padding:0 8px; white-space:nowrap; }
+  .nav-btn:hover { background:var(--btn-secondary); }
+
+  .search-area { background:var(--page-bg); padding:10px 16px 6px; flex-shrink:0; }
+  .search-bar { background:var(--surface); border-radius:12px; padding:9px 14px; color:var(--text-muted); font-size:14px; }
+  .tag-chips { display:flex; gap:6px; padding:8px 0 4px; overflow:hidden; }
+  .chip { padding:4px 12px; background:var(--chip-bg); border-radius:20px; font-size:12px; font-weight:500; color:var(--text-secondary); white-space:nowrap; }
+  .chip.active { background:var(--primary); color:#fff; }
+
+  .scroll-area { flex:1; overflow-y:auto; padding-bottom:16px; scrollbar-width:none; }
+  .scroll-area::-webkit-scrollbar { display:none; }
+
+  .section-header { display:flex; align-items:center; padding:14px 16px 8px; cursor:pointer; user-select:none; border-bottom:1px solid var(--divider); background:var(--page-bg); position:sticky; top:0; z-index:10; }
+  .section-header:hover { background:var(--surface); }
+  .section-arrow { font-size:10px; color:var(--text-muted); margin-right:8px; width:12px; text-align:center; }
+  .section-name { flex:1; font-size:12px; font-weight:700; color:var(--text-secondary); letter-spacing:.06em; text-transform:uppercase; }
+  .section-count { font-size:12px; color:var(--text-muted); font-weight:500; }
+  .section-header.unboxed .section-name { color:var(--text-muted); font-size:11px; }
+  .system-badge { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--primary); color:white; padding:2px 6px; border-radius:4px; margin-right:8px; opacity:.7; }
+
+  .card-item { margin:6px 12px; background:var(--card-bg); border-radius:14px; padding:14px 15px; box-shadow:var(--shadow); border:1px solid var(--divider); cursor:pointer; }
+  .card-item.system-card { background:var(--system-bg); }
+  .card-title { font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:4px; }
+  .card-meta { font-size:12px; color:var(--text-secondary); }
+  .card-tags { display:flex; gap:4px; margin-top:8px; flex-wrap:wrap; }
+  .card-tag { font-size:11px; padding:2px 8px; border-radius:6px; font-weight:500; }
+  .tag-green { background:#e8f0e4; color:#4a7c4e; } .tag-blue { background:#e3ecf5; color:#3a6494; }
+  .tag-gold { background:#f5edd8; color:#8a6630; } .tag-warm { background:#f5ece3; color:#8a5430; }
+  body.dark .tag-green { background:#1e2e1c; color:#6fa870; } body.dark .tag-blue { background:#1a2535; color:#5b8fc9; }
+  body.dark .tag-gold { background:#2a2014; color:#c4942a; } body.dark .tag-warm { background:#2a1a12; color:#c47a4a; }
+  .card-fav { float:right; color:var(--warm-gold); font-size:14px; margin-left:8px; }
+
+  .card-header { cursor:pointer; user-select:none; }
+  .card-title-row { display:flex; align-items:center; gap:6px; }
+  .card-arrow { font-size:9px; color:var(--text-muted); flex-shrink:0; }
+  .card-requests { margin-top:10px; border-top:1px solid var(--divider); padding-top:8px; display:flex; flex-direction:column; gap:6px; }
+  .card-requests.collapsed { display:none; }
+  .request-row { display:flex; align-items:flex-start; gap:8px; }
+  .request-dot { width:6px; height:6px; border-radius:50%; background:var(--primary); flex-shrink:0; margin-top:5px; opacity:.6; }
+  .request-text { font-size:13px; color:var(--text-secondary); flex:1; line-height:1.4; }
+  .request-answered { font-size:10px; font-weight:600; color:var(--primary); background:var(--surface); border-radius:4px; padding:1px 6px; flex-shrink:0; }
+
+  .system-chip { display:inline-block; font-size:10px; font-weight:600; color:var(--text-muted); background:var(--surface); border:1px solid var(--divider); border-radius:6px; padding:1px 7px; margin-left:6px; vertical-align:middle; }
+  .section-body.collapsed { display:none; }
+
+  .tab-bar { background:var(--surface); border-top:1px solid var(--divider); display:flex; padding:8px 0 20px; flex-shrink:0; }
+  .tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:2px 0; }
+  .tab-icon { font-size:20px; color:var(--text-muted); } .tab-label { font-size:10px; font-weight:500; color:var(--text-muted); }
+  .tab.active .tab-icon { color:var(--primary); } .tab.active .tab-label { color:var(--primary); font-weight:600; }
+
+  .upgrade-banner { margin:8px 12px 0; background:var(--banner-bg); border:1.5px solid var(--banner-border); border-radius:12px; padding:12px 14px; flex-shrink:0; position:relative; }
+  .upgrade-banner-title { font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:4px; }
+  .upgrade-banner-body { font-size:12px; color:var(--text-secondary); line-height:1.55; }
+  .upgrade-banner-body b { color:var(--text-primary); font-weight:600; }
+  .upgrade-banner-dismiss { position:absolute; top:8px; right:10px; border:none; background:transparent; font-size:18px; color:var(--text-muted); cursor:pointer; line-height:1; }
+
+  .select-check { width:24px; height:24px; border-radius:12px; border:2px solid var(--divider); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-right:10px; font-size:14px; color:white; }
+  .select-check.checked { background:var(--primary); border-color:var(--primary); }
+  .card-item.selectable { display:flex; align-items:flex-start; }
+  .card-item.selectable .card-content { flex:1; }
+  .select-bar { background:var(--primary); padding:10px 16px; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .select-bar-count { color:white; font-size:14px; font-weight:600; flex:1; }
+  .select-bar-btn { background:white; color:var(--primary-dark); border:none; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+
+  .list-section-label { padding:18px 16px 6px; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--text-muted); }
+  .box-row-wrap { position:relative; overflow:hidden; }
+  .swipe-left-action { position:absolute; left:0; top:0; bottom:0; display:flex; align-items:stretch; }
+  .swipe-right-action { position:absolute; right:0; top:0; bottom:0; display:flex; align-items:stretch; }
+  .swipe-btn { display:flex; align-items:center; justify-content:center; padding:0 22px; font-size:13px; font-weight:600; cursor:pointer; border:none; gap:5px; }
+  .swipe-btn.edit { background:var(--primary); color:#fff; } .swipe-btn.delete { background:var(--danger); color:#fff; }
+  .box-row { background:var(--card-bg); display:flex; align-items:center; padding:14px 16px; border-bottom:1px solid var(--divider); cursor:pointer; position:relative; transition:transform .2s ease; user-select:none; }
+  .box-row:hover { background:var(--surface); }
+  .box-row.swiped-right { transform:translateX(90px); } .box-row.swiped-left { transform:translateX(-90px); }
+  .box-row-icon { font-size:18px; margin-right:12px; opacity:.6; }
+  .box-row-name { flex:1; font-size:16px; font-weight:500; color:var(--text-primary); }
+  .box-row-count { font-size:13px; color:var(--text-muted); margin-right:8px; }
+  .box-row-chevron { font-size:12px; color:var(--text-muted); opacity:.5; }
+  .box-row.system-row { background:var(--system-bg); } .box-row.system-row .box-row-name { color:var(--text-secondary); }
+
+  .form-section { padding:20px 16px 0; }
+  .form-label { font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; display:block; }
+  .form-entry { width:100%; background:var(--card-bg); border:1.5px solid var(--divider); border-radius:12px; padding:13px 14px; font-size:16px; color:var(--text-primary); outline:none; font-family:inherit; }
+  .form-entry.focused { border-color:var(--primary); }
+  .form-hint { font-size:12px; color:var(--text-muted); margin-top:6px; padding:0 4px; }
+  .form-picker { width:100%; background:var(--card-bg); border:1.5px solid var(--divider); border-radius:12px; padding:13px 14px; font-size:16px; color:var(--text-primary); font-family:inherit; appearance:none; -webkit-appearance:none; }
+  .picker-wrap { position:relative; }
+  .picker-wrap::after { content:'▾'; position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--text-muted); pointer-events:none; }
+
+  .fake-keyboard { background:#d1cec9; height:260px; flex-shrink:0; display:flex; flex-direction:column; padding:8px 4px 4px; gap:8px; }
+  body.dark .fake-keyboard { background:#1e2018; }
+  .kb-row { display:flex; gap:5px; justify-content:center; }
+  .kb-key { flex:1; max-width:34px; height:42px; background:#fff; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:16px; color:#000; box-shadow:0 1px 0 rgba(0,0,0,.35); user-select:none; font-family:inherit; }
+  body.dark .kb-key { background:#3a3d35; color:#dce0d5; }
+  .kb-key.wide { max-width:50px; font-size:13px; background:#adb5b0; } body.dark .kb-key.wide { background:#2a2d26; color:#9ba595; }
+  .kb-key.space { max-width:200px; } .kb-key.prim { background:var(--primary); color:#fff; font-weight:700; max-width:60px; }
+
+  .overlay { position:absolute; inset:0; background:rgba(0,0,0,.45); display:none; align-items:flex-end; z-index:100; border-radius:50px; }
+  .overlay.active { display:flex; }
+  .action-sheet { background:var(--card-bg); border-radius:14px 14px 0 0; padding:0 0 34px; width:100%; }
+  .action-sheet-title { padding:18px 20px 4px; font-size:13px; font-weight:700; color:var(--text-primary); text-align:center; }
+  .action-sheet-msg { padding:0 20px 16px; font-size:13px; color:var(--text-secondary); text-align:center; line-height:1.5; border-bottom:1px solid var(--divider); }
+  .action-sheet-btn { display:flex; align-items:center; justify-content:center; padding:16px 20px; font-size:16px; font-weight:500; border:none; background:transparent; width:100%; cursor:pointer; border-bottom:1px solid var(--divider); color:var(--text-primary); font-family:inherit; }
+  .action-sheet-btn:hover { background:var(--surface); }
+  .action-sheet-btn.danger { color:var(--danger); font-weight:600; }
+  .action-sheet-btn.cancel { color:var(--primary); font-weight:600; border-bottom:none; }
+
+  .move-picker { background:var(--card-bg); border-radius:14px 14px 0 0; padding:0 0 34px; width:100%; }
+  .move-picker-title { padding:16px 20px 10px; font-size:15px; font-weight:700; color:var(--text-primary); text-align:center; border-bottom:1px solid var(--divider); }
+  .move-picker-row { display:flex; align-items:center; padding:14px 20px; border-bottom:1px solid var(--divider); cursor:pointer; gap:10px; font-size:15px; color:var(--text-primary); }
+  .move-picker-row:hover { background:var(--surface); }
+  .move-picker-row.muted { color:var(--text-muted); }
+
+  .legend { margin-top:16px; max-width:420px; width:100%; background:white; border-radius:12px; padding:14px 18px; border:1px solid #ddd; font-size:12px; line-height:1.7; color:#444; }
+  body.dark .legend { background:#222; border-color:#444; color:#bbb; }
+  .legend h3 { font-size:13px; font-weight:700; color:#222; margin-bottom:4px; } body.dark .legend h3 { color:#eee; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <label>Theme:</label>
+  <div class="tg"><button id="btn-light" class="active" onclick="setTheme('light')">Light</button><button id="btn-dark" onclick="setTheme('dark')">Dark</button></div>
+  <label>Naming:</label>
+  <div class="tg"><button id="btn-boxes" class="active" onclick="setNaming('boxes')">Boxes</button><button id="btn-folders" onclick="setNaming('folders')">Folders</button></div>
+</div>
+<div class="screen-nav" id="screenNav">
+  <button class="active" onclick="nav('screen-cards')">Cards</button>
+  <button onclick="nav('screen-upgrade')">Upgrade</button>
+  <button onclick="nav('screen-multiselect')">Multi-select</button>
+  <button onclick="nav('screen-create')">Create Card</button>
+  <button onclick="nav('screen-manage')">Manage</button>
+  <button onclick="nav('screen-detail-new')">New Box</button>
+  <button onclick="nav('screen-detail-edit')">Edit Box</button>
+</div>
+
+<div class="phone">
+
+<!-- ═══════ SCREEN: Cards ═══════ -->
+<div class="screen active" id="screen-cards">
+  <div class="status-bar"><div class="notch"></div><span style="padding-left:6px">9:41</span><span style="padding-right:6px">100%</span></div>
+  <div class="nav-bar"><span class="nav-title left">Prayer Cards</span><div class="nav-actions"><button class="nav-btn" id="nav-boxes-btn" onclick="nav('screen-manage')">Boxes</button><button class="nav-btn">Add Card</button></div></div>
+  <div class="search-area"><div class="search-bar">🔍 Search cards…</div><div class="tag-chips"><div class="chip active">All</div><div class="chip">Family</div><div class="chip">Health</div><div class="chip">Work</div><div class="chip">Church</div></div></div>
+  <div class="scroll-area">
+    <div class="section-header unboxed" onclick="toggle('unboxed')"><span class="section-arrow" id="arrow-unboxed">▼</span><span class="section-name" id="sname-unboxed">Unboxed</span><span class="section-count">2</span></div>
+    <div class="section-body" id="body-unboxed">
+      <div class="card-item"><div class="card-title"><span class="card-fav">★</span>The Johnson Family</div><div class="card-meta">3 requests</div><div class="card-tags"><span class="card-tag tag-green">Family</span><span class="card-tag tag-blue">Healing</span></div></div>
+      <div class="card-item"><div class="card-title">Morning Devotion</div><div class="card-meta">1 request</div></div>
+    </div>
+    <div class="section-header" onclick="toggle('family')"><span class="section-arrow" id="arrow-family">▼</span><span class="section-name" id="sname-family">Family Box</span><span class="section-count">3</span></div>
+    <div class="section-body" id="body-family">
+      <div class="card-item"><div class="card-header" onclick="toggleCard('card-mh','ca-mh')"><div class="card-title-row"><span class="card-arrow" id="ca-mh">▾</span><span class="card-title" style="flex:1"><span class="card-fav">★</span>Mom's Health</span></div><div class="card-meta" style="padding-left:15px">5 requests</div><div class="card-tags" style="padding-left:15px"><span class="card-tag tag-gold">Health</span></div></div><div class="card-requests" id="card-mh"><div class="request-row"><div class="request-dot"></div><span class="request-text">Healing from knee surgery</span><span class="request-answered">✓ Answered</span></div><div class="request-row"><div class="request-dot"></div><span class="request-text">Strength during recovery</span></div><div class="request-row"><div class="request-dot"></div><span class="request-text">Peace about follow-up appointment</span></div></div></div>
+      <div class="card-item"><div class="card-header" onclick="toggleCard('card-dj','ca-dj')"><div class="card-title-row"><span class="card-arrow" id="ca-dj">▸</span><span class="card-title" style="flex:1">Dad's Job Search</span></div><div class="card-meta" style="padding-left:15px">2 requests</div><div class="card-tags" style="padding-left:15px"><span class="card-tag tag-blue">Provision</span></div></div><div class="card-requests collapsed" id="card-dj"></div></div>
+      <div class="card-item"><div class="card-header" onclick="toggleCard('card-cs','ca-cs')"><div class="card-title-row"><span class="card-arrow" id="ca-cs">▸</span><span class="card-title" style="flex:1">College Decision — Sarah</span></div><div class="card-meta" style="padding-left:15px">4 requests</div><div class="card-tags" style="padding-left:15px"><span class="card-tag tag-green">Family</span><span class="card-tag tag-warm">Guidance</span></div></div><div class="card-requests collapsed" id="card-cs"></div></div>
+    </div>
+    <div class="section-header" onclick="toggle('ministry')"><span class="section-arrow" id="arrow-ministry">▶</span><span class="section-name" id="sname-ministry">Ministry Box</span><span class="section-count">4</span></div>
+    <div class="section-body collapsed" id="body-ministry"><div class="card-item"><div class="card-title">Youth Group Leaders</div><div class="card-meta">3 requests</div></div></div>
+    <div class="section-header" onclick="toggle('system')"><span class="section-arrow" id="arrow-system">▼</span><span class="system-badge">System</span><span class="section-name" id="sname-system">System Box</span><span class="section-count">2</span></div>
+    <div class="section-body" id="body-system">
+      <div class="card-item system-card"><div class="card-title">⚡ Quick Add <span class="system-chip">System</span></div><div class="card-meta">12 requests</div></div>
+      <div class="card-item system-card"><div class="card-title">🔗 Shared with Me <span class="system-chip">System</span></div><div class="card-meta">3 requests</div></div>
+    </div>
+    <div class="section-header" onclick="toggle('archived')"><span class="section-arrow" id="arrow-archived">▶</span><span class="system-badge">System</span><span class="section-name" id="sname-archived">Archived Box</span><span class="section-count">3</span></div>
+    <div class="section-body collapsed" id="body-archived"><div class="card-item"><div class="card-title">Old Workplace Prayers</div><div class="card-meta">4 requests</div></div><div class="card-item"><div class="card-title">2023 Thanksgiving List</div><div class="card-meta">8 requests</div></div></div>
+    <div style="height:12px"></div>
+  </div>
+  <div class="tab-bar"><div class="tab"><span class="tab-icon">🏠</span><span class="tab-label">Home</span></div><div class="tab active"><span class="tab-icon">📋</span><span class="tab-label">Prayer Cards</span></div><div class="tab"><span class="tab-icon">🙏</span><span class="tab-label">Prayers</span></div><div class="tab"><span class="tab-icon">🏷️</span><span class="tab-label">Tags</span></div><div class="tab"><span class="tab-icon">⚙️</span><span class="tab-label">Settings</span></div></div>
+</div>
+
+<!-- ═══════ SCREEN: Upgrade ═══════ -->
+<div class="screen" id="screen-upgrade">
+  <div class="status-bar"><div class="notch"></div><span style="padding-left:6px">9:41</span><span style="padding-right:6px">100%</span></div>
+  <div class="nav-bar"><span class="nav-title left">Prayer Cards</span><div class="nav-actions"><button class="nav-btn" id="nav-boxes-btn2">Boxes</button><button class="nav-btn">Add Card</button></div></div>
+  <div class="upgrade-banner">
+    <button class="upgrade-banner-dismiss">✕</button>
+    <div class="upgrade-banner-title" id="banner-title">📦 Introducing Boxes</div>
+    <div class="upgrade-banner-body" id="banner-body">Your cards are now organized into <b id="banner-word-p">Boxes</b>. All your existing cards are in <b id="banner-unboxed-word">Unboxed</b> — nothing was moved or deleted.<br><br><b>Quick Add</b> and <b>Shared with Me</b> have moved to the new <b>System</b> <span id="banner-word-s">box</span> below.</div>
+  </div>
+  <div class="scroll-area">
+    <div class="section-header unboxed"><span class="section-arrow">▼</span><span class="section-name" id="sname2-unboxed">Unboxed</span><span class="section-count">9</span></div>
+    <div class="section-body">
+      <div class="card-item"><div class="card-title"><span class="card-fav">★</span>The Johnson Family</div><div class="card-meta">3 requests</div><div class="card-tags"><span class="card-tag tag-green">Family</span></div></div>
+      <div class="card-item"><div class="card-title">Mom's Health</div><div class="card-meta">5 requests</div></div>
+      <div class="card-item"><div class="card-title">Dad's Job Search</div><div class="card-meta">2 requests</div></div>
+      <div class="card-item"><div class="card-title">Morning Devotion</div><div class="card-meta">1 request</div></div>
+      <div class="card-item"><div class="card-title">Youth Group Leaders</div><div class="card-meta">3 requests</div></div>
+      <div class="card-item"><div class="card-title">Sunday Services</div><div class="card-meta">6 requests</div></div>
+    </div>
+    <div class="section-header"><span class="section-arrow">▼</span><span class="system-badge">System</span><span class="section-name" id="sname2-system">System Box</span><span class="section-count">2</span></div>
+    <div class="section-body">
+      <div class="card-item system-card"><div class="card-title">⚡ Quick Add <span class="system-chip">System</span></div><div class="card-meta">12 requests</div></div>
+      <div class="card-item system-card"><div class="card-title">🔗 Shared with Me <span class="system-chip">System</span></div><div class="card-meta">3 requests</div></div>
+    </div>
+    <div class="section-header"><span class="section-arrow">▶</span><span class="system-badge">System</span><span class="section-name" id="sname2-archived">Archived Box</span><span class="section-count">0</span></div>
+    <div style="height:12px"></div>
+  </div>
+  <div class="tab-bar"><div class="tab"><span class="tab-icon">🏠</span><span class="tab-label">Home</span></div><div class="tab active"><span class="tab-icon">📋</span><span class="tab-label">Prayer Cards</span></div><div class="tab"><span class="tab-icon">🙏</span><span class="tab-label">Prayers</span></div><div class="tab"><span class="tab-icon">🏷️</span><span class="tab-label">Tags</span></div><div class="tab"><span class="tab-icon">⚙️</span><span class="tab-label">Settings</span></div></div>
+</div>
+
+<!-- ═══════ SCREEN: Multi-select ═══════ -->
+<div class="screen" id="screen-multiselect">
+  <div class="status-bar"><div class="notch"></div><span style="padding-left:6px">9:41</span><span style="padding-right:6px">100%</span></div>
+  <div class="select-bar"><button class="select-bar-btn" style="background:transparent;color:white;font-weight:500">Cancel</button><span class="select-bar-count">3 selected</span><button class="select-bar-btn" onclick="showMovePicker()">Move to…</button></div>
+  <div class="scroll-area">
+    <div class="section-header unboxed"><span class="section-arrow">▼</span><span class="section-name">Unboxed</span><span class="section-count">6</span></div>
+    <div class="section-body">
+      <div class="card-item selectable"><div class="select-check checked">✓</div><div class="card-content"><div class="card-title">The Johnson Family</div><div class="card-meta">3 requests</div></div></div>
+      <div class="card-item selectable"><div class="select-check checked">✓</div><div class="card-content"><div class="card-title">Mom's Health</div><div class="card-meta">5 requests</div></div></div>
+      <div class="card-item selectable"><div class="select-check checked">✓</div><div class="card-content"><div class="card-title">Dad's Job Search</div><div class="card-meta">2 requests</div></div></div>
+      <div class="card-item selectable"><div class="select-check"></div><div class="card-content"><div class="card-title">Morning Devotion</div><div class="card-meta">1 request</div></div></div>
+      <div class="card-item selectable"><div class="select-check"></div><div class="card-content"><div class="card-title">Youth Group Leaders</div><div class="card-meta">3 requests</div></div></div>
+      <div class="card-item selectable"><div class="select-check"></div><div class="card-content"><div class="card-title">Sunday Services</div><div class="card-meta">6 requests</div></div></div>
+    </div>
+    <div style="height:12px"></div>
+  </div>
+  <div class="tab-bar"><div class="tab"><span class="tab-icon">🏠</span><span class="tab-label">Home</span></div><div class="tab active"><span class="tab-icon">📋</span><span class="tab-label">Prayer Cards</span></div><div class="tab"><span class="tab-icon">🙏</span><span class="tab-label">Prayers</span></div><div class="tab"><span class="tab-icon">🏷️</span><span class="tab-label">Tags</span></div><div class="tab"><span class="tab-icon">⚙️</span><span class="tab-label">Settings</span></div></div>
+  <div class="overlay" id="overlay-move">
+    <div class="move-picker">
+      <div class="move-picker-title">Move 3 cards to…</div>
+      <div class="move-picker-row" onclick="hideMovePicker()"><span style="opacity:.6">📦</span> Family</div>
+      <div class="move-picker-row" onclick="hideMovePicker()"><span style="opacity:.6">📦</span> Ministry</div>
+      <div class="move-picker-row" onclick="hideMovePicker()"><span style="opacity:.6">📦</span> Small Business</div>
+      <div class="move-picker-row muted" onclick="hideMovePicker()">— Unorganized</div>
+      <div class="move-picker-row" onclick="hideMovePicker()" style="color:var(--primary);font-weight:600;justify-content:center;border-bottom:none">Cancel</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SCREEN: Create Card ═══════ -->
+<div class="screen" id="screen-create">
+  <div class="status-bar"><div class="notch"></div><span style="padding-left:6px">9:41</span><span style="padding-right:6px">100%</span></div>
+  <div class="nav-bar"><button class="nav-back" onclick="nav('screen-cards')">‹ Prayer Cards</button><span class="nav-title">New Card</span><button class="nav-btn" style="color:var(--text-muted)">Save</button></div>
+  <div class="scroll-area" style="overflow:hidden">
+    <div class="form-section"><label class="form-label">Card Title</label><input class="form-entry focused" type="text" placeholder="e.g. Mom, Small Group…" readonly></div>
+    <div class="form-section" style="padding-top:16px">
+      <label class="form-label" id="folder-picker-label">Box (optional)</label>
+      <div class="picker-wrap"><select class="form-picker" disabled><option selected>Unboxed</option><option>Family</option><option>Ministry</option><option>Small Business</option></select></div>
+      <p class="form-hint" id="folder-picker-hint">Assign this card to a box, or leave unassigned.</p>
+    </div>
+    <div class="form-section" style="padding-top:16px">
+      <label class="form-label">Notifications</label>
+      <div style="display:flex;align-items:center;gap:10px"><div style="width:48px;height:28px;border-radius:14px;background:var(--primary);position:relative"><div style="width:24px;height:24px;border-radius:12px;background:white;position:absolute;right:2px;top:2px;box-shadow:0 1px 2px rgba(0,0,0,.2)"></div></div><span style="font-size:14px;color:var(--text-primary)">Enabled</span></div>
+    </div>
+  </div>
+  <div class="fake-keyboard"><div class="kb-row"><div class="kb-key">q</div><div class="kb-key">w</div><div class="kb-key">e</div><div class="kb-key">r</div><div class="kb-key">t</div><div class="kb-key">y</div><div class="kb-key">u</div><div class="kb-key">i</div><div class="kb-key">o</div><div class="kb-key">p</div></div><div class="kb-row"><div class="kb-key">a</div><div class="kb-key">s</div><div class="kb-key">d</div><div class="kb-key">f</div><div class="kb-key">g</div><div class="kb-key">h</div><div class="kb-key">j</div><div class="kb-key">k</div><div class="kb-key">l</div></div><div class="kb-row"><div class="kb-key wide">⇧</div><div class="kb-key">z</div><div class="kb-key">x</div><div class="kb-key">c</div><div class="kb-key">v</div><div class="kb-key">b</div><div class="kb-key">n</div><div class="kb-key">m</div><div class="kb-key wide">⌫</div></div><div class="kb-row"><div class="kb-key wide">123</div><div class="kb-key wide">😊</div><div class="kb-key space"></div><div class="kb-key prim">return</div></div></div>
+</div>
+
+<!-- ═══════ SCREEN: Manage ═══════ -->
+<div class="screen" id="screen-manage">
+  <div class="status-bar"><div class="notch"></div><span style="padding-left:6px">9:41</span><span style="padding-right:6px">100%</span></div>
+  <div class="nav-bar"><button class="nav-back" onclick="nav('screen-cards')">‹ Prayer Cards</button><span class="nav-title" id="manage-title">Boxes</span><button class="nav-btn" onclick="nav('screen-detail-new')">Add</button></div>
+  <div class="scroll-area">
+    <div class="list-section-label" id="manage-section-label">Your Boxes</div>
+    <div class="box-row-wrap"><div class="swipe-left-action"><button class="swipe-btn edit" onclick="nav('screen-detail-edit')">✎ Edit</button></div><div class="box-row swiped-right" onclick="this.classList.remove('swiped-right')"><span class="box-row-icon">📦</span><span class="box-row-name">Family</span><span class="box-row-count">3 cards</span><span class="box-row-chevron">›</span></div></div>
+    <div class="box-row-wrap"><div class="swipe-right-action"><button class="swipe-btn delete" onclick="showDelete('Ministry')">🗑 Delete</button></div><div class="box-row swiped-left" onclick="this.classList.remove('swiped-left')"><span class="box-row-icon">📦</span><span class="box-row-name">Ministry</span><span class="box-row-count">4 cards</span><span class="box-row-chevron">›</span></div></div>
+    <div class="box-row-wrap"><div class="box-row"><span class="box-row-icon">📦</span><span class="box-row-name">Small Business</span><span class="box-row-count">0 cards</span><span class="box-row-chevron">›</span></div></div>
+    <div class="list-section-label" style="padding-top:24px">System</div>
+    <div class="box-row-wrap"><div class="box-row system-row"><span class="box-row-icon" style="opacity:.4">📦</span><span class="box-row-name">System</span><span class="system-badge" style="font-size:8px;margin-right:8px">System</span><span class="box-row-count">2 cards</span></div></div>
+    <div class="box-row-wrap"><div class="box-row system-row"><span class="box-row-icon" style="opacity:.4">📦</span><span class="box-row-name">Archived</span><span class="system-badge" style="font-size:8px;margin-right:8px">System</span><span class="box-row-count">3 cards</span></div></div>
+    <div style="padding:20px 16px"><p style="font-size:12px;color:var(--text-muted);line-height:1.6">System boxes are managed automatically. They cannot be renamed or deleted.</p></div>
+  </div>
+  <div class="tab-bar"><div class="tab"><span class="tab-icon">🏠</span><span class="tab-label">Home</span></div><div class="tab active"><span class="tab-icon">📋</span><span class="tab-label">Prayer Cards</span></div><div class="tab"><span class="tab-icon">🙏</span><span class="tab-label">Prayers</span></div><div class="tab"><span class="tab-icon">🏷️</span><span class="tab-label">Tags</span></div><div class="tab"><span class="tab-icon">⚙️</span><span class="tab-label">Settings</span></div></div>
+  <div class="overlay" id="overlay-delete"><div class="action-sheet"><div class="action-sheet-title" id="delete-title">Delete "Ministry"?</div><div class="action-sheet-msg">What should happen to the cards in this box?</div><button class="action-sheet-btn" onclick="hideDelete()">Unassign Cards</button><button class="action-sheet-btn danger" onclick="hideDelete()">Delete All Cards &amp; Requests</button><button class="action-sheet-btn cancel" onclick="hideDelete()">Cancel</button></div></div>
+</div>
+
+<!-- ═══════ SCREEN: New Box ═══════ -->
+<div class="screen" id="screen-detail-new">
+  <div class="status-bar"><div class="notch"></div><span style="padding-left:6px">9:41</span><span style="padding-right:6px">100%</span></div>
+  <div class="nav-bar"><button class="nav-back" onclick="nav('screen-manage')">‹ <span id="nav-back-manage-label">Boxes</span></button><span class="nav-title" id="detail-new-title">New Box</span><button class="nav-btn" style="color:var(--text-muted)">Save</button></div>
+  <div class="scroll-area" style="overflow:hidden"><div class="form-section"><label class="form-label" id="form-label-name">Box Name</label><input class="form-entry focused" type="text" placeholder="e.g. Family, Ministry…" readonly><p class="form-hint">You can assign cards to this box when creating or editing a card.</p></div></div>
+  <div class="fake-keyboard"><div class="kb-row"><div class="kb-key">q</div><div class="kb-key">w</div><div class="kb-key">e</div><div class="kb-key">r</div><div class="kb-key">t</div><div class="kb-key">y</div><div class="kb-key">u</div><div class="kb-key">i</div><div class="kb-key">o</div><div class="kb-key">p</div></div><div class="kb-row"><div class="kb-key">a</div><div class="kb-key">s</div><div class="kb-key">d</div><div class="kb-key">f</div><div class="kb-key">g</div><div class="kb-key">h</div><div class="kb-key">j</div><div class="kb-key">k</div><div class="kb-key">l</div></div><div class="kb-row"><div class="kb-key wide">⇧</div><div class="kb-key">z</div><div class="kb-key">x</div><div class="kb-key">c</div><div class="kb-key">v</div><div class="kb-key">b</div><div class="kb-key">n</div><div class="kb-key">m</div><div class="kb-key wide">⌫</div></div><div class="kb-row"><div class="kb-key wide">123</div><div class="kb-key wide">😊</div><div class="kb-key space"></div><div class="kb-key prim">return</div></div></div>
+</div>
+
+<!-- ═══════ SCREEN: Edit Box ═══════ -->
+<div class="screen" id="screen-detail-edit">
+  <div class="status-bar"><div class="notch"></div><span style="padding-left:6px">9:41</span><span style="padding-right:6px">100%</span></div>
+  <div class="nav-bar"><button class="nav-back" onclick="nav('screen-manage')">‹ Boxes</button><span class="nav-title" id="detail-edit-title">Edit Box</span><button class="nav-btn" style="color:var(--primary);font-weight:600">Save</button></div>
+  <div class="scroll-area" style="overflow:hidden"><div class="form-section"><label class="form-label" id="form-edit-label-name">Box Name</label><input class="form-entry focused" type="text" value="Family" readonly><p class="form-hint">Renaming a box updates it everywhere.</p></div></div>
+  <div class="fake-keyboard"><div class="kb-row"><div class="kb-key">q</div><div class="kb-key">w</div><div class="kb-key">e</div><div class="kb-key">r</div><div class="kb-key">t</div><div class="kb-key">y</div><div class="kb-key">u</div><div class="kb-key">i</div><div class="kb-key">o</div><div class="kb-key">p</div></div><div class="kb-row"><div class="kb-key">a</div><div class="kb-key">s</div><div class="kb-key">d</div><div class="kb-key">f</div><div class="kb-key">g</div><div class="kb-key">h</div><div class="kb-key">j</div><div class="kb-key">k</div><div class="kb-key">l</div></div><div class="kb-row"><div class="kb-key wide">⇧</div><div class="kb-key">z</div><div class="kb-key">x</div><div class="kb-key">c</div><div class="kb-key">v</div><div class="kb-key">b</div><div class="kb-key">n</div><div class="kb-key">m</div><div class="kb-key wide">⌫</div></div><div class="kb-row"><div class="kb-key wide">123</div><div class="kb-key wide">😊</div><div class="kb-key space"></div><div class="kb-key prim">return</div></div></div>
+</div>
+
+</div><!-- /phone -->
+
+<div class="legend">
+  <h3>7 screens — tap the strip above to switch</h3>
+  <b>Cards</b> — Normal view: collapsible box sections, card accordion, sticky headers<br>
+  <b>Upgrade</b> — First launch after update: warm banner, all cards in Unboxed, System folder expanded<br>
+  <b>Multi-select</b> — Long-press enters mode; green bar shows count + "Move to…" folder picker<br>
+  <b>Create Card</b> — New card form with optional folder picker below title<br>
+  <b>Manage</b> — Swipe right=Edit, swipe left=Delete. System rows are read-only.<br>
+  <b>New/Edit Box</b> — Name entry form (mirrors Tags pattern exactly)
+</div>
+
+<script>
+  function nav(id) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+    var map = {'screen-cards':0,'screen-upgrade':1,'screen-multiselect':2,'screen-create':3,'screen-manage':4,'screen-detail-new':5,'screen-detail-edit':6};
+    var btns = document.querySelectorAll('.screen-nav button');
+    btns.forEach(function(b,i) { b.classList.toggle('active', i === map[id]); });
+  }
+  function toggle(id) { var b=document.getElementById('body-'+id),a=document.getElementById('arrow-'+id); if(!b||!a)return; var c=b.classList.toggle('collapsed'); a.textContent=c?'▶':'▼'; }
+  function toggleCard(bid,aid) { var b=document.getElementById(bid),a=document.getElementById(aid); if(!b||!a)return; var c=b.classList.toggle('collapsed'); a.textContent=c?'▸':'▾'; }
+  function showDelete(n) { document.getElementById('delete-title').textContent='Delete "'+n+'"?'; document.getElementById('overlay-delete').classList.add('active'); }
+  function hideDelete() { document.getElementById('overlay-delete').classList.remove('active'); }
+  function showMovePicker() { document.getElementById('overlay-move').classList.add('active'); }
+  function hideMovePicker() { document.getElementById('overlay-move').classList.remove('active'); }
+  function setTheme(t) { document.body.classList.toggle('dark',t==='dark'); document.getElementById('btn-light').classList.toggle('active',t==='light'); document.getElementById('btn-dark').classList.toggle('active',t==='dark'); }
+
+  var N = {
+    boxes:   {w:'Box',p:'Boxes',u:'Unboxed',fam:'Family Box',min:'Ministry Box',sys:'System Box',arch:'Archived Box'},
+    folders: {w:'Folder',p:'Folders',u:'Unorganized',fam:'Family',min:'Ministry',sys:'System',arch:'Archived'}
+  };
+  function setNaming(n) {
+    var m=N[n];
+    ['sname-unboxed','sname2-unboxed'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=m.u;});
+    document.getElementById('sname-family').textContent=m.fam;
+    document.getElementById('sname-ministry').textContent=m.min;
+    ['sname-system','sname2-system'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=m.sys;});
+    ['sname-archived','sname2-archived'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=m.arch;});
+    ['nav-boxes-btn','nav-boxes-btn2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=m.p;});
+    document.getElementById('manage-title').textContent=m.p;
+    document.getElementById('manage-section-label').textContent='Your '+m.p;
+    document.getElementById('nav-back-manage-label').textContent=m.p;
+    document.getElementById('detail-new-title').textContent='New '+m.w;
+    document.getElementById('detail-edit-title').textContent='Edit '+m.w;
+    document.getElementById('form-label-name').textContent=m.w+' Name';
+    document.getElementById('form-edit-label-name').textContent=m.w+' Name';
+    document.getElementById('folder-picker-label').textContent=m.w+' (optional)';
+    document.getElementById('folder-picker-hint').textContent='Assign this card to a '+m.w.toLowerCase()+', or leave unassigned.';
+    var pk=document.querySelector('.form-picker option:first-child'); if(pk) pk.textContent=m.u;
+    document.getElementById('banner-title').textContent=(n==='boxes'?'📦':'📁')+' Introducing '+m.p;
+    document.getElementById('banner-word-p').textContent=m.p;
+    document.getElementById('banner-unboxed-word').textContent=m.u;
+    document.getElementById('banner-word-s').textContent=m.w.toLowerCase();
+    document.getElementById('btn-boxes').classList.toggle('active',n==='boxes');
+    document.getElementById('btn-folders').classList.toggle('active',n==='folders');
+  }
+</script>
+</body>
+</html>
