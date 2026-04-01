@@ -172,6 +172,7 @@
                     </Border.Triggers>
                     <Border.Behaviors>
                         <toolkit:TouchBehavior LongPressDuration="500"
+                                               ShouldMakeChildrenInputTransparent="False"
                                                Loaded="OnCardLongPressBehaviorLoaded" />
                     </Border.Behaviors>
 
