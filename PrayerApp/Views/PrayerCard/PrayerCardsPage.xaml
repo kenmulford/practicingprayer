@@ -171,12 +171,8 @@
                         </DataTrigger>
                     </Border.Triggers>
                     <Border.Behaviors>
-                        <!-- XC0045 false positive: LongPressCardCommand is on PrayerCardsViewModel (page),
-                             not PrayerCardViewModel (DataTemplate). RelativeSource resolves at runtime. -->
-                        <toolkit:TouchBehavior
-                            LongPressCommand="{Binding Source={RelativeSource AncestorType={x:Type viewModels:PrayerCardsViewModel}}, Path=LongPressCardCommand}"
-                            LongPressCommandParameter="{Binding}"
-                            LongPressDuration="500" />
+                        <toolkit:TouchBehavior LongPressDuration="500"
+                                               Loaded="OnCardLongPressBehaviorLoaded" />
                     </Border.Behaviors>
 
                     <VerticalStackLayout Spacing="0">

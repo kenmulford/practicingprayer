@@ -37,6 +37,21 @@ public partial class PrayerCardsPage : ContentPage
         }
     }
 
+    private void OnCardLongPressBehaviorLoaded(object? sender, EventArgs e)
+    {
+        // Wire LongPressCommand in code-behind to avoid XC0045 warning.
+        // The command lives on PrayerCardsViewModel (the page VM), but the DataTemplate's
+        // x:DataType is PrayerCardViewModel — XAML compiled bindings can't resolve across scopes.
+        if (sender is CommunityToolkit.Maui.Behaviors.TouchBehavior behavior
+            && BindingContext is PrayerCardsViewModel vm)
+        {
+            behavior.LongPressCommand = vm.LongPressCardCommand;
+            // Bind CommandParameter to the Border's BindingContext (the card VM)
+            behavior.SetBinding(CommunityToolkit.Maui.Behaviors.TouchBehavior.LongPressCommandParameterProperty,
+                new Binding("."));
+        }
+    }
+
     private void OnCardHeaderTapped(object? sender, TappedEventArgs e)
     {
         if (sender is not Grid grid || grid.BindingContext is not PrayerCardViewModel card) return;
