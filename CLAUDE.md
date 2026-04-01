@@ -106,6 +106,7 @@ Views (XAML)
 | Prayer table name mismatch         | `Prayer` model → `[Table("PrayerRequest")]` SQLite table                     |
 | SQLite page size warning           | XA0141 re: Android 16 16KB pages — third-party issue, no action needed       |
 | PAT scope for CI                   | Pushing `.github/workflows/` requires `workflow` scope on GitHub PAT         |
+| BindableLayout + AppThemeBinding   | `AppThemeBinding` inside a keyed Style doesn't reliably propagate to all BindableLayout children. Use inline color bindings for BoxView/dividers inside BindableLayout DataTemplates. Exception to the "no inline colors" rule. |
 
 ---
 

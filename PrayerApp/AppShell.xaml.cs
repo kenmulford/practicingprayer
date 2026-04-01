@@ -120,11 +120,14 @@ namespace PrayerApp
             var page = CurrentPage;
             if (page is null) return;
 
-            page.Opacity = 0;
-            page.TranslationX = 60;
-            await Task.WhenAll(
-                page.FadeToAsync(1, 250, Easing.CubicOut),
-                page.TranslateToAsync(0, 0, 250, Easing.CubicOut));
+            // Setting Opacity = 0 then fading in causes a flash: the platform renders
+            // the first frame at full opacity before we can set it to 0, so the user
+            // sees: visible → invisible → fade in. Slide-only avoids this entirely.
+            if (!page.IsAnimationEnabled)
+                return;
+
+            page.TranslationX = 40;
+            await page.TranslateToAsync(0, 0, 220, Easing.CubicOut);
         }
 
         private static async Task ShowOnboardingCompletePopupAsync()

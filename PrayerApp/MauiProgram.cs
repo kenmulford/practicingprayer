@@ -1,6 +1,7 @@
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.LifecycleEvents;
 using PrayerApp.Models;
 using Plugin.LocalNotification;
 using PrayerApp.Services;
@@ -61,6 +62,44 @@ namespace PrayerApp
 #endif
             });
 
+            // F-10: Deep link handling via platform lifecycle events
+            builder.ConfigureLifecycleEvents(events =>
+            {
+#if ANDROID
+                events.AddAndroid(android =>
+                {
+                    // Cold launch — Intent arrives with the activity
+                    android.OnCreate((activity, _) =>
+                        HandleAndroidIntent(activity.Intent));
+
+                    // Warm launch — app already running, new link tapped
+                    android.OnNewIntent((activity, intent) =>
+                        HandleAndroidIntent(intent));
+                });
+#elif IOS
+                events.AddiOS(ios =>
+                {
+                    // Warm launch via Universal Link (app already running)
+                    ios.ContinueUserActivity((app, activity, handler) =>
+                    {
+                        if (activity.ActivityType == Foundation.NSUserActivityType.BrowsingWeb)
+                            HandleDeepLink(activity.WebPageUrl?.ToString());
+                        return true;
+                    });
+
+                    // Scene-based launch (iPadOS multi-window, cold + warm)
+                    ios.SceneWillConnect((scene, session, options) =>
+                    {
+                        var activity = options.UserActivities?
+                            .ToArray<Foundation.NSUserActivity>()
+                            .FirstOrDefault(a =>
+                                a.ActivityType == Foundation.NSUserActivityType.BrowsingWeb);
+                        HandleDeepLink(activity?.WebPageUrl?.ToString());
+                    });
+                });
+#endif
+            });
+
 #if ANDROID
             PrayerApp.Platforms.Android.Handlers.TextInputTimePickerHandler.Configure();
 #elif IOS
@@ -113,6 +152,8 @@ namespace PrayerApp
             // Navigation + accessibility abstractions (enable VM unit testing)
             builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
             builder.Services.AddSingleton<IAccessibilityService, MauiAccessibilityService>();
+            // Deep link sharing service
+            builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
@@ -230,6 +271,44 @@ namespace PrayerApp
             };
         }
 
+#if ANDROID
+        private static void HandleAndroidIntent(Android.Content.Intent? intent)
+        {
+            if (intent?.Action != Android.Content.Intent.ActionView || intent.Data is null)
+                return;
+            HandleDeepLink(intent.Data.ToString());
+        }
+#endif
+
+        /// <summary>
+        /// Processes an incoming Universal Link / App Link URI.
+        /// Waits for DB initialization, then delegates to DeepLinkService.
+        /// </summary>
+        private static void HandleDeepLink(string? url)
+        {
+            if (string.IsNullOrEmpty(url) || !url.StartsWith("https://practicingprayerapp.com/share"))
+                return;
+
+            // Suppress onboarding for this session — must happen before UI dispatch
+            // so MainPage.OnAppearing sees the flag when it checks.
+            var onboarding = IPlatformApplication.Current?.Services?.GetService<IOnboardingService>();
+            onboarding?.MarkDeepLinkSession();
+
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await App.InitTask;
+                    var svc = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+                    await svc.HandleAsync(url);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeepLink] HandleDeepLink failed: {ex.Message}");
+                }
+            });
+        }
+
         /// <summary>
         /// Runs post-schema seed work asynchronously. Awaited by App.InitTask
         /// before the first page loads data.
@@ -249,11 +328,13 @@ namespace PrayerApp
             var cardService = services.GetRequiredService<ICardService>();
             await cardService.GetOrCreateQuickAddCardAsync();
 
+            // Load active prayers once — reused for recently-notified tagging and M-11 renewal
+            var prayerService = services.GetRequiredService<IPrayerService>();
+            var activePrayers = await prayerService.GetAllActivePrayersAsync();
+
             // Tag prayers that were recently notified (within last 24h based on schedule)
             try
             {
-                var prayerService = services.GetRequiredService<IPrayerService>();
-                var activePrayers = await prayerService.GetAllActivePrayersAsync();
                 var recentIds = NotificationHelper.GetRecentlyNotifiedPrayerIds(activePrayers, DateTime.Now);
 
                 var systemTag = await tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
@@ -267,6 +348,20 @@ namespace PrayerApp
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Recently-notified tagging failed: {ex}");
+            }
+
+            // Reconcile notifications: clear orphans from deleted prayers or prior
+            // app versions, then reschedule all prayers with CanNotify=true.
+            // On Android this also renews the 12 monthly one-shot notifications (M-11).
+            // On iOS this clears native UNCalendarNotificationTrigger orphans.
+            try
+            {
+                var notificationService = services.GetRequiredService<INotificationService>();
+                await notificationService.ReconcileNotificationsAsync(activePrayers);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Notification reconciliation failed: {ex}");
             }
 
 #if DEBUG

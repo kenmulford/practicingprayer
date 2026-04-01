@@ -194,11 +194,14 @@ public class PrayerListTests
             driver.GoBack();
         }
 
+        // Ensure we're back on the Prayers list
+        driver.NavigateToTab("Prayers");
+
         // Verify Answered filter still works
-        if (driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 3))
+        if (driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 5))
             driver.Tap("List_Filter_Answered");
 
-        Assert.True(driver.IsDisplayed("List_Filter_Answered"));
+        Assert.True(driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 5));
 
         // Restore Active filter for subsequent tests
         if (driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 2))

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode override: match PageDark so no white flash appears in dark mode
+         before MAUI applies its theme. -->
+    <style name="Maui.SplashTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/colorPageDark</item>
+    </style>
+</resources>

@@ -16,6 +16,8 @@ public partial class PrayerCardPage : ContentPage
 #if IOS
         Platforms.iOS.Helpers.SwipeBackHelper.DisableSwipeBack(this);
 #endif
+        if (BindingContext is PrayerCardViewModel vm && vm.IsNew)
+            Dispatcher.DispatchAsync(() => TitleEntry.Focus());
     }
 
     protected override void OnDisappearing()

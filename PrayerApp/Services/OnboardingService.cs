@@ -11,8 +11,7 @@ public class OnboardingService : IOnboardingService
         OnboardingStep.NameCard,
         OnboardingStep.AddRequest,
         OnboardingStep.NameRequest,
-        OnboardingStep.PrayerTime,
-        OnboardingStep.PrayerTimeActive,
+        OnboardingStep.PrayerTimeHighlight,
         OnboardingStep.Complete
     };
 
@@ -20,10 +19,11 @@ public class OnboardingService : IOnboardingService
 
     public OnboardingStep CurrentStep => _currentStep;
 
-    // True for Welcome through PrayerTimeActive inclusive; false for None and Complete
     public bool IsActive =>
         _currentStep != OnboardingStep.None &&
         _currentStep != OnboardingStep.Complete;
+
+    public bool IsDeepLinkSession { get; private set; }
 
     public bool WelcomeShownThisSession { get; private set; }
 
@@ -35,8 +35,12 @@ public class OnboardingService : IOnboardingService
         if (Enum.TryParse<OnboardingStep>(persisted, out var step))
             _currentStep = step;
 
+        // Migration: all legacy steps → PrayerTimeHighlight
+        if (_currentStep is OnboardingStep.PrayerTime or OnboardingStep.PrayerTimeActive
+            or OnboardingStep.ShareIntro or OnboardingStep.SharePrayer)
+            _currentStep = OnboardingStep.PrayerTimeHighlight;
+
         // First install: no persisted step + onboarding not complete → start at Welcome
-        // Note: Settings.FirstRun is NOT referenced here (per spec).
         if (_currentStep == OnboardingStep.None && !Settings.OnboardingComplete)
             _currentStep = OnboardingStep.Welcome;
     }
@@ -63,12 +67,10 @@ public class OnboardingService : IOnboardingService
 
     public void Reset()
     {
-        // Per spec: (1) clear persisted step key, (2) set OnboardingComplete=false,
-        // (3) set WelcomeShownThisSession=false, (4) set in-memory CurrentStep=Welcome.
-        // Welcome popup appears naturally on next MainPage.OnAppearing — NOT shown here.
-        Preferences.Remove(nameof(OnboardingStep)); // key: nameof(OnboardingStep)
+        Preferences.Remove(nameof(OnboardingStep));
         Settings.OnboardingComplete = false;
         WelcomeShownThisSession = false;
+        IsDeepLinkSession = false;
         _currentStep = OnboardingStep.Welcome;
         StepChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -78,11 +80,13 @@ public class OnboardingService : IOnboardingService
         WelcomeShownThisSession = true;
     }
 
+    public void MarkDeepLinkSession()
+    {
+        IsDeepLinkSession = true;
+    }
+
     private void Persist()
     {
-        // Persistence key: nameof(OnboardingStep) — consistent with Settings class convention
-        // NOTE: Settings.OnboardingComplete is NOT set here. It is set exclusively in
-        // OnboardingCompletePopup's Done button handler, which is the spec-defined write site.
         Preferences.Set(nameof(OnboardingStep), _currentStep.ToString());
     }
 }

@@ -59,4 +59,5 @@ public class SettingsService : ISettings
         get => Settings.PrayerTimeLandscape;
         set => Settings.PrayerTimeLandscape = value;
     }
+
 }

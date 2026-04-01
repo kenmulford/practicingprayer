@@ -19,8 +19,8 @@
 		<ApplicationId>com.multithreadedllc.prayercards</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0.6</ApplicationDisplayVersion>
-		<ApplicationVersion>33</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.7</ApplicationDisplayVersion>
+		<ApplicationVersion>43</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -67,7 +67,13 @@
 	<ItemGroup>
 		<!-- App Icon -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#6B7D5A" />
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\bolt_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\folder_regular_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\link_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\gear_solid_full.svg">
@@ -89,6 +95,9 @@
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\person_praying_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\share_from_square_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\star_solid_full.svg">
@@ -115,7 +124,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Images\FontAwesomeIcons\bolt_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\folder_regular_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\link_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\pen_to_square_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\star_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\tag_solid_full.svg" />

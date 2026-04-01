@@ -35,7 +35,7 @@
 
                         <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
-                        <!-- Delete Button — Save is in the navbar -->
+                        <!-- Delete Button — Save is in the navbar, Share is on the expanded card view -->
                         <Button Text="Delete"
                                 AutomationId="Card_Btn_Delete"
                                 Style="{StaticResource DangerButton}"

@@ -45,7 +45,8 @@
 
                     <Label Text="Prayer Title"
                            Style="{StaticResource FormLabel}" />
-                    <Entry Text="{Binding Title}"
+                    <Entry x:Name="TitleEntry"
+                           Text="{Binding Title}"
                            AutomationId="QuickAdd_Entry_Title"
                            Placeholder="Enter prayer title"
                            SemanticProperties.Hint="Title for your prayer request"

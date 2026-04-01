@@ -272,8 +272,8 @@ public static class AppExtensions
             try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
         }
 
-        // Stage 2: Try dismissing a known modal (Cancel buttons that block tab access)
-        foreach (var modalButton in new[] { "Scope_Btn_Cancel", "QuickAdd_Btn_Cancel" })
+        // Stage 2: Try dismissing a known modal (Cancel/Skip buttons that block tab access)
+        foreach (var modalButton in new[] { "Welcome_Btn_Skip", "Banner_Btn_Skip", "Banner_Btn_GotIt", "Scope_Btn_Cancel", "QuickAdd_Btn_Cancel" })
         {
             try
             {
@@ -402,29 +402,51 @@ public static class AppExtensions
 
     /// <summary>
     /// Dismiss onboarding if currently showing. Idempotent — safe to call multiple times.
-    /// Taps "Skip tour" on the welcome popup, then "Done" on the completion popup.
+    /// Taps "Skip tour" on the welcome popup, "Skip" on a mid-flow banner, or "Got it!"
+    /// on the final PrayerTimeHighlight step, then "Done" on the completion popup.
+    /// Retries up to 3 times with increasing wait to handle slow popup rendering.
     /// </summary>
     public static void DismissOnboardingIfPresent(this AppiumDriver driver, AppiumSetup setup)
     {
         if (setup.OnboardingHandled) return;
 
-        // Check for skip buttons — welcome popup or mid-onboarding banner
-        string? skipButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
-            : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2) ? "Banner_Btn_Skip"
-            : null;
-
-        if (skipButton != null)
+        // Retry loop — the welcome popup renders asynchronously from OnAppearing
+        // and may not be visible immediately, especially on slow emulators.
+        for (int attempt = 0; attempt < 3; attempt++)
         {
-            driver.Tap(skipButton);
-            Thread.Sleep(1000);
+            // Check for dismissal buttons — welcome popup, mid-onboarding banner, or final "Got it!"
+            string? dismissButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
+                : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2) ? "Banner_Btn_Skip"
+                : driver.IsDisplayed("Banner_Btn_GotIt", timeoutSeconds: 2) ? "Banner_Btn_GotIt"
+                : null;
 
-            if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
+            if (dismissButton != null)
             {
-                driver.Tap("Complete_Btn_Done");
-                Thread.Sleep(500);
+                driver.Tap(dismissButton);
+                Thread.Sleep(1000);
+
+                if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
+                {
+                    driver.Tap("Complete_Btn_Done");
+                    Thread.Sleep(500);
+                }
+
+                setup.OnboardingHandled = true;
+                return;
             }
+
+            // If tab bar is already accessible, no popup is blocking — we're good
+            if (driver.IsDisplayed("Home", timeoutSeconds: 1))
+            {
+                setup.OnboardingHandled = true;
+                return;
+            }
+
+            // Wait before retry to give the popup time to render
+            Thread.Sleep(1000);
         }
 
+        // After retries, mark handled to avoid infinite loops in future calls
         setup.OnboardingHandled = true;
     }
 
@@ -495,6 +517,13 @@ public static class AppExtensions
         return (AppiumElement)wait.Until(d => d.FindElement(TextLocator(text)));
     }
 
+    /// <summary>Find an element whose text/label contains the given substring.</summary>
+    public static AppiumElement FindByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    {
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        return (AppiumElement)wait.Until(d => d.FindElement(TextContainsLocator(text)));
+    }
+
     /// <summary>Find and tap any element by its visible text.</summary>
     public static void TapByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
     {
@@ -505,9 +534,7 @@ public static class AppExtensions
     /// <summary>Find and tap any element whose text/label <em>contains</em> the given substring.</summary>
     public static void TapByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 5)
     {
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        var element = (AppiumElement)wait.Until(d => d.FindElement(TextContainsLocator(text)));
-        element.Click();
+        driver.FindByTextContains(text, timeoutSeconds).Click();
         Thread.Sleep(300);
     }
 
@@ -542,21 +569,29 @@ public static class AppExtensions
     /// <summary>Swipe an element in the given direction.</summary>
     private static void SwipeElement(AppiumDriver driver, AppiumElement element, string direction)
     {
+        var location = element.Location;
+        var size = element.Size;
+        var centerX = location.X + size.Width / 2;
+        var centerY = location.Y + size.Height / 2;
+
         if (TestConfig.IsIOS)
         {
-            // iOS XCUITest: "mobile: swipe" with elementId, direction, and velocity (px/sec)
-            driver.ExecuteScript("mobile: swipe", new Dictionary<string, object>
+            // Use coordinate-based drag for reliable SwipeView triggering on iOS.
+            // mobile: swipe with elementId doesn't always reach the inner SwipeView content.
+            int dx = direction switch { "left" => -200, "right" => 200, _ => 0 };
+            int dy = direction switch { "up" => -200, "down" => 200, _ => 0 };
+            driver.ExecuteScript("mobile: dragFromToForDuration", new Dictionary<string, object>
             {
-                { "elementId", element.Id },
-                { "direction", direction },
-                { "velocity", IOSSwipeVelocity }
+                { "fromX", centerX },
+                { "fromY", centerY },
+                { "toX", centerX + dx },
+                { "toY", centerY + dy },
+                { "duration", 0.3 }
             });
         }
         else
         {
             // Android UiAutomator2: "mobile: swipeGesture" with bounding area
-            var location = element.Location;
-            var size = element.Size;
             driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
             {
                 { "left", location.X },
@@ -660,6 +695,61 @@ public static class AppExtensions
         if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5) && TestConfig.IsIOS)
             driver.NavigateToTab("Tags");
 
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+    }
+
+    /// <summary>
+    /// Find a card cell element by name, suitable for swiping. On iOS, CollectionView
+    /// flattens cells so text search returns a tiny inner label — this finds the parent
+    /// XCUIElementTypeCell container which has enough height for reliable swipe gestures.
+    /// </summary>
+    public static AppiumElement? FindCardCell(this AppiumDriver driver, string cardName, int timeoutSeconds = 5)
+    {
+        try
+        {
+            if (TestConfig.IsIOS)
+            {
+                // Find the Cell that contains the card name text
+                var xpath = $"//XCUIElementTypeCell[.//XCUIElementTypeStaticText[contains(@name, '{cardName}')]]";
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
+                var cell = (AppiumElement)driver.FindElement(By.XPath(xpath));
+                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+                return cell;
+            }
+            return (AppiumElement)driver.FindElement(TextLocator(cardName));
+        }
+        catch (WebDriverException)
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Ensures a user-created card named "UITest Card" exists. Creates it via the
+    /// Prayer Cards tab toolbar if missing. Needed for tests that require a non-system card.
+    /// </summary>
+    public static void EnsureUITestCardExists(this AppiumDriver driver, AppiumSetup setup)
+    {
+        driver.EnsureOnTab("Prayer Cards", setup);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        bool found = TestConfig.IsIOS
+            ? driver.IsTextContainsDisplayed("UITest Card", timeoutSeconds: 3)
+            : driver.IsTextDisplayed("UITest Card", timeoutSeconds: 3);
+
+        if (found) return;
+
+        // Create via toolbar Add Card
+        driver.TapToolbarItem("Add Card");
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
+        driver.EnterText("Card_Entry_Title", "UITest Card");
+        driver.DismissKeyboardIfPresent();
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+
+        // Return to card list
+        driver.EnsureOnTab("Prayer Cards", setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
     }
 

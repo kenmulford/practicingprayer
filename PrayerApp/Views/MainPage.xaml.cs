@@ -31,38 +31,46 @@ public partial class MainPage : ContentPage
             await Shell.Current.Navigation.PushModalAsync(
                 _services.GetRequiredService<QuickAddPage>());
 
-        BtnPrayerTime.Clicked += async (s, e) =>
+        BtnPrayerTime.Clicked += async (s, e) => await LaunchPrayerTimeAsync();
+
+        // Last Prayed metric card also launches Prayer Time
+        LastPrayedCard.GestureRecognizers.Add(new TapGestureRecognizer
         {
-            if (_prayerTimeNavigating) return;
-            _prayerTimeNavigating = true;
-            try
-            {
-                if (!_homeViewModel.HasActivePrayers)
-                {
-                    await DisplayAlertAsync("No Prayer Requests",
-                        "Add a prayer card and some prayer requests to get started with Prayer Time.",
-                        "OK");
-                    return;
-                }
+            Command = new Command(async () => await LaunchPrayerTimeAsync())
+        });
+    }
 
-                if (!_homeViewModel.HasTags)
-                {
-                    await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
-                    return;
-                }
-
-                var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, "All Requests", "By Tags");
-                if (action == "All Requests")
-                    await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
-                else if (action == "By Tags")
-                    await Shell.Current.Navigation.PushModalAsync(
-                        _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());
-            }
-            finally
+    private async Task LaunchPrayerTimeAsync()
+    {
+        if (_prayerTimeNavigating) return;
+        _prayerTimeNavigating = true;
+        try
+        {
+            if (!_homeViewModel.HasActivePrayers)
             {
-                _prayerTimeNavigating = false;
+                await DisplayAlertAsync("No Prayer Requests",
+                    "Add a prayer card and some prayer requests to get started with Prayer Time.",
+                    "OK");
+                return;
             }
-        };
+
+            if (!_homeViewModel.HasTags)
+            {
+                await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
+                return;
+            }
+
+            var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, "All Requests", "By Tags");
+            if (action == "All Requests")
+                await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
+            else if (action == "By Tags")
+                await Shell.Current.Navigation.PushModalAsync(
+                    _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());
+        }
+        finally
+        {
+            _prayerTimeNavigating = false;
+        }
     }
 
     protected override async void OnAppearing()
@@ -72,9 +80,10 @@ public partial class MainPage : ContentPage
         await App.InitTask; // ensure DB seeding is complete before loading data
         await _homeViewModel.LoadAsync();
 
-        // Show welcome popup on first visit — one-shot guard prevents re-showing on back navigation
+        // Show welcome popup on first visit — skip if user entered via share link
         if (_onboardingService.CurrentStep == OnboardingStep.Welcome
-            && !_onboardingService.WelcomeShownThisSession)
+            && !_onboardingService.WelcomeShownThisSession
+            && !_onboardingService.IsDeepLinkSession)
         {
             _onboardingService.MarkWelcomeShown();
             try

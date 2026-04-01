@@ -9,4 +9,10 @@ public partial class QuickAddPage : ContentPage, IPageSheetModal
         InitializeComponent();
         BindingContext = vm;
     }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+    }
 }

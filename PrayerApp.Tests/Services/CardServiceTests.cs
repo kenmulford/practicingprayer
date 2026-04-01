@@ -182,4 +182,73 @@ public class CardServiceTests
         await _service.GetCardsAsync(); // should re-query
         await _db.Received(2).GetAllAsync<PrayerCard>();
     }
+
+    // ── GetOrCreateSharedCardAsync ───────────────────────────────────────────
+
+    [Fact]
+    public async Task GetOrCreateSharedCardAsync_NoCardsExist_CreatesSharedCard()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        var result = await _service.GetOrCreateSharedCardAsync();
+
+        Assert.Equal("Shared with me", result.Title);
+        Assert.True(result.IsSystem);
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.IsSystem && c.Title == "Shared with me"));
+    }
+
+    [Fact]
+    public async Task GetOrCreateSharedCardAsync_SharedCardExists_ReturnsExisting()
+    {
+        var shared = new PrayerCard { Id = 99, Title = "Shared with me", IsSystem = true };
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard> { shared }));
+
+        var result = await _service.GetOrCreateSharedCardAsync();
+
+        Assert.Equal(99, result.Id);
+        Assert.True(result.IsSystem);
+        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
+    }
+
+    [Fact]
+    public async Task GetOrCreateSharedCardAsync_QuickAddExists_CreatesSharedCard()
+    {
+        var quickAdd = new PrayerCard { Id = 1, Title = "Quick Add", IsSystem = true };
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard> { quickAdd }));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        var result = await _service.GetOrCreateSharedCardAsync();
+
+        Assert.Equal("Shared with me", result.Title);
+        Assert.True(result.IsSystem);
+    }
+
+    [Fact]
+    public async Task GetOrCreateSharedCardAsync_InvalidatesCache()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.GetOrCreateSharedCardAsync();
+        await _service.GetCardsAsync();
+
+        // Should have queried DB twice: once for shared card creation, once after cache bust
+        await _db.Received(2).GetAllAsync<PrayerCard>();
+    }
+
+    // ── GetOrCreateQuickAddCardAsync — title matching ────────────────────────
+
+    [Fact]
+    public async Task GetOrCreateQuickAddCardAsync_BothSystemCardsExist_ReturnsQuickAddNotShared()
+    {
+        var quickAdd = new PrayerCard { Id = 1, Title = "Quick Add", IsSystem = true };
+        var shared = new PrayerCard { Id = 2, Title = "Shared with me", IsSystem = true };
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard> { shared, quickAdd }));
+
+        var result = await _service.GetOrCreateQuickAddCardAsync();
+
+        Assert.Equal("Quick Add", result.Title);
+        Assert.Equal(1, result.Id);
+    }
 }

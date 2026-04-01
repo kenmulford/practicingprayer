@@ -6,10 +6,11 @@
              x:DataType="viewModels:PrayerRequestDetailViewModel"
              xmlns:models="clr-namespace:PrayerApp.Models"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Name="page"
              Title="Prayer Request"
              SafeAreaEdges="Container">
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*,Auto,Auto">
         <ScrollView Grid.Row="0">
         <VerticalStackLayout Padding="12,8" Spacing="16">
             <VerticalStackLayout.GestureRecognizers>
@@ -23,11 +24,23 @@
                 <VerticalStackLayout Spacing="12">
 
                     <!-- Title -->
-                    <Label Text="{Binding Title}"
-                           FontSize="22"
-                           FontAttributes="Bold"
-                           SemanticProperties.HeadingLevel="Level1"
-                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="{Binding Title}"
+                               FontSize="22"
+                               FontAttributes="Bold"
+                               SemanticProperties.HeadingLevel="Level1"
+                               TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                        <Image Source="imported.png"
+                               HeightRequest="20"
+                               WidthRequest="20"
+                               IsVisible="{Binding IsImported}"
+                               VerticalOptions="Center"
+                               SemanticProperties.Description="Imported prayer">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </Image.Behaviors>
+                        </Image>
+                    </HorizontalStackLayout>
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
 

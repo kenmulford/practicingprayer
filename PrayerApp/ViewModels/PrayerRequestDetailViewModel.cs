@@ -357,6 +357,7 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        public bool IsImported => _prayer.IsImported;
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
@@ -546,7 +547,7 @@ namespace PrayerApp.ViewModels
         private async Task MarkAnsweredAsync()
         {
             IsAnswered = true;
-            await _notificationService.CancelAsync(_prayer.Id);
+            await _notificationService.CancelAsync(_prayer.Id, _prayer.PrayerFrequency);
             await _prayerService.SavePrayerAsync(_prayer);
             CaptureOriginals(); // Reset dirty state before navigation
 
@@ -563,10 +564,10 @@ namespace PrayerApp.ViewModels
 
         private async Task ShareAsync()
         {
-            var text = string.IsNullOrWhiteSpace(Details)
-                ? Title
-                : $"{Title}\n\n{Details}";
+            var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+            var text = deepLinkService.BuildRequestShareText(_prayer);
             await Share.RequestAsync(new ShareTextRequest { Title = Title, Text = text });
+            _onboardingService.Advance();
         }
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)

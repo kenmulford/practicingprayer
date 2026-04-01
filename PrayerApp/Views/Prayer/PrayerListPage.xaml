@@ -181,6 +181,8 @@
                         <Label Grid.Row="0"
                                Text="{Binding CardTitle}"
                                FontSize="11"
+                               MaxLines="3"
+                               LineBreakMode="TailTruncation"
                                Style="{StaticResource MutedText}" />
 
                         <!-- Prayer title + answered badge -->

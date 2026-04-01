@@ -135,6 +135,12 @@ namespace PrayerApp.Services
             }
             catch { /* Column already exists */ }
 
+            // F-10: Add IsImported column to PrayerCard and PrayerRequest for shared content
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsImported INTEGER DEFAULT 0"); }
+            catch { /* Column already exists */ }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN IsImported INTEGER DEFAULT 0"); }
+            catch { /* Column already exists */ }
+
             // Add IsSystem column to PrayerTag for system-managed tags
             try
             {

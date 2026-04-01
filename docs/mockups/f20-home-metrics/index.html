@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F-20: Home Page Metrics — Variant C (Refined)</title>
+<style>
+  :root {
+    --page-bg: #FAF8F3;
+    --card-bg: #FFFFFF;
+    --card-border: #E8EDE3;
+    --primary: #6B7D5A;
+    --primary-btn: #6B7D5A;
+    --tertiary: #3F4A34;
+    --text-primary: #3F4A34;
+    --text-muted: #919191;
+    --text-on-primary: #FFFFFF;
+    --overdue-bg: #FFF8E7;
+    --secondary: #E8EDE3;
+    --success: #2E7D32;
+    --gold: #C4A052;
+    --divider: #E8EDE3;
+    --btn-secondary-bg: #E8EDE3;
+    --btn-secondary-text: #3F4A34;
+    --metric-count: #3F4A34;
+    --metric-label: #919191;
+    --empty-text: #ACACAC;
+  }
+
+  [data-theme="dark"] {
+    --page-bg: #0d0e0c;
+    --card-bg: #181a16;
+    --card-border: #2a2e26;
+    --primary: #A8B896;
+    --primary-btn: #7d8e6c;
+    --tertiary: #dce0d5;
+    --text-primary: #dce0d5;
+    --text-muted: #858981;
+    --text-on-primary: #1C2415;
+    --overdue-bg: #1a1810;
+    --secondary: #252722;
+    --success: #66BB6A;
+    --gold: #d4b062;
+    --divider: #2a2e26;
+    --btn-secondary-bg: #252722;
+    --btn-secondary-text: #dce0d5;
+    --metric-count: #dce0d5;
+    --metric-label: #858981;
+    --empty-text: #4a4d46;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #333; }
+
+  .controls {
+    position: sticky; top: 0; z-index: 100;
+    background: #2a2a2a; color: #fff;
+    display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px 20px; flex-wrap: wrap;
+  }
+  .controls label { font-size: 13px; font-weight: 600; }
+  .controls button {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid #555;
+    background: #3a3a3a; color: #fff; font-size: 13px; cursor: pointer;
+  }
+  .controls button.active { background: #6B7D5A; border-color: #6B7D5A; }
+
+  .section-title { text-align: center; font-size: 20px; font-weight: 700; color: #555; margin: 24px 0 4px; }
+  .section-desc { text-align: center; font-size: 13px; color: #888; margin-bottom: 24px; }
+
+  .mockup-grid { display: flex; justify-content: center; align-items: flex-start; gap: 40px; padding: 16px 20px 32px; flex-wrap: wrap; }
+
+  .device-label { text-align: center; font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .device-frame { border-radius: 24px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.2); background: var(--page-bg); flex-shrink: 0; }
+  .device-frame.phone { width: 375px; }
+  .device-frame.tablet { width: 768px; }
+
+  .app-shell { background: var(--page-bg); min-height: 600px; }
+  .nav-bar { background: var(--card-bg); border-bottom: 1px solid var(--divider); padding: 12px 16px; text-align: center; }
+  .nav-bar h1 { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+  .page-content { padding: 16px 20px; }
+
+  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px 8px; border-radius: 10px; font-size: 15px; font-weight: 600; border: none; cursor: pointer; }
+  .action-btn.quick-add { background: var(--btn-secondary-bg); color: var(--btn-secondary-text); }
+  .action-btn.prayer-time { background: var(--primary-btn); color: var(--text-on-primary); }
+
+  /* Metric grid */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .metric-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+    padding: 14px 8px; cursor: pointer; transition: transform 0.15s ease; text-decoration: none;
+  }
+  .metric-card:hover { transform: scale(1.02); }
+  .metric-card .count { font-size: 28px; font-weight: 700; color: var(--metric-count); line-height: 1.1; }
+  .metric-card .label { font-size: 11px; color: var(--metric-label); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .metric-card .tap-hint { font-size: 10px; color: var(--primary); margin-top: 6px; font-weight: 500; }
+
+  /* Date metric */
+  .metric-card.date-metric .month { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; line-height: 1; }
+  .metric-card.date-metric .day { font-size: 32px; font-weight: 700; color: var(--metric-count); line-height: 1.1; }
+
+  /* Overdue metric (gold highlight) */
+  .metric-card.overdue-metric { background: var(--overdue-bg); border-color: var(--gold); }
+  .metric-card.overdue-metric .count { color: var(--gold); }
+
+  /* Empty state metric */
+  .metric-card .empty-text { font-size: 13px; color: var(--empty-text); font-weight: 500; text-align: center; line-height: 1.3; }
+  .metric-card.date-metric .empty-text { font-size: 13px; }
+
+  /* (overdue detail list removed — metric taps navigate to Prayers page with overdue filter) */
+
+  /* Zero-state for overdue metric */
+  .overdue-zero { text-align: center; padding: 8px; }
+  .overdue-zero .check { font-size: 20px; color: var(--success); }
+  .overdue-zero .msg { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Tab bar */
+  .tab-bar { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--card-bg); border-top: 1px solid var(--divider); padding: 8px 0 4px; }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: var(--text-muted); }
+  .tab-item.active { color: var(--primary); }
+  .tab-icon { font-size: 18px; }
+
+  /* Tablet adjustments */
+  .device-frame.tablet .page-content { padding: 20px 32px; }
+  .device-frame.tablet .action-row, .device-frame.tablet .metric-grid {
+    max-width: 600px; margin-left: auto; margin-right: auto;
+  }
+  .device-frame.tablet .metric-grid { margin-bottom: 16px; }
+
+  /* Scenario sections */
+  .scenario { display: none; }
+  .scenario.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <label>Scenario:</label>
+  <button class="active" onclick="showScenario('populated', this)">Populated</button>
+  <button onclick="showScenario('empty', this)">Empty / Zero States</button>
+  <button onclick="showScenario('singular', this)">Singular (1 of each)</button>
+  <span style="width: 1px; height: 20px; background: #555;"></span>
+  <label>Theme:</label>
+  <button class="active" onclick="setTheme('light', this)">Light</button>
+  <button onclick="setTheme('dark', this)">Dark</button>
+</div>
+
+<!-- SCENARIO: Populated (normal usage) -->
+<div class="scenario active" id="scenario-populated">
+  <div class="section-title">Variant C: 2x2 Metric Grid (Populated)</div>
+  <div class="section-desc">All metrics are tappable. Overdue navigates to Prayers page with overdue filter. Cards with 0 active prayers excluded from count.</div>
+  <div class="mockup-grid">
+    <div>
+      <div class="device-label">iPhone 15</div>
+      <div class="device-frame phone" data-theme="light">
+        <div class="app-shell">
+          <div class="nav-bar"><h1>Practicing Prayer</h1></div>
+          <div class="page-content">
+            <div class="action-row">
+              <button class="action-btn quick-add">+ Quick Add</button>
+              <button class="action-btn prayer-time">Prayer Time</button>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="count">5</span>
+                <span class="label">Active Cards</span>
+                <span class="tap-hint">View Cards &rarr;</span>
+              </div>
+              <div class="metric-card">
+                <span class="count">23</span>
+                <span class="label">Unanswered Prayers</span>
+                <span class="tap-hint">View Prayers &rarr;</span>
+              </div>
+              <div class="metric-card date-metric">
+                <span class="month">Mar</span>
+                <span class="day">27</span>
+                <span class="label">Last Prayed</span>
+                <span class="tap-hint">Pray Now &rarr;</span>
+              </div>
+              <div class="metric-card overdue-metric">
+                <span class="count">3</span>
+                <span class="label">Overdue</span>
+                <span class="tap-hint">View in Prayers &rarr;</span>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active"><span class="tab-icon">&#9750;</span>Home</div>
+            <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+            <div class="tab-item"><span class="tab-icon">&#128203;</span>Prayers</div>
+            <div class="tab-item"><span class="tab-icon">&#127991;</span>Tags</div>
+            <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="device-label">iPad</div>
+      <div class="device-frame tablet" data-theme="light">
+        <div class="app-shell">
+          <div class="nav-bar"><h1>Practicing Prayer</h1></div>
+          <div class="page-content">
+            <div class="action-row">
+              <button class="action-btn quick-add">+ Quick Add</button>
+              <button class="action-btn prayer-time">Prayer Time</button>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="count">5</span>
+                <span class="label">Active Cards</span>
+                <span class="tap-hint">View Cards &rarr;</span>
+              </div>
+              <div class="metric-card">
+                <span class="count">23</span>
+                <span class="label">Unanswered Prayers</span>
+                <span class="tap-hint">View Prayers &rarr;</span>
+              </div>
+              <div class="metric-card date-metric">
+                <span class="month">Mar</span>
+                <span class="day">27</span>
+                <span class="label">Last Prayed</span>
+                <span class="tap-hint">Pray Now &rarr;</span>
+              </div>
+              <div class="metric-card overdue-metric">
+                <span class="count">3</span>
+                <span class="label">Overdue</span>
+                <span class="tap-hint">View in Prayers &rarr;</span>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active"><span class="tab-icon">&#9750;</span>Home</div>
+            <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+            <div class="tab-item"><span class="tab-icon">&#128203;</span>Prayers</div>
+            <div class="tab-item"><span class="tab-icon">&#127991;</span>Tags</div>
+            <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO: Empty / Zero States -->
+<div class="scenario" id="scenario-empty">
+  <div class="section-title">Zero / Empty States</div>
+  <div class="section-desc">No cards, no prayers, never prayed, no overdue. Each metric shows contextual alt text instead of "0".</div>
+  <div class="mockup-grid">
+    <div>
+      <div class="device-label">iPhone 15</div>
+      <div class="device-frame phone" data-theme="light">
+        <div class="app-shell">
+          <div class="nav-bar"><h1>Practicing Prayer</h1></div>
+          <div class="page-content">
+            <div class="action-row">
+              <button class="action-btn quick-add">+ Quick Add</button>
+              <button class="action-btn prayer-time">Prayer Time</button>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="empty-text">No active cards</span>
+                <span class="label">Active Cards</span>
+                <span class="tap-hint">Add a Card &rarr;</span>
+              </div>
+              <div class="metric-card">
+                <span class="empty-text">No prayers yet</span>
+                <span class="label">Unanswered Prayers</span>
+                <span class="tap-hint">Quick Add &rarr;</span>
+              </div>
+              <div class="metric-card date-metric">
+                <span class="empty-text">Not yet</span>
+                <span class="label">Last Prayed</span>
+                <span class="tap-hint">Start Praying &rarr;</span>
+              </div>
+              <div class="metric-card overdue-metric" style="background: var(--card-bg); border-color: var(--card-border);">
+                <div class="overdue-zero">
+                  <div class="check">&#10003;</div>
+                  <div class="msg">All requests have been recently prayed for.</div>
+                </div>
+                <span class="label">Overdue</span>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active"><span class="tab-icon">&#9750;</span>Home</div>
+            <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+            <div class="tab-item"><span class="tab-icon">&#128203;</span>Prayers</div>
+            <div class="tab-item"><span class="tab-icon">&#127991;</span>Tags</div>
+            <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="device-label">iPad</div>
+      <div class="device-frame tablet" data-theme="light">
+        <div class="app-shell">
+          <div class="nav-bar"><h1>Practicing Prayer</h1></div>
+          <div class="page-content">
+            <div class="action-row">
+              <button class="action-btn quick-add">+ Quick Add</button>
+              <button class="action-btn prayer-time">Prayer Time</button>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="empty-text">No active cards</span>
+                <span class="label">Active Cards</span>
+                <span class="tap-hint">Add a Card &rarr;</span>
+              </div>
+              <div class="metric-card">
+                <span class="empty-text">No prayers yet</span>
+                <span class="label">Unanswered Prayers</span>
+                <span class="tap-hint">Quick Add &rarr;</span>
+              </div>
+              <div class="metric-card date-metric">
+                <span class="empty-text">Not yet</span>
+                <span class="label">Last Prayed</span>
+                <span class="tap-hint">Start Praying &rarr;</span>
+              </div>
+              <div class="metric-card overdue-metric" style="background: var(--card-bg); border-color: var(--card-border);">
+                <div class="overdue-zero">
+                  <div class="check">&#10003;</div>
+                  <div class="msg">All requests have been recently prayed for.</div>
+                </div>
+                <span class="label">Overdue</span>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active"><span class="tab-icon">&#9750;</span>Home</div>
+            <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+            <div class="tab-item"><span class="tab-icon">&#128203;</span>Prayers</div>
+            <div class="tab-item"><span class="tab-icon">&#127991;</span>Tags</div>
+            <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO: Singular (1 of each) -->
+<div class="scenario" id="scenario-singular">
+  <div class="section-title">Singular Forms (1 of each)</div>
+  <div class="section-desc">Demonstrates proper singular label text: "Active Card", "Unanswered Prayer", "Overdue"</div>
+  <div class="mockup-grid">
+    <div>
+      <div class="device-label">iPhone 15</div>
+      <div class="device-frame phone" data-theme="light">
+        <div class="app-shell">
+          <div class="nav-bar"><h1>Practicing Prayer</h1></div>
+          <div class="page-content">
+            <div class="action-row">
+              <button class="action-btn quick-add">+ Quick Add</button>
+              <button class="action-btn prayer-time">Prayer Time</button>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="count">1</span>
+                <span class="label">Active Card</span>
+                <span class="tap-hint">View Card &rarr;</span>
+              </div>
+              <div class="metric-card">
+                <span class="count">1</span>
+                <span class="label">Unanswered Prayer</span>
+                <span class="tap-hint">View Prayer &rarr;</span>
+              </div>
+              <div class="metric-card date-metric">
+                <span class="month">Mar</span>
+                <span class="day">29</span>
+                <span class="label">Last Prayed</span>
+                <span class="tap-hint">Pray Now &rarr;</span>
+              </div>
+              <div class="metric-card overdue-metric">
+                <span class="count">1</span>
+                <span class="label">Overdue</span>
+                <span class="tap-hint">View in Prayers &rarr;</span>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active"><span class="tab-icon">&#9750;</span>Home</div>
+            <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+            <div class="tab-item"><span class="tab-icon">&#128203;</span>Prayers</div>
+            <div class="tab-item"><span class="tab-icon">&#127991;</span>Tags</div>
+            <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="device-label">iPad</div>
+      <div class="device-frame tablet" data-theme="light">
+        <div class="app-shell">
+          <div class="nav-bar"><h1>Practicing Prayer</h1></div>
+          <div class="page-content">
+            <div class="action-row">
+              <button class="action-btn quick-add">+ Quick Add</button>
+              <button class="action-btn prayer-time">Prayer Time</button>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="count">1</span>
+                <span class="label">Active Card</span>
+                <span class="tap-hint">View Card &rarr;</span>
+              </div>
+              <div class="metric-card">
+                <span class="count">1</span>
+                <span class="label">Unanswered Prayer</span>
+                <span class="tap-hint">View Prayer &rarr;</span>
+              </div>
+              <div class="metric-card date-metric">
+                <span class="month">Mar</span>
+                <span class="day">29</span>
+                <span class="label">Last Prayed</span>
+                <span class="tap-hint">Pray Now &rarr;</span>
+              </div>
+              <div class="metric-card overdue-metric">
+                <span class="count">1</span>
+                <span class="label">Overdue</span>
+                <span class="tap-hint">View in Prayers &rarr;</span>
+              </div>
+            </div>
+          </div>
+          <div class="tab-bar">
+            <div class="tab-item active"><span class="tab-icon">&#9750;</span>Home</div>
+            <div class="tab-item"><span class="tab-icon">&#9776;</span>Cards</div>
+            <div class="tab-item"><span class="tab-icon">&#128203;</span>Prayers</div>
+            <div class="tab-item"><span class="tab-icon">&#127991;</span>Tags</div>
+            <div class="tab-item"><span class="tab-icon">&#9881;</span>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showScenario(id, btn) {
+  document.querySelectorAll('.scenario').forEach(el => el.classList.remove('active'));
+  document.getElementById('scenario-' + id).classList.add('active');
+  btn.parentElement.querySelectorAll('button').forEach(b => {
+    if (!['Light','Dark'].includes(b.textContent)) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+}
+function setTheme(theme, btn) {
+  document.querySelectorAll('.device-frame').forEach(f => f.setAttribute('data-theme', theme));
+  btn.parentElement.querySelectorAll('button').forEach(b => {
+    if (['Light','Dark'].includes(b.textContent)) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+}
+</script>
+
+</body>
+</html>

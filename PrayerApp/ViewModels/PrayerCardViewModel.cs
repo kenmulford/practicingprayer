@@ -30,6 +30,7 @@ namespace PrayerApp.ViewModels
         public ICommand ToggleExpandedCommand { get; }
         public ICommand ToggleFavoriteCommand { get; }
         public ICommand AddPrayerCommand { get; }
+        public ICommand ShareCommand { get; }
 
         #region Properties
 
@@ -71,6 +72,7 @@ namespace PrayerApp.ViewModels
                 {
                     _prayerCard.IsFavorite = value;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(FavoriteLabel));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
                 }
             }
@@ -86,14 +88,19 @@ namespace PrayerApp.ViewModels
                     _isExpanded = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(ShowBadge));
+                    OnPropertyChanged(nameof(ShowActionChips));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
                 }
             }
         }
 
         public bool IsSystem => _prayerCard.IsSystem;
+        public bool IsImported => _prayerCard.IsImported;
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
+        public bool CanShare => !IsSystem && ActivePrayerCount > 0;
+        public bool ShowActionChips => IsExpanded && !IsSystem;
+        public string FavoriteLabel => IsFavorite ? "Favorited" : "Favorite";
 
         public bool IsDirty => Title != _originalTitle;
 
@@ -131,7 +138,11 @@ namespace PrayerApp.ViewModels
             set
             {
                 if (SetProperty(ref _activePrayerCount, value))
+                {
+                    OnPropertyChanged(nameof(CanShare));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
+                    ((IRelayCommand)ShareCommand).NotifyCanExecuteChanged();
+                }
             }
         }
 
@@ -174,11 +185,12 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
-            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
-            SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsSystem);
+            SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync, () => !IsSystem);
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
-            ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync);
+            ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync, () => !IsSystem);
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
+            ShareCommand = new AsyncRelayCommand(ShareAsync, () => CanShare);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
@@ -192,6 +204,19 @@ namespace PrayerApp.ViewModels
         { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
+        {
+            _prayerCard = pc;
+            LoadActivePrayerCountAsync().SafeFireAndForget();
+        }
+
+        /// <summary>
+        /// Constructor for creating a card VM with injected services and a PrayerCard model.
+        /// Used by PrayerCardsViewModel to avoid dependency on IPlatformApplication in tests.
+        /// </summary>
+        public PrayerCardViewModel(PrayerCard pc, ICardService cardService, IPrayerService prayerService,
+            IOnboardingService onboardingService, INavigationService navigationService,
+            IAccessibilityService accessibilityService)
+            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService)
         {
             _prayerCard = pc;
             LoadActivePrayerCountAsync().SafeFireAndForget();
@@ -274,16 +299,37 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private bool _isFavoriteSaving;
         private async Task ToggleFavoriteAsync()
         {
-            IsFavorite = !IsFavorite;
-            await _cardService.SaveCardAsync(_prayerCard);
+            if (_isFavoriteSaving) return;
+            _isFavoriteSaving = true;
+            try
+            {
+                IsFavorite = !IsFavorite;
+                await _cardService.SaveCardAsync(_prayerCard);
+            }
+            finally
+            {
+                _isFavoriteSaving = false;
+            }
         }
 
         private async Task AddPrayerAsync()
         {
             _onboardingService.Advance(); // AddRequest → NameRequest
             await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?newForCard={_prayerCard.Id}");
+        }
+
+        private async Task ShareAsync()
+        {
+            if (_prayerCard.IsSystem) return;
+            var allPrayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
+            var activePrayers = allPrayers.Where(p => !p.IsAnswered).ToList();
+            var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+            var text = deepLinkService.BuildCardShareText(_prayerCard, activePrayers);
+            await Share.RequestAsync(new ShareTextRequest { Title = _prayerCard.Title, Text = text });
+            _onboardingService.Advance();
         }
 
         #endregion
@@ -338,8 +384,10 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(Title));
             OnPropertyChanged(nameof(IsFavorite));
             OnPropertyChanged(nameof(IsSystem));
+            OnPropertyChanged(nameof(IsImported));
             OnPropertyChanged(nameof(IsNew));
             OnPropertyChanged(nameof(CanDelete));
+            OnPropertyChanged(nameof(CanShare));
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
             OnPropertyChanged(nameof(AccessibleCardHeader));

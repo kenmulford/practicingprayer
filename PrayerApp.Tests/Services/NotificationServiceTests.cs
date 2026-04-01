@@ -268,6 +268,115 @@ public class NotificationServiceTests
         Assert.True(result > DateTime.Now);
     }
 
+    // ── RenewMonthlyNotificationsAsync ────────────────────────────────────
+
+    [Fact]
+    public async Task RenewMonthly_SchedulesMonthlyPrayers()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 9, NotifyMinute = 0, NotifyDayOfMonth = 15 },
+            new() { Id = 2, CanNotify = true, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 10, NotifyMinute = 30, NotifyDayOfMonth = 1 }
+        };
+
+        await _service.RenewMonthlyNotificationsAsync(prayers);
+
+        await _center.Received(2).ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task RenewMonthly_SkipsNonMonthlyPrayers()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Daily, NotifyHour = 9, NotifyMinute = 0 },
+            new() { Id = 2, CanNotify = true, PrayerFrequency = PrayerFrequency.Weekly, NotifyHour = 9, NotifyMinute = 0 }
+        };
+
+        await _service.RenewMonthlyNotificationsAsync(prayers);
+
+        await _center.DidNotReceive().ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task RenewMonthly_SkipsCanNotifyFalse()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = false, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 9, NotifyMinute = 0, NotifyDayOfMonth = 15 }
+        };
+
+        await _service.RenewMonthlyNotificationsAsync(prayers);
+
+        await _center.DidNotReceive().ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task RenewMonthly_EmptyList_NoCalls()
+    {
+        await _service.RenewMonthlyNotificationsAsync(new List<Prayer>());
+
+        await _center.DidNotReceive().ScheduleMonthlyAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    // ── ReconcileNotificationsAsync ───────────────────────────────────────
+
+    [Fact]
+    public async Task Reconcile_ClearsAllThenReschedulesNotifyPrayers()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Daily, NotifyHour = 9, NotifyMinute = 0 },
+            new() { Id = 2, CanNotify = true, PrayerFrequency = PrayerFrequency.Monthly, NotifyHour = 10, NotifyMinute = 0, NotifyDayOfMonth = 15 },
+            new() { Id = 3, CanNotify = false, PrayerFrequency = PrayerFrequency.Weekly, NotifyHour = 8, NotifyMinute = 0 }
+        };
+
+        await _service.ReconcileNotificationsAsync(prayers);
+
+        // ClearAllPending called first
+        _center.Received(1).ClearAllPending();
+        // Only prayers with CanNotify=true get scheduled (ids 1 and 2)
+        // Each ScheduleAsync call cancels then schedules, so we check the schedule calls
+        // Prayer 1 (Daily) goes through ShowAsync
+        await _center.Received(1).ShowAsync(
+            Arg.Is(1), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<DateTime>(), Arg.Any<NotifyRepeat>(), Arg.Any<TimeSpan?>());
+        // Prayer 2 (Monthly) goes through ScheduleMonthlyAsync
+        await _center.Received(1).ScheduleMonthlyAsync(
+            Arg.Is(2), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task Reconcile_SkipsWhenNotificationsDisabled()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, CanNotify = true, PrayerFrequency = PrayerFrequency.Daily, NotifyHour = 9, NotifyMinute = 0 }
+        };
+
+        await _serviceDisabled.ReconcileNotificationsAsync(prayers);
+
+        _center.DidNotReceive().ClearAllPending();
+    }
+
+    [Fact]
+    public async Task Reconcile_EmptyList_StillClearsOrphans()
+    {
+        await _service.ReconcileNotificationsAsync(new List<Prayer>());
+
+        // Should still clear to remove any orphaned notifications
+        _center.Received(1).ClearAllPending();
+    }
+
     [Fact]
     public void GetNextDayOfWeek_SameDayFutureTime_ReturnsSameDay()
     {

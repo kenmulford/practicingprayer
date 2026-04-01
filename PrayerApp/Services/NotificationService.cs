@@ -127,6 +127,29 @@ public class NotificationService : INotificationService
         }
     }
 
+    public async Task RenewMonthlyNotificationsAsync(IEnumerable<Prayer> activePrayers)
+    {
+        foreach (var prayer in activePrayers
+            .Where(p => p.CanNotify && p.PrayerFrequency == PrayerFrequency.Monthly))
+        {
+            await ScheduleAsync(prayer);
+        }
+    }
+
+    public async Task ReconcileNotificationsAsync(IEnumerable<Prayer> activePrayers)
+    {
+        if (!_isNotificationsAllowed()) return;
+
+        // Wipe all pending notifications (plugin + native iOS) to eliminate orphans
+        _center.ClearAllPending();
+
+        // Reschedule only prayers that should be notifying
+        foreach (var prayer in activePrayers.Where(p => p.CanNotify))
+        {
+            await ScheduleAsync(prayer);
+        }
+    }
+
     internal static DateTime GetNextDayOfWeek(DayOfWeek targetDay, int hour, int minute)
     {
         var now = DateTime.Now;

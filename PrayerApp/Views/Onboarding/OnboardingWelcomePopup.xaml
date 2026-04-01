@@ -15,7 +15,8 @@
 
         <VerticalStackLayout Padding="28,32" Spacing="16">
 
-            <Label Text="Welcome to Practicing Prayer"
+            <Label x:Name="TitleLabel"
+                   Text="Welcome to Practicing Prayer"
                    FontSize="22"
                    FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
@@ -23,7 +24,8 @@
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
 
-            <Label Text="Let's set up your first prayer card."
+            <Label x:Name="SubtitleLabel"
+                   Text="Let's set up your first prayer card."
                    FontSize="15"
                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                    HorizontalOptions="Center"
