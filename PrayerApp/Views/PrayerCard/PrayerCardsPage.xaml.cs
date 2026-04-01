@@ -46,7 +46,9 @@ public partial class PrayerCardsPage : ContentPage
         var behavior = border.Behaviors.OfType<CommunityToolkit.Maui.Behaviors.TouchBehavior>().FirstOrDefault();
         if (behavior is null) return;
         behavior.LongPressCommand = vm.LongPressCardCommand;
-        behavior.LongPressCommandParameter = border.BindingContext;
+        // Bind parameter to Border's BindingContext so it tracks recycled items correctly
+        behavior.SetBinding(CommunityToolkit.Maui.Behaviors.TouchBehavior.LongPressCommandParameterProperty,
+            new Binding("BindingContext", source: border));
     }
 
     private void OnCardHeaderTapped(object? sender, TappedEventArgs e)
