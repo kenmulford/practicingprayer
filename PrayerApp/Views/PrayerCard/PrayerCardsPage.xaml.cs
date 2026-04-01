@@ -15,11 +15,26 @@ public partial class PrayerCardsPage : ContentPage
 
     private async void OnHighlightCardRequested(object? sender, PrayerCardViewModel card)
     {
-        cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
+        // ScrollTo with grouped CollectionView uses the group + item overload
+        var vm = BindingContext as PrayerCardsViewModel;
+        var section = vm?.BoxSections.FirstOrDefault(s => s.Contains(card));
+        if (section != null)
+            cardCollection.ScrollTo(card, section, ScrollToPosition.Center, animate: true);
+        else
+            cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
+
         SemanticScreenReader.Announce($"New card: {card.Title}");
 
         await Task.Delay(2500);
         card.IsHighlighted = false;
+    }
+
+    private void OnSectionHeaderTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Grid grid && grid.BindingContext is BoxSectionViewModel section)
+        {
+            section.IsExpanded = !section.IsExpanded;
+        }
     }
 
     private void OnSearchButtonPressed(object? sender, EventArgs e)

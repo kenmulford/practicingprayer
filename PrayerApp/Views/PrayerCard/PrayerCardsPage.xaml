@@ -8,7 +8,11 @@
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
+        <ToolbarItem Text="Folders" AutomationId="Cards_Btn_Folders"
+                     SemanticProperties.Hint="Manage folders"
+                     Order="Primary" Priority="0" />
+        <ToolbarItem Text="Add Card" Command="{Binding NewCommand}"
+                     Order="Primary" Priority="1" />
     </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
@@ -87,24 +91,56 @@
             x:Name="cardCollection"
             AutomationId="Cards_List_Cards"
             AutomationProperties.IsInAccessibleTree="false"
-            ItemsSource="{Binding FilteredPrayerCards}"
+            IsGrouped="True"
+            ItemsSource="{Binding BoxSections}"
             ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
             SelectionMode="None">
         <CollectionView.EmptyView>
-            <VerticalStackLayout HorizontalOptions="Center" Margin="24,32" Spacing="12">
-                <ActivityIndicator
-                    IsRunning="{Binding IsLoading}"
-                    IsVisible="{Binding IsLoading}"
-                    Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                    HorizontalOptions="Center" />
-                <Label
-                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
-                    Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
-                    Style="{StaticResource MutedText}"
-                    HorizontalTextAlignment="Center" />
-            </VerticalStackLayout>
+            <ContentView>
+                <VerticalStackLayout HorizontalOptions="Center" Margin="24,32" Spacing="12">
+                    <ActivityIndicator
+                        IsRunning="{Binding IsLoading}"
+                        IsVisible="{Binding IsLoading}"
+                        Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+                        HorizontalOptions="Center" />
+                    <Label
+                        IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
+                        Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
+                        Style="{StaticResource MutedText}"
+                        HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </ContentView>
         </CollectionView.EmptyView>
+        <CollectionView.GroupHeaderTemplate>
+            <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
+                <Grid ColumnDefinitions="Auto,*,Auto"
+                      Padding="4,12,4,6"
+                      AutomationId="Cards_Section_Header"
+                      SemanticProperties.Description="{Binding Name}"
+                      SemanticProperties.Hint="Double tap to expand or collapse section">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
+                    </Grid.GestureRecognizers>
+                    <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
+                           FontSize="11"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                           VerticalOptions="Center"
+                           Margin="0,0,6,0" />
+                    <Label Grid.Column="1"
+                           Text="{Binding Name}"
+                           FontSize="14"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                           VerticalOptions="Center" />
+                    <Label Grid.Column="2"
+                           Text="{Binding CardCount}"
+                           FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                           VerticalOptions="Center" />
+                </Grid>
+            </DataTemplate>
+        </CollectionView.GroupHeaderTemplate>
         <CollectionView.ItemsLayout>
             <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
         </CollectionView.ItemsLayout>

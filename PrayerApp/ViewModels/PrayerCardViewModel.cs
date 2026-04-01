@@ -96,6 +96,7 @@ namespace PrayerApp.ViewModels
 
         public bool IsSystem => _prayerCard.IsSystem;
         public bool IsImported => _prayerCard.IsImported;
+        public int BoxId => _prayerCard.BoxId;
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
         public bool CanShare => !IsSystem && ActivePrayerCount > 0;

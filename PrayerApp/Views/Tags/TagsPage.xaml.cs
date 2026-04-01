@@ -15,6 +15,9 @@ namespace PrayerApp.Views.Tags
             BindingContext = _vm;
         }
 
+        private void OnBackgroundTapped(object? sender, TappedEventArgs e)
+            => _vm.DeselectAll();
+
         protected override async void OnAppearing()
         {
             base.OnAppearing();

@@ -1,0 +1,144 @@
+using NSubstitute;
+using PrayerApp.Helpers;
+using PrayerApp.Models;
+using PrayerApp.Services;
+using PrayerApp.ViewModels;
+
+namespace PrayerApp.Tests.ViewModels;
+
+public class BoxSectionViewModelTests
+{
+    public BoxSectionViewModelTests()
+    {
+        // PrayerCardViewModel constructor needs these
+        PrayerCard.SetDBService(Substitute.For<IDBService>());
+    }
+
+    private PrayerCardViewModel MakeCard(int id, string title) =>
+        new(new PrayerCard { Id = id, Title = title },
+            Substitute.For<ICardService>(),
+            Substitute.For<IPrayerService>(),
+            Substitute.For<IOnboardingService>(),
+            Substitute.For<INavigationService>(),
+            Substitute.For<IAccessibilityService>());
+
+    // ── Construction ──────────────────────────────────────────────────
+
+    [Fact]
+    public void UnboxedSection_UsesBoxStringsName()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: true);
+
+        Assert.Equal(BoxStrings.Unorganized, section.Name);
+        Assert.Equal(0, section.BoxId);
+        Assert.False(section.IsSystem);
+    }
+
+    [Fact]
+    public void BoxSection_UsesBoxName()
+    {
+        var box = new CardBox { Id = 5, Name = "Family", IsSystem = false };
+        var section = new BoxSectionViewModel(box, defaultExpanded: true);
+
+        Assert.Equal("Family", section.Name);
+        Assert.Equal(5, section.BoxId);
+        Assert.False(section.IsSystem);
+    }
+
+    // ── SetCards ───────────────────────────────────────────────────────
+
+    [Fact]
+    public void SetCards_WhenExpanded_PopulatesCollection()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: true);
+        var cards = new[] { MakeCard(1, "A"), MakeCard(2, "B") };
+
+        section.SetCards(cards);
+
+        Assert.Equal(2, section.Count);
+        Assert.Equal(2, section.CardCount);
+    }
+
+    [Fact]
+    public void SetCards_WhenCollapsed_CollectionIsEmpty_ButCardCountReflectsBackingData()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: false);
+        var cards = new[] { MakeCard(1, "A"), MakeCard(2, "B") };
+
+        section.SetCards(cards);
+
+        Assert.Empty(section); // Observable collection is empty (collapsed)
+        Assert.Equal(2, section.CardCount); // Derived from backing list
+    }
+
+    // ── Expand / Collapse ─────────────────────────────────────────────
+
+    [Fact]
+    public void IsExpanded_Toggle_PopulatesAndClearsCollection()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: false);
+        section.SetCards(new[] { MakeCard(1, "A") });
+
+        Assert.Empty(section);
+
+        section.IsExpanded = true;
+        Assert.Single(section);
+
+        section.IsExpanded = false;
+        Assert.Empty(section);
+    }
+
+    // ── Filter expand / restore ───────────────────────────────────────
+
+    [Fact]
+    public void FilterExpand_ExpandsCollapsedSection()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: false);
+        section.SetCards(new[] { MakeCard(1, "A") });
+        Assert.False(section.IsExpanded);
+
+        section.FilterExpand();
+
+        Assert.True(section.IsExpanded);
+        Assert.Single(section);
+    }
+
+    [Fact]
+    public void RestoreUserExpansionState_RestoresAfterFilterExpand()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: false);
+        section.SetCards(new[] { MakeCard(1, "A") });
+
+        section.FilterExpand(); // auto-expanded by filter
+        Assert.True(section.IsExpanded);
+
+        section.RestoreUserExpansionState(); // user wanted it collapsed
+        Assert.False(section.IsExpanded);
+        Assert.Empty(section);
+    }
+
+    [Fact]
+    public void RestoreUserExpansionState_NoOpWhenUserExpanded()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: true);
+        section.SetCards(new[] { MakeCard(1, "A") });
+
+        // User expands, filter runs, restore — should stay expanded
+        section.RestoreUserExpansionState();
+        Assert.True(section.IsExpanded);
+    }
+
+    [Fact]
+    public void FilterExpand_NoOpWhenAlreadyExpanded()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: true);
+        section.SetCards(new[] { MakeCard(1, "A") });
+
+        section.FilterExpand();
+        Assert.True(section.IsExpanded);
+
+        // Restore should keep it expanded since user had it expanded
+        section.RestoreUserExpansionState();
+        Assert.True(section.IsExpanded);
+    }
+}

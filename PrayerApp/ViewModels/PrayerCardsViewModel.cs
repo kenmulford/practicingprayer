@@ -17,6 +17,7 @@ namespace PrayerApp.ViewModels
         private readonly IPrayerService _prayerService;
         private readonly IOnboardingService _onboardingService;
         private readonly ITagService _tagService;
+        private readonly IBoxService _boxService;
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly ISettings _settings;
@@ -25,20 +26,25 @@ namespace PrayerApp.ViewModels
         public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
         public bool HasTags => AvailableTags.Count > 0;
 
-        private ObservableCollection<PrayerCardViewModel> _filteredPrayerCards = new();
+        private ObservableCollection<BoxSectionViewModel> _boxSections = new();
         /// <summary>
-        /// Filtered view of cards bound to the CollectionView. Replaced (not mutated) on each
-        /// filter pass to avoid iOS UICollectionView layout desync from rapid CollectionChanged events.
+        /// Grouped sections bound to the CollectionView. Each section is a BoxSectionViewModel
+        /// that contains the PrayerCardViewModels for cards in that box.
+        /// Replaced (not mutated) on each rebuild to avoid iOS UICollectionView layout desync.
         /// </summary>
-        public ObservableCollection<PrayerCardViewModel> FilteredPrayerCards
+        public ObservableCollection<BoxSectionViewModel> BoxSections
         {
-            get => _filteredPrayerCards;
-            private set => SetProperty(ref _filteredPrayerCards, value);
+            get => _boxSections;
+            private set => SetProperty(ref _boxSections, value);
         }
+
         private bool _isSorting;
         private bool _suppressFilterAnnounce;
         private readonly Dictionary<PrayerCardViewModel, System.ComponentModel.PropertyChangedEventHandler> _cardHandlers = new();
         private CancellationTokenSource? _filterAnnounceCts;
+
+        /// <summary>Cached box list for section building. Refreshed on LoadAsync/RefreshAsync.</summary>
+        private IReadOnlyList<CardBox> _boxes = Array.Empty<CardBox>();
 
         private bool _isLoading;
         public bool IsLoading
@@ -67,7 +73,8 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, ITagService tagService, ISettings settings)
+            IAccessibilityService accessibilityService, ITagService tagService, ISettings settings,
+            IBoxService boxService)
         {
             _cardService = cardService;
             _prayerService = prayerService;
@@ -76,6 +83,7 @@ namespace PrayerApp.ViewModels
             _accessibilityService = accessibilityService;
             _tagService = tagService;
             _settings = settings;
+            _boxService = boxService;
 
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
 
@@ -90,7 +98,8 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>())
         { }
 
         #endregion
@@ -151,7 +160,7 @@ namespace PrayerApp.ViewModels
                 {
                     UnsubscribeFromPropertyChanges(matched);
                     AllPrayerCards.Remove(matched);
-                    ApplySorting();
+                    RebuildSections();
                 }
             }
             else if (query.ContainsKey("saved"))
@@ -163,6 +172,8 @@ namespace PrayerApp.ViewModels
                 if (matched != null)
                 {
                     matched.Reload();
+                    // Card's BoxId may have changed — rebuild sections
+                    RebuildSections();
                 }
                 // If card isn't found, it's new; add it.
                 else
@@ -228,7 +239,7 @@ namespace PrayerApp.ViewModels
                 newCard.IsExpanded = true;
                 newCard.IsHighlighted = true;
 
-                ApplySorting(); // also calls ApplyFilter()
+                RebuildSections();
 
                 HighlightCardRequested?.Invoke(this, newCard);
             }
@@ -245,7 +256,9 @@ namespace PrayerApp.ViewModels
             try
             {
                 _cardService.InvalidateCache();
+                _boxService.InvalidateCache();
                 var cards = await _cardService.GetCardsAsync();
+                _boxes = await _boxService.GetBoxesAsync();
 
                 var viewModels = cards.Select(pc => CreateCardViewModel(pc)).ToList();
                 foreach (var vm in viewModels)
@@ -274,7 +287,7 @@ namespace PrayerApp.ViewModels
                 }
                 OnPropertyChanged(nameof(HasTags));
 
-                ApplySorting();
+                RebuildSections();
             }
             catch (Exception e)
             {
@@ -287,37 +300,81 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        private void ApplySorting()
+        private static IOrderedEnumerable<PrayerCardViewModel> SortCards(IEnumerable<PrayerCardViewModel> cards) =>
+            cards.OrderByDescending(c => c.IsFavorite).ThenBy(c => c.Title);
+
+        /// <summary>
+        /// Rebuilds sections from AllPrayerCards grouped by BoxId.
+        /// Preserves existing BoxSectionViewModel instances (and their user expansion state)
+        /// when the same BoxId is present. New sections get default expansion.
+        /// Sort order: Unboxed → user boxes (A→Z by name) → System → Archived.
+        /// </summary>
+        private void RebuildSections()
         {
             if (_isSorting) return;
             _isSorting = true;
             try
             {
-                var sorted = AllPrayerCards
-                    .OrderByDescending(pc => pc.IsSystem)
-                    .ThenByDescending(pc => pc.IsFavorite)
-                    .ThenBy(pc => pc.Title)
-                    .ToList();
+                var cardsByBox = AllPrayerCards
+                    .GroupBy(c => c.BoxId)
+                    .ToDictionary(g => g.Key, g => SortCards(g).ToList());
 
-                // Only update if order changed (minimize UI updates)
-                bool needsUpdate = false;
-                for (int i = 0; i < sorted.Count; i++)
+                // Preserve existing sections to retain user expansion state
+                var existingSections = BoxSections.ToDictionary(s => s.BoxId);
+                var sections = new List<BoxSectionViewModel>();
+
+                // Helper: reuse existing section or create new one
+                BoxSectionViewModel GetOrCreate(int boxId, Func<BoxSectionViewModel> factory)
                 {
-                    if (i >= AllPrayerCards.Count || AllPrayerCards[i] != sorted[i])
+                    if (existingSections.TryGetValue(boxId, out var existing))
+                        return existing;
+                    return factory();
+                }
+
+                // 1. Unboxed section (BoxId == 0)
+                var unboxedCards = cardsByBox.GetValueOrDefault(0);
+                if (unboxedCards is { Count: > 0 })
+                {
+                    var unboxed = GetOrCreate(0, () => new BoxSectionViewModel(defaultExpanded: true));
+                    unboxed.SetCards(unboxedCards);
+                    sections.Add(unboxed);
+                }
+
+                // 2. User boxes (not system, sorted by name)
+                foreach (var box in _boxes.Where(b => !b.IsSystem).OrderBy(b => b.Name))
+                {
+                    var boxCards = cardsByBox.GetValueOrDefault(box.Id);
+                    if (boxCards is { Count: > 0 })
                     {
-                        needsUpdate = true;
-                        break;
+                        var section = GetOrCreate(box.Id, () => new BoxSectionViewModel(box, defaultExpanded: true));
+                        section.SetCards(boxCards);
+                        sections.Add(section);
                     }
                 }
 
-                if (needsUpdate)
+                // 3. System box
+                var systemBox = _boxes.FirstOrDefault(b => b.SystemKey == CardBox.SystemKeySystem);
+                if (systemBox != null)
                 {
-                    AllPrayerCards.Clear();
-                    foreach (var card in sorted)
+                    var systemCards = cardsByBox.GetValueOrDefault(systemBox.Id);
+                    if (systemCards is { Count: > 0 })
                     {
-                        AllPrayerCards.Add(card);
+                        var systemSection = GetOrCreate(systemBox.Id, () => new BoxSectionViewModel(systemBox, defaultExpanded: true));
+                        systemSection.SetCards(systemCards);
+                        sections.Add(systemSection);
                     }
                 }
+
+                // 4. Archived box (always shown even when empty, collapsed by default)
+                var archivedBox = _boxes.FirstOrDefault(b => b.SystemKey == CardBox.SystemKeyArchived);
+                if (archivedBox != null)
+                {
+                    var archivedSection = GetOrCreate(archivedBox.Id, () => new BoxSectionViewModel(archivedBox, defaultExpanded: false));
+                    archivedSection.SetCards(cardsByBox.GetValueOrDefault(archivedBox.Id) ?? new List<PrayerCardViewModel>());
+                    sections.Add(archivedSection);
+                }
+
+                BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
             }
             finally
             {
@@ -329,44 +386,60 @@ namespace PrayerApp.ViewModels
 
         private void ApplyFilter()
         {
-            IEnumerable<PrayerCardViewModel> result = AllPrayerCards;
+            var hasSearch = !string.IsNullOrWhiteSpace(_searchText);
+            var searchQuery = _searchText?.Trim() ?? string.Empty;
 
-            if (!string.IsNullOrWhiteSpace(_searchText))
-            {
-                var q = _searchText.Trim();
-                result = result.Where(c =>
-                    c.Title?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false);
-            }
-
-            // Tag chip filter
             var selectedTagIds = AvailableTags
                 .Where(c => c.IsSelected)
                 .Select(c => c.Tag.Id)
                 .ToHashSet();
+            var hasTagFilter = selectedTagIds.Count > 0;
+            var hasAnyFilter = hasSearch || hasTagFilter;
 
-            if (selectedTagIds.Count > 0)
+            // Group once, look up per section — O(cards + sections) instead of O(sections × cards)
+            var cardsByBox = AllPrayerCards
+                .GroupBy(c => c.BoxId)
+                .ToDictionary(g => g.Key, g => SortCards(g).ToList());
+
+            var totalVisible = 0;
+
+            foreach (var section in BoxSections)
             {
-                result = result.Where(c =>
-                    _cardTagIds.TryGetValue(c.Id, out var tagIds) &&
-                    selectedTagIds.Overlaps(tagIds));
-            }
+                IEnumerable<PrayerCardViewModel> sectionCards =
+                    cardsByBox.GetValueOrDefault(section.BoxId) ?? new List<PrayerCardViewModel>();
 
-            FilteredPrayerCards = new ObservableCollection<PrayerCardViewModel>(result);
+                if (hasSearch)
+                    sectionCards = sectionCards.Where(c =>
+                        c.Title?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ?? false);
+
+                if (hasTagFilter)
+                    sectionCards = sectionCards.Where(c =>
+                        _cardTagIds.TryGetValue(c.Id, out var tagIds) &&
+                        selectedTagIds.Overlaps(tagIds));
+
+                var filteredCards = sectionCards.ToList();
+                section.SetCards(filteredCards);
+                totalVisible += filteredCards.Count;
+
+                if (hasAnyFilter && filteredCards.Count > 0)
+                    section.FilterExpand();
+                else if (!hasAnyFilter)
+                    section.RestoreUserExpansionState();
+            }
 
             if (!_suppressFilterAnnounce)
             {
                 _accessibilityService.NotifyLayoutChanged();
-                AnnounceFilterCountDebounced();
+                AnnounceFilterCountDebounced(totalVisible);
             }
         }
 
-        private void AnnounceFilterCountDebounced()
+        private void AnnounceFilterCountDebounced(int count)
         {
             _filterAnnounceCts?.Cancel();
             _filterAnnounceCts?.Dispose();
             _filterAnnounceCts = new CancellationTokenSource();
             var token = _filterAnnounceCts.Token;
-            var count = FilteredPrayerCards.Count;
             Task.Delay(400, token).ContinueWith(_ =>
             {
                 if (!token.IsCancellationRequested)
@@ -380,7 +453,7 @@ namespace PrayerApp.ViewModels
             {
                 if (e.PropertyName == nameof(PrayerCardViewModel.Title))
                 {
-                    ApplySorting();
+                    RebuildSections();
                 }
                 else if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded))
                 {
@@ -394,7 +467,7 @@ namespace PrayerApp.ViewModels
                     {
                         // Re-sort on collapse so favorite changes take effect
                         // at a natural transition point (not while user is interacting)
-                        ApplySorting();
+                        RebuildSections();
                     }
 
                     _accessibilityService.Announce(card.IsExpanded
@@ -428,7 +501,9 @@ namespace PrayerApp.ViewModels
         {
             _cardService.InvalidateCache();
             _prayerService.InvalidateCache();
+            _boxService.InvalidateCache();
             var cards = await _cardService.GetCardsAsync();
+            _boxes = await _boxService.GetBoxesAsync();
             var freshIds = cards.Select(c => c.Id).ToHashSet();
             var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
 
@@ -478,7 +553,7 @@ namespace PrayerApp.ViewModels
             }
             OnPropertyChanged(nameof(HasTags));
 
-            ApplySorting();
+            RebuildSections();
         }
 
         #endregion

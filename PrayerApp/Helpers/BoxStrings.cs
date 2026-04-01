@@ -7,8 +7,8 @@ namespace PrayerApp.Helpers
     /// </summary>
     public static class BoxStrings
     {
-        public const string Word = "Folder";
-        public const string Plural = "Folders";
-        public const string Unorganized = "Unorganized";
+        public const string Word = "Collection";
+        public const string Plural = "Collections";
+        public const string Unorganized = "Loose Cards";
     }
 }

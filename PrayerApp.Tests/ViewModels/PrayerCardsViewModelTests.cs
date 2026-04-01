@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using NSubstitute;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
@@ -15,16 +16,37 @@ public class PrayerCardsViewModelTests
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ITagService _tagService = Substitute.For<ITagService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
+    private readonly IBoxService _boxService = Substitute.For<IBoxService>();
 
     public PrayerCardsViewModelTests()
     {
         // Default mock: GetActivePrayerCountByCardAsync returns 0 for any card
         // (needed because PrayerCardViewModel constructor fires LoadActivePrayerCountAsync)
         _prayerService.GetActivePrayerCountByCardAsync(Arg.Any<int>()).Returns(0);
+
+        // Default: no boxes (sections will be empty)
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
     }
 
     private PrayerCardsViewModel CreateSut() =>
-        new(_cardService, _prayerService, _onboardingService, _navigationService, _accessibilityService, _tagService, _settings);
+        new(_cardService, _prayerService, _onboardingService, _navigationService,
+            _accessibilityService, _tagService, _settings, _boxService);
+
+    /// <summary>Sets up standard system boxes so sections can be built.</summary>
+    private void SetupSystemBoxes()
+    {
+        var boxes = new List<CardBox>
+        {
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        };
+        _boxService.GetBoxesAsync().Returns(boxes.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+    }
+
+    /// <summary>Helper to get all visible cards across all sections.</summary>
+    private List<PrayerCardViewModel> GetAllVisibleCards(PrayerCardsViewModel sut) =>
+        sut.BoxSections.SelectMany(s => s).ToList();
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -34,7 +56,7 @@ public class PrayerCardsViewModelTests
         var sut = CreateSut();
 
         Assert.Empty(sut.AllPrayerCards);
-        Assert.Empty(sut.FilteredPrayerCards);
+        Assert.Empty(sut.BoxSections);
         Assert.False(sut.IsLoading);
         Assert.Equal(string.Empty, sut.SearchText);
     }
@@ -79,7 +101,7 @@ public class PrayerCardsViewModelTests
     // ── LoadAsync cache invalidation ──────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_InvalidatesCardCache()
+    public async Task LoadAsync_InvalidatesCardAndBoxCaches()
     {
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
@@ -90,12 +112,13 @@ public class PrayerCardsViewModelTests
         await sut.LoadAsync();
 
         _cardService.Received(1).InvalidateCache();
+        _boxService.Received(1).InvalidateCache();
     }
 
-    // ── RefreshAsync invalidates both caches ──────────────────────────
+    // ── RefreshAsync invalidates caches ───────────────────────────────
 
     [Fact]
-    public async Task RefreshAsync_InvalidatesBothCaches()
+    public async Task RefreshAsync_InvalidatesAllCaches()
     {
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
@@ -107,6 +130,80 @@ public class PrayerCardsViewModelTests
 
         _cardService.Received(1).InvalidateCache();
         _prayerService.Received(1).InvalidateCache();
+        _boxService.Received(1).InvalidateCache();
+    }
+
+    // ── Section building ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_BuildsSections_UnboxedAndSystemAndArchived()
+    {
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 }; // Unboxed
+        var card2 = new PrayerCard { Id = 2, Title = "Quick Add", IsSystem = true, BoxId = 10 }; // System
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        // Should have: Unboxed (1 card), System (1 card), Archived (0 cards but always shown)
+        Assert.Equal(3, sut.BoxSections.Count);
+        Assert.Equal(BoxStrings.Unorganized, sut.BoxSections[0].Name);
+        Assert.Equal(1, sut.BoxSections[0].CardCount);
+        Assert.Equal("System", sut.BoxSections[1].Name);
+        Assert.Equal(1, sut.BoxSections[1].CardCount);
+        Assert.Equal("Archived", sut.BoxSections[2].Name);
+        Assert.Equal(0, sut.BoxSections[2].CardCount);
+    }
+
+    [Fact]
+    public async Task LoadAsync_UserBoxesSortedByName()
+    {
+        SetupSystemBoxes();
+        var boxes = new List<CardBox>
+        {
+            new() { Id = 5, Name = "Zulu", SortOrder = 0 },
+            new() { Id = 6, Name = "Alpha", SortOrder = 0 },
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        };
+        _boxService.GetBoxesAsync().Returns(boxes.AsReadOnly());
+
+        var card1 = new PrayerCard { Id = 1, Title = "Card A", BoxId = 5 }; // Zulu
+        var card2 = new PrayerCard { Id = 2, Title = "Card B", BoxId = 6 }; // Alpha
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        // User boxes sorted A→Z: Alpha before Zulu
+        Assert.Equal("Alpha", sut.BoxSections[0].Name);
+        Assert.Equal("Zulu", sut.BoxSections[1].Name);
+    }
+
+    [Fact]
+    public async Task LoadAsync_CardsWithinSectionSorted_FavoritesFirst()
+    {
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "Beta", BoxId = 0, IsFavorite = false };
+        var card2 = new PrayerCard { Id = 2, Title = "Alpha", BoxId = 0, IsFavorite = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        var unboxed = sut.BoxSections.First(s => s.BoxId == 0);
+        Assert.Equal("Alpha", unboxed[0].Title); // Favorited → first
+        Assert.Equal("Beta", unboxed[1].Title);
     }
 
     // ── Tag filter tests ────────────────────────────────────────────────
@@ -114,8 +211,8 @@ public class PrayerCardsViewModelTests
     [Fact]
     public async Task TagFilter_ShowsCardsWithUnansweredTaggedPrayers()
     {
-        // Arrange: card 1 has an unanswered prayer (id=10) tagged with tag 100
-        var card1 = new PrayerCard { Id = 1, Title = "Card One" };
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "Card One", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1 }.AsReadOnly());
 
         var tag = new PrayerTag { Id = 100, Name = "Healing" };
@@ -134,16 +231,17 @@ public class PrayerCardsViewModelTests
         Assert.Single(sut.AvailableTags);
         sut.AvailableTags[0].ToggleCommand.Execute(null);
 
-        // Assert: card appears in filtered results
-        Assert.Single(sut.FilteredPrayerCards);
-        Assert.Equal("Card One", sut.FilteredPrayerCards[0].Title);
+        // Assert: card appears in visible results
+        var visible = GetAllVisibleCards(sut);
+        Assert.Single(visible);
+        Assert.Equal("Card One", visible[0].Title);
     }
 
     [Fact]
     public async Task TagFilter_ExcludesCardsWhereAllTaggedPrayersAnswered()
     {
-        // Arrange: card 1 has an answered prayer (id=10) tagged with tag 100
-        var card1 = new PrayerCard { Id = 1, Title = "Card One" };
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "Card One", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1 }.AsReadOnly());
 
         var tag = new PrayerTag { Id = 100, Name = "Healing" };
@@ -162,15 +260,16 @@ public class PrayerCardsViewModelTests
         sut.AvailableTags[0].ToggleCommand.Execute(null);
 
         // Assert: card is excluded (no unanswered tagged prayers)
-        Assert.Empty(sut.FilteredPrayerCards);
+        var visible = GetAllVisibleCards(sut);
+        Assert.Empty(visible);
     }
 
     [Fact]
     public async Task TagFilter_MultipleTagsUseOrLogic()
     {
-        // Arrange: card 1 tagged with tag 100, card 2 tagged with tag 200
-        var card1 = new PrayerCard { Id = 1, Title = "Card One" };
-        var card2 = new PrayerCard { Id = 2, Title = "Card Two" };
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "Card One", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Card Two", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
 
         var tag1 = new PrayerTag { Id = 100, Name = "Healing" };
@@ -193,15 +292,16 @@ public class PrayerCardsViewModelTests
         sut.AvailableTags[1].ToggleCommand.Execute(null);
 
         // Assert: both cards appear (OR logic)
-        Assert.Equal(2, sut.FilteredPrayerCards.Count);
+        var visible = GetAllVisibleCards(sut);
+        Assert.Equal(2, visible.Count);
     }
 
     [Fact]
     public async Task TagFilter_ClearedShowsAllCards()
     {
-        // Arrange: card 1 tagged, card 2 not tagged
-        var card1 = new PrayerCard { Id = 1, Title = "Card One" };
-        var card2 = new PrayerCard { Id = 2, Title = "Card Two" };
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "Card One", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Card Two", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
 
         var tag = new PrayerTag { Id = 100, Name = "Healing" };
@@ -219,12 +319,14 @@ public class PrayerCardsViewModelTests
 
         // Act: select then deselect tag
         sut.AvailableTags[0].ToggleCommand.Execute(null);
-        Assert.Single(sut.FilteredPrayerCards); // filtered to 1 card
+        var filteredVisible = GetAllVisibleCards(sut);
+        Assert.Single(filteredVisible); // filtered to 1 card
 
         sut.AvailableTags[0].ToggleCommand.Execute(null); // deselect
 
         // Assert: all cards reappear
-        Assert.Equal(2, sut.FilteredPrayerCards.Count);
+        var allVisible = GetAllVisibleCards(sut);
+        Assert.Equal(2, allVisible.Count);
     }
 
     [Fact]
@@ -260,6 +362,26 @@ public class PrayerCardsViewModelTests
         await sut.LoadAsync();
 
         Assert.True(sut.HasTags);
+    }
+
+    // ── Archived section always visible ───────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_ArchivedSectionAlwaysPresent_EvenWhenEmpty()
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        // Only Archived should be visible (no cards in any section, but Archived is always shown)
+        Assert.Single(sut.BoxSections);
+        Assert.Equal("Archived", sut.BoxSections[0].Name);
+        Assert.Equal(0, sut.BoxSections[0].CardCount);
     }
 
     // ── Helper ──────────────────────────────────────────────────────────

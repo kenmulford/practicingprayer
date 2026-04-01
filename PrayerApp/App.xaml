@@ -15,6 +15,7 @@
             <converters:InverseBoolConverter x:Key="InverseBool" />
             <converters:StringToBoolConverter x:Key="StringToBool" />
             <converters:BoolToChevronConverter x:Key="BoolToChevron" />
+            <converters:BoolToTriangleConverter x:Key="BoolToTriangle" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
