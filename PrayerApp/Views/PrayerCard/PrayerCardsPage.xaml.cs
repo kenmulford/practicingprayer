@@ -37,6 +37,15 @@ public partial class PrayerCardsPage : ContentPage
         }
     }
 
+    private void OnCardHeaderTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not Grid grid || grid.BindingContext is not PrayerCardViewModel card) return;
+        if (BindingContext is PrayerCardsViewModel vm && vm.IsMultiSelectMode)
+            vm.ToggleCardSelection(card);
+        else
+            card.ToggleExpandedCommand.Execute(null);
+    }
+
     private async void OnCollectionsTapped(object? sender, EventArgs e)
         => await Shell.Current.GoToAsync(Routes.BoxesPage);
 

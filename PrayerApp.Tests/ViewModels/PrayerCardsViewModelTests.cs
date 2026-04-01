@@ -384,6 +384,135 @@ public class PrayerCardsViewModelTests
         Assert.Equal(0, sut.BoxSections[0].CardCount);
     }
 
+    // ── Multi-select ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task EnterMultiSelectMode_SetsIsMultiSelectModeAndSelectsCard()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        Assert.True(sut.IsMultiSelectMode);
+        Assert.True(sut.AllPrayerCards[0].IsMultiSelected);
+        Assert.Equal(1, sut.SelectedCardCount);
+    }
+
+    [Fact]
+    public async Task ToggleCardSelection_TogglesIsMultiSelected()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        sut.ToggleCardSelection(sut.AllPrayerCards[0]); // deselect
+        Assert.False(sut.AllPrayerCards[0].IsMultiSelected);
+        Assert.Equal(0, sut.SelectedCardCount);
+    }
+
+    [Fact]
+    public async Task CancelMultiSelectCommand_DeselectsAllAndExitsMode()
+    {
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "A", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "B", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+        sut.ToggleCardSelection(sut.AllPrayerCards[1]); // select second too
+
+        sut.CancelMultiSelectCommand.Execute(null);
+
+        Assert.False(sut.IsMultiSelectMode);
+        Assert.False(sut.AllPrayerCards[0].IsMultiSelected);
+        Assert.False(sut.AllPrayerCards[1].IsMultiSelected);
+    }
+
+    [Fact]
+    public async Task MoveSelectedCommand_Cancel_DoesNotMove()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" },
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Cancel");
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        await _cardService.DidNotReceive().AssignBoxAsync(Arg.Any<PrayerCard>(), Arg.Any<int>());
+        Assert.True(sut.IsMultiSelectMode); // stays in mode
+    }
+
+    [Fact]
+    public async Task MoveSelectedCommand_SelectsBox_MovesCardsAndExitsMode()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" },
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Family");
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).AssignBoxAsync(Arg.Any<PrayerCard>(), 5);
+        Assert.False(sut.IsMultiSelectMode); // exits mode after move
+    }
+
+    [Fact]
+    public void SelectedCountText_FormatsCorrectly()
+    {
+        var sut = CreateSut();
+        Assert.Equal("None selected", sut.SelectedCountText);
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)

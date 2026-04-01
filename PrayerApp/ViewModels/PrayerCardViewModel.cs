@@ -37,6 +37,9 @@ namespace PrayerApp.ViewModels
 
         public string Identifier => _prayerCard.Id.ToString();
 
+        /// <summary>Backing model for batch operations (e.g., multi-select move).</summary>
+        internal PrayerCard Card => _prayerCard;
+
         public int Id
         {
             get => _prayerCard.Id;
@@ -131,6 +134,13 @@ namespace PrayerApp.ViewModels
         {
             get => _isHighlighted;
             set => SetProperty(ref _isHighlighted, value);
+        }
+
+        private bool _isMultiSelected;
+        public bool IsMultiSelected
+        {
+            get => _isMultiSelected;
+            set => SetProperty(ref _isMultiSelected, value);
         }
 
         private int _activePrayerCount;

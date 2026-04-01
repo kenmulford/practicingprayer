@@ -16,7 +16,7 @@
                      Order="Primary" Priority="1" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
         </Grid.GestureRecognizers>
@@ -164,7 +164,17 @@
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding
                                 Light={StaticResource SystemCardLight}, Dark={StaticResource SystemCardDark}}" />
                         </DataTrigger>
+                        <DataTrigger TargetType="Border" Binding="{Binding IsMultiSelected}" Value="True">
+                            <Setter Property="Stroke" Value="{AppThemeBinding
+                                Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            <Setter Property="StrokeThickness" Value="2.5" />
+                        </DataTrigger>
                     </Border.Triggers>
+                    <Border.Behaviors>
+                        <toolkit:TouchBehavior LongPressCommand="{Binding Source={RelativeSource AncestorType={x:Type viewModels:PrayerCardsViewModel}}, Path=LongPressCardCommand}"
+                                               LongPressCommandParameter="{Binding}"
+                                               LongPressDuration="500" />
+                    </Border.Behaviors>
 
                     <VerticalStackLayout Spacing="0">
 
@@ -173,7 +183,7 @@
                             Padding="12,10"
                             ColumnDefinitions="*,Auto,Auto,Auto,Auto">
                             <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding ToggleExpandedCommand}" />
+                                <TapGestureRecognizer Tapped="OnCardHeaderTapped" />
                             </Grid.GestureRecognizers>
                             <Label
                                 Text="{Binding Title}"
@@ -453,6 +463,41 @@
             ExpectedStep="AddRequest"
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />
+
+        <!-- Multi-select toolbar -->
+        <Border Grid.Row="5"
+                AutomationId="Cards_Bar_MultiSelect"
+                IsVisible="{Binding IsMultiSelectMode}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+                StrokeThickness="0"
+                Padding="16,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        AutomationId="Cards_Btn_CancelSelect"
+                        Command="{Binding CancelMultiSelectCommand}"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        FontSize="14"
+                        Padding="8,4" />
+                <Label Grid.Column="1"
+                       Text="{Binding SelectedCountText}"
+                       TextColor="White"
+                       FontSize="14"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="2"
+                        Text="Move to…"
+                        AutomationId="Cards_Btn_MoveToBox"
+                        Command="{Binding MoveSelectedCommand}"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        Padding="8,4" />
+            </Grid>
+        </Border>
 
     </Grid>
 </ContentPage>

@@ -65,6 +65,34 @@ namespace PrayerApp.ViewModels
         }
 
         public ICommand NewCommand { get; }
+        public ICommand CancelMultiSelectCommand { get; }
+        public ICommand MoveSelectedCommand { get; }
+        public ICommand LongPressCardCommand { get; }
+
+        private bool _isMultiSelectMode;
+        public bool IsMultiSelectMode
+        {
+            get => _isMultiSelectMode;
+            set
+            {
+                if (SetProperty(ref _isMultiSelectMode, value))
+                {
+                    OnPropertyChanged(nameof(SelectedCardCount));
+                    OnPropertyChanged(nameof(SelectedCountText));
+                }
+            }
+        }
+
+        public int SelectedCardCount => AllPrayerCards.Count(c => c.IsMultiSelected);
+
+        public string SelectedCountText
+        {
+            get
+            {
+                var count = SelectedCardCount;
+                return count switch { 0 => "None selected", 1 => "1 selected", _ => $"{count} selected" };
+            }
+        }
 
         /// <summary>Raised when a newly created card should be scrolled to and highlighted.</summary>
         public event EventHandler<PrayerCardViewModel>? HighlightCardRequested;
@@ -89,6 +117,12 @@ namespace PrayerApp.ViewModels
 
             // register commands
             NewCommand = new AsyncRelayCommand(NewPrayerCardAsync);
+            CancelMultiSelectCommand = new RelayCommand(ExitMultiSelectMode);
+            MoveSelectedCommand = new AsyncRelayCommand(MoveSelectedAsync);
+            LongPressCardCommand = new RelayCommand<PrayerCardViewModel>(card =>
+            {
+                if (card != null) EnterMultiSelectMode(card);
+            });
         }
 
         public PrayerCardsViewModel() : this(
@@ -251,6 +285,7 @@ namespace PrayerApp.ViewModels
 
         public async Task LoadAsync()
         {
+            if (IsMultiSelectMode) ExitMultiSelectMode();
             IsLoading = true;
             _suppressFilterAnnounce = true;
             try
@@ -499,6 +534,7 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public async Task RefreshAsync()
         {
+            if (IsMultiSelectMode) ExitMultiSelectMode();
             _cardService.InvalidateCache();
             _prayerService.InvalidateCache();
             _boxService.InvalidateCache();
@@ -554,6 +590,83 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(HasTags));
 
             RebuildSections();
+        }
+
+        #endregion
+
+        #region Multi-Select
+
+        /// <summary>Enters multi-select mode with the given card pre-selected.</summary>
+        public void EnterMultiSelectMode(PrayerCardViewModel card)
+        {
+            if (IsMultiSelectMode) return;
+            IsMultiSelectMode = true;
+            card.IsMultiSelected = true;
+            NotifySelectionCount();
+            _accessibilityService.Announce("Selection mode. Tap cards to select them.");
+        }
+
+        /// <summary>Toggles a card's selection state while in multi-select mode.</summary>
+        public void ToggleCardSelection(PrayerCardViewModel card)
+        {
+            if (!IsMultiSelectMode) return;
+            card.IsMultiSelected = !card.IsMultiSelected;
+            NotifySelectionCount();
+        }
+
+        private void ExitMultiSelectMode()
+        {
+            foreach (var card in AllPrayerCards)
+                card.IsMultiSelected = false;
+            IsMultiSelectMode = false;
+            _accessibilityService.Announce("Selection cancelled");
+        }
+
+        private async Task MoveSelectedAsync()
+        {
+            var selected = AllPrayerCards.Where(c => c.IsMultiSelected).ToList();
+            if (selected.Count == 0) return;
+
+            // Build picker options: user boxes + "Loose Cards"
+            var boxes = await _boxService.GetBoxesAsync();
+            var options = new List<string> { BoxStrings.Unorganized };
+            var userBoxes = boxes.Where(b => !b.IsSystem).OrderBy(b => b.Name).ToList();
+            options.AddRange(userBoxes.Select(b => b.Name));
+
+            var result = await _navigationService.DisplayActionSheetAsync(
+                $"Move {selected.Count} card{(selected.Count == 1 ? "" : "s")} to…",
+                "Cancel", null, options.ToArray());
+
+            if (result is null or "Cancel") return;
+
+            // Resolve the selected box ID
+            int targetBoxId;
+            if (result == BoxStrings.Unorganized)
+            {
+                targetBoxId = 0;
+            }
+            else
+            {
+                var targetBox = userBoxes.FirstOrDefault(b => b.Name == result);
+                if (targetBox == null) return;
+                targetBoxId = targetBox.Id;
+            }
+
+            // Batch assign
+            foreach (var card in selected)
+                await _cardService.AssignBoxAsync(card.Card, targetBoxId);
+
+            _accessibilityService.Announce(
+                $"Moved {selected.Count} card{(selected.Count == 1 ? "" : "s")} to {result}");
+
+            ExitMultiSelectMode();
+            RebuildSections();
+        }
+
+        private void NotifySelectionCount()
+        {
+            OnPropertyChanged(nameof(SelectedCardCount));
+            OnPropertyChanged(nameof(SelectedCountText));
         }
 
         #endregion
