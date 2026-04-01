@@ -38,7 +38,6 @@
                                              IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}">
                             <Label Text="Collection" Style="{StaticResource FormLabel}" />
                             <Picker ItemsSource="{Binding AvailableBoxes}"
-                                    ItemDisplayBinding="{Binding Name}"
                                     SelectedItem="{Binding SelectedBox}"
                                     AutomationId="Card_Picker_Box"
                                     SemanticProperties.Hint="Choose which collection this card belongs to" />

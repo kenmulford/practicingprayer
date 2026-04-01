@@ -171,7 +171,11 @@
                         </DataTrigger>
                     </Border.Triggers>
                     <Border.Behaviors>
-                        <toolkit:TouchBehavior LongPressCommand="{Binding Source={RelativeSource AncestorType={x:Type viewModels:PrayerCardsViewModel}}, Path=LongPressCardCommand}"
+                        <!-- x:DataType intentionally omitted: LongPressCommand uses RelativeSource
+                             to reach PrayerCardsViewModel (parent), while CommandParameter is the
+                             current item (PrayerCardViewModel). Mixed scopes require reflection binding. -->
+                        <toolkit:TouchBehavior x:DataType="x:Null"
+                                               LongPressCommand="{Binding Source={RelativeSource AncestorType={x:Type viewModels:PrayerCardsViewModel}}, Path=LongPressCardCommand}"
                                                LongPressCommandParameter="{Binding}"
                                                LongPressDuration="500" />
                     </Border.Behaviors>
