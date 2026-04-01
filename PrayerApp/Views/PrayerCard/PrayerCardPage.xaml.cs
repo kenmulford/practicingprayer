@@ -22,7 +22,7 @@ public partial class PrayerCardPage : ContentPage
             if (vm.AvailableBoxes.Count == 0)
                 await vm.LoadBoxPickerAsync();
             if (vm.IsNew)
-                Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+                _ = Dispatcher.DispatchAsync(() => TitleEntry.Focus());
         }
     }
 
