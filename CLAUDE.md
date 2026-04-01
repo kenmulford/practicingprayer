@@ -154,6 +154,24 @@ A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically det
 
 **Not applicable to this project** (privacy-first, offline): `maui-authentication`, `maui-rest-api`, `maui-push-notifications`, `maui-maps`, `maui-geolocation`, `maui-aspire`, xamarin-* migration skills.
 
+### Project-Specific Skills (prayer-app-skills plugin)
+
+**Invoke before implementing features or modifications that touch the relevant layer:**
+
+| Area | Skill | When to invoke |
+| ---- | ----- | -------------- |
+| Models, schema, Active Record | `prayer-app-skills:prayer-app-models` | Creating/modifying models, adding columns, data relationships |
+| Database, migrations, DBService | `prayer-app-skills:prayer-app-database` | Schema changes, migrations, seed data, DB queries |
+| Service layer, caching, DI | `prayer-app-skills:prayer-app-services` | Creating/modifying services, understanding cache patterns |
+| ViewModels, MVVM, commands | `prayer-app-skills:prayer-app-viewmodels` | Creating/modifying ViewModels, data binding, commands |
+| Views, XAML, code-behind | `prayer-app-skills:prayer-app-views` | Creating/modifying pages, layout patterns, modals |
+| Colors, styles, dark mode | `prayer-app-skills:prayer-app-theming` | Styling, colors, theming, AppThemeBinding |
+| Unit tests, xUnit, mocking | `prayer-app-skills:prayer-app-unit-testing` | Writing tests, NSubstitute patterns, test project setup |
+| UI tests, Appium | `prayer-app-skills:prayer-app-ui-testing` | Writing Appium tests, platform-specific locators |
+| Android/iOS platform code | `prayer-app-skills:prayer-app-platform` | Handlers, deep linking, orientation, conditional compilation |
+| Shell navigation, routing | `prayer-app-skills:prayer-app-navigation` | Adding pages, routes, query params, modals, tabs |
+| Accessibility, screen readers | `prayer-app-skills:prayer-app-accessibility` | SemanticProperties, AutomationId, announcements |
+
 ---
 
 ## Changelog
