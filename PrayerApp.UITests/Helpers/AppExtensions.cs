@@ -613,6 +613,34 @@ public static class AppExtensions
     public static void SwipeElementRight(this AppiumDriver driver, AppiumElement element)
         => SwipeElement(driver, element, "right");
 
+    /// <summary>Long-press an element (for multi-select entry). Duration 750ms.</summary>
+    public static void LongPress(this AppiumDriver driver, AppiumElement element)
+    {
+        var location = element.Location;
+        var size = element.Size;
+        var centerX = location.X + size.Width / 2;
+        var centerY = location.Y + size.Height / 2;
+
+        if (TestConfig.IsIOS)
+        {
+            driver.ExecuteScript("mobile: touchAndHold", new Dictionary<string, object>
+            {
+                { "x", centerX },
+                { "y", centerY },
+                { "duration", 0.75 }
+            });
+        }
+        else
+        {
+            driver.ExecuteScript("mobile: longClickGesture", new Dictionary<string, object>
+            {
+                { "x", centerX },
+                { "y", centerY },
+                { "duration", 750 }
+            });
+        }
+    }
+
     /// <summary>Check if an alert dialog is currently showing.</summary>
     public static bool IsAlertPresent(this AppiumDriver driver)
     {
@@ -696,6 +724,35 @@ public static class AppExtensions
             driver.NavigateToTab("Tags");
 
         Thread.Sleep(TestConfig.DelayCollectionRender);
+    }
+
+    /// <summary>
+    /// Ensures a "UITest Collection" exists in the Manage Collections page.
+    /// Creates it if not found, then navigates back to the calling context.
+    /// </summary>
+    public static void EnsureUITestCollectionExists(this AppiumDriver driver, AppiumSetup setup)
+    {
+        driver.EnsureOnTab("Prayer Cards", setup);
+        driver.TapToolbarItem("Collections");
+        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
+
+        if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
+        {
+            driver.GoBack();
+            return;
+        }
+
+        driver.TapToolbarItem("Add");
+        driver.WaitForElement("BoxDetail_Entry_Name", timeoutSeconds: 5);
+        driver.EnterText("BoxDetail_Entry_Name", "UITest Collection");
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+
+        if (!driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5) && TestConfig.IsIOS)
+            driver.GoBack();
+
+        driver.GoBack();
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
     }
 
     /// <summary>

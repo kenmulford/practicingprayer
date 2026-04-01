@@ -51,7 +51,7 @@ public class TagTests
         Assert.True(onTagList, "Should return to tag list after saving new tag");
     }
 
-    /// <summary>7.3: Edit tag — swipe to reveal Edit, navigate to detail.</summary>
+    /// <summary>7.3: Edit tag — tap to select, tap Edit chip, navigate to detail.</summary>
     [Fact]
     public void Tags_EditTag()
     {
@@ -60,18 +60,21 @@ public class TagTests
 
         if (driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 3))
         {
-            var tagElement = driver.FindByText("UITest Tag");
-            driver.SwipeElementRight(tagElement);
+            // Tap to select (reveals action chips)
+            driver.TapByText("UITest Tag");
+            Thread.Sleep(TestConfig.DelayAfterTap);
 
-            if (driver.IsTextDisplayed("Edit", timeoutSeconds: 2))
+            // Tap Edit action chip
+            if (driver.IsDisplayed("Tags_Btn_Edit", timeoutSeconds: 3))
             {
-                driver.TapByText("Edit");
+                driver.Tap("Tags_Btn_Edit");
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
 
                 Assert.True(driver.IsDisplayed("TagDetail_Entry_Name", timeoutSeconds: 5),
                     "Should navigate to tag detail for editing");
 
                 driver.TapToolbarItem("Save");
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterSave);
             }
         }
 
@@ -79,7 +82,7 @@ public class TagTests
         Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5));
     }
 
-    /// <summary>7.4: Delete tag — swipe left reveals Delete action.</summary>
+    /// <summary>7.4: Delete tag — tap to select, tap Delete chip.</summary>
     [Fact]
     public void Tags_DeleteTag()
     {
@@ -91,21 +94,23 @@ public class TagTests
         driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 5);
         driver.EnterText("TagDetail_Entry_Name", "Delete Me Tag");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Explicit tab nav — GoToAsync("..") is unreliable on iOS (Bug #3)
         driver.NavigateToTab("Tags");
 
         if (driver.IsTextDisplayed("Delete Me Tag", timeoutSeconds: 5))
         {
-            var tagElement = driver.FindByText("Delete Me Tag");
-            driver.SwipeElementLeft(tagElement);
+            // Tap to select (reveals action chips)
+            driver.TapByText("Delete Me Tag");
+            Thread.Sleep(TestConfig.DelayAfterTap);
 
-            if (driver.IsTextDisplayed("Delete", timeoutSeconds: 2))
+            // Tap Delete action chip
+            if (driver.IsDisplayed("Tags_Btn_Delete", timeoutSeconds: 3))
             {
-                driver.TapByText("Delete");
+                driver.Tap("Tags_Btn_Delete");
                 driver.DismissAlertIfPresent();
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterSave);
             }
         }
 
