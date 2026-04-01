@@ -176,6 +176,8 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerTimeScopeViewModel>();
             builder.Services.AddTransient<TagsViewModel>();
             builder.Services.AddTransient<TagDetailViewModel>();
+            builder.Services.AddTransient<BoxesViewModel>();
+            builder.Services.AddTransient<BoxDetailViewModel>();
 
             // Pages — Transient (Shell resolves from DI on navigation)
             builder.Services.AddTransient<MainPage>();
@@ -188,6 +190,8 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerTimeScopePage>();
             builder.Services.AddTransient<TagsPage>();
             builder.Services.AddTransient<TagDetailPage>();
+            builder.Services.AddTransient<Views.Boxes.BoxesPage>();
+            builder.Services.AddTransient<Views.Boxes.BoxDetailPage>();
             builder.Services.AddTransient<SettingsHubPage>();
             builder.Services.AddTransient<AppSettingsPage>();
             builder.Services.AddTransient<BackupPage>();

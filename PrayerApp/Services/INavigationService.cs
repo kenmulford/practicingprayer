@@ -10,4 +10,5 @@ public interface INavigationService
     Task PopModalAsync();
     Task<bool> DisplayConfirmAsync(string title, string message, string accept, string cancel);
     Task DisplayAlertAsync(string title, string message, string ok);
+    Task<string?> DisplayActionSheetAsync(string title, string cancel, string? destruction, params string[] buttons);
 }

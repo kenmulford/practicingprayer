@@ -18,4 +18,7 @@ public class ShellNavigationService : INavigationService
 
     public Task DisplayAlertAsync(string title, string message, string ok)
         => Shell.Current.DisplayAlertAsync(title, message, ok);
+
+    public Task<string?> DisplayActionSheetAsync(string title, string cancel, string? destruction, params string[] buttons)
+        => Shell.Current.DisplayActionSheetAsync(title, cancel, destruction, buttons);
 }

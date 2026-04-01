@@ -37,6 +37,32 @@
 
                     <BoxView Style="{StaticResource DividerLine}" />
 
+                    <!-- Manage Collections -->
+                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                          AutomationId="Settings_Row_Collections"
+                          SemanticProperties.Hint="Double tap to open">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCollectionsTapped" />
+                        </Grid.GestureRecognizers>
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Manage Collections"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
+                            <Label Text="Organize your prayer cards into groups"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1"
+                               Text="›"
+                               FontSize="20"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+
+                    <BoxView Style="{StaticResource DividerLine}" />
+
                     <!-- Backup & Restore -->
                     <Grid ColumnDefinitions="*,Auto" Padding="16,14"
                           AutomationId="Settings_Row_Backup"

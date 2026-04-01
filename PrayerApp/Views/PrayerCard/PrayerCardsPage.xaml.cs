@@ -37,6 +37,9 @@ public partial class PrayerCardsPage : ContentPage
         }
     }
 
+    private async void OnCollectionsTapped(object? sender, EventArgs e)
+        => await Shell.Current.GoToAsync(Routes.BoxesPage);
+
     private void OnSearchButtonPressed(object? sender, EventArgs e)
         => searchBar.Unfocus();
 

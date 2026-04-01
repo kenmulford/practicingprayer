@@ -8,8 +8,9 @@
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Folders" AutomationId="Cards_Btn_Folders"
-                     SemanticProperties.Hint="Manage folders"
+        <ToolbarItem Text="Collections" AutomationId="Cards_Btn_Collections"
+                     SemanticProperties.Hint="Manage collections"
+                     Clicked="OnCollectionsTapped"
                      Order="Primary" Priority="0" />
         <ToolbarItem Text="Add Card" Command="{Binding NewCommand}"
                      Order="Primary" Priority="1" />

@@ -16,6 +16,7 @@ using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
 using PrayerApp.Views.PrayerTime;
 using PrayerApp.Views.Settings;
+using PrayerApp.Views.Boxes;
 using PrayerApp.Views.Tags;
 
 namespace PrayerApp
@@ -51,6 +52,8 @@ namespace PrayerApp
             Routing.RegisterRoute(nameof(PrayerDetailPage), typeof(PrayerDetailPage));
             Routing.RegisterRoute(nameof(PrayerTimePage), typeof(PrayerTimePage));
             Routing.RegisterRoute(nameof(TagDetailPage), typeof(TagDetailPage));
+            Routing.RegisterRoute(nameof(BoxesPage), typeof(BoxesPage));
+            Routing.RegisterRoute(nameof(BoxDetailPage), typeof(BoxDetailPage));
             Routing.RegisterRoute(nameof(AppSettingsPage), typeof(AppSettingsPage));
             Routing.RegisterRoute(nameof(BackupPage), typeof(BackupPage));
             Routing.RegisterRoute(nameof(AboutPage), typeof(AboutPage));
