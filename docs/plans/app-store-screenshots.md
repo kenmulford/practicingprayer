@@ -43,12 +43,12 @@ Apple's docs and App Store Connect validation **disagree**. These are the valida
 
 ### Dark Mode (high-impact only, both devices)
 
-| # | Screen | Filename |
-|---|--------|----------|
-| 1 | Prayer Cards (expanded) | `dark/02-prayer-cards.png` |
-| 2 | Prayer List (Active) | `dark/04-prayer-list.png` |
-| 3 | Prayer Time | `dark/08-prayer-time.png` |
-| 4 | Manage Collections | `dark/10-manage-collections.png` |
+| # | Screen | Filename | Notes |
+|---|--------|----------|-------|
+| 1 | Prayer Cards (expanded) | `dark/02-prayer-cards.png` | |
+| 2 | Prayer List (Active) | `dark/04-prayer-list.png` | |
+| 3 | Prayer Time | `dark/08-prayer-time.png` | iPhone: landscape (rotate with `sips -r 270`), iPad: portrait |
+| 4 | Manage Collections | `dark/10-manage-collections.png` | |
 
 ---
 
@@ -232,11 +232,11 @@ iPad screenshots (2064×2752) need no resize.
 ```
 screenshots/
   iphone/
-    light/   01 through 09
-    dark/    02, 04, 08
+    light/   02 through 10
+    dark/    02, 04, 08, 10
   ipad/
-    light/   01 through 09
-    dark/    02, 04, 08
+    light/   01 through 10
+    dark/    02, 04, 08, 10
 ```
 
 ---
@@ -252,3 +252,20 @@ screenshots/
 | Prayer Time auto-rotates to landscape on iPhone | App setting "Landscape Mode" controls this |
 | iPad screenshots accepted as-is | 2064×2752 matches the 13" category exactly |
 | Seed data timestamps | Must be .NET ticks format, not Unix epoch |
+| **Prayer Time action sheet auto-dismissed** | Prayer Time button shows a scope picker ("All Requests" / "By Tags" / "By Collection") when data has both tags and user collections. **`autoDismissAlerts: true` silently dismisses this**, making it look like the button does nothing. Use `autoDismissAlerts: false` for the entire session. |
+| **Appium MCP screenshot too large** | `appium_screenshot` returns base64 that exceeds tool result token limits. Use `xcrun simctl io $UDID screenshot <path>` for all captures — faster and saves directly to disk. |
+| **Exiting Prayer Time via Appium unreliable** | Landscape orientation confuses Appium element finding — buttons like "I'm Done" can't be located. Workaround: `xcrun simctl terminate` + `xcrun simctl launch` to restart the app on Home. |
+| **Tag Detail requires two taps** | Tap the tag row to expand (shows Edit/Delete inline buttons), then tap Edit to navigate to the tag edit page with color picker swatches. |
+| **Keyboard on Quick Add / Tag Edit** | Quick Add modal auto-focuses the title field, showing keyboard. `mobile: hideKeyboard` fails on Quick Add. On iPad, `hideKeyboard` works. For iPhone Quick Add, accept the keyboard in the screenshot or tap an empty area to dismiss. |
+
+---
+
+## Efficiency Tips for Future Passes
+
+1. **Always use `autoDismissAlerts: false`** — prevents silent dismissal of action sheets and confirmation dialogs
+2. **Use `xcrun simctl io` for screenshots, Appium only for navigation** — avoids token limit issues and saves directly to disk
+3. **Terminate + relaunch to escape Prayer Time** — faster than finding exit buttons through Appium in landscape
+4. **Do one device fully (light + dark) before moving to the next** — reduces session creation overhead
+5. **Appium session creation per navigation burst** — sessions go stale; create fresh sessions after terminate/relaunch cycles
+6. **Absolute paths for `xcrun simctl io screenshot`** — relative paths fail silently with "No such file or directory"
+7. **Batch resize at the end** — resize all iPhone screenshots in one pass after all captures are done
