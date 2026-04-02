@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Input;
 using NSubstitute;
 using PrayerApp.Models;
 using PrayerApp.Services;
@@ -81,7 +82,7 @@ public class PrayerTimeBoxScopeViewModelTests
     // ── Selection ─────────────────────────────────────────────────────
 
     [Fact]
-    public async Task SelectCommand_NavigatesToPrayerTimeWithBoxScope()
+    public async Task StartCommand_WithSelection_NavigatesToPrayerTimeWithBoxScope()
     {
         var boxes = new List<CardBox>
         {
@@ -100,11 +101,40 @@ public class PrayerTimeBoxScopeViewModelTests
         var sut = CreateSut();
         await sut.LoadBoxesAsync();
 
-        // Simulate selecting the first box
-        await sut.SelectBoxAsync(sut.Boxes[0]);
+        // Select the first box via RadioButton binding
+        sut.Boxes[0].IsSelected = true;
+        await ((IAsyncRelayCommand)sut.StartCommand).ExecuteAsync(null);
 
         await _navigationService.Received(1).PopModalAsync();
-        await _navigationService.Received(1).GoToAsync($"{Routes.PrayerTimePage}?scope=box&boxId=5");
+        await _navigationService.Received(1).GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeBox}&boxId=5");
+    }
+
+    [Fact]
+    public async Task StartCommand_NoneSelected_ShowsAlert()
+    {
+        var boxes = new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family", IsSystem = false }
+        };
+        _boxService.GetBoxesAsync().Returns(boxes.AsReadOnly());
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 10, BoxId = 5 }
+        }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, PrayerCardId = 10 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        // Don't select anything
+        await ((IAsyncRelayCommand)sut.StartCommand).ExecuteAsync(null);
+
+        await _navigationService.Received(1).DisplayAlertAsync(
+            "No Collection Selected", "Please select a collection.", "OK");
+        await _navigationService.DidNotReceive().PopModalAsync();
     }
 
     // ── Cancel ────────────────────────────────────────────────────────

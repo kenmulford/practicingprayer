@@ -23,26 +23,34 @@
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Boxes}" Spacing="0">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:SelectableBox">
-                            <Grid Padding="12,14">
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewModels:PrayerTimeBoxScopeViewModel}}, Path=SelectCommand}"
-                                        CommandParameter="{Binding}" />
-                                </Grid.GestureRecognizers>
-                                <Label Text="{Binding Box.Name}"
+                            <Grid Padding="8,10" ColumnDefinitions="*, Auto">
+                                <Label Grid.Column="0"
+                                       Text="{Binding Box.Name}"
                                        VerticalOptions="Center"
-                                       FontSize="16"
                                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                                <RadioButton Grid.Column="1"
+                                             IsChecked="{Binding IsSelected}"
+                                             GroupName="BoxSelection"
+                                             SemanticProperties.Description="{Binding Box.Name}"
+                                             VerticalOptions="Center" />
                             </Grid>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
             </Border>
 
-            <Button Text="Cancel"
-                    AutomationId="BoxScope_Btn_Cancel"
-                    Command="{Binding CancelCommand}"
-                    HorizontalOptions="Fill" />
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        AutomationId="BoxScope_Btn_Cancel"
+                        Command="{Binding CancelCommand}"
+                        HorizontalOptions="Fill" />
+                <Button Grid.Column="1"
+                        Text="Start"
+                        AutomationId="BoxScope_Btn_Start"
+                        Command="{Binding StartCommand}"
+                        HorizontalOptions="Fill" />
+            </Grid>
 
         </VerticalStackLayout>
     </ScrollView>

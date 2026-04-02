@@ -29,4 +29,4 @@
 
 ### Concise Play Store version
 
-Organize your prayer cards with Collections! Group cards into folders like "Family" or "Work," long-press to multi-select and move cards between collections, and archive cards you're not actively praying for. Also: smoother transitions, clearer Prayer Time buttons, and more reliable tag actions.
+Organize your prayer cards with Collections! Group cards into folders like "Family" or "Work," long-press to multi-select and move cards between collections, and archive cards you're not actively praying for. New: Pray by Collection to focus your Prayer Time on one group, with prayers sorted by card name for a more predictable flow. Also: smoother transitions, clearer Prayer Time buttons, and more reliable tag actions.

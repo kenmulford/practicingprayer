@@ -8,10 +8,15 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels;
 
-public class SelectableBox
+public class SelectableBox : ObservableObject
 {
+    private bool _isSelected;
     public CardBox Box { get; }
-
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
+    }
     public SelectableBox(CardBox box) => Box = box;
 }
 
@@ -23,7 +28,7 @@ public class PrayerTimeBoxScopeViewModel : ObservableObject
     private readonly INavigationService _navigationService;
 
     public ObservableCollection<SelectableBox> Boxes { get; } = new();
-    public ICommand SelectCommand { get; }
+    public ICommand StartCommand { get; }
     public ICommand CancelCommand { get; }
 
     public PrayerTimeBoxScopeViewModel(IBoxService boxService, ICardService cardService,
@@ -33,7 +38,7 @@ public class PrayerTimeBoxScopeViewModel : ObservableObject
         _cardService = cardService;
         _prayerService = prayerService;
         _navigationService = navigationService;
-        SelectCommand = new AsyncRelayCommand<SelectableBox>(SelectBoxAsync);
+        StartCommand = new AsyncRelayCommand(StartAsync);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
         LoadBoxesAsync().SafeFireAndForget();
     }
@@ -77,12 +82,17 @@ public class PrayerTimeBoxScopeViewModel : ObservableObject
         }
     }
 
-    public async Task SelectBoxAsync(SelectableBox? selectableBox)
+    private async Task StartAsync()
     {
-        if (selectableBox is null) return;
+        var selected = Boxes.FirstOrDefault(b => b.IsSelected);
+        if (selected is null)
+        {
+            await _navigationService.DisplayAlertAsync("No Collection Selected", "Please select a collection.", "OK");
+            return;
+        }
 
         await _navigationService.PopModalAsync();
-        await _navigationService.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeBox}&boxId={selectableBox.Box.Id}");
+        await _navigationService.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeBox}&boxId={selected.Box.Id}");
     }
 
     public async Task CancelAsync()
