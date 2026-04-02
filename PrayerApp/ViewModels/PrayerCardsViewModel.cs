@@ -600,10 +600,13 @@ namespace PrayerApp.ViewModels
 
         #region Multi-Select
 
+        private DateTime _multiSelectEnteredAt;
+
         /// <summary>Enters multi-select mode with the given card pre-selected.</summary>
         public void EnterMultiSelectMode(PrayerCardViewModel card)
         {
             if (IsMultiSelectMode) return;
+            _multiSelectEnteredAt = DateTime.UtcNow;
             IsMultiSelectMode = true;
             card.IsMultiSelected = true;
             NotifySelectionCount();
@@ -614,6 +617,9 @@ namespace PrayerApp.ViewModels
         public void ToggleCardSelection(PrayerCardViewModel card)
         {
             if (!IsMultiSelectMode) return;
+            // iOS fires tap on finger-up after long-press — suppress the immediate
+            // deselect of the card that just triggered multi-select entry.
+            if ((DateTime.UtcNow - _multiSelectEnteredAt).TotalMilliseconds < 300) return;
             card.IsMultiSelected = !card.IsMultiSelected;
             NotifySelectionCount();
         }

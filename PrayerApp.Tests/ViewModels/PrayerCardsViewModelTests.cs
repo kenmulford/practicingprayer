@@ -420,6 +420,9 @@ public class PrayerCardsViewModelTests
         await sut.LoadAsync();
         sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
 
+        // Wait past the 300ms long-press suppression window
+        await Task.Delay(350);
+
         sut.ToggleCardSelection(sut.AllPrayerCards[0]); // deselect
         Assert.False(sut.AllPrayerCards[0].IsMultiSelected);
         Assert.Equal(0, sut.SelectedCardCount);

@@ -15,7 +15,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: 1.1.0b44. 364 unit tests, 63 UITests.
-**Last completed**: BUG-55/56/57/58/59 (5 Collections bug fixes — EmptyView overlay, empty collections, count styling, system card migration, multi-select toolbar)
+**Last completed**: BUG-55/56/57/58/59/60 (6 Collections bug fixes folded into F-24)
 **Next up**: F-24 Phase 4 (UITests for Collections feature)
 
 ---
@@ -40,17 +40,12 @@ Items are listed in work order. Start at the top, work down.
 | ~~11~~ | ~~BUG-57~~ | ~~Collection card count styling inconsistent with card title row~~ | ~~Ken~~ | **Fixed.** Count badge bumped to 13px Bold Gray600 to match section header styling. |
 | ~~12~~ | ~~BUG-58~~ | ~~System cards not migrated into system collection~~ | ~~Ken~~ | **Fixed.** Migration ordering corrected (IsSystem/IsImported columns before box migration), IsSystem backfill for legacy cards, startup safety net, and on-demand system card creation assigns System box. |
 | ~~13~~ | ~~BUG-59~~ | ~~Multi-select context menu position — move to top of list~~ | ~~Ken~~ | **Fixed.** Toolbar moved from bottom to top overlay (Row 0, RowSpan 2, ZIndex 10, height-matched). Collection headers dimmed to 0.4 opacity during multi-select. |
-| 14  | BUG-60 | Android long-press multi-select doesn't register (Pixel 9)        | Ken    | Card header's TapGestureRecognizer consumes the touch on Android before TouchBehavior can detect a long-press. `ShouldMakeChildrenInputTransparent="False"` enables tap but blocks long-press. iOS gesture coexistence handles this natively. Approaches: move long-press to PointerGestureRecognizer on the header Grid, Android-specific custom handler, or rethink input transparency. Tested on Pixel 9 (2026-04-01). **Requires investigation.** |
+| ~~14~~ | ~~BUG-60~~ | ~~Android long-press multi-select doesn't register (Pixel 9)~~ | ~~Ken~~ | **Fixed.** Replaced cross-platform TouchBehavior with platform-specific gesture handling: Android native GestureDetector (tap + long-press) on header Grid; iOS TouchBehavior on Border. Follows TagDetailPage pattern. |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
-| BUG-55  | EmptyView overlay blocks interaction when all collections collapsed | 2026-04-01 |
-| BUG-56  | Empty collections not visible + empty hint text | 2026-04-01 |
-| BUG-57  | Collection card count styling inconsistent with header | 2026-04-01 |
-| BUG-58  | System cards not migrated into system collection (migration ordering + backfill) | 2026-04-01 |
-| BUG-59  | Multi-select toolbar moved to top + header dimming | 2026-04-01 |
 | UX-26   | Prayer Time button styles — "✓ Answered" (WarmGold pill) and "I'm done" (secondary pill) replacing cramped circles | 2026-03-31 |
 | UX-27   | Screen flash/flicker on page load — slide-only animation, Android window background fix | 2026-03-31 |
 | UX-22   | Android Play Store screenshots — 16 screenshots (phone + 10" tablet, light + dark) | 2026-03-31 |

@@ -155,22 +155,29 @@
                 </Grid>
             </DataTemplate>
         </CollectionView.GroupHeaderTemplate>
-        <!-- BUG-56: Empty collection hint — only when expanded AND 0 cards -->
+        <!-- BUG-56: Empty collection hint — only when expanded AND 0 cards.
+             HeightRequest="0" collapses the footer entirely for non-empty/collapsed sections
+             so it doesn't contribute spacing between collapsed section headers. -->
         <CollectionView.GroupFooterTemplate>
             <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
-                <ContentView IsVisible="{Binding IsExpanded}">
-                    <Label Text="No cards yet — move or create cards to add them here"
-                           IsVisible="False"
-                           Style="{StaticResource MutedText}"
-                           Margin="32,4,16,12"
-                           FontSize="13">
-                        <Label.Triggers>
-                            <DataTrigger TargetType="Label" Binding="{Binding CardCount}" Value="0">
-                                <Setter Property="IsVisible" Value="True" />
-                            </DataTrigger>
-                        </Label.Triggers>
-                    </Label>
-                </ContentView>
+                <Label Text="No cards yet — move or create cards to add them here"
+                       IsVisible="False"
+                       HeightRequest="0"
+                       Style="{StaticResource MutedText}"
+                       Margin="0"
+                       FontSize="13">
+                    <Label.Triggers>
+                        <MultiTrigger TargetType="Label">
+                            <MultiTrigger.Conditions>
+                                <BindingCondition Binding="{Binding IsExpanded}" Value="True" />
+                                <BindingCondition Binding="{Binding CardCount}" Value="0" />
+                            </MultiTrigger.Conditions>
+                            <Setter Property="IsVisible" Value="True" />
+                            <Setter Property="HeightRequest" Value="-1" />
+                            <Setter Property="Margin" Value="32,4,16,12" />
+                        </MultiTrigger>
+                    </Label.Triggers>
+                </Label>
             </DataTemplate>
         </CollectionView.GroupFooterTemplate>
         <CollectionView.ItemsLayout>

@@ -343,14 +343,15 @@ namespace PrayerApp
 
             // Ensure the system "Quick Add" card exists
             var cardService = services.GetRequiredService<ICardService>();
-            var quickAdd = await cardService.GetOrCreateQuickAddCardAsync();
+            await cardService.GetOrCreateQuickAddCardAsync();
 
-            // BUG-58 safety net: fix system cards still at BoxId=0 (legacy installs)
-            if (quickAdd.BoxId == 0)
+            // BUG-58 safety net: fix ANY system cards still at BoxId=0 (legacy installs)
+            var sysBox = await boxService.GetSystemBoxAsync(CardBox.SystemKeySystem);
+            if (sysBox != null)
             {
-                var sysBox = await boxService.GetSystemBoxAsync(CardBox.SystemKeySystem);
-                if (sysBox != null)
-                    await cardService.AssignBoxAsync(quickAdd, sysBox.Id);
+                var allCards = await cardService.GetCardsAsync();
+                foreach (var card in allCards.Where(c => c.IsSystem && c.BoxId == 0))
+                    await cardService.AssignBoxAsync(card, sysBox.Id);
             }
 
             // Load active prayers once — reused for recently-notified tagging and M-11 renewal
