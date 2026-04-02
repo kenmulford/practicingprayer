@@ -16,7 +16,7 @@
                      Order="Primary" Priority="1" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
         </Grid.GestureRecognizers>
@@ -79,8 +79,41 @@
             </HorizontalStackLayout>
         </ScrollView>
 
+        <!-- Collections education banner — dismissed permanently via ✕ button -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding ShowCollectionsBanner}"
+                AutomationId="Cards_Banner_Collections"
+                BackgroundColor="{AppThemeBinding Light={StaticResource OverdueLight}, Dark={StaticResource OverdueDark}}"
+                StrokeThickness="0"
+                Padding="14,10"
+                Margin="12,4,12,0">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
+                <Label Text="We've added Collections to help you organize your cards. Tap 'Collections' above to get started."
+                       FontSize="13"
+                       LineBreakMode="WordWrap"
+                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="✕"
+                        AutomationId="Cards_Btn_DismissBanner"
+                        Command="{Binding DismissCollectionsBannerCommand}"
+                        SemanticProperties.Description="Dismiss collections tip"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                        FontSize="14"
+                        Padding="4"
+                        BorderWidth="0"
+                        WidthRequest="32"
+                        HeightRequest="32"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
         <!-- Loading indicator -->
-        <ActivityIndicator Grid.Row="2"
+        <ActivityIndicator Grid.Row="3"
                            IsRunning="{Binding IsLoading}"
                            IsVisible="{Binding IsLoading}"
                            Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
@@ -88,7 +121,7 @@
                            VerticalOptions="Center" />
 
         <CollectionView
-            Grid.Row="2"
+            Grid.Row="3"
             x:Name="cardCollection"
             AutomationId="Cards_List_Cards"
             AutomationProperties.IsInAccessibleTree="false"
@@ -488,14 +521,14 @@
 
         <!-- CreateCard step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="3"
+            Grid.Row="4"
             ExpectedStep="CreateCard"
             HeadlineText="Tap 'Add Card' to create your first prayer card"
             SubText="Give it a name — a person, a topic, or a place." />
 
         <!-- AddRequest step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="4"
+            Grid.Row="5"
             ExpectedStep="AddRequest"
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />

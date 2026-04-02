@@ -17,9 +17,10 @@ Automated screenshot capture for Google Play Store listing. Matches the iOS App 
 ## Target Screens (4 screens × 2 modes = 8 per form factor)
 
 1. **Home Dashboard** — metrics grid showing active cards, unanswered prayers, last prayed, overdue count
-2. **Prayer Cards** — expanded card with action chips visible, several collapsed cards with badges
+2. **Prayer Cards** — cards organized into collection sections (Personal, Ministry), one expanded to show nested requests
 3. **Prayer List** — active filter selected, tag chips visible, multiple prayers with card labels
 4. **Prayer Time** — landscape carousel showing prayer title + details, progress bar, nav buttons
+5. **Manage Collections** — Cards tab → Collections toolbar — user + system collections with card counts
 
 ## Approach
 
@@ -31,11 +32,17 @@ Push a pre-built `prayer_app.db` directly to the emulator's app data directory. 
 
 **Seed data (matching iOS screenshots):**
 
-Cards:
-- "Family & Health" (favorited, 2 active prayers)
-- "Career & Purpose" (expanded in screenshot, 2 prayers)
-- "Gratitude" (1 prayer)
-- "Quick Add" (system card, 1 prayer)
+Card Boxes (Collections):
+- Id=1: "System" (IsSystem=true, SystemKey="system", SortOrder=900)
+- Id=2: "Archived" (IsSystem=true, SystemKey="archived", SortOrder=999)
+- Id=3: "Personal" (user collection)
+- Id=4: "Ministry" (user collection)
+
+Cards (with BoxId assignments):
+- "Quick Add" (system card, BoxId=1)
+- "Family & Health" (favorited, 2 active prayers, BoxId=3 Personal)
+- "Career & Purpose" (expanded in screenshot, 2 prayers, BoxId=4 Ministry)
+- "Gratitude" (1 prayer, BoxId=3 Personal)
 
 Prayers (PrayerRequest table):
 - "Mom's recovery from knee surgery" (Family & Health, has details)

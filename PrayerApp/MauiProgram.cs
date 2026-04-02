@@ -174,6 +174,7 @@ namespace PrayerApp
             builder.Services.AddTransient<QuickAddViewModel>();
             builder.Services.AddTransient<PrayerTimeViewModel>();
             builder.Services.AddTransient<PrayerTimeScopeViewModel>();
+            builder.Services.AddTransient<PrayerTimeBoxScopeViewModel>();
             builder.Services.AddTransient<TagsViewModel>();
             builder.Services.AddTransient<TagDetailViewModel>();
             builder.Services.AddTransient<BoxesViewModel>();
@@ -188,6 +189,7 @@ namespace PrayerApp
             builder.Services.AddTransient<QuickAddPage>();
             builder.Services.AddTransient<PrayerTimePage>();
             builder.Services.AddTransient<PrayerTimeScopePage>();
+            builder.Services.AddTransient<PrayerTimeBoxScopePage>();
             builder.Services.AddTransient<TagsPage>();
             builder.Services.AddTransient<TagDetailPage>();
             builder.Services.AddTransient<Views.Boxes.BoxesPage>();
@@ -227,7 +229,7 @@ namespace PrayerApp
                     if (confirmed)
                     {
                         await Shell.Current.GoToAsync(
-                            $"{nameof(PrayerApp.Views.PrayerTime.PrayerTimePage)}?scope=tags&tagIds={systemTag.Id}");
+                            $"{nameof(PrayerApp.Views.PrayerTime.PrayerTimePage)}?scope={Routes.ScopeTags}&tagIds={systemTag.Id}");
                     }
                 });
             };

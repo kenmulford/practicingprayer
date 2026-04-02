@@ -23,4 +23,9 @@ public static class Routes
     // Shell tab routes (absolute navigation)
     public const string PrayerCardsTab = "//CardsPage";
     public const string PrayersTab = "//PrayersPage";
+
+    // Prayer Time scope query parameter values
+    public const string ScopeAll = "all";
+    public const string ScopeTags = "tags";
+    public const string ScopeBox = "box";
 }

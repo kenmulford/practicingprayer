@@ -54,18 +54,33 @@ public partial class MainPage : ContentPage
                 return;
             }
 
-            if (!_homeViewModel.HasTags)
+            var hasTags = _homeViewModel.HasTags;
+            var hasBoxes = _homeViewModel.HasUserBoxesWithCards;
+
+            if (!hasTags && !hasBoxes)
             {
-                await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
+                await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeAll}");
                 return;
             }
 
-            var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, "All Requests", "By Tags");
-            if (action == "All Requests")
-                await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope=all");
-            else if (action == "By Tags")
+            // Build action sheet options dynamically
+            const string optAll = "All Requests";
+            const string optTags = "By Tags";
+            const string optBox = "By Collection";
+
+            var options = new List<string> { optAll };
+            if (hasTags) options.Add(optTags);
+            if (hasBoxes) options.Add(optBox);
+
+            var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, options.ToArray());
+            if (action == optAll)
+                await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeAll}");
+            else if (action == optTags)
                 await Shell.Current.Navigation.PushModalAsync(
                     _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());
+            else if (action == optBox)
+                await Shell.Current.Navigation.PushModalAsync(
+                    _services.GetRequiredService<PrayerTime.PrayerTimeBoxScopePage>());
         }
         finally
         {

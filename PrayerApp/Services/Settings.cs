@@ -105,6 +105,13 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(QuickAddTipDismissed), value);
         }
 
+        /// <summary>True once the user dismisses the Collections education banner.</summary>
+        public static bool CollectionsBannerDismissed
+        {
+            get => Preferences.Get(nameof(CollectionsBannerDismissed), false);
+            set => Preferences.Set(nameof(CollectionsBannerDismissed), value);
+        }
+
         /// <summary>Whether Prayer Time locks to landscape orientation. Default true (landscape).</summary>
         public static bool PrayerTimeLandscape
         {

@@ -74,7 +74,7 @@ public class PrayerTimeScopeViewModel : ObservableObject
 
         var tagIdsParam = string.Join(",", selectedIds);
         await _navigationService.PopModalAsync();
-        await _navigationService.GoToAsync($"{Routes.PrayerTimePage}?scope=tags&tagIds={tagIdsParam}");
+        await _navigationService.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeTags}&tagIds={tagIdsParam}");
     }
 
     private async Task CancelAsync()

@@ -10,6 +10,7 @@ public class HomeViewModel : ObservableObject
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
     private readonly ITagService _tagService;
+    private readonly IBoxService _boxService;
     private readonly INavigationService _navigationService;
     private readonly ISettings _settings;
 
@@ -125,6 +126,13 @@ public class HomeViewModel : ObservableObject
         private set => SetProperty(ref _hasTags, value);
     }
 
+    private bool _hasUserBoxesWithCards;
+    public bool HasUserBoxesWithCards
+    {
+        get => _hasUserBoxesWithCards;
+        private set => SetProperty(ref _hasUserBoxesWithCards, value);
+    }
+
     // ── Commands ──────────────────────────────────────────────────────
 
     public ICommand GoToOverdueCommand { get; }
@@ -134,11 +142,12 @@ public class HomeViewModel : ObservableObject
     // ── Constructors ──────────────────────────────────────────────────
 
     public HomeViewModel(IPrayerService prayerService, ICardService cardService,
-        ITagService tagService, INavigationService navigationService, ISettings settings)
+        ITagService tagService, IBoxService boxService, INavigationService navigationService, ISettings settings)
     {
         _prayerService = prayerService;
         _cardService = cardService;
         _tagService = tagService;
+        _boxService = boxService;
         _navigationService = navigationService;
         _settings = settings;
 
@@ -151,6 +160,7 @@ public class HomeViewModel : ObservableObject
         IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
     { }
@@ -164,6 +174,7 @@ public class HomeViewModel : ObservableObject
             _prayerService.InvalidateCache();
             _cardService.InvalidateCache();
             _tagService.InvalidateCache();
+            _boxService.InvalidateCache();
 
             // Overdue
             var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
@@ -182,6 +193,14 @@ public class HomeViewModel : ObservableObject
             // Tags (for Prayer Time scope)
             var tags = await _tagService.GetTagsAsync();
             HasTags = tags.Count > 0;
+
+            // User collections with active prayers (for Prayer Time scope)
+            var boxes = await _boxService.GetBoxesAsync();
+            var cards = await _cardService.GetCardsAsync();
+            var cardIdsWithPrayers = activePrayers.Select(p => p.PrayerCardId).ToHashSet();
+            HasUserBoxesWithCards = boxes
+                .Where(b => !b.IsSystem)
+                .Any(b => cards.Any(c => c.BoxId == b.Id && cardIdsWithPrayers.Contains(c.Id)));
 
             // Last prayed date components
             var lastDate = await _prayerService.GetLastInteractionDateAsync();

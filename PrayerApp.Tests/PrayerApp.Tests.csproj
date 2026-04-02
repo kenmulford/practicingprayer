@@ -76,6 +76,7 @@
     <Compile Include="../PrayerApp/ViewModels/BoxSectionViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/BoxesViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/BoxDetailViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerTimeBoxScopeViewModel.cs" />
 
     <!-- Service interfaces -->
     <Compile Include="../PrayerApp/Services/ISettings.cs" />

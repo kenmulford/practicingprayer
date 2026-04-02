@@ -60,6 +60,15 @@ namespace PrayerApp.ViewModels
         /// <summary>True when no sections exist (no data loaded). Used to control EmptyView visibility.</summary>
         public bool HasNoSections => BoxSections.Count == 0;
 
+        private bool _showCollectionsBanner;
+        public bool ShowCollectionsBanner
+        {
+            get => _showCollectionsBanner;
+            private set => SetProperty(ref _showCollectionsBanner, value);
+        }
+
+        public ICommand DismissCollectionsBannerCommand { get; }
+
         private string _searchText = string.Empty;
         public string SearchText
         {
@@ -120,6 +129,7 @@ namespace PrayerApp.ViewModels
             _boxService = boxService;
 
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
+            _showCollectionsBanner = !settings.CollectionsBannerDismissed;
 
             // register commands
             NewCommand = new AsyncRelayCommand(NewPrayerCardAsync);
@@ -128,6 +138,11 @@ namespace PrayerApp.ViewModels
             LongPressCardCommand = new RelayCommand<PrayerCardViewModel>(card =>
             {
                 if (card != null) EnterMultiSelectMode(card);
+            });
+            DismissCollectionsBannerCommand = new RelayCommand(() =>
+            {
+                _settings.CollectionsBannerDismissed = true;
+                ShowCollectionsBanner = false;
             });
         }
 

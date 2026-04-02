@@ -603,6 +603,42 @@ public class PrayerCardsViewModelTests
         Assert.All(sut.BoxSections, s => Assert.False(s.IsMultiSelectMode));
     }
 
+    // ── Collections Banner ─────────────────────────────────────────────
+
+    [Fact]
+    public void CollectionsBanner_NotDismissed_ShowsBanner()
+    {
+        _settings.CollectionsBannerDismissed.Returns(false);
+
+        var sut = CreateSut();
+
+        Assert.True(sut.ShowCollectionsBanner);
+    }
+
+    [Fact]
+    public void CollectionsBanner_AlreadyDismissed_HidesBanner()
+    {
+        _settings.CollectionsBannerDismissed.Returns(true);
+
+        var sut = CreateSut();
+
+        Assert.False(sut.ShowCollectionsBanner);
+    }
+
+    [Fact]
+    public void DismissCollectionsBannerCommand_SetsFlagAndHidesBanner()
+    {
+        _settings.CollectionsBannerDismissed.Returns(false);
+
+        var sut = CreateSut();
+        Assert.True(sut.ShowCollectionsBanner);
+
+        sut.DismissCollectionsBannerCommand.Execute(null);
+
+        Assert.False(sut.ShowCollectionsBanner);
+        _settings.Received(1).CollectionsBannerDismissed = true;
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)

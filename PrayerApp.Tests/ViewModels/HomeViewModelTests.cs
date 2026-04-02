@@ -11,10 +11,11 @@ public class HomeViewModelTests
     private readonly IPrayerService _prayerService = Substitute.For<IPrayerService>();
     private readonly ICardService _cardService = Substitute.For<ICardService>();
     private readonly ITagService _tagService = Substitute.For<ITagService>();
+    private readonly IBoxService _boxService = Substitute.For<IBoxService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
 
-    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _tagService, _navigationService, _settings);
+    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _tagService, _boxService, _navigationService, _settings);
 
     // ── LoadAsync ──────────────────────────────────────────────────────
 
@@ -328,6 +329,80 @@ public class HomeViewModelTests
         Assert.True(sut.HasTags);
     }
 
+    // ── HasUserBoxesWithCards ────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_UserBoxesWithActivePrayers_HasUserBoxesWithCardsTrue()
+    {
+        SetupDefaultMocks();
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 1, Name = "Family", IsSystem = false }
+        }.AsReadOnly());
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 10, BoxId = 1 }
+        }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, PrayerCardId = 10 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.True(sut.HasUserBoxesWithCards);
+    }
+
+    [Fact]
+    public async Task LoadAsync_OnlySystemBoxes_HasUserBoxesWithCardsFalse()
+    {
+        SetupDefaultMocks();
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 1, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem },
+            new() { Id = 2, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.False(sut.HasUserBoxesWithCards);
+    }
+
+    [Fact]
+    public async Task LoadAsync_UserBoxesButNoActivePrayers_HasUserBoxesWithCardsFalse()
+    {
+        SetupDefaultMocks();
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 1, Name = "Family", IsSystem = false }
+        }.AsReadOnly());
+        // Card is in the box but has no active prayers
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 10, BoxId = 1 }
+        }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.False(sut.HasUserBoxesWithCards);
+    }
+
+    [Fact]
+    public async Task LoadAsync_NoBoxes_HasUserBoxesWithCardsFalse()
+    {
+        SetupDefaultMocks();
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.False(sut.HasUserBoxesWithCards);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────
 
     /// <summary>Set up minimal mocks so LoadAsync doesn't throw.</summary>
@@ -339,5 +414,6 @@ public class HomeViewModelTests
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
     }
 }

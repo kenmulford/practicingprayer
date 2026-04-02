@@ -18,6 +18,9 @@
 
 ### Improvements
 
+- **Pray by Collection** — Start a Prayer Time session focused on a single collection. The action sheet now offers "By Collection" alongside "All Requests" and "By Tags."
+- **Prayer Time ordering** — Prayers in a session are now sorted by card name, then prayer title, for a more predictable flow.
+- **Collections awareness banner** — A one-time tip appears on the Prayer Cards page letting you know about Collections. Dismiss it with the ✕ button.
 - **Smoother page transitions** — Navigating between screens no longer produces a brief flash.
 - **Clearer Prayer Time buttons** — The "Answered" and "I'm done" buttons in Prayer Time are now properly sized pill buttons with legible text.
 - **Reliable tag actions** — Edit and Delete buttons on the Tags page now use tap-to-reveal action chips instead of swipe gestures.

@@ -54,6 +54,12 @@ public class SettingsService : ISettings
         set => Settings.QuickAddTipDismissed = value;
     }
 
+    public bool CollectionsBannerDismissed
+    {
+        get => Settings.CollectionsBannerDismissed;
+        set => Settings.CollectionsBannerDismissed = value;
+    }
+
     public bool PrayerTimeLandscape
     {
         get => Settings.PrayerTimeLandscape;
