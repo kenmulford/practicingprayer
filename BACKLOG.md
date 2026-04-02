@@ -15,7 +15,7 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: 1.1.0b44. 364 unit tests, 63 UITests.
-**Last completed**: BUG-55/56/57/58/59/60 (6 Collections bug fixes folded into F-24)
+**Last completed**: F-24 Phases 1-3D + bug fixes (BUG-55–60 folded in). Collections feature code-complete, pending UITests.
 **Next up**: F-24 Phase 4 (UITests for Collections feature)
 
 ---
