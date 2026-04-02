@@ -101,19 +101,22 @@
              HasNoSections hides content when sections exist but are merely collapsed. -->
         <CollectionView.EmptyView>
             <ContentView InputTransparent="True">
-                <VerticalStackLayout IsVisible="{Binding HasNoSections}"
-                                     HorizontalOptions="Center" Margin="24,32" Spacing="12">
-                    <ActivityIndicator
-                        IsRunning="{Binding IsLoading}"
-                        IsVisible="{Binding IsLoading}"
-                        Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                        HorizontalOptions="Center" />
-                    <Label
-                        IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
-                        Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
-                        Style="{StaticResource MutedText}"
-                        HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
+                <Label IsVisible="False"
+                       Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
+                       Style="{StaticResource MutedText}"
+                       HorizontalTextAlignment="Center"
+                       Margin="24,32">
+                    <Label.Triggers>
+                        <!-- Only show when genuinely empty (not loading, no sections) -->
+                        <MultiTrigger TargetType="Label">
+                            <MultiTrigger.Conditions>
+                                <BindingCondition Binding="{Binding HasNoSections}" Value="True" />
+                                <BindingCondition Binding="{Binding IsLoading}" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter Property="IsVisible" Value="True" />
+                        </MultiTrigger>
+                    </Label.Triggers>
+                </Label>
             </ContentView>
         </CollectionView.EmptyView>
         <CollectionView.GroupHeaderTemplate>
@@ -152,20 +155,22 @@
                 </Grid>
             </DataTemplate>
         </CollectionView.GroupHeaderTemplate>
-        <!-- BUG-56: Empty collection hint when section has 0 cards -->
+        <!-- BUG-56: Empty collection hint — only when expanded AND 0 cards -->
         <CollectionView.GroupFooterTemplate>
             <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
-                <Label Text="No cards yet — move or create cards to add them here"
-                       IsVisible="False"
-                       Style="{StaticResource MutedText}"
-                       Margin="32,4,16,12"
-                       FontSize="13">
-                    <Label.Triggers>
-                        <DataTrigger TargetType="Label" Binding="{Binding CardCount}" Value="0">
-                            <Setter Property="IsVisible" Value="True" />
-                        </DataTrigger>
-                    </Label.Triggers>
-                </Label>
+                <ContentView IsVisible="{Binding IsExpanded}">
+                    <Label Text="No cards yet — move or create cards to add them here"
+                           IsVisible="False"
+                           Style="{StaticResource MutedText}"
+                           Margin="32,4,16,12"
+                           FontSize="13">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding CardCount}" Value="0">
+                                <Setter Property="IsVisible" Value="True" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </ContentView>
             </DataTemplate>
         </CollectionView.GroupFooterTemplate>
         <CollectionView.ItemsLayout>
@@ -197,17 +202,15 @@
                             <Setter Property="StrokeThickness" Value="2.5" />
                         </DataTrigger>
                     </Border.Triggers>
-                    <Border.Behaviors>
-                        <toolkit:TouchBehavior LongPressDuration="500"
-                                               ShouldMakeChildrenInputTransparent="False" />
-                    </Border.Behaviors>
+                    <!-- BUG-60: Long-press wired in code-behind — iOS via OnCardBorderLoaded, Android via OnCardHeaderLoaded -->
 
                     <VerticalStackLayout Spacing="0">
 
                         <!-- Card header: title + system badge + imported icon + count badge + favorite star -->
                         <Grid
                             Padding="12,10"
-                            ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                            ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+                            Loaded="OnCardHeaderLoaded">
                             <Grid.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnCardHeaderTapped" />
                             </Grid.GestureRecognizers>

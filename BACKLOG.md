@@ -40,6 +40,7 @@ Items are listed in work order. Start at the top, work down.
 | ~~11~~ | ~~BUG-57~~ | ~~Collection card count styling inconsistent with card title row~~ | ~~Ken~~ | **Fixed.** Count badge bumped to 13px Bold Gray600 to match section header styling. |
 | ~~12~~ | ~~BUG-58~~ | ~~System cards not migrated into system collection~~ | ~~Ken~~ | **Fixed.** Migration ordering corrected (IsSystem/IsImported columns before box migration), IsSystem backfill for legacy cards, startup safety net, and on-demand system card creation assigns System box. |
 | ~~13~~ | ~~BUG-59~~ | ~~Multi-select context menu position — move to top of list~~ | ~~Ken~~ | **Fixed.** Toolbar moved from bottom to top overlay (Row 0, RowSpan 2, ZIndex 10, height-matched). Collection headers dimmed to 0.4 opacity during multi-select. |
+| 14  | BUG-60 | Android long-press multi-select doesn't register (Pixel 9)        | Ken    | Card header's TapGestureRecognizer consumes the touch on Android before TouchBehavior can detect a long-press. `ShouldMakeChildrenInputTransparent="False"` enables tap but blocks long-press. iOS gesture coexistence handles this natively. Approaches: move long-press to PointerGestureRecognizer on the header Grid, Android-specific custom handler, or rethink input transparency. Tested on Pixel 9 (2026-04-01). **Requires investigation.** |
 
 ### Recently Completed (this release cycle)
 
