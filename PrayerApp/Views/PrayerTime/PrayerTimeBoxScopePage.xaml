@@ -23,16 +23,11 @@
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Boxes}" Spacing="0">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="viewModels:SelectableBox">
-                            <RadioButton IsChecked="{Binding IsSelected}"
+                            <RadioButton Content="{Binding Box.Name}"
+                                         IsChecked="{Binding IsSelected}"
                                          GroupName="BoxSelection"
                                          Padding="8,10"
-                                         SemanticProperties.Description="{Binding Box.Name}">
-                                <RadioButton.Content>
-                                    <Label Text="{Binding Box.Name}"
-                                           VerticalOptions="Center"
-                                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
-                                </RadioButton.Content>
-                            </RadioButton>
+                                         SemanticProperties.Description="{Binding Box.Name}" />
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
