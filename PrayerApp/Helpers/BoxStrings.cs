@@ -10,5 +10,6 @@ namespace PrayerApp.Helpers
         public const string Word = "Collection";
         public const string Plural = "Collections";
         public const string Unorganized = "Loose Cards";
+        public const string EmptyCollectionHint = "No cards yet \u2014 move or create cards to add them here";
     }
 }

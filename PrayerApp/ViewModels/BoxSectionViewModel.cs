@@ -31,6 +31,10 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
     /// <summary>True when section is expanded due to an active search/filter, not user choice.</summary>
     private bool _filterExpanded;
 
+    /// <summary>Shorthand — ObservableCollection only exposes the EventArgs overload.</summary>
+    private void NotifyChanged(string propertyName)
+        => OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+
     public int BoxId { get; }
     public bool IsSystem { get; }
     public string? SystemKey { get; }
@@ -44,12 +48,27 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
             if (_name != value)
             {
                 _name = value;
-                OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(Name)));
+                NotifyChanged(nameof(Name));
             }
         }
     }
 
     public int CardCount => _backingCards.Count;
+
+    private bool _isMultiSelectMode;
+    /// <summary>Propagated from PrayerCardsViewModel to dim headers during multi-select.</summary>
+    public bool IsMultiSelectMode
+    {
+        get => _isMultiSelectMode;
+        set
+        {
+            if (_isMultiSelectMode != value)
+            {
+                _isMultiSelectMode = value;
+                NotifyChanged(nameof(IsMultiSelectMode));
+            }
+        }
+    }
 
     private bool _isExpanded;
     public bool IsExpanded
@@ -62,7 +81,7 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
                 _isExpanded = value;
                 _userIsExpanded = value;
                 ApplyExpansionState();
-                OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsExpanded)));
+                NotifyChanged(nameof(IsExpanded));
             }
         }
     }
@@ -97,7 +116,7 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
     public void SetCards(IEnumerable<PrayerCardViewModel> cards)
     {
         _backingCards = cards.ToList();
-        OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(CardCount)));
+        NotifyChanged(nameof(CardCount));
         ApplyExpansionState();
     }
 
@@ -111,7 +130,7 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
             _filterExpanded = true;
             _isExpanded = true;
             ApplyExpansionState();
-            OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsExpanded)));
+            NotifyChanged(nameof(IsExpanded));
         }
     }
 
@@ -125,7 +144,7 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
             _filterExpanded = false;
             _isExpanded = _userIsExpanded;
             ApplyExpansionState();
-            OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsExpanded)));
+            NotifyChanged(nameof(IsExpanded));
         }
     }
 

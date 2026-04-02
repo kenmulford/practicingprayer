@@ -142,4 +142,30 @@ public class BoxSectionViewModelTests
         section.RestoreUserExpansionState();
         Assert.True(section.IsExpanded);
     }
+
+    // ── IsMultiSelectMode (BUG-59) ───────────────────────────────────
+
+    [Fact]
+    public void IsMultiSelectMode_RaisesPropertyChanged()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: true);
+        var raised = false;
+        ((System.ComponentModel.INotifyPropertyChanged)section).PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(BoxSectionViewModel.IsMultiSelectMode)) raised = true;
+        };
+
+        section.IsMultiSelectMode = true;
+
+        Assert.True(raised);
+        Assert.True(section.IsMultiSelectMode);
+    }
+
+    [Fact]
+    public void IsMultiSelectMode_DefaultFalse()
+    {
+        var section = new BoxSectionViewModel(defaultExpanded: true);
+
+        Assert.False(section.IsMultiSelectMode);
+    }
 }

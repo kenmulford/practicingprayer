@@ -97,9 +97,12 @@
             ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
             SelectionMode="None">
+        <!-- BUG-55: InputTransparent lets taps pass through to collapsed group headers.
+             HasNoSections hides content when sections exist but are merely collapsed. -->
         <CollectionView.EmptyView>
-            <ContentView>
-                <VerticalStackLayout HorizontalOptions="Center" Margin="24,32" Spacing="12">
+            <ContentView InputTransparent="True">
+                <VerticalStackLayout IsVisible="{Binding HasNoSections}"
+                                     HorizontalOptions="Center" Margin="24,32" Spacing="12">
                     <ActivityIndicator
                         IsRunning="{Binding IsLoading}"
                         IsVisible="{Binding IsLoading}"
@@ -120,6 +123,12 @@
                       AutomationId="Cards_Section_Header"
                       SemanticProperties.Description="{Binding Name}"
                       SemanticProperties.Hint="Double tap to expand or collapse section">
+                    <!-- BUG-59: Dim headers during multi-select so focus stays on cards -->
+                    <Grid.Triggers>
+                        <DataTrigger TargetType="Grid" Binding="{Binding IsMultiSelectMode}" Value="True">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </DataTrigger>
+                    </Grid.Triggers>
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
                     </Grid.GestureRecognizers>
@@ -136,12 +145,29 @@
                            VerticalOptions="Center" />
                     <Label Grid.Column="2"
                            Text="{Binding CardCount}"
-                           FontSize="12"
-                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource TextMutedDark}}"
                            VerticalOptions="Center" />
                 </Grid>
             </DataTemplate>
         </CollectionView.GroupHeaderTemplate>
+        <!-- BUG-56: Empty collection hint when section has 0 cards -->
+        <CollectionView.GroupFooterTemplate>
+            <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
+                <Label Text="No cards yet — move or create cards to add them here"
+                       IsVisible="False"
+                       Style="{StaticResource MutedText}"
+                       Margin="32,4,16,12"
+                       FontSize="13">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label" Binding="{Binding CardCount}" Value="0">
+                            <Setter Property="IsVisible" Value="True" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+            </DataTemplate>
+        </CollectionView.GroupFooterTemplate>
         <CollectionView.ItemsLayout>
             <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
         </CollectionView.ItemsLayout>
@@ -464,8 +490,10 @@
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />
 
-        <!-- Multi-select toolbar -->
-        <Border Grid.Row="5"
+        <!-- BUG-59: Multi-select toolbar overlays search/tag rows at top (visible during long-press) -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                ZIndex="10"
+                VerticalOptions="Fill"
                 AutomationId="Cards_Bar_MultiSelect"
                 IsVisible="{Binding IsMultiSelectMode}"
                 BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"

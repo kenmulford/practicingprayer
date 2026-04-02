@@ -156,7 +156,7 @@ A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically det
 
 ### Project-Specific Skills (prayer-app-skills plugin)
 
-**Invoke before implementing features or modifications that touch the relevant layer:**
+**Invoke during planning AND implementation — skills are the primary source of truth for this codebase's patterns, not raw file exploration.** When researching a bug or feature, invoke the relevant prayer-app skills FIRST to understand conventions, then read specific files only for details the skills don't cover. Don't send Explore agents to rediscover what the skills already document.
 
 | Area | Skill | When to invoke |
 | ---- | ----- | -------------- |

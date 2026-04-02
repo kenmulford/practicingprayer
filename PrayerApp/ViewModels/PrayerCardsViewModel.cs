@@ -57,6 +57,9 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        /// <summary>True when no sections exist (no data loaded). Used to control EmptyView visibility.</summary>
+        public bool HasNoSections => BoxSections.Count == 0;
+
         private string _searchText = string.Empty;
         public string SearchText
         {
@@ -79,6 +82,9 @@ namespace PrayerApp.ViewModels
                 {
                     OnPropertyChanged(nameof(SelectedCardCount));
                     OnPropertyChanged(nameof(SelectedCountText));
+                    // Propagate to sections for header dimming
+                    foreach (var section in BoxSections)
+                        section.IsMultiSelectMode = value;
                 }
             }
         }
@@ -375,16 +381,13 @@ namespace PrayerApp.ViewModels
                     sections.Add(unboxed);
                 }
 
-                // 2. User boxes (not system, sorted by name)
+                // 2. User boxes (not system, sorted by name) — always shown, even when empty
                 foreach (var box in _boxes.Where(b => !b.IsSystem).OrderBy(b => b.Name))
                 {
-                    var boxCards = cardsByBox.GetValueOrDefault(box.Id);
-                    if (boxCards is { Count: > 0 })
-                    {
-                        var section = GetOrCreate(box.Id, () => new BoxSectionViewModel(box, defaultExpanded: true));
-                        section.SetCards(boxCards);
-                        sections.Add(section);
-                    }
+                    var boxCards = cardsByBox.GetValueOrDefault(box.Id) ?? new List<PrayerCardViewModel>();
+                    var section = GetOrCreate(box.Id, () => new BoxSectionViewModel(box, defaultExpanded: true));
+                    section.SetCards(boxCards);
+                    sections.Add(section);
                 }
 
                 // 3. System box
@@ -410,6 +413,7 @@ namespace PrayerApp.ViewModels
                 }
 
                 BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
+                OnPropertyChanged(nameof(HasNoSections));
             }
             finally
             {

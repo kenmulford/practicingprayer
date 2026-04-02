@@ -513,6 +513,93 @@ public class PrayerCardsViewModelTests
         Assert.Equal("None selected", sut.SelectedCountText);
     }
 
+    // ── BUG-55: HasNoSections ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task HasNoSections_TrueWhenNoSections()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        var sut = CreateSut();
+
+        await sut.LoadAsync();
+
+        Assert.True(sut.HasNoSections);
+    }
+
+    [Fact]
+    public async Task HasNoSections_FalseWhenSectionsExist()
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Test", BoxId = 0 }
+        }.AsReadOnly());
+        var sut = CreateSut();
+
+        await sut.LoadAsync();
+
+        Assert.False(sut.HasNoSections);
+    }
+
+    // ── BUG-56: Empty user boxes always shown ────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_EmptyUserBox_AppearsAsSection()
+    {
+        var boxes = new List<CardBox>
+        {
+            new() { Id = 5, Name = "Empty Box", IsSystem = false, SortOrder = 0 },
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        };
+        _boxService.GetBoxesAsync().Returns(boxes.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        var sut = CreateSut();
+
+        await sut.LoadAsync();
+
+        var emptySection = sut.BoxSections.FirstOrDefault(s => s.BoxId == 5);
+        Assert.NotNull(emptySection);
+        Assert.Equal("Empty Box", emptySection.Name);
+        Assert.Equal(0, emptySection.CardCount);
+    }
+
+    // ── BUG-59: Multi-select propagation ─────────────────────────────
+
+    [Fact]
+    public async Task IsMultiSelectMode_PropagatesToSections()
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Card", BoxId = 0 }
+        }.AsReadOnly());
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        sut.IsMultiSelectMode = true;
+
+        Assert.All(sut.BoxSections, s => Assert.True(s.IsMultiSelectMode));
+    }
+
+    [Fact]
+    public async Task IsMultiSelectMode_False_ClearsOnSections()
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Card", BoxId = 0 }
+        }.AsReadOnly());
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        sut.IsMultiSelectMode = true;
+
+        sut.IsMultiSelectMode = false;
+
+        Assert.All(sut.BoxSections, s => Assert.False(s.IsMultiSelectMode));
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)

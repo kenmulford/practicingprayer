@@ -89,6 +89,37 @@ namespace PrayerApp.Services
 
             await EnsurePrayerCardColumnsAsync();
 
+            // Add IsSystem column to PrayerCard for system-managed cards (e.g., Quick Add)
+            // Must run BEFORE EnsureCardBoxMigrationAsync which queries WHERE IsSystem = 1
+            try
+            {
+                await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsSystem INTEGER DEFAULT 0");
+            }
+            catch { /* Column already exists */ }
+
+            // F-10: Add IsImported column to PrayerCard and PrayerRequest for shared content
+            // Must run BEFORE EnsureCardBoxMigrationAsync which queries WHERE IsImported = 1
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsImported INTEGER DEFAULT 0"); }
+            catch { /* Column already exists */ }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN IsImported INTEGER DEFAULT 0"); }
+            catch { /* Column already exists */ }
+
+            // BUG-58: Backfill IsSystem on legacy system cards created before IsSystem feature.
+            // Uses Title match since these cards may have IsSystem=0 from the DEFAULT.
+            try
+            {
+                await _db.ExecuteAsync(
+                    "UPDATE PrayerCard SET IsSystem = 1 WHERE Title = ? AND IsSystem = 0",
+                    PrayerCard.TitleQuickAdd);
+                await _db.ExecuteAsync(
+                    "UPDATE PrayerCard SET IsSystem = 1 WHERE Title = ? AND IsSystem = 0",
+                    PrayerCard.TitleSharedWithMe);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[BUG-58] IsSystem backfill: {ex.Message}");
+            }
+
             // F-24: CardBox table + PrayerCard box columns + data migration
             await _db.CreateTableAsync<CardBox>();
             await EnsureCardBoxMigrationAsync();
@@ -125,24 +156,11 @@ namespace PrayerApp.Services
                 System.Diagnostics.Debug.WriteLine($"[UpdateSchema] Orphan PrayerCardTag cleanup: {ex.Message}");
             }
 
-            // Add IsSystem column to PrayerCard for system-managed cards (e.g., Quick Add)
-            try
-            {
-                await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsSystem INTEGER DEFAULT 0");
-            }
-            catch { /* Column already exists */ }
-
             // Add IsDefault column to UserColor and backfill existing seed colors
             try
             {
                 await _db.ExecuteAsync("ALTER TABLE UserColor ADD COLUMN IsDefault INTEGER DEFAULT 0");
             }
-            catch { /* Column already exists */ }
-
-            // F-10: Add IsImported column to PrayerCard and PrayerRequest for shared content
-            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN IsImported INTEGER DEFAULT 0"); }
-            catch { /* Column already exists */ }
-            try { await _db.ExecuteAsync("ALTER TABLE PrayerRequest ADD COLUMN IsImported INTEGER DEFAULT 0"); }
             catch { /* Column already exists */ }
 
             // Add IsSystem column to PrayerTag for system-managed tags
@@ -565,33 +583,39 @@ namespace PrayerApp.Services
             Settings.ArchivedFolderId = archivedBox.Id;
 
             // 4. Add new columns to PrayerCard
-            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN BoxId INTEGER DEFAULT 0"); } catch { }
-            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN SystemKey TEXT"); } catch { }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN BoxId INTEGER DEFAULT 0"); }
+            catch { System.Diagnostics.Debug.WriteLine("[F-24 Migration] BoxId column already exists"); }
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN SystemKey TEXT"); }
+            catch { System.Diagnostics.Debug.WriteLine("[F-24 Migration] SystemKey column already exists"); }
 
-            // 4. Migrate system and imported cards into the System box (one-time)
+            // 5. Migrate system and imported cards into the System box
             // Only cards with BoxId=0 need migration — already-assigned cards are left alone.
             try
             {
-                await _db.ExecuteAsync(
+                var rows = await _db.ExecuteAsync(
                     "UPDATE PrayerCard SET BoxId = ? WHERE BoxId = 0 AND (IsSystem = 1 OR IsImported = 1)",
                     systemBox.Id);
+                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] Migrated {rows} system/imported cards to System box (id={systemBox.Id})");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] System card migration: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] System card migration FAILED: {ex.Message}");
             }
 
-            // 5. Set SystemKey on known system cards (idempotent — uses WHERE SystemKey IS NULL)
+            // 6. Set SystemKey on known system cards (idempotent — uses WHERE SystemKey IS NULL)
             try
             {
-                await _db.ExecuteAsync(
-                    "UPDATE PrayerCard SET SystemKey = 'quick_add' WHERE IsSystem = 1 AND Title = 'Quick Add' AND SystemKey IS NULL");
-                await _db.ExecuteAsync(
-                    "UPDATE PrayerCard SET SystemKey = 'shared_with_me' WHERE IsSystem = 1 AND Title = 'Shared with me' AND SystemKey IS NULL");
+                var qaRows = await _db.ExecuteAsync(
+                    "UPDATE PrayerCard SET SystemKey = ? WHERE IsSystem = 1 AND Title = ? AND SystemKey IS NULL",
+                    PrayerCard.SystemKeyQuickAdd, PrayerCard.TitleQuickAdd);
+                var swmRows = await _db.ExecuteAsync(
+                    "UPDATE PrayerCard SET SystemKey = ? WHERE IsSystem = 1 AND Title = ? AND SystemKey IS NULL",
+                    PrayerCard.SystemKeySharedWithMe, PrayerCard.TitleSharedWithMe);
+                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] SystemKey backfill: quick_add={qaRows}, shared_with_me={swmRows}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] SystemKey backfill: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[F-24 Migration] SystemKey backfill FAILED: {ex.Message}");
             }
         }
 

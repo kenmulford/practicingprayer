@@ -14,8 +14,8 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.1.0b44. 354 unit tests, 63 UITests.
-**Last completed**: F-24 Phases 1-3D (Collections feature — data layer, grouped Cards page, BUG-7 fix, box management UI, collection picker, multi-select)
+**Status**: 1.1.0b44. 364 unit tests, 63 UITests.
+**Last completed**: BUG-55/56/57/58/59 (5 Collections bug fixes — EmptyView overlay, empty collections, count styling, system card migration, multi-select toolbar)
 **Next up**: F-24 Phase 4 (UITests for Collections feature)
 
 ---
@@ -35,11 +35,21 @@ Items are listed in work order. Start at the top, work down.
 | 6   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
 | 7   | INV-5 | Voice dictation for prayer requests — research feasibility         | Ken    | User presses a mic button on the prayer request form, dictates their request aloud, and the transcription is captured as the request text. Research: platform speech-to-text APIs (iOS SFSpeechRecognizer, Android SpeechRecognizer), MAUI plugin options (e.g., Plugin.Maui.Audio, community speech-to-text libs), privacy implications (does audio leave the device?), and whether on-device vs. cloud transcription is required. Privacy-first constraint means on-device is strongly preferred. |
 | 8   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping. |
+| ~~9~~ | ~~BUG-55~~ | ~~All collections collapsed → EmptyView overlay blocks interaction~~ | ~~Ken~~ | **Fixed.** EmptyView wrapped with InputTransparent + HasNoSections visibility guard. Taps pass through to collapsed group headers. |
+| ~~10~~ | ~~BUG-56~~ | ~~Empty collections (0 cards) not visible in card list~~ | ~~Ken~~ | **Fixed.** User-created boxes always shown in section list even with 0 cards. Empty hint text displayed via GroupFooterTemplate. |
+| ~~11~~ | ~~BUG-57~~ | ~~Collection card count styling inconsistent with card title row~~ | ~~Ken~~ | **Fixed.** Count badge bumped to 13px Bold Gray600 to match section header styling. |
+| ~~12~~ | ~~BUG-58~~ | ~~System cards not migrated into system collection~~ | ~~Ken~~ | **Fixed.** Migration ordering corrected (IsSystem/IsImported columns before box migration), IsSystem backfill for legacy cards, startup safety net, and on-demand system card creation assigns System box. |
+| ~~13~~ | ~~BUG-59~~ | ~~Multi-select context menu position — move to top of list~~ | ~~Ken~~ | **Fixed.** Toolbar moved from bottom to top overlay (Row 0, RowSpan 2, ZIndex 10, height-matched). Collection headers dimmed to 0.4 opacity during multi-select. |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| BUG-55  | EmptyView overlay blocks interaction when all collections collapsed | 2026-04-01 |
+| BUG-56  | Empty collections not visible + empty hint text | 2026-04-01 |
+| BUG-57  | Collection card count styling inconsistent with header | 2026-04-01 |
+| BUG-58  | System cards not migrated into system collection (migration ordering + backfill) | 2026-04-01 |
+| BUG-59  | Multi-select toolbar moved to top + header dimming | 2026-04-01 |
 | UX-26   | Prayer Time button styles — "✓ Answered" (WarmGold pill) and "I'm done" (secondary pill) replacing cramped circles | 2026-03-31 |
 | UX-27   | Screen flash/flicker on page load — slide-only animation, Android window background fix | 2026-03-31 |
 | UX-22   | Android Play Store screenshots — 16 screenshots (phone + 10" tablet, light + dark) | 2026-03-31 |
