@@ -188,6 +188,10 @@ A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically det
 - `BACKLOG.md` — prioritized work queue (update every session)
 - `docs/CHANGELOG.md` — app store release notes (update every session with user-facing changes)
 - `docs/plans/` — active feature implementation plans (F-10, F-13)
+- `docs/plans/app-store-screenshots.md` — iOS screenshot runbook (devices, seed data, capture commands)
+- `docs/plans/UX-22-android-screenshots.md` — Android screenshot runbook (emulators, seed data, adb commands)
+- `screenshots/` — app store screenshots (phone + tablet, light + dark)
+- `screenshots/android/prayer_app_seed.db` — pre-built seed DB for screenshot sessions
 - `docs/research/` — investigation notes
 - `docs/tester-feedback/feedback-log.md` — verbatim tester feedback
 - `docs/archive/` — completed plan/spec docs (historical reference)
