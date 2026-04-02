@@ -130,28 +130,10 @@
             ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
             SelectionMode="None">
-        <!-- BUG-55: InputTransparent lets taps pass through to collapsed group headers.
-             HasNoSections hides content when sections exist but are merely collapsed. -->
-        <CollectionView.EmptyView>
-            <ContentView InputTransparent="True">
-                <Label IsVisible="False"
-                       Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
-                       Style="{StaticResource MutedText}"
-                       HorizontalTextAlignment="Center"
-                       Margin="24,32">
-                    <Label.Triggers>
-                        <!-- Only show when genuinely empty (not loading, no sections) -->
-                        <MultiTrigger TargetType="Label">
-                            <MultiTrigger.Conditions>
-                                <BindingCondition Binding="{Binding HasNoSections}" Value="True" />
-                                <BindingCondition Binding="{Binding IsLoading}" Value="False" />
-                            </MultiTrigger.Conditions>
-                            <Setter Property="IsVisible" Value="True" />
-                        </MultiTrigger>
-                    </Label.Triggers>
-                </Label>
-            </ContentView>
-        </CollectionView.EmptyView>
+        <!-- BUG-55 fix: Empty hint lives OUTSIDE the CollectionView so it never
+             replaces group headers. Grouped CollectionView's built-in EmptyView
+             hides group headers when all groups have 0 items, which prevents
+             tapping section headers to re-expand collapsed collections. -->
         <CollectionView.GroupHeaderTemplate>
             <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
                 <Grid ColumnDefinitions="Auto,*,Auto"
@@ -518,6 +500,26 @@
             </DataTemplate>
         </CollectionView.ItemTemplate>
         </CollectionView>
+
+        <!-- BUG-55: External empty hint — InputTransparent so collapsed group headers
+             remain tappable beneath this overlay. Only visible when truly empty. -->
+        <Label Grid.Row="3"
+               IsVisible="False"
+               InputTransparent="True"
+               Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
+               Style="{StaticResource MutedText}"
+               HorizontalTextAlignment="Center"
+               Margin="36,32">
+            <Label.Triggers>
+                <MultiTrigger TargetType="Label">
+                    <MultiTrigger.Conditions>
+                        <BindingCondition Binding="{Binding HasNoSections}" Value="True" />
+                        <BindingCondition Binding="{Binding IsLoading}" Value="False" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="IsVisible" Value="True" />
+                </MultiTrigger>
+            </Label.Triggers>
+        </Label>
 
         <!-- CreateCard step banner -->
         <onboarding:OnboardingBanner
