@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.1.0b44. 377 unit tests, 68 UITests (5 new collection tests).
-**Last completed**: F-25 (Prayer Time by Collection), F-24 Phase 4 (UITests), UX-28 (education banner), UX-29 seed data updates.
-**Next up**: UX-29 screenshot capture session, then F-10 Android deep-link verification.
+**Status**: 1.1.0b44. 378 unit tests, 68 UITests (5 new collection tests).
+**Last completed**: UX-29 Android screenshots captured (phone + tablet, light + dark, 20 files). iOS screenshots pending (Mac session).
+**Next up**: UX-29 iOS screenshot capture (Mac), then F-10 Android deep-link verification post-launch.
 
 ---
 
@@ -27,7 +27,7 @@ Items are listed in work order. Start at the top, work down.
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. 1.0.7b43 final review submitted 2026-04-01 — should be live soon. iOS sharing confirmed working. Verify Android inbound links post-launch. Plan at `docs/plans/F10-deep-link-share.md`. |
-| 2   | UX-29 | Updated store screenshots for F-24 release                        | Ken    | Seed data + runbooks updated with collections. Ready for capture session. Matrix: Android + iOS, phone + 10" tablet, light + dark. Plus new Manage Collections screen. Runbooks at `docs/plans/app-store-screenshots.md` and `docs/plans/UX-22-android-screenshots.md`. **Must ship with F-24.** |
+| 2   | UX-29 | Updated store screenshots — iOS remaining                         | Ken    | Android complete (20 screenshots: phone + tablet, light + dark). iOS capture pending — requires Mac session with simulators. Runbooks at `docs/plans/app-store-screenshots.md` and `docs/plans/UX-22-android-screenshots.md`. Seed DB at `screenshots/android/prayer_app_seed.db`. **Must ship with F-24.** |
 | ~~—~~ | ~~BUG-61~~ | ~~Prayer Time by-tag ordering is random~~ | ~~Ken~~ | **Fixed.** Added `.OrderBy(CardTitle).ThenBy(PrayerTitle)` in `LoadEntriesAsync`. |
 | ~~—~~ | ~~F-25~~ | ~~Prayer Time by Collection~~ | ~~Ken~~ | **Done.** `scope=box&boxId={id}`, modal picker, action sheet option. Smart guard: only shows "By Collection" when user boxes have active cards. |
 | ~~—~~ | ~~F-24~~ | ~~Card groups & archiving — UITests~~ | ~~Ken~~ | **Done.** Phase 4 complete: 5 new tests (8.11–8.15). All phases shipped. |
