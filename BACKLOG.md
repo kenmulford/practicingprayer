@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.1.0b44. 378 unit tests, 68 UITests (5 new collection tests).
-**Last completed**: UX-29 Android screenshots captured (phone + tablet, light + dark, 20 files). iOS screenshots pending (Mac session).
-**Next up**: UX-29 iOS screenshot capture (Mac), then F-10 Android deep-link verification post-launch.
+**Status**: 1.1.0b50. 378 unit tests, 68 UITests. App live on Google Play.
+**Last completed**: F-10 Android deep-link verification (Play Store live), BUG-55 collapse regression fix, dark mode fix on Prayer Time collection picker.
+**Next up**: UX-29 iOS screenshot capture (Mac), then F-23 dashboard feature.
 
 ---
 
@@ -26,29 +26,20 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | F-10  | Deep-link share — verify Android after Play Store launch           | —      | Both phases implemented. Android `AutoVerify` activates when app is published on Google Play. 1.0.7b43 final review submitted 2026-04-01 — should be live soon. iOS sharing confirmed working. Verify Android inbound links post-launch. Plan at `docs/plans/F10-deep-link-share.md`. |
-| 2   | UX-29 | Updated store screenshots — iOS remaining                         | Ken    | Android complete (20 screenshots: phone + tablet, light + dark). iOS capture pending — requires Mac session with simulators. Runbooks at `docs/plans/app-store-screenshots.md` and `docs/plans/UX-22-android-screenshots.md`. Seed DB at `screenshots/android/prayer_app_seed.db`. **Must ship with F-24.** |
-| ~~—~~ | ~~BUG-61~~ | ~~Prayer Time by-tag ordering is random~~ | ~~Ken~~ | **Fixed.** Added `.OrderBy(CardTitle).ThenBy(PrayerTitle)` in `LoadEntriesAsync`. |
-| ~~—~~ | ~~F-25~~ | ~~Prayer Time by Collection~~ | ~~Ken~~ | **Done.** `scope=box&boxId={id}`, modal picker, action sheet option. Smart guard: only shows "By Collection" when user boxes have active cards. |
-| ~~—~~ | ~~F-24~~ | ~~Card groups & archiving — UITests~~ | ~~Ken~~ | **Done.** Phase 4 complete: 5 new tests (8.11–8.15). All phases shipped. |
-| ~~—~~ | ~~UX-28~~ | ~~Collection feature education banner~~ | ~~Ken~~ | **Done.** Dismissable banner on Cards page using Quick Add tip pattern. |
-| ~~—~~ | ~~BUG-7~~ | ~~SwipeView gestures unreliable on Tags list~~ | ~~Ken~~ | **Fixed in F-24 Phase 3A.** SwipeView replaced with inline action chips on TagsPage (same pattern as PrayerCardsPage). BoxesPage uses the same pattern. |
-| 3   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Full-width card below 2x2 metric grid. Shows prayers answered on same month+day in prior years (not today). Header: "Answered prayers from [Month Day]". Lists prayer titles. Hidden when empty, no tap action. Plan at `.claude/plans/reactive-swimming-bunny.md`. **Ready to implement.** |
-| 4   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
-| 5   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
-| 6   | INV-5 | Voice dictation for prayer requests — research feasibility         | Ken    | User presses a mic button on the prayer request form, dictates their request aloud, and the transcription is captured as the request text. Research: platform speech-to-text APIs (iOS SFSpeechRecognizer, Android SpeechRecognizer), MAUI plugin options (e.g., Plugin.Maui.Audio, community speech-to-text libs), privacy implications (does audio leave the device?), and whether on-device vs. cloud transcription is required. Privacy-first constraint means on-device is strongly preferred. |
-| 7   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping. |
-| ~~9~~ | ~~BUG-55~~ | ~~All collections collapsed → EmptyView overlay blocks interaction~~ | ~~Ken~~ | **Fixed.** EmptyView wrapped with InputTransparent + HasNoSections visibility guard. Taps pass through to collapsed group headers. |
-| ~~10~~ | ~~BUG-56~~ | ~~Empty collections (0 cards) not visible in card list~~ | ~~Ken~~ | **Fixed.** User-created boxes always shown in section list even with 0 cards. Empty hint text displayed via GroupFooterTemplate. |
-| ~~11~~ | ~~BUG-57~~ | ~~Collection card count styling inconsistent with card title row~~ | ~~Ken~~ | **Fixed.** Count badge bumped to 13px Bold Gray600 to match section header styling. |
-| ~~12~~ | ~~BUG-58~~ | ~~System cards not migrated into system collection~~ | ~~Ken~~ | **Fixed.** Migration ordering corrected (IsSystem/IsImported columns before box migration), IsSystem backfill for legacy cards, startup safety net, and on-demand system card creation assigns System box. |
-| ~~13~~ | ~~BUG-59~~ | ~~Multi-select context menu position — move to top of list~~ | ~~Ken~~ | **Fixed.** Toolbar moved from bottom to top overlay (Row 0, RowSpan 2, ZIndex 10, height-matched). Collection headers dimmed to 0.4 opacity during multi-select. |
-| ~~14~~ | ~~BUG-60~~ | ~~Android long-press multi-select doesn't register (Pixel 9)~~ | ~~Ken~~ | **Fixed.** Replaced cross-platform TouchBehavior with platform-specific gesture handling: Android native GestureDetector (tap + long-press) on header Grid; iOS TouchBehavior on Border. Follows TagDetailPage pattern. |
+| 1   | UX-29 | Updated store screenshots — iOS remaining                         | Ken    | Android complete (20 screenshots: phone + tablet, light + dark). iOS capture pending — requires Mac session with simulators. Runbooks at `docs/plans/app-store-screenshots.md` and `docs/plans/UX-22-android-screenshots.md`. Seed DB at `screenshots/android/prayer_app_seed.db`. |
+| 2   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Full-width card below 2x2 metric grid. Shows prayers answered on same month+day in prior years (not today). Header: "Answered prayers from [Month Day]". Lists prayer titles. Hidden when empty, no tap action. Plan at `.claude/plans/reactive-swimming-bunny.md`. **Ready to implement.** |
+| 3   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
+| 4   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
+| 5   | INV-5 | Voice dictation for prayer requests — research feasibility         | Ken    | User presses a mic button on the prayer request form, dictates their request aloud, and the transcription is captured as the request text. Research: platform speech-to-text APIs (iOS SFSpeechRecognizer, Android SpeechRecognizer), MAUI plugin options (e.g., Plugin.Maui.Audio, community speech-to-text libs), privacy implications (does audio leave the device?), and whether on-device vs. cloud transcription is required. Privacy-first constraint means on-device is strongly preferred. |
+| 6   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping. |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| F-10    | Deep-link share — Android App Links verified post-Play Store launch | 2026-04-02 |
+| BUG-55b | Collapse regression — EmptyView moved outside CollectionView so headers always render | 2026-04-02 |
+| BUG-62  | Dark mode text color on Prayer Time collection picker (RadioButton content label) | 2026-04-02 |
 | BUG-61  | Prayer Time ordering — sorted by card title then prayer title | 2026-04-02 |
 | F-25    | Prayer Time by Collection — scope=box modal picker, smart guard on action sheet | 2026-04-02 |
 | F-24p4  | Collections UITests — 5 new tests (8.11–8.15: delete all, multi-select move, search, empty hint, archived) | 2026-04-02 |
@@ -85,22 +76,6 @@ Items are listed in work order. Start at the top, work down.
 | TD-12   | MVVM architecture audit (Phases 1+2+4) | 2026-03-25 |
 | TD-8    | ViewModel constructor injection | 2026-03-25 |
 | FB-29   | iOS tester feedback (build 29) | 2026-03-25 |
-
----
-
-## Detailed Descriptions
-
-### F-10 Deep-link share
-
-> **Full implementation plan:** [`docs/plans/F10-deep-link-share.md`](docs/plans/F10-deep-link-share.md)
-> **Deferred until app is live in the App Store / Play Store** — the `prayercards://` URI scheme must be registered and live before links work for recipients.
-
-Both cards and individual requests are shareable. Share sheet sends a `prayercards://` deep link alongside a plain-text fallback (for recipients without the app).
-
-**Recipient behavior:**
-
-- Shared card → auto-saved silently as a new card with all active requests
-- Shared request → auto-saved into a "Shared with me" system card (top of list, cannot be deleted, hideable in Settings)
 
 ---
 
@@ -234,4 +209,4 @@ Both cards and individual requests are shareable. Share sheet sends a `prayercar
 
 ---
 
-_Last updated: 2026-03-30 (session — BUG-6, UX-24 action chips, UX-25 deep-link suppression, favorite visual state; 282 unit tests, 63 UITests; build 1.0.7b42)_
+_Last updated: 2026-04-02 (session — F-10 verified, BUG-55 collapse regression fix, BUG-62 dark mode collection picker, b50; 378 unit tests, 68 UITests)_
