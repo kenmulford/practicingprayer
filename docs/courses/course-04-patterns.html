@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Patterns — Engineering Wisdom | Practicing Prayer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--color-bg:#FAF7F2;--color-bg-warm:#F5F0E8;--color-bg-code:#1E1E2E;--color-text:#2C2A28;--color-text-secondary:#6B6560;--color-text-muted:#9E9790;--color-border:#E5DFD6;--color-border-light:#EEEBE5;--color-surface:#FFFFFF;--color-surface-warm:#FDF9F3;--color-accent:#6B7D5A;--color-accent-hover:#5A6B4A;--color-accent-light:#EDF2E8;--color-accent-muted:#8FA37E;--color-success:#2D8B55;--color-success-light:#E8F5EE;--color-error:#C93B3B;--color-error-light:#FDE8E8;--color-info:#2A7B9B;--color-info-light:#E4F2F7;--color-actor-1:#6B7D5A;--color-actor-2:#2A7B9B;--color-actor-3:#7B6DAA;--color-actor-4:#D4A843;--color-actor-5:#D94F30;--font-display:'Bricolage Grotesque',Georgia,serif;--font-body:'DM Sans',-apple-system,sans-serif;--font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;--text-xs:0.75rem;--text-sm:0.875rem;--text-base:1rem;--text-lg:1.125rem;--text-xl:1.25rem;--text-2xl:1.5rem;--text-4xl:2.25rem;--text-6xl:3.75rem;--leading-tight:1.15;--leading-normal:1.6;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--space-16:4rem;--content-width:800px;--content-width-wide:1000px;--nav-height:50px;--radius-sm:8px;--radius-md:12px;--radius-full:9999px;--shadow-sm:0 1px 2px rgba(44,42,40,0.05);--shadow-md:0 4px 12px rgba(44,42,40,0.08);--shadow-lg:0 8px 24px rgba(44,42,40,0.1);--ease-out:cubic-bezier(0.16,1,0.3,1);--duration-fast:150ms;--duration-normal:300ms;--duration-slow:500ms;--stagger-delay:120ms}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-snap-type:y proximity;scroll-behavior:smooth}body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(107,125,90,0.03) 0%,transparent 50%);-webkit-font-smoothing:antialiased}pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,247,242,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-border-light);height:var(--nav-height)}.progress-bar{position:absolute;top:0;left:0;height:3px;background:var(--color-accent);width:0%}.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6)}.nav-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm)}.nav-dots{display:flex;gap:var(--space-3)}.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;transition:all var(--duration-fast);padding:0}.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent);box-shadow:0 0 8px rgba(107,125,90,0.3)}.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent)}
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12))}.module-content{max-width:var(--content-width);margin:0 auto}.module-header{margin-bottom:var(--space-12)}.module-number{font-family:var(--font-display);font-weight:800;font-size:var(--text-6xl);color:var(--color-accent);opacity:0.15;line-height:var(--leading-tight)}.module-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-4xl);line-height:var(--leading-tight);margin-top:calc(-1 * var(--space-4))}.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);margin-top:var(--space-3)}.screen{margin-bottom:var(--space-16)}.screen-heading{font-family:var(--font-display);font-weight:600;font-size:1.5rem;margin-bottom:var(--space-6)}
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out)}.animate-in.visible{opacity:1;transform:translateY(0)}.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay))}
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0}.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden}.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent)}.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5}.translation-english .translation-label{position:relative;top:auto;right:auto;display:block;color:var(--color-text-muted);margin-bottom:var(--space-3)}.tl{margin-bottom:var(--space-3);color:var(--color-text-secondary)}.tl:last-child{margin-bottom:0}
+.code-keyword{color:#CBA6F7}.code-string{color:#A6E3A1}.code-function{color:#89B4FA}.code-comment{color:#6C7086}.code-number{color:#FAB387}.code-property{color:#F9E2AF}.code-operator{color:#94E2D5}.code-type{color:#89DCEB}
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5);border-radius:var(--radius-md);margin:var(--space-8) 0}.callout-icon{font-size:1.5rem;flex-shrink:0}.callout-content{flex:1}.callout-title{display:block;margin-bottom:var(--space-2);font-weight:600}.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent)}.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info)}.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error)}
+.pattern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4);margin:var(--space-8) 0}.pattern-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-6);box-shadow:var(--shadow-sm);transition:transform var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal)}.pattern-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}.pattern-icon{width:48px;height:48px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:var(--space-3);color:white}.pattern-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-2)}.pattern-desc{font-size:var(--text-sm);color:var(--color-text-secondary)}
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-8) 0}.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}.icon-row p{margin:0;color:var(--color-text-secondary);font-size:var(--text-sm)}.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:white}
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-8) 0}.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}.step-body p{margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-2);border-radius:4px}
+.quiz-container{margin:var(--space-8) 0}.quiz-question-block{margin-bottom:var(--space-8)}.quiz-question{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin-bottom:var(--space-4)}.quiz-options{display:flex;flex-direction:column;gap:var(--space-3)}.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;font-family:var(--font-body);font-size:var(--text-base);text-align:left}.quiz-option:hover{border-color:var(--color-accent-muted)}.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light)}.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light)}.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light)}.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0}.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white}.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal),padding var(--duration-normal);border-radius:var(--radius-sm);font-size:var(--text-sm)}.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3) var(--space-4);margin-top:var(--space-2)}.quiz-feedback.success{background:var(--color-success-light);color:#1a6b3a}.quiz-feedback.error{background:var(--color-error-light);color:#a32a2a}.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:600;font-size:var(--text-sm);cursor:pointer;margin-top:var(--space-4);margin-right:var(--space-3)}.quiz-check-btn{background:var(--color-accent);color:white}.quiz-check-btn:hover{background:var(--color-accent-hover)}.quiz-reset-btn{background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-border)}
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative}.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent)}.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000}.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code)}.term-tooltip.visible{opacity:1}.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code)}
+@media(max-width:768px){:root{--text-4xl:1.875rem;--text-6xl:3rem}.translation-block{grid-template-columns:1fr}.translation-english{border-left:none;border-top:3px solid var(--color-accent)}.pattern-cards{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){:root{--text-4xl:1.5rem;--text-6xl:2.25rem}.module{padding:var(--space-8) var(--space-4)}.pattern-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="progress-bar" id="progress-bar"></div><div class="nav-inner"><span class="nav-title">Course 4: The Patterns</span><div class="nav-dots"><button class="nav-dot" data-target="module-1" title="MVVM"></button><button class="nav-dot" data-target="module-2" title="Active Record"></button><button class="nav-dot" data-target="module-3" title="Singleton Caching"></button><button class="nav-dot" data-target="module-4" title="Interface Segregation"></button><button class="nav-dot" data-target="module-5" title="Cascading Ops"></button><button class="nav-dot" data-target="module-6" title="Computed Properties"></button><button class="nav-dot" data-target="module-7" title="Error Handling"></button></div></div></nav>
+
+<!-- HERO -->
+<section class="module" id="module-intro" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">The Patterns</h1><p class="module-subtitle">Named engineering patterns you can request from AI by name &mdash; the vocabulary that turns vague instructions into precise architecture.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px">You've seen these patterns in action across the previous courses. Now you'll learn their <em>names</em>. Knowing the name lets you say "use the Active Record pattern" instead of "make the model save itself somehow."</p></section>
+      <section class="screen animate-in"><h2 class="screen-heading">The seven patterns in this app</h2>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)"><div class="pattern-icon" style="background:var(--color-actor-1)">&#x1F3AD;</div><h4 class="pattern-title">MVVM</h4><p class="pattern-desc">Three-layer separation: Model, View, ViewModel</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><div class="pattern-icon" style="background:var(--color-actor-2)">&#x1F4C2;</div><h4 class="pattern-title">Active Record</h4><p class="pattern-desc">Models that save and load themselves</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)"><div class="pattern-icon" style="background:var(--color-actor-3)">&#x1F4CB;</div><h4 class="pattern-title">Singleton Caching</h4><p class="pattern-desc">One shared instance with a remembered result</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-4)"><div class="pattern-icon" style="background:var(--color-actor-4)">&#x1F4DC;</div><h4 class="pattern-title">Interface Segregation</h4><p class="pattern-desc">Contracts that enable swapping and testing</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-5)"><div class="pattern-icon" style="background:var(--color-actor-5)">&#x1F4A5;</div><h4 class="pattern-title">Cascading Operations</h4><p class="pattern-desc">Deletes that clean up dependent records</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-info)"><div class="pattern-icon" style="background:var(--color-info)">&#x1F4CA;</div><h4 class="pattern-title">Computed Properties</h4><p class="pattern-desc">Values that auto-update when dependencies change</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-text-muted)"><div class="pattern-icon" style="background:var(--color-text-muted)">&#x1F5C4;</div><h4 class="pattern-title">Diagnostic Logging</h4><p class="pattern-desc">Recording crashes for post-mortem analysis</p></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 1: MVVM -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">MVVM &mdash; The Three-Layer Cake</h1><p class="module-subtitle">A theater production &mdash; the script (Model) is the story, the director (ViewModel) decides how to tell it, the actors on stage (View) perform it.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">What MVVM means</h2><p><span class="term" data-definition="MVVM (Model-View-ViewModel) is an architecture pattern that separates an app into three layers. The Model holds data, the View displays it, and the ViewModel connects them. Each layer has one job and doesn't do the others' work.">MVVM</span> stands for <strong>Model-View-ViewModel</strong>. It's the organizing principle behind this entire app:</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-4)">M</div><div><strong>Model</strong><p>The data shapes and database persistence. Prayer, PrayerCard, PrayerTag. Knows nothing about screens.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">V</div><div><strong>View</strong><p>The XAML pages. Buttons, labels, lists. Knows nothing about business logic &mdash; only displays what the ViewModel provides.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">VM</div><div><strong>ViewModel</strong><p>The brain in between. Receives user actions (via commands), talks to services, exposes data for the View to display (via properties).</p></div></div>
+        </div>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">Why this matters for AI</strong><p>When you tell AI "add a delete button," it needs to know: the button goes in the <strong>View</strong>, the delete logic goes in the <strong>ViewModel</strong>, and the data deletion goes in the <strong>Model/Service</strong>. Saying "follow MVVM" instantly communicates this three-way split.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2: ACTIVE RECORD -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">Active Record</h1><p class="module-subtitle">Self-filing documents &mdash; each model knows its own filing cabinet drawer and can walk itself there.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The pattern</h2><p>In the <span class="term" data-definition="Active Record is a pattern where each model object knows how to save, load, and delete itself from the database. Instead of a separate 'repository' class managing persistence, the model handles it directly. PrayerCard.SaveAsync() and Prayer.LoadAsync() are Active Record methods.">Active Record</span> pattern, each model object carries its own persistence logic. You don't need a separate "PrayerCardRepository" &mdash; the PrayerCard itself knows how to save and load.</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-comment">// The model saves itself:</span>
+<span class="code-keyword">await</span> card.<span class="code-function">SaveAsync</span>();
+
+<span class="code-comment">// The model loads itself:</span>
+<span class="code-keyword">var</span> card = <span class="code-keyword">await</span> PrayerCard.<span class="code-function">LoadAsync</span>(<span class="code-number">42</span>);
+
+<span class="code-comment">// The model deletes itself:</span>
+<span class="code-keyword">await</span> card.<span class="code-function">DeleteAsync</span>();</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Save this card to the database (it knows how).</p><p class="tl">Load prayer card #42 from the database.</p><p class="tl">Delete this card from the database.</p><p class="tl">Each of these is an <em>instance method</em> on the model itself. The model is the document that files itself.</p></div></div></div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The trade-off</h2>
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top:3px solid var(--color-success)"><h4 class="pattern-title">Pros</h4><p class="pattern-desc">Simple, intuitive, less boilerplate. One class holds everything about a concept.</p></div>
+          <div class="pattern-card" style="border-top:3px solid var(--color-error)"><h4 class="pattern-title">Cons</h4><p class="pattern-desc">Models depend on the database (via static _dbService). Harder to test in complete isolation. Less flexible for complex queries.</p></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3: SINGLETON CACHING -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">03</span><h1 class="module-title">Singleton Caching</h1><p class="module-subtitle">A librarian with a clipboard &mdash; first request reads the shelves, subsequent requests use the clipboard.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The read path</h2>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>Someone asks for all cards</strong><p>GetCardsAsync() is called. Is the clipboard (_cache) filled?</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2a</div><div class="step-body"><strong>Cache hit:</strong> Return the clipboard<p>The list was already loaded &mdash; return it instantly. No database trip.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2b</div><div class="step-body"><strong>Cache miss:</strong> Read the shelves<p>Load all cards from SQLite, copy them onto the clipboard, return.</p></div></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The write path</h2>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>Someone saves or deletes a card</strong><p>The database changes.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>Throw away the clipboard</strong><p><code class="inline">_cache = null;</code> &mdash; the old list is stale.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>Next read rebuilds</strong><p>The next GetCardsAsync() call sees null, goes to the database, and rebuilds.</p></div></div>
+        </div>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">The #1 caching bug: forgetting to invalidate</strong><p>If you add a save method but forget <code class="inline">_cache = null;</code>, the new data is in the database but invisible to the UI. The screen shows stale data until the app restarts. Always check: "does this write method clear the cache?"</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4: INTERFACE SEGREGATION -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">Interface Segregation</h1><p class="module-subtitle">A job description vs the employee &mdash; swap the person, keep the contract.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Every service has a contract</h2><p>The <span class="term" data-definition="Interface Segregation means depending on a contract (interface) rather than a concrete implementation. Your ViewModel asks for ICardService, not CardService. This means you can swap the real service for a mock in tests without changing any ViewModel code.">interface segregation</span> pattern means the rest of the code never knows (or cares) which <em>specific</em> class is doing the work:</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">I</div><div><strong>ICardService</strong> (contract)<p>Defines: GetCardsAsync, SaveCardAsync, DeleteCardAsync, InvalidateCache</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">C</div><div><strong>CardService</strong> (real implementation)<p>Talks to SQLite. Used in the running app.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">M</div><div><strong>Mock CardService</strong> (test fake)<p>Returns pre-set answers. Used in unit tests. Same contract, different behavior.</p></div></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5: CASCADING OPS -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">Cascading Operations &amp; System Guards</h1><p class="module-subtitle">Removing a load-bearing wall &mdash; cascade deletes clear dependent records; guards protect critical structures.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Cascade deletes</h2><p>When you delete a tag, what happens to all the prayers tagged with it? A <span class="term" data-definition="A cascade delete means when you delete a parent record, all related child records are also deleted. If you delete a PrayerTag, all PrayerCardTag junction rows pointing to it must also be removed. Without this, you'd have orphan records pointing to a tag that no longer exists.">cascade delete</span> cleans up the <span class="term" data-definition="A junction table connects two other tables in a many-to-many relationship. PrayerCardTag connects prayers and tags &mdash; one prayer can have many tags, and one tag can be on many prayers. Each row in the junction table is one prayer-tag pairing.">junction records</span>:</p>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>User deletes a tag</strong><p>TagService.DeleteTagAsync(tagId) is called.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>Clear all junction rows first</strong><p>DeleteByTagIdAsync removes all PrayerCardTag rows pointing to this tag.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>Then delete the tag itself</strong><p>The PrayerTag row is removed. No orphans left behind.</p></div></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">System entity guards</h2><p>Some records must never be deleted. <span class="term" data-definition="System entity guards are checks that prevent deletion of critical built-in records. The 'Quick Add' card, 'Recently Notified' tag, and 'System'/'Archived' boxes are all protected. The delete method checks IsSystem and refuses to proceed if true.">System guards</span> protect them:</p>
+        <div class="callout callout-info"><div class="callout-icon">&#x1F6E1;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Protected entities</strong><p>The "Quick Add" card, "Recently Notified" tag, "System" box, and "Archived" box are all marked <code class="inline">IsSystem = true</code>. Delete methods check this flag and refuse to proceed. This prevents accidental destruction of built-in features.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 6: COMPUTED PROPERTIES -->
+<section class="module" id="module-6" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">Computed Properties</h1><p class="module-subtitle">A spreadsheet formula &mdash; change one cell, all dependent cells update.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Properties that derive from other properties</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public</span> <span class="code-type">bool</span> <span class="code-property">HasOverdue</span>
+    => OverdueCount > <span class="code-number">0</span>;
+
+<span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-property">OverdueHeadline</span>
+    => OverdueCount <span class="code-keyword">switch</span>
+{
+    <span class="code-number">0</span> => <span class="code-string">"All requests have been recently prayed for."</span>,
+    <span class="code-number">1</span> => <span class="code-string">"1 Overdue"</span>,
+    _ => $<span class="code-string">"{OverdueCount} Overdue"</span>
+};</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><strong>HasOverdue</strong> is true if the count is greater than zero. It has no setter &mdash; it's a formula.</p><p class="tl"><strong>OverdueHeadline</strong> generates different text based on the count. 0 = encouraging message. 1 = singular. 2+ = plural with the actual number.</p><p class="tl">The <span class="term" data-definition="A switch expression is a concise way to map one value to another. Instead of a chain of if/else statements, you list the cases on separate lines. The _ is the catch-all (like 'else'). Switch expressions are great for mapping enum values or numbers to display text.">switch expression</span> (<code class="inline">switch {}</code>) maps the count to the right text.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/ViewModels/HomeViewModel.cs</code> &mdash; lines 33&ndash;40</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 7: ERROR HANDLING -->
+<section class="module" id="module-7" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">07</span><h1 class="module-title">Error Handling &amp; Diagnostics</h1><p class="module-subtitle">A black box flight recorder &mdash; records the last events before every crash.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">DiagnosticLog &mdash; the crash recorder</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public void</span> <span class="code-function">Log</span>(
+    <span class="code-type">string</span> category, <span class="code-type">Exception</span> ex)
+{
+    <span class="code-keyword">var</span> entry = $<span class="code-string">"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] [{category}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}"</span>;
+    <span class="code-keyword">lock</span> (_lock)
+    {
+        File.<span class="code-function">AppendAllText</span>(
+            _logPath, entry);
+    }
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Write a crash entry with the timestamp, category (like "UnhandledException"), error type, message, and the <span class="term" data-definition="A stack trace shows the chain of method calls that led to an error. It's like breadcrumbs: 'the crash happened in SaveAsync, which was called by SaveCardAsync, which was called by the Save button handler.' Stack traces are how developers find exactly where code broke.">stack trace</span>.</p><p class="tl">The <code class="inline">lock</code> prevents two threads from writing to the same file simultaneously (which would corrupt the file).</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/DiagnosticLog.cs</code> &mdash; lines 17&ndash;24</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Trim &mdash; preventing unbounded growth</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public void</span> <span class="code-function">Trim</span>()
+{
+    <span class="code-keyword">if</span> (entries.Length <= MaxEntries)
+        <span class="code-keyword">return</span>;
+
+    <span class="code-keyword">var</span> trimmed = entries
+        .<span class="code-function">Skip</span>(entries.Length - MaxEntries);
+    File.<span class="code-function">WriteAllText</span>(_logPath,
+        <span class="code-type">string</span>.<span class="code-function">Join</span>(Delimiter, trimmed));
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">If there are fewer than 100 entries, do nothing &mdash; the log is small enough.</p><p class="tl">Otherwise, keep only the <strong>most recent 100</strong> entries (skip the oldest) and rewrite the file.</p><p class="tl">This runs once at startup (in SeedAsync) to prevent the log file from growing forever.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/DiagnosticLog.cs</code> &mdash; lines 28&ndash;45</p></section>
+
+      <section class="screen animate-in" id="quiz-m7"><h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="pq1" data-correct="opt-b" data-explain-correct="Active Record means the model manages its own persistence. You'd say 'use the Active Record pattern' and the AI knows to put SaveAsync/DeleteAsync/LoadAsync as instance methods on the model class itself, with a static DB reference." data-explain-incorrect="Think about which pattern describes models that save themselves. In this app, PrayerCard.SaveAsync() is the model saving itself &mdash; that's the defining characteristic of one specific pattern."><h3 class="quiz-question">You're building a new app and want models that can save themselves. Which pattern name do you tell the AI?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Repository Pattern &mdash; a separate class manages persistence</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Active Record &mdash; each model manages its own persistence</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>MVVM &mdash; the ViewModel handles all database calls</span></button></div><div class="quiz-feedback"></div></div>
+          <div class="quiz-question-block" data-question="pq2" data-correct="opt-c" data-explain-correct="Cache invalidation (setting _cache = null after a write) forces the next read to fetch fresh data from the database. Without it, the UI shows stale data. This is the #1 caching bug." data-explain-incorrect="Think about what happens to cached data when the database changes. If the cache still holds the old list, the new/deleted/changed item is invisible to the UI."><h3 class="quiz-question">You added a new service method that updates a prayer's tag list, but the tags don't appear on screen after saving. What did you likely forget?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Setting the prayer's Id before saving</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Calling OnPropertyChanged in the ViewModel</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Setting _cache = null to invalidate the tag cache</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m7')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m7')">Try Again</button>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Course complete</h2><p style="font-size:var(--text-lg)">You can now name every engineering pattern in the app: MVVM, Active Record, Singleton Caching, Interface Segregation, Cascading Operations, Computed Properties, and Diagnostic Logging.</p>
+        <div class="callout callout-accent" style="margin-top:var(--space-8)"><div class="callout-icon">&#x1F389;</div><div class="callout-content"><strong class="callout-title">What's next</strong><p><strong>Course 5: The Canvas</strong> dives into the visual layer &mdash; XAML layout, styling, theming, and making the app accessible to everyone.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}})},{rootMargin:'0px 0px -10% 0px',threshold:0.1});
+document.querySelectorAll('.animate-in').forEach(function(el){observer.observe(el)});
+document.querySelectorAll('.stagger-children').forEach(function(p){Array.from(p.children).forEach(function(c,i){c.style.setProperty('--stagger-index',i)})});
+var pb=document.getElementById('progress-bar');
+window.addEventListener('scroll',function(){requestAnimationFrame(function(){var s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;pb.style.width=(h>0?(s/h)*100:0)+'%'})},{passive:true});
+var dots=document.querySelectorAll('.nav-dot');
+dots.forEach(function(d){d.addEventListener('click',function(){var t=document.getElementById(d.dataset.target);if(t)t.scrollIntoView({behavior:'smooth'})})});
+var mObs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var n=e.target.id.replace('module-','');dots.forEach(function(d){var dn=d.dataset.target.replace('module-','');if(dn===n)d.classList.add('current');else{d.classList.remove('current');if(parseInt(dn)<parseInt(n))d.classList.add('visited')}})}})},{rootMargin:'-30% 0px -30% 0px',threshold:0});
+document.querySelectorAll('.module[id^="module-"]').forEach(function(m){if(m.id!=='module-intro')mObs.observe(m)});
+var allM=Array.from(document.querySelectorAll('.module'));
+document.addEventListener('keydown',function(e){if(['INPUT','TEXTAREA'].indexOf(e.target.tagName)!==-1)return;if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();var c=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c<allM.length-1)allM[c+1].scrollIntoView({behavior:'smooth'})}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();var c2=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c2>0)allM[c2-1].scrollIntoView({behavior:'smooth'})}});
+var at=null;function pt(term,tip){var r=term.getBoundingClientRect(),tw=Math.min(320,window.innerWidth*0.8);tip.style.width=tw+'px';var l=r.left+r.width/2-tw/2;l=Math.max(8,Math.min(l,window.innerWidth-tw-8));tip.style.left=l+'px';document.body.appendChild(tip);var th=tip.offsetHeight;if(r.top-th-8<0){tip.style.top=(r.bottom+8)+'px';tip.classList.add('flip')}else{tip.style.top=(r.top-th-8)+'px';tip.classList.remove('flip')}}
+document.querySelectorAll('.term').forEach(function(t){var tip=document.createElement('span');tip.className='term-tooltip';tip.textContent=t.dataset.definition;t.addEventListener('mouseenter',function(){if(at&&at!==tip){at.classList.remove('visible');at.remove()}pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip});t.addEventListener('mouseleave',function(){tip.classList.remove('visible');setTimeout(function(){if(!tip.classList.contains('visible'))tip.remove()},150);at=null});t.addEventListener('click',function(e){e.stopPropagation();if(at&&at!==tip){at.classList.remove('visible');at.remove()}if(tip.classList.contains('visible')){tip.classList.remove('visible');tip.remove();at=null}else{pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip}})});
+document.addEventListener('click',function(){if(at){at.classList.remove('visible');at.remove();at=null}});
+window.selectOption=function(btn){var b=btn.closest('.quiz-question-block');if(b.querySelector('.quiz-option[disabled]'))return;b.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected')});btn.classList.add('selected')};
+function sf(f,ok,txt){while(f.firstChild)f.removeChild(f.firstChild);var s=document.createElement('strong');s.textContent=ok?'Exactly! ':'Not quite. ';f.appendChild(s);f.appendChild(document.createTextNode(txt));f.className='quiz-feedback show '+(ok?'success':'error')}
+window.checkQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-question-block').forEach(function(q){var sel=q.querySelector('.quiz-option.selected'),fb=q.querySelector('.quiz-feedback'),cv=q.dataset.correct;if(!sel){fb.textContent='Pick an answer first!';fb.className='quiz-feedback show warning';return}if(sel.dataset.value===cv){sel.classList.add('correct');sf(fb,true,q.dataset.explainCorrect)}else{sel.classList.add('incorrect');q.querySelector('[data-value="'+cv+'"]').classList.add('correct');sf(fb,false,q.dataset.explainIncorrect)}q.querySelectorAll('.quiz-option').forEach(function(o){o.disabled=true})})};
+window.resetQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected','correct','incorrect');o.disabled=false});c.querySelectorAll('.quiz-feedback').forEach(function(f){f.className='quiz-feedback'})};
+})();
+</script>
+</body>
+</html>

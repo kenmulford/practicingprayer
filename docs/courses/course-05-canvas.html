@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Canvas — The Visual Layer | Practicing Prayer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--color-bg:#FAF7F2;--color-bg-warm:#F5F0E8;--color-bg-code:#1E1E2E;--color-text:#2C2A28;--color-text-secondary:#6B6560;--color-text-muted:#9E9790;--color-border:#E5DFD6;--color-border-light:#EEEBE5;--color-surface:#FFFFFF;--color-surface-warm:#FDF9F3;--color-accent:#6B7D5A;--color-accent-hover:#5A6B4A;--color-accent-light:#EDF2E8;--color-accent-muted:#8FA37E;--color-success:#2D8B55;--color-success-light:#E8F5EE;--color-error:#C93B3B;--color-error-light:#FDE8E8;--color-info:#2A7B9B;--color-info-light:#E4F2F7;--color-actor-1:#6B7D5A;--color-actor-2:#2A7B9B;--color-actor-3:#7B6DAA;--color-actor-4:#D4A843;--color-actor-5:#D94F30;--font-display:'Bricolage Grotesque',Georgia,serif;--font-body:'DM Sans',-apple-system,sans-serif;--font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;--text-xs:0.75rem;--text-sm:0.875rem;--text-base:1rem;--text-lg:1.125rem;--text-xl:1.25rem;--text-2xl:1.5rem;--text-4xl:2.25rem;--text-6xl:3.75rem;--leading-tight:1.15;--leading-normal:1.6;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--space-16:4rem;--content-width:800px;--content-width-wide:1000px;--nav-height:50px;--radius-sm:8px;--radius-md:12px;--radius-full:9999px;--shadow-sm:0 1px 2px rgba(44,42,40,0.05);--shadow-md:0 4px 12px rgba(44,42,40,0.08);--shadow-lg:0 8px 24px rgba(44,42,40,0.1);--ease-out:cubic-bezier(0.16,1,0.3,1);--duration-fast:150ms;--duration-normal:300ms;--duration-slow:500ms;--stagger-delay:120ms}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-snap-type:y proximity;scroll-behavior:smooth}body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(107,125,90,0.03) 0%,transparent 50%);-webkit-font-smoothing:antialiased}pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,247,242,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-border-light);height:var(--nav-height)}.progress-bar{position:absolute;top:0;left:0;height:3px;background:var(--color-accent);width:0%}.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6)}.nav-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm)}.nav-dots{display:flex;gap:var(--space-3)}.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;transition:all var(--duration-fast);padding:0}.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent);box-shadow:0 0 8px rgba(107,125,90,0.3)}.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent)}
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12))}.module-content{max-width:var(--content-width);margin:0 auto}.module-header{margin-bottom:var(--space-12)}.module-number{font-family:var(--font-display);font-weight:800;font-size:var(--text-6xl);color:var(--color-accent);opacity:0.15;line-height:var(--leading-tight)}.module-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-4xl);line-height:var(--leading-tight);margin-top:calc(-1 * var(--space-4))}.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);margin-top:var(--space-3)}.screen{margin-bottom:var(--space-16)}.screen-heading{font-family:var(--font-display);font-weight:600;font-size:1.5rem;margin-bottom:var(--space-6)}
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out)}.animate-in.visible{opacity:1;transform:translateY(0)}.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay))}
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0}.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden}.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent)}.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5}.translation-english .translation-label{position:relative;top:auto;right:auto;display:block;color:var(--color-text-muted);margin-bottom:var(--space-3)}.tl{margin-bottom:var(--space-3);color:var(--color-text-secondary)}.tl:last-child{margin-bottom:0}
+.code-keyword{color:#CBA6F7}.code-string{color:#A6E3A1}.code-function{color:#89B4FA}.code-comment{color:#6C7086}.code-number{color:#FAB387}.code-property{color:#F9E2AF}.code-operator{color:#94E2D5}.code-type{color:#89DCEB}.code-tag{color:#F38BA8}.code-attr{color:#F9E2AF}
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5);border-radius:var(--radius-md);margin:var(--space-8) 0}.callout-icon{font-size:1.5rem;flex-shrink:0}.callout-content{flex:1}.callout-title{display:block;margin-bottom:var(--space-2);font-weight:600}.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent)}.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info)}.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error)}
+.pattern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4);margin:var(--space-8) 0}.pattern-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-5);box-shadow:var(--shadow-sm);transition:transform var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal)}.pattern-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}.pattern-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-2)}.pattern-desc{font-size:var(--text-sm);color:var(--color-text-secondary)}
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-8) 0}.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}.icon-row p{margin:0;color:var(--color-text-secondary);font-size:var(--text-sm)}.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:white}
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-8) 0}.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}.step-body p{margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-2);border-radius:4px}
+/* Color swatches */
+.swatch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-3);margin:var(--space-8) 0}.swatch{border-radius:var(--radius-sm);overflow:hidden;box-shadow:var(--shadow-sm)}.swatch-color{height:48px}.swatch-label{padding:var(--space-2) var(--space-3);font-family:var(--font-mono);font-size:var(--text-xs);background:var(--color-surface)}
+.quiz-container{margin:var(--space-8) 0}.quiz-question-block{margin-bottom:var(--space-8)}.quiz-question{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin-bottom:var(--space-4)}.quiz-options{display:flex;flex-direction:column;gap:var(--space-3)}.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;font-family:var(--font-body);font-size:var(--text-base);text-align:left}.quiz-option:hover{border-color:var(--color-accent-muted)}.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light)}.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light)}.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light)}.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0}.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white}.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal),padding var(--duration-normal);border-radius:var(--radius-sm);font-size:var(--text-sm)}.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3) var(--space-4);margin-top:var(--space-2)}.quiz-feedback.success{background:var(--color-success-light);color:#1a6b3a}.quiz-feedback.error{background:var(--color-error-light);color:#a32a2a}.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:600;font-size:var(--text-sm);cursor:pointer;margin-top:var(--space-4);margin-right:var(--space-3)}.quiz-check-btn{background:var(--color-accent);color:white}.quiz-check-btn:hover{background:var(--color-accent-hover)}.quiz-reset-btn{background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-border)}
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative}.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent)}.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000}.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code)}.term-tooltip.visible{opacity:1}.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code)}
+@media(max-width:768px){:root{--text-4xl:1.875rem;--text-6xl:3rem}.translation-block{grid-template-columns:1fr}.translation-english{border-left:none;border-top:3px solid var(--color-accent)}.pattern-cards{grid-template-columns:1fr 1fr}.swatch-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:480px){:root{--text-4xl:1.5rem;--text-6xl:2.25rem}.module{padding:var(--space-8) var(--space-4)}.pattern-cards{grid-template-columns:1fr}.swatch-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="progress-bar" id="progress-bar"></div><div class="nav-inner"><span class="nav-title">Course 5: The Canvas</span><div class="nav-dots"><button class="nav-dot" data-target="module-1" title="XAML"></button><button class="nav-dot" data-target="module-2" title="Color Palette"></button><button class="nav-dot" data-target="module-3" title="Styles"></button><button class="nav-dot" data-target="module-4" title="Theming"></button><button class="nav-dot" data-target="module-5" title="CollectionView"></button><button class="nav-dot" data-target="module-6" title="Forms"></button><button class="nav-dot" data-target="module-7" title="Accessibility"></button></div></div></nav>
+
+<!-- HERO -->
+<section class="module" id="module-intro" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">The Canvas</h1><p class="module-subtitle">The visual layer &mdash; XAML layout, styling, theming, and making the app accessible to everyone.</p></header>
+    <div class="module-body"><section class="screen animate-in"><p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px">This course covers everything the user <em>sees</em> &mdash; how pages are built with XAML, how colors and styles create the warm journal aesthetic, and how accessibility features ensure everyone can use the app.</p></section></div>
+  </div>
+</section>
+
+<!-- MODULE 1: XAML -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">XAML Fundamentals</h1><p class="module-subtitle">An architect's blueprint &mdash; specifies where every wall, window, and light switch goes.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">What is XAML?</h2><p><span class="term" data-definition="XAML (Extensible Application Markup Language) is an XML-based language for defining UI layouts. Instead of writing code to create buttons and labels, you declare them in XAML. It's like HTML for mobile apps &mdash; you describe the structure, and the framework renders it.">XAML</span> is the language that defines what each screen looks like. Instead of writing C# code to create buttons, you declare them in a markup file:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;ContentPage</span>
+    <span class="code-attr">xmlns</span>=<span class="code-string">"...maui"</span>
+    <span class="code-attr">x:DataType</span>=<span class="code-string">"viewModels:PrayerCardsViewModel"</span>&gt;
+
+    <span class="code-tag">&lt;Grid</span> <span class="code-attr">RowDefinitions</span>=<span class="code-string">"Auto,Auto,Auto,*"</span>&gt;
+        <span class="code-tag">&lt;SearchBar</span>
+            <span class="code-attr">Text</span>=<span class="code-string">"{Binding SearchText}"</span>
+            <span class="code-attr">Placeholder</span>=<span class="code-string">"Search cards..."</span> /&gt;
+    <span class="code-tag">&lt;/Grid&gt;</span>
+<span class="code-tag">&lt;/ContentPage&gt;</span></code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This is a full-screen page.</p><p class="tl"><span class="term" data-definition="x:DataType enables compiled bindings. It tells the XAML compiler 'the data context for this page is a PrayerCardsViewModel.' This means binding errors are caught at compile time, not at runtime. Always use this in MAUI.">x:DataType</span> tells the compiler which ViewModel this page binds to &mdash; enabling compile-time binding checks.</p><p class="tl">A <span class="term" data-definition="Grid is a layout container that arranges children in rows and columns. RowDefinitions defines how many rows and their heights. 'Auto' means the row shrinks to fit its content. '*' means the row takes all remaining space.">Grid</span> with 4 rows: three auto-sized rows and one that fills remaining space.</p><p class="tl">A search bar in the first row, bound to the ViewModel's SearchText property.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Views/PrayerCard/PrayerCardsPage.xaml</code> &mdash; lines 1&ndash;28</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">XAML + code-behind</h2><p>Every <code class="inline">.xaml</code> file has a <span class="term" data-definition="Code-behind is the C# file paired with a XAML file (e.g., PrayerCardsPage.xaml.cs). It handles events that can't be expressed in XAML alone &mdash; like page lifecycle (OnAppearing), physical gestures, or platform-specific behavior. Keep it thin; business logic goes in the ViewModel.">code-behind</span> file (<code class="inline">.xaml.cs</code>). The XAML declares the layout; the code-behind handles lifecycle events like <code class="inline">OnAppearing</code> (page became visible) and <code class="inline">OnDisappearing</code> (page left).</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2: COLORS -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">Colors.xaml &mdash; The Palette</h1><p class="module-subtitle">A chameleon's wardrobe &mdash; two complete outfits (light and dark), with descriptive labels for each piece.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Semantic color tokens</h2><p>Instead of scattering hex codes like <code class="inline">#6B7D5A</code> everywhere, the app defines named <span class="term" data-definition="A color token is a named color defined once in Colors.xaml and referenced everywhere by name. 'Primary' is the main green, 'PageLight' is the light background. If you want to change the green, you change it in one place and it updates everywhere.">color tokens</span>:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;Color</span> <span class="code-attr">x:Key</span>=<span class="code-string">"Primary"</span>&gt;<span class="code-string">#6B7D5A</span><span class="code-tag">&lt;/Color&gt;</span>
+<span class="code-tag">&lt;Color</span> <span class="code-attr">x:Key</span>=<span class="code-string">"PageLight"</span>&gt;<span class="code-string">#FAF8F3</span><span class="code-tag">&lt;/Color&gt;</span>
+<span class="code-tag">&lt;Color</span> <span class="code-attr">x:Key</span>=<span class="code-string">"PageDark"</span>&gt;<span class="code-string">#0d0e0c</span><span class="code-tag">&lt;/Color&gt;</span>
+<span class="code-tag">&lt;Color</span> <span class="code-attr">x:Key</span>=<span class="code-string">"CardLight"</span>&gt;<span class="code-string">#FFFFFF</span><span class="code-tag">&lt;/Color&gt;</span>
+<span class="code-tag">&lt;Color</span> <span class="code-attr">x:Key</span>=<span class="code-string">"CardDark"</span>&gt;<span class="code-string">#181a16</span><span class="code-tag">&lt;/Color&gt;</span></code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><strong>Primary</strong> &mdash; the app's signature warm green. Used for buttons, accents, and the app icon.</p><p class="tl"><strong>PageLight</strong> &mdash; the warm cream background in light mode.</p><p class="tl"><strong>PageDark</strong> &mdash; the deep charcoal background in dark mode.</p><p class="tl"><strong>CardLight/CardDark</strong> &mdash; card surface colors for light and dark themes.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Resources/Styles/Colors.xaml</code> &mdash; lines 9&ndash;31</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The color palette</h2>
+        <div class="swatch-grid stagger-children">
+          <div class="swatch animate-in"><div class="swatch-color" style="background:#6B7D5A"></div><div class="swatch-label">Primary<br>#6B7D5A</div></div>
+          <div class="swatch animate-in"><div class="swatch-color" style="background:#FAF8F3"></div><div class="swatch-label">PageLight<br>#FAF8F3</div></div>
+          <div class="swatch animate-in"><div class="swatch-color" style="background:#0d0e0c"></div><div class="swatch-label">PageDark<br>#0d0e0c</div></div>
+          <div class="swatch animate-in"><div class="swatch-color" style="background:#C4A052"></div><div class="swatch-label">WarmGold<br>#C4A052</div></div>
+          <div class="swatch animate-in"><div class="swatch-color" style="background:#CD5C5C"></div><div class="swatch-label">DangerRed<br>#CD5C5C</div></div>
+          <div class="swatch animate-in"><div class="swatch-color" style="background:#2E7D32"></div><div class="swatch-label">SuccessGreen<br>#2E7D32</div></div>
+        </div>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Never hardcode hex in XAML</strong><p>If you see <code class="inline">TextColor="#6B7D5A"</code> in XAML, that's a bug. Always use <code class="inline">TextColor="{StaticResource Primary}"</code>. Hardcoded hex means the color won't update if the palette changes, and it won't adapt to dark mode.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3: STYLES -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">03</span><h1 class="module-title">Styles.xaml &mdash; Reusable Recipes</h1><p class="module-subtitle">A fashion designer's pattern book &mdash; sewing patterns for consistent garments.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Named styles</h2><p>A <span class="term" data-definition="A named style in XAML is a reusable set of property values. Instead of setting Padding, CornerRadius, BackgroundColor on every Border, you define a style called 'PrayerCardBorder' once in Styles.xaml and reference it with Style='{StaticResource PrayerCardBorder}' everywhere.">named style</span> lets you define a visual recipe once and reuse it across the app:</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">&#x1F4E6;</div><div><strong>PrayerCardBorder</strong><p>The border style applied to every card &mdash; rounded corners, shadow, consistent padding.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">&#x1F3F7;</div><div><strong>FormLabel</strong><p>The label style for form fields &mdash; specific font size, weight, and spacing above input fields.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">&#x1F518;</div><div><strong>Primary / Secondary button</strong><p>Button styles with the right colors, padding, and corner radius for the app's aesthetic.</p></div></div>
+        </div>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">The form convention</strong><p>In this app, forms always use <strong>label above field</strong> layout with full-width inputs. Never side-by-side label+field. When telling AI to build a form, say "use the FormLabel style and vertical stack layout, label above field."</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4: THEMING -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">AppThemeBinding &mdash; Light &amp; Dark</h1><p class="module-subtitle">A house with two sets of curtains &mdash; one sheer for day, one blackout for night, the system picks which to draw.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">How it works</h2><p><span class="term" data-definition="AppThemeBinding is a XAML markup extension that provides different values for light and dark mode. You set Light and Dark values inline, and the framework automatically picks the right one based on the device's current theme. No code-behind needed.">AppThemeBinding</span> lets you specify different values for each theme, right in the XAML:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;SearchBar</span>
+    <span class="code-attr">BackgroundColor</span>=<span class="code-string">"{AppThemeBinding
+        Light={StaticResource Secondary},
+        Dark=Transparent}"</span> /&gt;</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">The search bar background changes automatically:</p><p class="tl"><strong>Light mode:</strong> use the Secondary color (a soft green-gray).</p><p class="tl"><strong>Dark mode:</strong> use Transparent (blends into the dark background).</p><p class="tl">No if/else code needed &mdash; the framework handles the switch.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Views/PrayerCard/PrayerCardsPage.xaml</code> &mdash; line 31</p>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Known gotcha: AppThemeBinding + BindableLayout</strong><p>AppThemeBinding inside a keyed Style doesn't reliably work for all BindableLayout children. Use inline color bindings for dividers inside BindableLayout DataTemplates. This is a known framework quirk.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5: COLLECTIONVIEW -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">CollectionView &amp; Grouping</h1><p class="module-subtitle">A bookshelf with labeled dividers &mdash; sections separate groups, EmptyView fills empty shelves.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Displaying lists of data</h2><p><span class="term" data-definition="CollectionView is the primary list control in .NET MAUI. It displays a scrollable list of items, each rendered from a DataTemplate. It supports grouping (sections with headers), selection, swipe actions, and an EmptyView for when there's no data.">CollectionView</span> is how the app shows the list of prayer cards. Each card is rendered from a <span class="term" data-definition="A DataTemplate defines how each item in a collection should look. It's a visual recipe: 'for each prayer card, create a Border with a Label for the title and a Label for the prayer count.' The template is reused for every item in the list.">DataTemplate</span>:</p>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>ItemsSource</strong><p>Binds to BoxSections &mdash; the grouped list of cards from the ViewModel.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>GroupHeaderTemplate</strong><p>A header for each section (e.g., the collection name: "My Prayers", "Work").</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>ItemTemplate</strong><p>How each card looks &mdash; a Border with title, prayer count, and action chips.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">4</div><div class="step-body"><strong>EmptyView</strong><p>What shows when there are no cards &mdash; a friendly "Add your first card" message.</p></div></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 6: FORMS -->
+<section class="module" id="module-6" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">Forms &amp; Modals</h1><p class="module-subtitle">A pop-up shop inside a mall &mdash; temporary overlay, must close before returning to the main floor.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Modal pages</h2><p>When the app needs focused input (like the Quick Add prayer form), it opens a <span class="term" data-definition="A modal page slides up over the current page and blocks interaction with the page behind it. The user must complete or dismiss the modal before returning. In MAUI, you open modals with Shell.Current.Navigation.PushModalAsync(page).">modal</span>:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">await</span> Shell.Current.Navigation
+    .<span class="code-function">PushModalAsync</span>(page);</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Open the page as a full-screen overlay. The user must close it to get back to the previous screen. Good for forms that require focused attention.</p></div></div></div>
+        <div class="callout callout-info"><div class="callout-icon">&#x1F50D;</div><div class="callout-content"><strong class="callout-title">MAUI gotcha</strong><p>The older <code class="inline">Shell.PushModalAsync</code> method was removed. Always use <code class="inline">Shell.Current.Navigation.PushModalAsync</code> instead. AI tools sometimes generate the removed version.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 7: ACCESSIBILITY -->
+<section class="module" id="module-7" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">07</span><h1 class="module-title">Accessibility</h1><p class="module-subtitle">Audio descriptions at a museum &mdash; narration for every exhibit, invisible labels for tour guides.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Screen reader support</h2><p><span class="term" data-definition="SemanticProperties are XAML attributes that tell screen readers (TalkBack on Android, VoiceOver on iOS) what each element is. Description provides the spoken label, Hint explains what tapping does, and HeadingLevel creates navigation landmarks.">SemanticProperties</span> make the app usable by blind and low-vision users:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;ToolbarItem</span>
+    <span class="code-attr">Text</span>=<span class="code-string">"Collections"</span>
+    <span class="code-attr">AutomationId</span>=<span class="code-string">"Cards_Btn_Collections"</span>
+    <span class="code-attr">SemanticProperties.Hint</span>=<span class="code-string">"Manage collections"</span> /&gt;</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">A toolbar button that says "Collections."</p><p class="tl"><span class="term" data-definition="AutomationId is a unique identifier for UI testing. Appium tests find elements by their AutomationId. It also serves as an accessibility identifier on iOS. Convention: 'PagePrefix_Type_Name' (e.g., Cards_Btn_Collections).">AutomationId</span> serves double duty: screen readers and UI test locators both use it.</p><p class="tl"><strong>Hint</strong> tells VoiceOver/TalkBack what tapping this button does &mdash; "Manage collections."</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Views/PrayerCard/PrayerCardsPage.xaml</code> &mdash; lines 11&ndash;13</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Programmatic announcements</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public void</span> <span class="code-function">Announce</span>(<span class="code-type">string</span> message)
+{
+    <span class="code-keyword">if</span> (MainThread.IsMainThread)
+        SemanticScreenReader.<span class="code-function">Announce</span>(message);
+    <span class="code-keyword">else</span>
+        MainThread.<span class="code-function">BeginInvokeOnMainThread</span>(
+            () => SemanticScreenReader
+                .<span class="code-function">Announce</span>(message));
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Speak a message through the screen reader (e.g., "Loading" or "Content loaded").</p><p class="tl">If we're already on the <span class="term" data-definition="The main thread (UI thread) is the single thread that can update the screen. All UI operations must happen here. If you try to update the UI from a background thread, the app crashes. MainThread.BeginInvokeOnMainThread runs code on the main thread safely.">main thread</span>, announce directly.</p><p class="tl">Otherwise, switch to the main thread first (screen reader calls must happen on the UI thread).</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/MauiAccessibilityService.cs</code> &mdash; lines 10&ndash;16</p></section>
+
+      <section class="screen animate-in" id="quiz-m7"><h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="vq1" data-correct="opt-b" data-explain-correct="AppThemeBinding automatically picks the right value based on the current theme. You set Light and Dark values, and the framework handles switching. No code-behind needed." data-explain-incorrect="Think about what AppThemeBinding does. It's the mechanism that lets you declare different values for light and dark mode right in the XAML, without any C# code."><h3 class="quiz-question">You want a label to be dark green in light mode and light green in dark mode. How?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Check the theme in code-behind and set the color manually</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Use AppThemeBinding with Light and Dark values in XAML</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Create two separate labels and show/hide based on theme</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m7')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m7')">Try Again</button>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Course complete</h2><p style="font-size:var(--text-lg)">You now understand the visual layer: XAML layout, semantic colors, named styles, AppThemeBinding for light/dark mode, CollectionView for lists, modals for focused input, and accessibility for screen reader users.</p>
+        <div class="callout callout-accent" style="margin-top:var(--space-8)"><div class="callout-icon">&#x1F389;</div><div class="callout-content"><strong class="callout-title">What's next</strong><p><strong>Course 6: The Bridge</strong> explores how the app adapts to Android and iOS &mdash; conditional compilation, custom handlers, notifications, deep linking, and backup/restore.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}})},{rootMargin:'0px 0px -10% 0px',threshold:0.1});
+document.querySelectorAll('.animate-in').forEach(function(el){observer.observe(el)});
+document.querySelectorAll('.stagger-children').forEach(function(p){Array.from(p.children).forEach(function(c,i){c.style.setProperty('--stagger-index',i)})});
+var pb=document.getElementById('progress-bar');
+window.addEventListener('scroll',function(){requestAnimationFrame(function(){var s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;pb.style.width=(h>0?(s/h)*100:0)+'%'})},{passive:true});
+var dots=document.querySelectorAll('.nav-dot');
+dots.forEach(function(d){d.addEventListener('click',function(){var t=document.getElementById(d.dataset.target);if(t)t.scrollIntoView({behavior:'smooth'})})});
+var mObs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var n=e.target.id.replace('module-','');dots.forEach(function(d){var dn=d.dataset.target.replace('module-','');if(dn===n)d.classList.add('current');else{d.classList.remove('current');if(parseInt(dn)<parseInt(n))d.classList.add('visited')}})}})},{rootMargin:'-30% 0px -30% 0px',threshold:0});
+document.querySelectorAll('.module[id^="module-"]').forEach(function(m){if(m.id!=='module-intro')mObs.observe(m)});
+var allM=Array.from(document.querySelectorAll('.module'));
+document.addEventListener('keydown',function(e){if(['INPUT','TEXTAREA'].indexOf(e.target.tagName)!==-1)return;if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();var c=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c<allM.length-1)allM[c+1].scrollIntoView({behavior:'smooth'})}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();var c2=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c2>0)allM[c2-1].scrollIntoView({behavior:'smooth'})}});
+var at=null;function pt(term,tip){var r=term.getBoundingClientRect(),tw=Math.min(320,window.innerWidth*0.8);tip.style.width=tw+'px';var l=r.left+r.width/2-tw/2;l=Math.max(8,Math.min(l,window.innerWidth-tw-8));tip.style.left=l+'px';document.body.appendChild(tip);var th=tip.offsetHeight;if(r.top-th-8<0){tip.style.top=(r.bottom+8)+'px';tip.classList.add('flip')}else{tip.style.top=(r.top-th-8)+'px';tip.classList.remove('flip')}}
+document.querySelectorAll('.term').forEach(function(t){var tip=document.createElement('span');tip.className='term-tooltip';tip.textContent=t.dataset.definition;t.addEventListener('mouseenter',function(){if(at&&at!==tip){at.classList.remove('visible');at.remove()}pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip});t.addEventListener('mouseleave',function(){tip.classList.remove('visible');setTimeout(function(){if(!tip.classList.contains('visible'))tip.remove()},150);at=null});t.addEventListener('click',function(e){e.stopPropagation();if(at&&at!==tip){at.classList.remove('visible');at.remove()}if(tip.classList.contains('visible')){tip.classList.remove('visible');tip.remove();at=null}else{pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip}})});
+document.addEventListener('click',function(){if(at){at.classList.remove('visible');at.remove();at=null}});
+window.selectOption=function(btn){var b=btn.closest('.quiz-question-block');if(b.querySelector('.quiz-option[disabled]'))return;b.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected')});btn.classList.add('selected')};
+function sf(f,ok,txt){while(f.firstChild)f.removeChild(f.firstChild);var s=document.createElement('strong');s.textContent=ok?'Exactly! ':'Not quite. ';f.appendChild(s);f.appendChild(document.createTextNode(txt));f.className='quiz-feedback show '+(ok?'success':'error')}
+window.checkQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-question-block').forEach(function(q){var sel=q.querySelector('.quiz-option.selected'),fb=q.querySelector('.quiz-feedback'),cv=q.dataset.correct;if(!sel){fb.textContent='Pick an answer first!';fb.className='quiz-feedback show warning';return}if(sel.dataset.value===cv){sel.classList.add('correct');sf(fb,true,q.dataset.explainCorrect)}else{sel.classList.add('incorrect');q.querySelector('[data-value="'+cv+'"]').classList.add('correct');sf(fb,false,q.dataset.explainIncorrect)}q.querySelectorAll('.quiz-option').forEach(function(o){o.disabled=true})})};
+window.resetQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected','correct','incorrect');o.disabled=false});c.querySelectorAll('.quiz-feedback').forEach(function(f){f.className='quiz-feedback'})};
+})();
+</script>
+</body>
+</html>

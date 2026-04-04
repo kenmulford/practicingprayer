@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Safety Net — Testing &amp; CI | Practicing Prayer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--color-bg:#FAF7F2;--color-bg-warm:#F5F0E8;--color-bg-code:#1E1E2E;--color-text:#2C2A28;--color-text-secondary:#6B6560;--color-text-muted:#9E9790;--color-border:#E5DFD6;--color-border-light:#EEEBE5;--color-surface:#FFFFFF;--color-surface-warm:#FDF9F3;--color-accent:#6B7D5A;--color-accent-hover:#5A6B4A;--color-accent-light:#EDF2E8;--color-accent-muted:#8FA37E;--color-success:#2D8B55;--color-success-light:#E8F5EE;--color-error:#C93B3B;--color-error-light:#FDE8E8;--color-info:#2A7B9B;--color-info-light:#E4F2F7;--color-actor-1:#6B7D5A;--color-actor-2:#2A7B9B;--color-actor-3:#7B6DAA;--color-actor-4:#D4A843;--color-actor-5:#D94F30;--font-display:'Bricolage Grotesque',Georgia,serif;--font-body:'DM Sans',-apple-system,sans-serif;--font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;--text-xs:0.75rem;--text-sm:0.875rem;--text-base:1rem;--text-lg:1.125rem;--text-xl:1.25rem;--text-2xl:1.5rem;--text-4xl:2.25rem;--text-6xl:3.75rem;--leading-tight:1.15;--leading-normal:1.6;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--space-16:4rem;--content-width:800px;--content-width-wide:1000px;--nav-height:50px;--radius-sm:8px;--radius-md:12px;--radius-full:9999px;--shadow-sm:0 1px 2px rgba(44,42,40,0.05);--shadow-md:0 4px 12px rgba(44,42,40,0.08);--shadow-lg:0 8px 24px rgba(44,42,40,0.1);--ease-out:cubic-bezier(0.16,1,0.3,1);--duration-fast:150ms;--duration-normal:300ms;--duration-slow:500ms;--stagger-delay:120ms}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-snap-type:y proximity;scroll-behavior:smooth}body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(107,125,90,0.03) 0%,transparent 50%);-webkit-font-smoothing:antialiased}pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,247,242,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-border-light);height:var(--nav-height)}.progress-bar{position:absolute;top:0;left:0;height:3px;background:var(--color-accent);width:0%}.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6)}.nav-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm)}.nav-dots{display:flex;gap:var(--space-3)}.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;transition:all var(--duration-fast);padding:0}.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent);box-shadow:0 0 8px rgba(107,125,90,0.3)}.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent)}
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12))}.module-content{max-width:var(--content-width);margin:0 auto}.module-header{margin-bottom:var(--space-12)}.module-number{font-family:var(--font-display);font-weight:800;font-size:var(--text-6xl);color:var(--color-accent);opacity:0.15;line-height:var(--leading-tight)}.module-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-4xl);line-height:var(--leading-tight);margin-top:calc(-1 * var(--space-4))}.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);margin-top:var(--space-3)}.screen{margin-bottom:var(--space-16)}.screen-heading{font-family:var(--font-display);font-weight:600;font-size:1.5rem;margin-bottom:var(--space-6)}
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out)}.animate-in.visible{opacity:1;transform:translateY(0)}.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay))}
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0}.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden}.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent)}.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5}.translation-english .translation-label{position:relative;top:auto;right:auto;display:block;color:var(--color-text-muted);margin-bottom:var(--space-3)}.tl{margin-bottom:var(--space-3);color:var(--color-text-secondary)}.tl:last-child{margin-bottom:0}
+.code-keyword{color:#CBA6F7}.code-string{color:#A6E3A1}.code-function{color:#89B4FA}.code-comment{color:#6C7086}.code-number{color:#FAB387}.code-property{color:#F9E2AF}.code-operator{color:#94E2D5}.code-type{color:#89DCEB}.code-tag{color:#F38BA8}.code-attr{color:#F9E2AF}
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5);border-radius:var(--radius-md);margin:var(--space-8) 0}.callout-icon{font-size:1.5rem;flex-shrink:0}.callout-content{flex:1}.callout-title{display:block;margin-bottom:var(--space-2);font-weight:600}.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent)}.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info)}.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error)}
+.pattern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4);margin:var(--space-8) 0}.pattern-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-5);box-shadow:var(--shadow-sm);transition:transform var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal)}.pattern-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}.pattern-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-2)}.pattern-desc{font-size:var(--text-sm);color:var(--color-text-secondary)}
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-8) 0}.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}.icon-row p{margin:0;color:var(--color-text-secondary);font-size:var(--text-sm)}.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:white}
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-8) 0}.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}.step-body p{margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-2);border-radius:4px}
+.quiz-container{margin:var(--space-8) 0}.quiz-question-block{margin-bottom:var(--space-8)}.quiz-question{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin-bottom:var(--space-4)}.quiz-options{display:flex;flex-direction:column;gap:var(--space-3)}.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;font-family:var(--font-body);font-size:var(--text-base);text-align:left}.quiz-option:hover{border-color:var(--color-accent-muted)}.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light)}.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light)}.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light)}.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0}.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white}.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal),padding var(--duration-normal);border-radius:var(--radius-sm);font-size:var(--text-sm)}.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3) var(--space-4);margin-top:var(--space-2)}.quiz-feedback.success{background:var(--color-success-light);color:#1a6b3a}.quiz-feedback.error{background:var(--color-error-light);color:#a32a2a}.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:600;font-size:var(--text-sm);cursor:pointer;margin-top:var(--space-4);margin-right:var(--space-3)}.quiz-check-btn{background:var(--color-accent);color:white}.quiz-check-btn:hover{background:var(--color-accent-hover)}.quiz-reset-btn{background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-border)}
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative}.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent)}.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000}.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code)}.term-tooltip.visible{opacity:1}.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code)}
+@media(max-width:768px){:root{--text-4xl:1.875rem;--text-6xl:3rem}.translation-block{grid-template-columns:1fr}.translation-english{border-left:none;border-top:3px solid var(--color-accent)}.pattern-cards{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){:root{--text-4xl:1.5rem;--text-6xl:2.25rem}.module{padding:var(--space-8) var(--space-4)}.pattern-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="progress-bar" id="progress-bar"></div><div class="nav-inner"><span class="nav-title">Course 7: The Safety Net</span><div class="nav-dots"><button class="nav-dot" data-target="module-1" title="Test Architecture"></button><button class="nav-dot" data-target="module-2" title="xUnit"></button><button class="nav-dot" data-target="module-3" title="NSubstitute"></button><button class="nav-dot" data-target="module-4" title="Testing Caching"></button><button class="nav-dot" data-target="module-5" title="Parallelization"></button><button class="nav-dot" data-target="module-6" title="UI Tests"></button><button class="nav-dot" data-target="module-7" title="CI/CD"></button></div></div></nav>
+
+<!-- HERO -->
+<section class="module" id="module-intro" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">07</span><h1 class="module-title">The Safety Net</h1><p class="module-subtitle">How automated tests, mocking, and continuous integration catch bugs before users do.</p></header>
+    <div class="module-body"><section class="screen animate-in"><p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px">Tests are code that checks other code. Instead of manually tapping through the app after every change, automated tests verify hundreds of scenarios in seconds. This course teaches you how the Practicing Prayer test suite works.</p></section></div>
+  </div>
+</section>
+
+<!-- MODULE 1: TEST ARCHITECTURE -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">Test Project Architecture</h1><p class="module-subtitle">A flight simulator vs a real cockpit &mdash; linked files replicate the instruments without the actual airplane.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The linked-file pattern</h2><p>The main app targets mobile platforms (Android + iOS). The test project targets plain <code class="inline">net10.0</code> (no phone needed). But it needs to test the same code. The solution: <span class="term" data-definition="Linked files (Compile Include) tell the test project to compile source files from the main project directly, without using a project reference. This works because the test project targets net10.0 (desktop), while the main project targets mobile-only. A project reference would fail because the test can't build for Android/iOS.">linked files</span>.</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-comment">&lt;!-- Models --&gt;</span>
+<span class="code-tag">&lt;Compile</span> <span class="code-attr">Include</span>=<span class="code-string">"../PrayerApp/Models/Prayer.cs"</span> /&gt;
+<span class="code-tag">&lt;Compile</span> <span class="code-attr">Include</span>=<span class="code-string">"../PrayerApp/Models/PrayerCard.cs"</span> /&gt;
+
+<span class="code-comment">&lt;!-- Services --&gt;</span>
+<span class="code-tag">&lt;Compile</span> <span class="code-attr">Include</span>=<span class="code-string">"../PrayerApp/Services/CardService.cs"</span> /&gt;
+<span class="code-tag">&lt;Compile</span> <span class="code-attr">Include</span>=<span class="code-string">"../PrayerApp/Services/IDBService.cs"</span> /&gt;</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Compile these model files from the main project as if they were in the test project.</p><p class="tl">Same for services. The test project gets the exact same code &mdash; no copies, no drift.</p><p class="tl">Files that depend on MAUI (Settings.cs, platform services, UI pages) are <strong>excluded</strong> &mdash; they can't run on a desktop.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp.Tests/PrayerApp.Tests.csproj</code> &mdash; lines 37&ndash;113</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2: XUNIT -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">xUnit Fundamentals</h1><p class="module-subtitle">A quality control checklist at a factory &mdash; Arrange the product, Act on it, Assert the result.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Arrange, Act, Assert</h2><p>Every test follows three steps, called <span class="term" data-definition="AAA (Arrange-Act-Assert) is the standard structure for unit tests. Arrange: set up the test data and dependencies. Act: call the method being tested. Assert: verify the result is what you expected. If the assert fails, the test fails.">AAA</span>:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code>[<span class="code-function">Fact</span>]
+<span class="code-keyword">public async</span> <span class="code-type">Task</span>
+    <span class="code-function">GetCardsAsync_ReturnsCardsFromDatabase</span>()
+{
+    <span class="code-comment">// Arrange</span>
+    <span class="code-keyword">var</span> cards = <span class="code-keyword">new</span> <span class="code-type">List</span>&lt;<span class="code-type">PrayerCard</span>&gt;
+    {
+        <span class="code-keyword">new</span>() { Id = <span class="code-number">1</span>, Title = <span class="code-string">"Alpha"</span> },
+        <span class="code-keyword">new</span>() { Id = <span class="code-number">2</span>, Title = <span class="code-string">"Beta"</span> }
+    };
+    _db.<span class="code-function">GetAllAsync</span>&lt;<span class="code-type">PrayerCard</span>&gt;()
+        .<span class="code-function">Returns</span>(Task.<span class="code-function">FromResult</span>(cards));
+
+    <span class="code-comment">// Act</span>
+    <span class="code-keyword">var</span> result = <span class="code-keyword">await</span>
+        _service.<span class="code-function">GetCardsAsync</span>();
+
+    <span class="code-comment">// Assert</span>
+    Assert.<span class="code-function">Equal</span>(<span class="code-number">2</span>, result.Count);
+    Assert.<span class="code-function">Contains</span>(result,
+        c => c.Title == <span class="code-string">"Alpha"</span>);
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><span class="term" data-definition="[Fact] is an xUnit attribute that marks a method as a test. The test runner discovers all [Fact] methods and runs them. If any Assert fails, the test is marked as failed.">[Fact]</span> marks this method as a test that xUnit should run.</p><p class="tl">The test name describes what it checks: "GetCardsAsync returns cards from the database."</p><p class="tl"><strong>Arrange:</strong> Create fake data &mdash; two prayer cards. Tell the mock database to return these cards when asked.</p><p class="tl"><strong>Act:</strong> Call the real service method being tested.</p><p class="tl"><strong>Assert:</strong> Verify: we got 2 cards, and one of them is named "Alpha."</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp.Tests/Services/CardServiceTests.cs</code> &mdash; lines 35&ndash;49</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3: NSUBSTITUTE -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">03</span><h1 class="module-title">NSubstitute &mdash; Mock Everything</h1><p class="module-subtitle">A stunt double in a movie &mdash; follows a script, and the director verifies the right stunts were performed.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Creating a mock</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">private readonly</span> <span class="code-type">IDBService</span> _db;
+
+<span class="code-keyword">public</span> <span class="code-function">CardServiceTests</span>()
+{
+    _db = Substitute.<span class="code-function">For</span>&lt;<span class="code-type">IDBService</span>&gt;();
+    PrayerCard.<span class="code-function">SetDBService</span>(_db);
+    _service = <span class="code-keyword">new</span> <span class="code-type">CardService</span>();
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">A private field to hold the fake database.</p><p class="tl">The test <span class="term" data-definition="In xUnit, the constructor runs before each test method. This ensures every test starts with a clean slate &mdash; fresh mock, fresh service instance. No leftover state from previous tests.">constructor</span> runs before every single test.</p><p class="tl"><span class="term" data-definition="Substitute.For creates a mock (fake) implementation of an interface. The mock looks like a real IDBService but does nothing by default. You tell it what to return using .Returns(), and you can verify what was called using .Received().">Substitute.For</span> creates a fake IDBService &mdash; a stunt double that looks real but follows your script.</p><p class="tl">Wire the mock into the PrayerCard model's static DB reference.</p><p class="tl">Create a real CardService. It will unknowingly use the fake database.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp.Tests/Services/CardServiceTests.cs</code> &mdash; lines 7&ndash;19</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The two superpowers</h2>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)"><h4 class="pattern-title"><code class="inline">.Returns()</code></h4><p class="pattern-desc">Script the stunt double: "when asked for all cards, return this fake list." Controls what the mock gives back.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><h4 class="pattern-title"><code class="inline">.Received()</code></h4><p class="pattern-desc">Check the director's footage: "was GetAllAsync called exactly once?" Verifies that the code under test called the right methods.</p></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Verifying the cache works</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code>[<span class="code-function">Fact</span>]
+<span class="code-keyword">public async</span> <span class="code-type">Task</span>
+    <span class="code-function">GetCardsAsync_SecondCall_UsesCacheNotDatabase</span>()
+{
+    _db.<span class="code-function">GetAllAsync</span>&lt;<span class="code-type">PrayerCard</span>&gt;()
+        .<span class="code-function">Returns</span>(Task.<span class="code-function">FromResult</span>(
+            <span class="code-keyword">new</span> <span class="code-type">List</span>&lt;<span class="code-type">PrayerCard</span>&gt;()));
+
+    <span class="code-keyword">await</span> _service.<span class="code-function">GetCardsAsync</span>();
+    <span class="code-keyword">await</span> _service.<span class="code-function">GetCardsAsync</span>();
+
+    <span class="code-keyword">await</span> _db.<span class="code-function">Received</span>(<span class="code-number">1</span>)
+        .<span class="code-function">GetAllAsync</span>&lt;<span class="code-type">PrayerCard</span>&gt;();
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Test: "calling GetCardsAsync twice should only hit the database once."</p><p class="tl">Tell the mock to return an empty list when asked for cards.</p><p class="tl">Call GetCardsAsync twice.</p><p class="tl"><strong>Assert:</strong> The database was queried exactly <strong>1</strong> time, not 2. Proves the cache worked &mdash; the second call used the cached result instead of hitting the database again.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp.Tests/Services/CardServiceTests.cs</code> &mdash; lines 52&ndash;60</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4: TESTING CACHING -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">Testing the Caching Pattern</h1><p class="module-subtitle">Testing a vending machine &mdash; insert coin, press button, check the snack AND verify the warehouse call count.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">What to test in a cached service</h2>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>First call hits the database</strong><p>Verify GetAllAsync was called (cache was empty).</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>Second call uses cache</strong><p>Verify GetAllAsync was still only called once (cache served the second request).</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>Save invalidates the cache</strong><p>After SaveCardAsync, the next GetCardsAsync should hit the database again.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">4</div><div class="step-body"><strong>Delete invalidates the cache</strong><p>Same pattern: after delete, cache is null, next read goes to DB.</p></div></div>
+        </div>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">This is what tests are <em>for</em></strong><p>Without these tests, a developer could accidentally remove the <code class="inline">_cache = null;</code> line and never notice. The app would look fine in manual testing (caches rebuild on restart). But the test catches it instantly: "Expected database to be called 2 times, but it was called 1 time."</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5: PARALLELIZATION -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">Static State &amp; Parallelization</h1><p class="module-subtitle">A shared whiteboard in a conference room &mdash; serial meetings prevent mixed-up notes.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The problem</h2><p>Remember the <span class="term" data-definition="Static state means data that belongs to the class itself, shared by all instances. Prayer._dbService is static &mdash; every Prayer object uses the same database reference. In tests, this means if two tests run simultaneously and set different mocks, they'll corrupt each other.">static _dbService</span> reference on each model? In the constructor of every test class, we call <code class="inline">PrayerCard.SetDBService(_db)</code> to wire in the mock.</p><p style="margin-top:var(--space-3)">If two test classes run <em>simultaneously</em>, they'd each set a different mock &mdash; and both would be writing to the same static reference. Chaos.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The solution</h2><p><span class="term" data-definition="Test parallelization means running multiple tests at the same time to speed things up. xUnit does this by default. But when tests share static state (like _dbService), parallel execution causes flaky failures. DisableTestParallelization forces tests to run one at a time.">Test parallelization</span> is disabled for this project. Tests run sequentially &mdash; slower, but reliable:</p>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Gotcha: test passes alone, fails in CI</strong><p>If you see a test that passes when you run it individually but fails in CI, the culprit is almost always shared static state. This is why parallelization is disabled here &mdash; and why a test you wrote might suddenly fail when someone else adds a new test class.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 6: UI TESTS -->
+<section class="module" id="module-6" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">UI Testing with Appium</h1><p class="module-subtitle">A robot tester with a touchscreen finger &mdash; a mechanical arm that taps buttons and reads screens.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">How UI tests work</h2><p>Unit tests check logic without a screen. <span class="term" data-definition="Appium is an open-source tool for automating mobile app testing. It connects to a real device or emulator, can tap buttons, scroll lists, read text, and verify the screen shows the right content. It finds elements by their AutomationId.">Appium</span> tests run the actual app on a real device (or emulator) and interact with it like a user:</p>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>Launch the app</strong><p>Appium starts the app on a connected device or emulator.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>Find elements</strong><p>Locate buttons, labels, and inputs by their <span class="term" data-definition="AutomationId is a unique identifier set on XAML elements specifically for testing. Appium finds elements using these IDs: Driver.FindElement(By.Id('Cards_Btn_Collections')). The naming convention is PagePrefix_Type_Name.">AutomationId</span>.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>Interact</strong><p>Tap buttons, type text, scroll lists &mdash; exactly like a human user.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">4</div><div class="step-body"><strong>Assert</strong><p>Verify the screen shows the expected text, elements, or state.</p></div></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Unit tests vs UI tests</h2>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><h4 class="pattern-title">Unit Tests</h4><p class="pattern-desc">Fast (milliseconds). Test logic in isolation. No phone needed. Run on every push. The first line of defense.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-5)"><h4 class="pattern-title">UI Tests</h4><p class="pattern-desc">Slow (seconds per test). Test the full app on a real screen. Catches bugs that logic tests miss &mdash; like layout issues or navigation failures.</p></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 7: CI/CD -->
+<section class="module" id="module-7" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">07</span><h1 class="module-title">CI/CD with GitHub Actions</h1><p class="module-subtitle">An automatic inspection station on a conveyor belt &mdash; every push triggers quality checks.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The pipeline</h2><p><span class="term" data-definition="CI (Continuous Integration) automatically builds and tests code every time someone pushes changes. It catches bugs immediately instead of waiting for manual testing. GitHub Actions is one CI provider &mdash; it runs your build/test commands on a cloud server.">CI</span> runs automatically whenever code is pushed:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-property">on</span>:
+  <span class="code-property">push</span>:
+    <span class="code-property">branches</span>: [<span class="code-string">"master"</span>, <span class="code-string">"dev"</span>, <span class="code-string">"feature/**"</span>]
+  <span class="code-property">pull_request</span>:
+    <span class="code-property">branches</span>: [<span class="code-string">"master"</span>, <span class="code-string">"dev"</span>]
+
+<span class="code-property">jobs</span>:
+  <span class="code-property">test</span>:
+    <span class="code-property">runs-on</span>: <span class="code-string">ubuntu-latest</span>
+    <span class="code-property">steps</span>:
+      - <span class="code-function">actions/checkout@v4</span>
+      - <span class="code-function">setup-dotnet@v4</span> (<span class="code-string">'10.0.x'</span>)
+      - <span class="code-string">dotnet restore</span>
+      - <span class="code-string">dotnet build --configuration Release</span>
+      - <span class="code-string">dotnet test --collect:"XPlat Code Coverage"</span></code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Run this pipeline when code is pushed to master, dev, or any feature branch. Also on pull requests.</p><p class="tl">Job: run unit tests.</p><p class="tl">Use a <span class="term" data-definition="ubuntu-latest is a Linux virtual machine provided by GitHub Actions. It's free for open-source projects. The test project targets net10.0 (plain .NET, no mobile), so it runs on Linux without needing Android/iOS SDKs.">Linux cloud server</span> (tests don't need a phone &mdash; they run on plain .NET).</p><p class="tl">Checkout the code, install .NET 10, restore packages, build, and run all tests with code coverage.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">.github/workflows/ci.yml</code> &mdash; the complete file</p></section>
+
+      <section class="screen animate-in" id="quiz-m7"><h2 class="screen-heading">Final check</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="tq1" data-correct="opt-a" data-explain-correct="The test project links source files from the main project using Compile Include instead of a project reference. This works because the test targets net10.0 (desktop) while the main project targets mobile-only. A project reference would fail." data-explain-incorrect="Think about why the test project can't use the main project directly. The main project targets Android and iOS &mdash; you can't build those on a plain desktop runner."><h3 class="quiz-question">Why does the test project use linked files instead of a normal project reference?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The main project targets mobile-only; a project reference can't build on desktop</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Linked files are faster to compile than project references</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>xUnit requires linked files for test discovery</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m7')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m7')">Try Again</button>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Series complete</h2><p style="font-size:var(--text-lg)">You've completed all 8 courses. You now have the vocabulary, mental models, and code fluency to effectively steer AI coding tools, debug problems, and make informed architectural decisions.</p>
+        <div class="callout callout-accent" style="margin-top:var(--space-8)"><div class="callout-icon">&#x1F389;</div><div class="callout-content"><strong class="callout-title">Your toolkit</strong><p>You can now say things like "use the Active Record pattern," "put this in the service layer as a singleton," "add an AppThemeBinding for dark mode," or "write a unit test with NSubstitute mocking" &mdash; and know exactly what you're asking for. That precision is what turns a vibe coder into a confident technical collaborator.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}})},{rootMargin:'0px 0px -10% 0px',threshold:0.1});
+document.querySelectorAll('.animate-in').forEach(function(el){observer.observe(el)});
+document.querySelectorAll('.stagger-children').forEach(function(p){Array.from(p.children).forEach(function(c,i){c.style.setProperty('--stagger-index',i)})});
+var pb=document.getElementById('progress-bar');
+window.addEventListener('scroll',function(){requestAnimationFrame(function(){var s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;pb.style.width=(h>0?(s/h)*100:0)+'%'})},{passive:true});
+var dots=document.querySelectorAll('.nav-dot');dots.forEach(function(d){d.addEventListener('click',function(){var t=document.getElementById(d.dataset.target);if(t)t.scrollIntoView({behavior:'smooth'})})});
+var mObs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var n=e.target.id.replace('module-','');dots.forEach(function(d){var dn=d.dataset.target.replace('module-','');if(dn===n)d.classList.add('current');else{d.classList.remove('current');if(parseInt(dn)<parseInt(n))d.classList.add('visited')}})}})},{rootMargin:'-30% 0px -30% 0px',threshold:0});
+document.querySelectorAll('.module[id^="module-"]').forEach(function(m){if(m.id!=='module-intro')mObs.observe(m)});
+var allM=Array.from(document.querySelectorAll('.module'));document.addEventListener('keydown',function(e){if(['INPUT','TEXTAREA'].indexOf(e.target.tagName)!==-1)return;if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();var c=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c<allM.length-1)allM[c+1].scrollIntoView({behavior:'smooth'})}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();var c2=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c2>0)allM[c2-1].scrollIntoView({behavior:'smooth'})}});
+var at=null;function pt(term,tip){var r=term.getBoundingClientRect(),tw=Math.min(320,window.innerWidth*0.8);tip.style.width=tw+'px';var l=r.left+r.width/2-tw/2;l=Math.max(8,Math.min(l,window.innerWidth-tw-8));tip.style.left=l+'px';document.body.appendChild(tip);var th=tip.offsetHeight;if(r.top-th-8<0){tip.style.top=(r.bottom+8)+'px';tip.classList.add('flip')}else{tip.style.top=(r.top-th-8)+'px';tip.classList.remove('flip')}}
+document.querySelectorAll('.term').forEach(function(t){var tip=document.createElement('span');tip.className='term-tooltip';tip.textContent=t.dataset.definition;t.addEventListener('mouseenter',function(){if(at&&at!==tip){at.classList.remove('visible');at.remove()}pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip});t.addEventListener('mouseleave',function(){tip.classList.remove('visible');setTimeout(function(){if(!tip.classList.contains('visible'))tip.remove()},150);at=null});t.addEventListener('click',function(e){e.stopPropagation();if(at&&at!==tip){at.classList.remove('visible');at.remove()}if(tip.classList.contains('visible')){tip.classList.remove('visible');tip.remove();at=null}else{pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip}})});
+document.addEventListener('click',function(){if(at){at.classList.remove('visible');at.remove();at=null}});
+window.selectOption=function(btn){var b=btn.closest('.quiz-question-block');if(b.querySelector('.quiz-option[disabled]'))return;b.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected')});btn.classList.add('selected')};
+function sf(f,ok,txt){while(f.firstChild)f.removeChild(f.firstChild);var s=document.createElement('strong');s.textContent=ok?'Exactly! ':'Not quite. ';f.appendChild(s);f.appendChild(document.createTextNode(txt));f.className='quiz-feedback show '+(ok?'success':'error')}
+window.checkQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-question-block').forEach(function(q){var sel=q.querySelector('.quiz-option.selected'),fb=q.querySelector('.quiz-feedback'),cv=q.dataset.correct;if(!sel){fb.textContent='Pick an answer first!';fb.className='quiz-feedback show warning';return}if(sel.dataset.value===cv){sel.classList.add('correct');sf(fb,true,q.dataset.explainCorrect)}else{sel.classList.add('incorrect');q.querySelector('[data-value="'+cv+'"]').classList.add('correct');sf(fb,false,q.dataset.explainIncorrect)}q.querySelectorAll('.quiz-option').forEach(function(o){o.disabled=true})})};
+window.resetQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected','correct','incorrect');o.disabled=false});c.querySelectorAll('.quiz-feedback').forEach(function(f){f.className='quiz-feedback'})};
+})();
+</script>
+</body>
+</html>
