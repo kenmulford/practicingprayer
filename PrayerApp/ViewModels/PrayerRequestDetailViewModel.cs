@@ -549,8 +549,13 @@ namespace PrayerApp.ViewModels
             _onboardingService.Advance();
         }
 
+        private bool _queryApplied;
+
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
+            if (_queryApplied) return;
+            _queryApplied = true;
+
             if (query.ContainsKey("newForCard"))
             {
                 if (int.TryParse(query["newForCard"].ToString(), out int cardId))
