@@ -14,8 +14,8 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.1.0b50. 378 unit tests, 68 UITests. App live on Google Play.
-**Last completed**: F-10 Android deep-link verification (Play Store live), BUG-55 collapse regression fix, dark mode fix on Prayer Time collection picker.
+**Status**: 1.1.1b51. 405 unit tests, 68 UITests. App live on Google Play.
+**Last completed**: BUG-45b tag picker modal (iOS tap fix + comma auto-save), UX-30 PickerField styling.
 **Next up**: UX-29 iOS screenshot capture (Mac), then F-23 dashboard feature.
 
 ---
@@ -37,6 +37,8 @@ Items are listed in work order. Start at the top, work down.
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| BUG-45b | Tag picker modal — iOS tap fix, comma auto-save, dedicated picker page replacing inline suggestions | 2026-04-04 |
+| UX-30   | PickerField styling — outlined border + ▼ indicator on all 5 Picker controls (PrayerDetail + PrayerCard) | 2026-04-04 |
 | F-10    | Deep-link share — Android App Links verified post-Play Store launch | 2026-04-02 |
 | BUG-55b | Collapse regression — EmptyView moved outside CollectionView so headers always render | 2026-04-02 |
 | BUG-62  | Dark mode text color on Prayer Time collection picker (RadioButton content label) | 2026-04-02 |

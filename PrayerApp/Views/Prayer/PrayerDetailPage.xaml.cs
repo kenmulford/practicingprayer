@@ -30,7 +30,7 @@ public partial class PrayerDetailPage : ContentPage
 
         vm.TagPickerRequested += async pickerVm =>
             await Shell.Current.Navigation.PushModalAsync(
-                new NavigationPage(new TagPickerPage(pickerVm)));
+                new TagPickerPage(pickerVm));
 
         vm.SelectedTags.CollectionChanged += (_, _) => RebuildEditTagChips(vm);
     }
@@ -41,6 +41,7 @@ public partial class PrayerDetailPage : ContentPage
         var chipTextColor = (Color)Application.Current!.Resources["White"];
 
         editTagChips.Children.Clear();
+        editTagChips.Children.Add(tagsLabel);
 
         foreach (var chip in vm.SelectedTags)
         {
@@ -98,7 +99,6 @@ public partial class PrayerDetailPage : ContentPage
         {
             if (_initialLoadComplete)
             {
-                // Returning from a child page (e.g. tag edit) — reload to pick up changes
                 vm.Reload();
             }
             else

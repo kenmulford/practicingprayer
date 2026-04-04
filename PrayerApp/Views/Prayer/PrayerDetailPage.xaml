@@ -245,14 +245,16 @@
                                 VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
-                    <!-- Tags (edit mode) -->
-                    <Label Text="Tags" Style="{StaticResource FormLabel}" />
-
+                    <!-- Tags (edit mode) — label, chips, and + button flow inline -->
                     <FlexLayout x:Name="editTagChips"
                                 Wrap="Wrap"
                                 Direction="Row"
                                 AlignItems="Center">
-                        <!-- Tag chips populated in code-behind; + button is the last child -->
+                        <!-- Label + chips rebuilt in code-behind; + button is last child -->
+                        <Label x:Name="tagsLabel" Text="Tags"
+                               Style="{StaticResource FormLabel}"
+                               VerticalOptions="Center"
+                               Margin="0,0,6,0" />
                         <Border x:Name="addTagButton"
                                 AutomationId="Detail_Btn_AddTags"
                                 StrokeShape="RoundRectangle 14"

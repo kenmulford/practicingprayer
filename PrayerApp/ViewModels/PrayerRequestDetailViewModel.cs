@@ -635,6 +635,7 @@ namespace PrayerApp.ViewModels
 
         public void Reload()
         {
+            if (_prayer.Id == 0) return;
             LoadPrayerAsync(_prayer.Id).SafeFireAndForget();
         }
 

@@ -8,14 +8,20 @@
              x:Name="page"
              Title="Tags"
              SafeAreaEdges="All">
-    <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Done"
-                     AutomationId="TagPicker_Btn_Done"
-                     Command="{Binding DoneCommand}" />
-    </ContentPage.ToolbarItems>
-
     <ScrollView>
     <VerticalStackLayout Padding="16,12" Spacing="14">
+
+        <!-- Header: title + Done -->
+        <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,4">
+            <Label Text="Tags"
+                   Style="{StaticResource SectionHeading}"
+                   VerticalOptions="Center" />
+            <Button Grid.Column="1"
+                    Text="Done"
+                    AutomationId="TagPicker_Btn_Done"
+                    Style="{StaticResource GhostButton}"
+                    Command="{Binding DoneCommand}" />
+        </Grid>
 
         <!-- Search entry -->
         <Entry x:Name="SearchEntry"
@@ -79,7 +85,7 @@
                           SemanticProperties.Hint="Double tap to add tag">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer
-                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}}"
+                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}, x:DataType=ContentPage}"
                                 CommandParameter="{Binding Id}" />
                         </Grid.GestureRecognizers>
                         <Label Text="{Binding Name}"

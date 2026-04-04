@@ -271,4 +271,16 @@ public class PrayerRequestDetailViewModelTests
 
         _notificationService.DidNotReceive().RequestPermissionAsync();
     }
+
+    // ── Reload guard ─────────────────────────────────────────────────
+
+    [Fact]
+    public void Reload_NewPrayer_DoesNotNavigateAway()
+    {
+        var sut = CreateSut();
+
+        sut.Reload();
+
+        _navigationService.DidNotReceive().GoToAsync(Arg.Any<string>());
+    }
 }
