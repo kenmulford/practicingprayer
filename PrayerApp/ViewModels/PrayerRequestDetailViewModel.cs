@@ -33,25 +33,11 @@ namespace PrayerApp.ViewModels
         public ICommand EditPrayerCommand { get; private set; }
         public ICommand MarkAnsweredCommand { get; private set; }
         public ICommand ShareCommand { get; private set; }
-        public ICommand AddSuggestedTagCommand { get; private set; }
-        public ICommand SubmitTagEntryCommand { get; private set; }
+        public ICommand OpenTagPickerCommand { get; private set; }
 
         public ObservableCollection<TagChipViewModel> SelectedTags { get; } = new();
-        public ObservableCollection<PrayerTag> SuggestedTags { get; } = new();
-
-        private string _tagSearchText = string.Empty;
-        public string TagSearchText
-        {
-            get => _tagSearchText;
-            set
-            {
-                if (SetProperty(ref _tagSearchText, value))
-                    UpdateSuggestions();
-            }
-        }
 
         public bool HasTags => SelectedTags.Count > 0;
-        public bool HasSuggestions => SuggestedTags.Count > 0;
 
         private string _savedQueryKey = "saved";
         private string _deletedQueryKey = "deleted";
@@ -381,11 +367,9 @@ namespace PrayerApp.ViewModels
             EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
             MarkAnsweredCommand = new AsyncRelayCommand(MarkAnsweredAsync);
             ShareCommand = new AsyncRelayCommand(ShareAsync);
-            AddSuggestedTagCommand = new AsyncRelayCommand<int>(AddSuggestedTagAsync);
-            SubmitTagEntryCommand = new AsyncRelayCommand(SubmitTagEntryAsync);
+            OpenTagPickerCommand = new AsyncRelayCommand(OpenTagPickerAsync);
 
             SelectedTags.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTags));
-            SuggestedTags.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasSuggestions));
         }
 
         public PrayerRequestDetailViewModel() : this(
@@ -414,15 +398,12 @@ namespace PrayerApp.ViewModels
             CaptureOriginals();
 
             // New prayers: persist staged tags now that we have an ID.
-            // Existing prayers persist tags immediately in AddSuggestedTagAsync.
+            // Existing prayers: tags are persisted immediately by the tag picker modal.
             if (isNew)
             {
                 foreach (var chip in SelectedTags)
                     await _tagService.AddTagToRequestAsync(_prayer.Id, chip.Id);
             }
-
-            if (!string.IsNullOrWhiteSpace(_tagSearchText))
-                await SubmitTagEntryAsync();
 
             if (_prayer.CanNotify)
                 await _notificationService.ScheduleAsync(_prayer);
@@ -490,8 +471,6 @@ namespace PrayerApp.ViewModels
         {
             _prayer = CreateDefaultPrayer(cardId);
             SelectedTags.Clear();
-            SuggestedTags.Clear();
-            TagSearchText = string.Empty;
             RefreshProperties();
             CaptureOriginals();
             OnPropertyChanged(nameof(IsNew));
@@ -690,43 +669,50 @@ namespace PrayerApp.ViewModels
                 var requestTags = await _tagService.GetTagsByRequestIdAsync(_prayer.Id);
                 SelectedTags.Clear();
                 foreach (var tag in requestTags.OrderBy(t => t.Name))
-                    SelectedTags.Add(new TagChipViewModel(tag, RemoveTagAsync));
+                    SelectedTags.Add(new TagChipViewModel(tag, RemoveTagFromDisplayAsync));
             }
-
-            UpdateSuggestions();
         }
 
-        private void UpdateSuggestions()
+        /// <summary>Raised when the user taps the + button to open the tag picker modal.
+        /// The view subscribes to this and pushes the modal page.</summary>
+        public event Func<TagPickerViewModel, Task>? TagPickerRequested;
+
+        private async Task OpenTagPickerAsync()
         {
-            SuggestedTags.Clear();
-            if (string.IsNullOrWhiteSpace(_tagSearchText)) return;
+            var pickerVm = new TagPickerViewModel(_tagService, _navigationService, _accessibilityService);
+            // _allTags shared by reference so new tags created in the picker
+            // are visible to SyncTagsFromPicker after dismissal.
+            pickerVm.Initialize(_prayer.Id, _allTags, SelectedTags.Select(t => t.Id).ToList());
 
-            var assignedIds = SelectedTags.Select(t => t.Id).ToHashSet();
-            var filtered = _allTags
-                .Where(t => !t.IsSystem && !assignedIds.Contains(t.Id) &&
-                            (t.Name?.Contains(_tagSearchText, StringComparison.OrdinalIgnoreCase) ?? false))
-                .OrderBy(t => t.Name)
-                .Take(6);
+            if (TagPickerRequested is null)
+                return;
 
-            foreach (var tag in filtered)
-                SuggestedTags.Add(tag);
+            await TagPickerRequested.Invoke(pickerVm);
+            await pickerVm.WaitForDismissAsync();
+
+            // Sync tags back from the picker
+            SyncTagsFromPicker(pickerVm);
         }
 
-        private async Task AddSuggestedTagAsync(int tagId)
+        private void SyncTagsFromPicker(TagPickerViewModel pickerVm)
         {
-            if (SelectedTags.Any(t => t.Id == tagId)) return;
-            var tag = _allTags.FirstOrDefault(t => t.Id == tagId);
-            if (tag is null) return;
+            var pickerTagIds = pickerVm.GetSelectedTagIds().ToHashSet();
+            var currentTagIds = SelectedTags.Select(t => t.Id).ToHashSet();
 
-            // Only persist immediately if the prayer has been saved (has a real ID).
-            // For new prayers (Id == 0), just stage locally — SaveAsync persists them.
-            if (_prayer.Id > 0)
-                await _tagService.AddTagToRequestAsync(_prayer.Id, tagId);
-            SelectedTags.Add(new TagChipViewModel(tag, RemoveTagAsync));
-            TagSearchText = string.Empty;
+            // Remove tags that were deselected in the picker
+            foreach (var chip in SelectedTags.Where(t => !pickerTagIds.Contains(t.Id)).ToList())
+                SelectedTags.Remove(chip);
+
+            // Add tags that were newly selected in the picker
+            foreach (var tagId in pickerTagIds.Where(id => !currentTagIds.Contains(id)))
+            {
+                var tag = _allTags.FirstOrDefault(t => t.Id == tagId);
+                if (tag is not null)
+                    SelectedTags.Add(new TagChipViewModel(tag, RemoveTagFromDisplayAsync));
+            }
         }
 
-        private async Task RemoveTagAsync(int tagId)
+        private async Task RemoveTagFromDisplayAsync(int tagId)
         {
             // Only hit the DB if the prayer has been saved (has a real ID).
             if (_prayer.Id > 0)
@@ -734,34 +720,6 @@ namespace PrayerApp.ViewModels
             var chip = SelectedTags.FirstOrDefault(t => t.Id == tagId);
             if (chip is not null)
                 SelectedTags.Remove(chip);
-        }
-
-        private async Task SubmitTagEntryAsync()
-        {
-            var text = _tagSearchText.Trim();
-            if (string.IsNullOrWhiteSpace(text)) return;
-
-            // If there's exactly one suggestion and it matches, just assign it
-            var exactMatch = _allTags.FirstOrDefault(
-                t => string.Equals(t.Name, text, StringComparison.OrdinalIgnoreCase));
-
-            if (exactMatch is not null)
-            {
-                await AddSuggestedTagAsync(exactMatch.Id);
-                return;
-            }
-
-            // Create a new tag and assign it
-            var newTag = new PrayerTag { Name = text };
-            newTag = await _tagService.SaveTagAsync(newTag);
-            _allTags.Add(newTag);
-
-            // Only persist junction row if prayer has been saved (has a real ID).
-            // For new prayers (Id == 0), just stage locally — SaveAsync persists them.
-            if (_prayer.Id > 0)
-                await _tagService.AddTagToRequestAsync(_prayer.Id, newTag.Id);
-            SelectedTags.Add(new TagChipViewModel(newTag, RemoveTagAsync));
-            TagSearchText = string.Empty;
         }
 
         private void CaptureOriginals()

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:models="clr-namespace:PrayerApp.Models"
+             x:Class="PrayerApp.Views.Tags.TagPickerPage"
+             x:DataType="viewModels:TagPickerViewModel"
+             x:Name="page"
+             Title="Tags"
+             SafeAreaEdges="All">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Done"
+                     AutomationId="TagPicker_Btn_Done"
+                     Command="{Binding DoneCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+    <VerticalStackLayout Padding="16,12" Spacing="14">
+
+        <!-- Search entry -->
+        <Entry x:Name="SearchEntry"
+               Text="{Binding TagSearchText}"
+               AutomationId="TagPicker_Entry_Search"
+               Placeholder="Search or create tags..."
+               ReturnCommand="{Binding SubmitTagEntryCommand}"
+               ReturnType="Done"
+               SemanticProperties.Hint="Type a tag name to search or create. Use commas to add multiple tags."
+               HorizontalOptions="Fill" />
+
+        <!-- Selected tag chips -->
+        <FlexLayout AutomationId="TagPicker_Chips_Selected"
+                    BindableLayout.ItemsSource="{Binding SelectedTags}"
+                    Wrap="Wrap"
+                    Direction="Row"
+                    IsVisible="{Binding HasTags}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="viewModels:TagChipViewModel">
+                    <Border BackgroundColor="{Binding ChipColor}"
+                            Stroke="Transparent"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="6,4"
+                            Margin="2,2">
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="{Binding Name}"
+                                   TextColor="{StaticResource White}"
+                                   FontSize="12"
+                                   VerticalOptions="Center" />
+                            <Button Text="&#x00D7;"
+                                    SemanticProperties.Description="Remove tag"
+                                    Command="{Binding RemoveCommand}"
+                                    TextColor="{StaticResource White}"
+                                    BackgroundColor="Transparent"
+                                    FontSize="14"
+                                    Padding="2,0"
+                                    BorderWidth="0"
+                                    MinimumWidthRequest="24"
+                                    MinimumHeightRequest="24"
+                                    VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </FlexLayout>
+
+        <!-- Divider between chips and suggestions -->
+        <BoxView Style="{StaticResource DividerLine}"
+                 IsVisible="{Binding HasSuggestions}" />
+
+        <!-- Suggestion list -->
+        <VerticalStackLayout AutomationId="TagPicker_List_Suggestions"
+                             BindableLayout.ItemsSource="{Binding SuggestedTags}"
+                             Spacing="0"
+                             IsVisible="{Binding HasSuggestions}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="models:PrayerTag">
+                    <Grid Padding="14,12"
+                          BackgroundColor="Transparent"
+                          SemanticProperties.Description="{Binding Name}"
+                          SemanticProperties.Hint="Double tap to add tag">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}}"
+                                CommandParameter="{Binding Id}" />
+                        </Grid.GestureRecognizers>
+                        <Label Text="{Binding Name}"
+                               FontSize="15"
+                               TextColor="{AppThemeBinding Light={StaticResource Tertiary},
+                                                           Dark={StaticResource TextPrimaryDark}}" />
+                    </Grid>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+
+    </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
