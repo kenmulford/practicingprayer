@@ -85,8 +85,9 @@
                           SemanticProperties.Hint="Double tap to add tag">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer
-                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}, x:DataType=ContentPage}"
-                                CommandParameter="{Binding Id}" />
+                                Command="{Binding BindingContext.AddSuggestedTagCommand, Source={x:Reference page}}"
+                                CommandParameter="{Binding Id}"
+                                x:DataType="{x:Null}" />
                         </Grid.GestureRecognizers>
                         <Label Text="{Binding Name}"
                                FontSize="15"

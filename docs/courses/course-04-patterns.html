@@ -141,6 +141,18 @@ code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var
 
       <section class="screen animate-in"><h2 class="screen-heading">System entity guards</h2><p>Some records must never be deleted. <span class="term" data-definition="System entity guards are checks that prevent deletion of critical built-in records. The 'Quick Add' card, 'Recently Notified' tag, and 'System'/'Archived' boxes are all protected. The delete method checks IsSystem and refuses to proceed if true.">System guards</span> protect them:</p>
         <div class="callout callout-info"><div class="callout-icon">&#x1F6E1;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Protected entities</strong><p>The "Quick Add" card, "Recently Notified" tag, "System" box, and "Archived" box are all marked <code class="inline">IsSystem = true</code>. Delete methods check this flag and refuse to proceed. This prevents accidental destruction of built-in features.</p></div></div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Deferred persistence &mdash; the tag picker pattern</h2><p>The tag picker modal has a subtle coordination problem: when a prayer is <em>new</em> (never saved), it has no database ID yet. Tags can't be linked to a prayer that doesn't exist. The solution: <span class="term" data-definition="Deferred persistence means holding changes in memory until a later event triggers the actual database write. The tag picker stages tag selections locally for new prayers. Only after the prayer is saved (and gets an ID) are the tag assignments persisted to the database.">deferred persistence</span>.</p>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)"><h4 class="pattern-title">Existing prayer (Id &gt; 0)</h4><p class="pattern-desc">Tags are saved to the database <strong>immediately</strong> as the user adds/removes them in the picker. Real-time persistence.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)"><h4 class="pattern-title">New prayer (Id = 0)</h4><p class="pattern-desc">Tags are <strong>staged in memory</strong> only. After the prayer is saved and gets an ID, all staged tags are persisted in one batch.</p></div>
+        </div>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">if</span> (_prayerId > <span class="code-number">0</span>)
+    <span class="code-keyword">await</span> _tagService
+        .<span class="code-function">AddTagToRequestAsync</span>(
+            _prayerId, tagId);</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Only persist to the database if the prayer has been saved (Id &gt; 0). For new prayers, skip the DB call &mdash; the in-memory list is enough until save time.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/ViewModels/TagPickerViewModel.cs</code> &mdash; lines 134&ndash;135</p>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">When to use deferred persistence</strong><p>Use this pattern whenever a child entity (tag assignment) depends on a parent entity (prayer) that might not exist yet. Stage locally, persist after the parent is saved. This avoids orphaned records and foreign key violations.</p></div></div></section>
     </div>
   </div>
 </section>
