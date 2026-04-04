@@ -107,6 +107,7 @@ Views (XAML)
 | SQLite page size warning           | XA0141 re: Android 16 16KB pages — third-party issue, no action needed       |
 | PAT scope for CI                   | Pushing `.github/workflows/` requires `workflow` scope on GitHub PAT         |
 | BindableLayout + AppThemeBinding   | `AppThemeBinding` inside a keyed Style doesn't reliably propagate to all BindableLayout children. Use inline color bindings for BoxView/dividers inside BindableLayout DataTemplates. Exception to the "no inline colors" rule. |
+| Cross-context bindings (XC0045/XC0023) | Never use `x:DataType="{x:Null}"` — trades one warning for another across MAUI versions. Use code-behind `Tapped` handler + pattern-match `BindingContext` instead. See `TagPickerPage.xaml.cs OnSuggestionTapped`. |
 
 ---
 
