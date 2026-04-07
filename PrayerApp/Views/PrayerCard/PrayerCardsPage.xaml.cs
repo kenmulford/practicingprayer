@@ -37,6 +37,10 @@ public partial class PrayerCardsPage : ContentPage
         if (sender is Grid grid && grid.BindingContext is BoxSectionViewModel section)
         {
             section.IsExpanded = !section.IsExpanded;
+
+            // Persist expansion state so it survives app restarts
+            if (BindingContext is PrayerCardsViewModel vm)
+                vm.SaveSectionExpansionState();
         }
     }
 

@@ -191,6 +191,7 @@ public class PrayerCardsViewModelTests
     public async Task LoadAsync_CardsWithinSectionSorted_FavoritesFirst()
     {
         SetupSystemBoxes();
+        _settings.ExpandedSectionIds.Returns("0"); // Expand unboxed so items are visible
         var card1 = new PrayerCard { Id = 1, Title = "Beta", BoxId = 0, IsFavorite = false };
         var card2 = new PrayerCard { Id = 2, Title = "Alpha", BoxId = 0, IsFavorite = true };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
@@ -300,6 +301,7 @@ public class PrayerCardsViewModelTests
     public async Task TagFilter_ClearedShowsAllCards()
     {
         SetupSystemBoxes();
+        _settings.ExpandedSectionIds.Returns("0"); // Section starts expanded so restore returns to expanded
         var card1 = new PrayerCard { Id = 1, Title = "Card One", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Card Two", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
@@ -637,6 +639,84 @@ public class PrayerCardsViewModelTests
 
         Assert.False(sut.ShowCollectionsBanner);
         _settings.Received(1).CollectionsBannerDismissed = true;
+    }
+
+    // ── UX-31: Section expansion persistence ─────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_NoSavedState_AllSectionsCollapsed()
+    {
+        SetupSystemBoxes();
+        // ExpandedSectionIds defaults to null/empty → all collapsed
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.All(sut.BoxSections, s => Assert.False(s.IsExpanded));
+    }
+
+    [Fact]
+    public async Task LoadAsync_SavedExpandedIds_RestoresExpansionState()
+    {
+        SetupSystemBoxes();
+        _settings.ExpandedSectionIds.Returns("0,20"); // Unboxed and Archived expanded
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        var unboxed = sut.BoxSections.First(s => s.BoxId == 0);
+        var archived = sut.BoxSections.First(s => s.BoxId == 20);
+        Assert.True(unboxed.IsExpanded);
+        Assert.True(archived.IsExpanded);
+    }
+
+    [Fact]
+    public async Task SaveSectionExpansionState_PersistsExpandedIds()
+    {
+        SetupSystemBoxes();
+        _settings.ExpandedSectionIds.Returns("0"); // Start with Unboxed expanded
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        sut.SaveSectionExpansionState();
+
+        // Should save "0" (the Unboxed section that was expanded)
+        _settings.Received().ExpandedSectionIds = Arg.Is<string>(s => s.Contains("0"));
+    }
+
+    [Fact]
+    public async Task SaveSectionExpansionState_AllCollapsed_SavesEmpty()
+    {
+        SetupSystemBoxes();
+        // No saved state → all collapsed
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        sut.SaveSectionExpansionState();
+
+        _settings.Received().ExpandedSectionIds = "";
     }
 
     // ── Helper ──────────────────────────────────────────────────────────

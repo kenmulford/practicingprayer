@@ -71,4 +71,10 @@ public class SettingsService : ISettings
         get => Settings.ArchivedFolderId;
         set => Settings.ArchivedFolderId = value;
     }
+
+    public string ExpandedSectionIds
+    {
+        get => Settings.ExpandedSectionIds;
+        set => Settings.ExpandedSectionIds = value;
+    }
 }

@@ -360,9 +360,37 @@ namespace PrayerApp.ViewModels
             cards.OrderByDescending(c => c.IsFavorite).ThenBy(c => c.Title);
 
         /// <summary>
+        /// Parses the persisted expanded-section setting into a HashSet of BoxIds.
+        /// Empty string → empty set → all collapsed by default.
+        /// </summary>
+        private HashSet<int> GetSavedExpandedIds()
+        {
+            var raw = _settings.ExpandedSectionIds;
+            if (string.IsNullOrEmpty(raw)) return new HashSet<int>();
+            return raw.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                       .Select(s => int.TryParse(s.Trim(), out var id) ? id : (int?)null)
+                       .Where(id => id.HasValue)
+                       .Select(id => id!.Value)
+                       .ToHashSet();
+        }
+
+        /// <summary>
+        /// Persists the current expanded-section state to settings.
+        /// Called from the code-behind when a section header is tapped.
+        /// </summary>
+        public void SaveSectionExpansionState()
+        {
+            var expandedIds = BoxSections
+                .Where(s => s.IsExpanded)
+                .Select(s => s.BoxId.ToString());
+            _settings.ExpandedSectionIds = string.Join(",", expandedIds);
+        }
+
+        /// <summary>
         /// Rebuilds sections from AllPrayerCards grouped by BoxId.
         /// Preserves existing BoxSectionViewModel instances (and their user expansion state)
-        /// when the same BoxId is present. New sections get default expansion.
+        /// when the same BoxId is present. New sections use persisted expansion state
+        /// (collapsed by default on first launch).
         /// Sort order: Unboxed → user boxes (A→Z by name) → System → Archived.
         /// </summary>
         private void RebuildSections()
@@ -377,6 +405,7 @@ namespace PrayerApp.ViewModels
 
                 // Preserve existing sections to retain user expansion state
                 var existingSections = BoxSections.ToDictionary(s => s.BoxId);
+                var savedExpandedIds = GetSavedExpandedIds();
                 var sections = new List<BoxSectionViewModel>();
 
                 // Helper: reuse existing section or create new one
@@ -391,7 +420,8 @@ namespace PrayerApp.ViewModels
                 var unboxedCards = cardsByBox.GetValueOrDefault(0);
                 if (unboxedCards is { Count: > 0 })
                 {
-                    var unboxed = GetOrCreate(0, () => new BoxSectionViewModel(defaultExpanded: true));
+                    var unboxed = GetOrCreate(0, () => new BoxSectionViewModel(
+                        defaultExpanded: savedExpandedIds.Contains(0)));
                     unboxed.SetCards(unboxedCards);
                     sections.Add(unboxed);
                 }
@@ -400,7 +430,8 @@ namespace PrayerApp.ViewModels
                 foreach (var box in _boxes.Where(b => !b.IsSystem).OrderBy(b => b.Name))
                 {
                     var boxCards = cardsByBox.GetValueOrDefault(box.Id) ?? new List<PrayerCardViewModel>();
-                    var section = GetOrCreate(box.Id, () => new BoxSectionViewModel(box, defaultExpanded: true));
+                    var section = GetOrCreate(box.Id, () => new BoxSectionViewModel(box,
+                        defaultExpanded: savedExpandedIds.Contains(box.Id)));
                     section.SetCards(boxCards);
                     sections.Add(section);
                 }
@@ -412,7 +443,8 @@ namespace PrayerApp.ViewModels
                     var systemCards = cardsByBox.GetValueOrDefault(systemBox.Id);
                     if (systemCards is { Count: > 0 })
                     {
-                        var systemSection = GetOrCreate(systemBox.Id, () => new BoxSectionViewModel(systemBox, defaultExpanded: true));
+                        var systemSection = GetOrCreate(systemBox.Id, () => new BoxSectionViewModel(systemBox,
+                            defaultExpanded: savedExpandedIds.Contains(systemBox.Id)));
                         systemSection.SetCards(systemCards);
                         sections.Add(systemSection);
                     }
@@ -422,7 +454,8 @@ namespace PrayerApp.ViewModels
                 var archivedBox = _boxes.FirstOrDefault(b => b.SystemKey == CardBox.SystemKeyArchived);
                 if (archivedBox != null)
                 {
-                    var archivedSection = GetOrCreate(archivedBox.Id, () => new BoxSectionViewModel(archivedBox, defaultExpanded: false));
+                    var archivedSection = GetOrCreate(archivedBox.Id, () => new BoxSectionViewModel(archivedBox,
+                        defaultExpanded: savedExpandedIds.Contains(archivedBox.Id)));
                     archivedSection.SetCards(cardsByBox.GetValueOrDefault(archivedBox.Id) ?? new List<PrayerCardViewModel>());
                     sections.Add(archivedSection);
                 }

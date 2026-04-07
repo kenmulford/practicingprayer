@@ -22,4 +22,10 @@ public interface ISettings
     /// All "is archived?" checks use card.BoxId == ArchivedFolderId.
     /// </summary>
     int ArchivedFolderId { get; set; }
+
+    /// <summary>
+    /// Comma-delimited BoxIds of expanded sections on the Cards page.
+    /// Empty string = all collapsed (the default for new installs).
+    /// </summary>
+    string ExpandedSectionIds { get; set; }
 }

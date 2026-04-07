@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.1.1b51. 405 unit tests, 68 UITests. App live on Google Play.
-**Last completed**: BUG-45b tag picker modal (iOS tap fix + comma auto-save), UX-30 PickerField styling.
-**Next up**: UX-29 iOS screenshot capture (Mac), then F-23 dashboard feature.
+**Status**: 1.1.1b51. 411 unit tests, 68 UITests. App live on Google Play.
+**Last completed**: UX-31 collapse collections + persist state, UX-32 indent cards.
+**Next up**: F-23 dashboard feature.
 
 ---
 
@@ -26,17 +26,19 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | UX-29 | Updated store screenshots — iOS remaining                         | Ken    | Android complete (20 screenshots: phone + tablet, light + dark). iOS capture pending — requires Mac session with simulators. Runbooks at `docs/plans/app-store-screenshots.md` and `docs/plans/UX-22-android-screenshots.md`. Seed DB at `screenshots/android/prayer_app_seed.db`. |
-| 2   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Full-width card below 2x2 metric grid. Shows prayers answered on same month+day in prior years (not today). Header: "Answered prayers from [Month Day]". Lists prayer titles. Hidden when empty, no tap action. Plan at `.claude/plans/reactive-swimming-bunny.md`. **Ready to implement.** |
-| 3   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
-| 4   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
-| 5   | INV-5 | Voice dictation for prayer requests — research feasibility         | Ken    | User presses a mic button on the prayer request form, dictates their request aloud, and the transcription is captured as the request text. Research: platform speech-to-text APIs (iOS SFSpeechRecognizer, Android SpeechRecognizer), MAUI plugin options (e.g., Plugin.Maui.Audio, community speech-to-text libs), privacy implications (does audio leave the device?), and whether on-device vs. cloud transcription is required. Privacy-first constraint means on-device is strongly preferred. |
-| 6   | F-18  | Widget support for prayer cards                                    | Ken    | **Shelved** — very large effort (separate native projects for iOS WidgetKit + Android App Widgets). Needs scoping. |
+| 1   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Full-width card below 2x2 metric grid. Shows prayers answered on same month+day in prior years (not today). Header: "Answered prayers from [Month Day]". Lists prayer titles. Hidden when empty, no tap action. Plan at `.claude/plans/reactive-swimming-bunny.md`. **Ready to implement.** |
+| 2   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
+| 3   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
+| 4   | INV-5 | Voice dictation for prayer requests — research feasibility         | Ken    | User presses a mic button on the prayer request form, dictates their request aloud, and the transcription is captured as the request text. Research: platform speech-to-text APIs (iOS SFSpeechRecognizer, Android SpeechRecognizer), MAUI plugin options (e.g., Plugin.Maui.Audio, community speech-to-text libs), privacy implications (does audio leave the device?), and whether on-device vs. cloud transcription is required. Privacy-first constraint means on-device is strongly preferred. |
+| 5   | F-18  | Widget support for prayer cards                                    | Ken    | Research complete — plan at `.claude/plans/whimsical-sleeping-orbit.md`. Android doable in 1-2 sessions (C# only, no DB changes). iOS is 3-5 sessions (Swift extension, App Group DB migration, Xcode). No cross-platform abstraction exists. **Needs decision: Android-only first vs both vs shelve.** |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                           | Completed  |
 | ------- | ------------------------------ | ---------- |
+| UX-31   | Collapse collections by default + persist expansion state across sessions | 2026-04-07 |
+| UX-32   | Left indent cards within collections to reinforce nesting | 2026-04-07 |
+| UX-29   | Updated store screenshots — iOS + Android complete (phone + tablet, light + dark) | 2026-04-07 |
 | BUG-45b | Tag picker modal — iOS tap fix, comma auto-save, dedicated picker page replacing inline suggestions | 2026-04-04 |
 | UX-30   | PickerField styling — outlined border + ▼ indicator on all 5 Picker controls (PrayerDetail + PrayerCard) | 2026-04-04 |
 | F-10    | Deep-link share — Android App Links verified post-Play Store launch | 2026-04-02 |

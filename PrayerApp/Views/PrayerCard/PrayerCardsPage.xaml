@@ -189,7 +189,7 @@
                             </MultiTrigger.Conditions>
                             <Setter Property="IsVisible" Value="True" />
                             <Setter Property="HeightRequest" Value="-1" />
-                            <Setter Property="Margin" Value="32,4,16,12" />
+                            <Setter Property="Margin" Value="46,4,16,12" />
                         </MultiTrigger>
                     </Label.Triggers>
                 </Label>
@@ -202,8 +202,10 @@
             <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
 
                 <!-- Card body — inline action buttons replace SwipeView for reliability on iOS -->
+                <!-- UX-32: Left indent reinforces nesting under section headers -->
                 <Border Style="{StaticResource PrayerCardBorder}"
                         Padding="0"
+                        Margin="14,0,0,0"
                         Loaded="OnCardBorderLoaded">
                     <Border.Triggers>
                         <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">

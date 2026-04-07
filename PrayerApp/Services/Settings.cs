@@ -126,6 +126,13 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(ArchivedFolderId), value);
         }
 
+        /// <summary>Comma-delimited BoxIds of expanded sections on the Cards page.</summary>
+        public static string ExpandedSectionIds
+        {
+            get => Preferences.Get(nameof(ExpandedSectionIds), string.Empty);
+            set => Preferences.Set(nameof(ExpandedSectionIds), value);
+        }
+
         public static void ClearSettings()
         {
             // reset "first run" flag
