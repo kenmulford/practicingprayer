@@ -51,7 +51,7 @@
                             <Label Text="No active cards"
                                    IsVisible="{Binding HasActiveCards, Converter={StaticResource InverseBool}}"
                                    FontSize="13" HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding ActiveCardTapHint}"
                                    FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
@@ -78,7 +78,7 @@
                             <Label Text="No prayers yet"
                                    IsVisible="{Binding HasUnanswered, Converter={StaticResource InverseBool}}"
                                    FontSize="13" HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding UnansweredTapHint}"
                                    FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
@@ -105,7 +105,7 @@
                             <Label Text="Not yet"
                                    IsVisible="{Binding HasLastPrayed, Converter={StaticResource InverseBool}}"
                                    FontSize="13" HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TabUnselectedDark}}" />
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}" />
                             <Label Text="{Binding LastPrayedTapHint}"
                                    FontSize="10" HorizontalOptions="Center" Margin="0,4,0,0"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />

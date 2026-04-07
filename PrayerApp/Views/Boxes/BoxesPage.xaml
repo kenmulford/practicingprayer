@@ -113,6 +113,7 @@
                             </Border.GestureRecognizers>
                             <HorizontalStackLayout Spacing="4">
                                 <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                       AutomationProperties.IsInAccessibleTree="False"
                                        VerticalOptions="Center">
                                     <Image.Behaviors>
                                         <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -142,6 +143,7 @@
                             </Border.GestureRecognizers>
                             <HorizontalStackLayout Spacing="4">
                                 <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                       AutomationProperties.IsInAccessibleTree="False"
                                        VerticalOptions="Center">
                                     <Image.Behaviors>
                                         <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding

@@ -162,7 +162,7 @@
                                 <Switch Grid.Column="1"
                                         AutomationId="Detail_Switch_Reminders"
                                         IsToggled="{Binding CanNotify}"
-                                        SemanticProperties.Description="Enable reminders for this request"
+                                        SemanticProperties.Hint="Enable reminders for this request"
                                         VerticalOptions="Center" />
                             </Grid>
 
@@ -241,7 +241,7 @@
                                VerticalOptions="Center" />
                         <Switch AutomationId="Detail_Switch_Answered"
                                 IsToggled="{Binding IsAnswered}"
-                                SemanticProperties.Description="Mark this request as answered"
+                                SemanticProperties.Hint="Mark this request as answered"
                                 VerticalOptions="Center" />
                     </HorizontalStackLayout>
 

@@ -13,3 +13,4 @@
 - **Improved dropdown fields** — Picker fields (card, collection, frequency, day) now show a clear outlined border with a dropdown arrow, making them easier to find and tap on all devices.
 - **Collections start collapsed** — All collections on the Prayer Cards page now start collapsed for a cleaner view. Your expand/collapse choices are remembered between sessions.
 - **Cards indented within collections** — Cards are now visually indented under their collection headers, making it easier to see which cards belong to which collection.
+- **Accessibility improvements** — Better screen reader support: improved color contrast for muted text, fixed toggle switch announcements, cleaned up how card headers are read aloud, and hidden decorative icons from screen readers.

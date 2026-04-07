@@ -152,6 +152,7 @@
                     </Grid.GestureRecognizers>
                     <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
                            FontSize="11"
+                           AutomationProperties.IsInAccessibleTree="False"
                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                            VerticalOptions="Center"
                            Margin="0,0,6,0" />
@@ -231,9 +232,12 @@
                     <VerticalStackLayout Spacing="0">
 
                         <!-- Card header: title + system badge + imported icon + count badge + favorite star -->
+                        <!-- A11Y: Description on the Grid (single tappable unit), not the Label (avoids double-read) -->
                         <Grid
                             Padding="12,10"
                             ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+                            SemanticProperties.Description="{Binding AccessibleCardHeader}"
+                            SemanticProperties.Hint="Double tap to expand or collapse"
                             Loaded="OnCardHeaderLoaded">
                             <Grid.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnCardHeaderTapped" />
@@ -241,8 +245,7 @@
                             <Label
                                 Text="{Binding Title}"
                                 Style="{StaticResource CardTitle}"
-                                SemanticProperties.Description="{Binding AccessibleCardHeader}"
-                                SemanticProperties.Hint="Double tap to expand or collapse"
+                                AutomationProperties.IsInAccessibleTree="False"
                                 TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                 VerticalOptions="Center" />
                             <!-- System badge -->
@@ -327,6 +330,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="star_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -360,6 +364,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="share_from_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -384,6 +389,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -411,6 +417,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
