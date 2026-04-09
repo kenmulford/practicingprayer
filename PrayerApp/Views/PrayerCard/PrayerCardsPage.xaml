@@ -151,7 +151,7 @@
                             <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
                         </Grid.GestureRecognizers>
                         <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
-                               FontSize="10"
+                               FontSize="11"
                                AutomationProperties.IsInAccessibleTree="False"
                                TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                                VerticalOptions="Center"
