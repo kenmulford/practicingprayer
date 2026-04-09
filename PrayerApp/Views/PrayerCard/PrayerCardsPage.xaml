@@ -160,6 +160,7 @@
                                Text="{Binding HeaderText}"
                                FontSize="15"
                                FontFamily="OpenSansSemibold"
+                               AutomationProperties.IsInAccessibleTree="False"
                                TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
                                VerticalOptions="Center" />
                     </Grid>
@@ -167,29 +168,43 @@
                 </VerticalStackLayout>
             </DataTemplate>
         </CollectionView.GroupHeaderTemplate>
-        <!-- BUG-56: Empty collection hint — only when expanded AND 0 cards.
-             HeightRequest="0" collapses the footer entirely for non-empty/collapsed sections
-             so it doesn't contribute spacing between collapsed section headers. -->
+        <!-- Section footer: closing divider when expanded (visual bracket),
+             plus "No cards yet" hint when expanded + empty.
+             HeightRequest="0" collapses the footer entirely for collapsed sections
+             so it doesn't contribute spacing between collapsed section headers (BUG-56). -->
         <CollectionView.GroupFooterTemplate>
             <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
-                <Label Text="No cards yet — move or create cards to add them here"
-                       IsVisible="False"
-                       HeightRequest="0"
-                       Style="{StaticResource MutedText}"
-                       Margin="0"
-                       FontSize="13">
-                    <Label.Triggers>
-                        <MultiTrigger TargetType="Label">
-                            <MultiTrigger.Conditions>
-                                <BindingCondition Binding="{Binding IsExpanded}" Value="True" />
-                                <BindingCondition Binding="{Binding CardCount}" Value="0" />
-                            </MultiTrigger.Conditions>
-                            <Setter Property="IsVisible" Value="True" />
+                <VerticalStackLayout HeightRequest="0" Spacing="0">
+                    <VerticalStackLayout.Triggers>
+                        <DataTrigger TargetType="VerticalStackLayout"
+                                     Binding="{Binding IsExpanded}" Value="True">
                             <Setter Property="HeightRequest" Value="-1" />
-                            <Setter Property="Margin" Value="46,4,16,12" />
-                        </MultiTrigger>
-                    </Label.Triggers>
-                </Label>
+                        </DataTrigger>
+                    </VerticalStackLayout.Triggers>
+                    <!-- Empty-section hint (only when expanded + 0 cards) -->
+                    <Label Text="No cards yet — move or create cards to add them here"
+                           IsVisible="False"
+                           HeightRequest="0"
+                           Style="{StaticResource MutedText}"
+                           Margin="0"
+                           FontSize="13">
+                        <Label.Triggers>
+                            <MultiTrigger TargetType="Label">
+                                <MultiTrigger.Conditions>
+                                    <BindingCondition Binding="{Binding IsExpanded}" Value="True" />
+                                    <BindingCondition Binding="{Binding CardCount}" Value="0" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="IsVisible" Value="True" />
+                                <Setter Property="HeightRequest" Value="-1" />
+                                <Setter Property="Margin" Value="46,4,16,12" />
+                            </MultiTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <!-- Closing divider (visible whenever expanded) -->
+                    <BoxView Style="{StaticResource DividerLine}"
+                             Margin="4,8,4,0"
+                             IsVisible="{Binding IsExpanded}" />
+                </VerticalStackLayout>
             </DataTemplate>
         </CollectionView.GroupFooterTemplate>
         <CollectionView.ItemsLayout>
