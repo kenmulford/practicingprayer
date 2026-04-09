@@ -544,8 +544,7 @@ namespace PrayerApp.ViewModels
         private async Task ShareAsync()
         {
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
-            var text = deepLinkService.BuildRequestShareText(_prayer);
-            await Share.RequestAsync(new ShareTextRequest { Title = Title, Text = text });
+            await deepLinkService.ShareRequestAsync(_prayer);
             _onboardingService.Advance();
         }
 

@@ -96,6 +96,17 @@ namespace PrayerApp
                                 a.ActivityType == Foundation.NSUserActivityType.BrowsingWeb);
                         HandleDeepLink(activity?.WebPageUrl?.ToString());
                     });
+
+                    // File open handler (.prayercard files)
+                    ios.OpenUrl((app, url, options) =>
+                    {
+                        if (url.Path?.EndsWith(".prayercard", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            HandleFileOpen(url.Path);
+                            return true;
+                        }
+                        return false;
+                    });
                 });
 #endif
             });
@@ -154,6 +165,8 @@ namespace PrayerApp
             // Navigation + accessibility abstractions (enable VM unit testing)
             builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
             builder.Services.AddSingleton<IAccessibilityService, MauiAccessibilityService>();
+            // OS share sheet abstraction (enables unit testing of share logic)
+            builder.Services.AddSingleton<IShareService, ShareService>();
             // Deep link sharing service
             builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
 
@@ -285,7 +298,65 @@ namespace PrayerApp
         {
             if (intent?.Action != Android.Content.Intent.ActionView || intent.Data is null)
                 return;
-            HandleDeepLink(intent.Data.ToString());
+
+            var uri = intent.Data.ToString();
+
+            // URL-based deep link
+            if (uri?.StartsWith("https://practicingprayerapp.com/share") == true)
+            {
+                HandleDeepLink(uri);
+                return;
+            }
+
+            // File-based import (.prayercard)
+            var mimeType = intent.Type;
+            if (mimeType == "application/x-prayercard" || IsPrayerCardFile(intent))
+            {
+                HandleFileImport(intent);
+            }
+        }
+
+        private static bool IsPrayerCardFile(Android.Content.Intent intent)
+        {
+            try
+            {
+                var context = Android.App.Application.Context;
+                using var cursor = context.ContentResolver?.Query(
+                    intent.Data!, null, null, null, null);
+                if (cursor != null && cursor.MoveToFirst())
+                {
+                    var nameIndex = cursor.GetColumnIndex(
+                        Android.Provider.OpenableColumns.DisplayName);
+                    if (nameIndex >= 0)
+                    {
+                        var name = cursor.GetString(nameIndex);
+                        return name?.EndsWith(".prayercard", StringComparison.OrdinalIgnoreCase) == true;
+                    }
+                }
+            }
+            catch { /* Ignore cursor errors */ }
+            return false;
+        }
+
+        private static void HandleFileImport(Android.Content.Intent intent)
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await App.InitTask;
+                    var context = Android.App.Application.Context;
+                    using var inputStream = context.ContentResolver?.OpenInputStream(intent.Data!);
+                    if (inputStream == null) return;
+
+                    var svc = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+                    await svc.HandleFileAsync(inputStream);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeepLink] File import failed: {ex.Message}");
+                }
+            });
         }
 #endif
 
@@ -320,6 +391,27 @@ namespace PrayerApp
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"[DeepLink] HandleDeepLink failed: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Processes a .prayercard file opened via the OS (iOS OpenUrl / Android file intent).
+        /// </summary>
+        private static void HandleFileOpen(string filePath)
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await App.InitTask;
+                    await using var stream = File.OpenRead(filePath);
+                    var svc = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+                    await svc.HandleFileAsync(stream);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeepLink] File open failed: {ex.Message}");
                 }
             });
         }

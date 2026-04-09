@@ -97,6 +97,7 @@
     <Compile Include="../PrayerApp/Services/IOrientationService.cs" />
     <Compile Include="../PrayerApp/Services/IBackupService.cs" />
     <Compile Include="../PrayerApp/Services/IDeepLinkService.cs" />
+    <Compile Include="../PrayerApp/Services/IShareService.cs" />
     <Compile Include="../PrayerApp/Services/DeepLinkService.cs" />
     <Compile Include="../PrayerApp/Services/IBoxService.cs" />
     <Compile Include="../PrayerApp/Services/BoxService.cs" />

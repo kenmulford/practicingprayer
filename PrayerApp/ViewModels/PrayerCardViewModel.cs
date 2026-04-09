@@ -354,8 +354,7 @@ namespace PrayerApp.ViewModels
                 .Where(p => !p.IsAnswered && !string.IsNullOrWhiteSpace(p.Title))
                 .ToList();
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
-            var text = deepLinkService.BuildCardShareText(_prayerCard, activePrayers);
-            await Share.RequestAsync(new ShareTextRequest { Title = _prayerCard.Title, Text = text });
+            await deepLinkService.ShareCardAsync(_prayerCard, activePrayers);
             _onboardingService.Advance();
         }
 

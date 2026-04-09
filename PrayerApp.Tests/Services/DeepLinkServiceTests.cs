@@ -1,16 +1,19 @@
+using System.IO.Compression;
 using NSubstitute;
 using PrayerApp.Models;
 using PrayerApp.Services;
 
 namespace PrayerApp.Tests.Services;
 
-public class DeepLinkServiceTests
+public class DeepLinkServiceTests : IDisposable
 {
     private readonly IDBService _db;
     private readonly ICardService _cardService;
     private readonly IPrayerService _prayerService;
     private readonly INavigationService _nav;
+    private readonly IShareService _shareService;
     private readonly DeepLinkService _service;
+    private readonly string _tempDir;
 
     public DeepLinkServiceTests()
     {
@@ -21,92 +24,182 @@ public class DeepLinkServiceTests
         _cardService = Substitute.For<ICardService>();
         _prayerService = Substitute.For<IPrayerService>();
         _nav = Substitute.For<INavigationService>();
+        _shareService = Substitute.For<IShareService>();
         // Default: user accepts import confirmation
         _nav.DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(true);
-        _service = new DeepLinkService(_cardService, _prayerService, _nav);
+        _tempDir = Path.Combine(Path.GetTempPath(), $"deeplink-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_tempDir);
+        _service = new DeepLinkService(_cardService, _prayerService, _nav, _shareService, () => _tempDir);
     }
 
-    // ── BuildRequestShareText ────────────────────────────────────────────────
+    public void Dispose()
+    {
+        if (Directory.Exists(_tempDir))
+            Directory.Delete(_tempDir, recursive: true);
+    }
+
+    // ── Helper: build a compressed URL the same way the service does ────────
+
+    private static string BuildCompressedUrl(string path, string json)
+    {
+        using var output = new MemoryStream();
+        using (var gzip = new GZipStream(output, CompressionLevel.Optimal))
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            gzip.Write(bytes);
+        }
+        var base64 = Convert.ToBase64String(output.ToArray())
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+        return $"https://practicingprayerapp.com/share/{path}?v=2&d=z.{base64}";
+    }
+
+    // ── ShareRequestAsync ───────────────────────────────────────────────────
 
     [Fact]
-    public void BuildRequestShareText_IncludesUriAndFallback()
+    public async Task ShareRequestAsync_SmallRequest_SharesAsText()
     {
         var prayer = new Prayer { Title = "Heal my friend", Details = "Surgery next week" };
 
-        var result = _service.BuildRequestShareText(prayer);
+        await _service.ShareRequestAsync(prayer);
 
-        Assert.Contains("https://practicingprayerapp.com/share/r?", result);
-        Assert.Contains("Heal my friend", result);
-        Assert.Contains("Surgery next week", result);
-        Assert.Contains("Shared via Practicing Prayer", result);
+        await _shareService.Received(1).ShareTextAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(text =>
+                text.Contains("https://practicingprayerapp.com/share/r?v=2&d=z.") &&
+                text.Contains("Heal my friend") &&
+                text.Contains("Surgery next week") &&
+                text.Contains("Shared via Practicing Prayer")));
     }
 
     [Fact]
-    public void BuildRequestShareText_UrlIsSafe_NoRawSpecialChars()
-    {
-        var prayer = new Prayer { Title = "John & Jane\u2019s prayer", Details = "Details with spaces" };
-
-        var result = _service.BuildRequestShareText(prayer);
-
-        var lines = result.Split('\n');
-        var uriLine = lines.First(l => l.StartsWith("https://"));
-        // URL should be compact Base64 — no raw spaces, quotes, or ampersands
-        Assert.DoesNotContain(" ", uriLine);
-        Assert.DoesNotContain("'", uriLine);
-        Assert.DoesNotContain("&", uriLine.Split('?').Last().Split('=').First()); // no & in param name
-        // Fallback text should have readable ASCII apostrophes
-        Assert.Contains("John & Jane's prayer", result);
-    }
-
-    [Fact]
-    public void BuildRequestShareText_UsesBase64Payload_NotQueryParams()
-    {
-        var prayer = new Prayer { Title = "Mom\u2019s surgery", Details = "Please pray for healing" };
-
-        var result = _service.BuildRequestShareText(prayer);
-        var uriLine = result.Split('\n').First(l => l.StartsWith("https://"));
-
-        // URL should use v=2 and compressed Base64 payload, not long query params
-        Assert.Contains("/share/r?v=2&d=z.", uriLine);
-        Assert.DoesNotContain("title=", uriLine);
-        Assert.DoesNotContain("notes=", uriLine);
-        // No raw smart quotes or percent-encoded multibyte chars in URL
-        Assert.DoesNotContain("\u2019", uriLine);
-        Assert.DoesNotContain("%E2%80%99", uriLine);
-    }
-
-    [Fact]
-    public void BuildRequestShareText_NormalizesSmartQuotes_InFallbackText()
+    public async Task ShareRequestAsync_NormalizesSmartQuotes()
     {
         var prayer = new Prayer { Title = "Mom\u2019s surgery" };
 
-        var result = _service.BuildRequestShareText(prayer);
+        await _service.ShareRequestAsync(prayer);
 
-        // Fallback body should have readable ASCII apostrophes
-        var fallbackLines = result.Split('\n').Where(l => !l.StartsWith("https://")).ToList();
-        var fallback = string.Join('\n', fallbackLines);
-        Assert.Contains("Mom's surgery", fallback);
+        await _shareService.Received(1).ShareTextAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(text => text.Contains("Mom's surgery")));
     }
 
     [Fact]
-    public async Task HandleAsync_Request_Base64Payload_RoundTrips()
+    public async Task ShareRequestAsync_NullDetails_SharesWithoutDetails()
+    {
+        var prayer = new Prayer { Title = "Simple prayer", Details = null };
+
+        await _service.ShareRequestAsync(prayer);
+
+        await _shareService.Received(1).ShareTextAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(text =>
+                text.Contains("/share/r?v=2&d=z.") &&
+                !text.Contains("null", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    // ── ShareCardAsync ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ShareCardAsync_SmallCard_SharesAsText()
+    {
+        var card = new PrayerCard { Title = "Family Prayers" };
+        var prayers = new List<Prayer>
+        {
+            new() { Title = "Mom\u2019s health" },
+            new() { Title = "Dad\u2019s job" }
+        };
+
+        await _service.ShareCardAsync(card, prayers);
+
+        await _shareService.Received(1).ShareTextAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(text =>
+                text.Contains("https://practicingprayerapp.com/share/c?v=2&d=z.") &&
+                text.Contains("Family Prayers") &&
+                text.Contains("+ 2 requests") &&
+                text.Contains("Shared via Practicing Prayer")));
+    }
+
+    [Fact]
+    public async Task ShareCardAsync_LargeCard_SharesAsFile()
+    {
+        var card = new PrayerCard { Title = "Big Card" };
+        // Generate prayers with unique text that doesn't compress well (GZip excels
+        // at repetitive patterns, so we need varied content to exceed 1800 chars)
+        var rng = new Random(42); // deterministic seed
+        var prayers = Enumerable.Range(1, 100).Select(i =>
+        {
+            var guid = new Guid(rng.Next(), 0, 0, new byte[8]).ToString();
+            return new Prayer
+            {
+                Title = $"Unique prayer {guid} for person {i}",
+                Details = $"Detailed notes {guid} about situation {i}: {Guid.NewGuid()}"
+            };
+        }).ToList();
+
+        await _service.ShareCardAsync(card, prayers);
+
+        await _shareService.Received(1).ShareFileAsync(
+            Arg.Is<string>(t => t.Contains("Big Card")),
+            Arg.Is<string>(path => path.EndsWith(".prayercard")),
+            "application/x-prayercard");
+        // Should NOT have called ShareTextAsync
+        await _shareService.DidNotReceive().ShareTextAsync(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    // ── HandleAsync — Request ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_Request_GzipPayload_RoundTrips()
     {
         var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
         _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
 
-        // Build a share URL the new way (Base64 payload)
-        var prayer = new Prayer { Title = "Mom\u2019s surgery", Details = "Please pray" };
-        var shareText = _service.BuildRequestShareText(prayer);
-        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Mom\u2019s surgery", notes = "Please pray" });
+        var uri = BuildCompressedUrl("r", json);
 
-        await _service.HandleAsync(uriLine);
+        await _service.HandleAsync(uri);
 
-        // Smart quote should be normalized to ASCII on save
+        // Smart quote preserved from JSON (NormalizeQuotes applies on import)
         await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
             p.Title == "Mom's surgery" &&
-            p.Details == "Please pray"));
+            p.Details == "Please pray" &&
+            p.PrayerCardId == 10 &&
+            p.IsImported == true &&
+            p.CanNotify == false));
+    }
+
+    [Fact]
+    public async Task HandleAsync_Request_NavigatesToCardsTabWithImportedFlag()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Test", notes = "" });
+        var uri = BuildCompressedUrl("r", json);
+
+        await _service.HandleAsync(uri);
+
+        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
+    }
+
+    [Fact]
+    public async Task HandleAsync_Request_InvalidatesCaches()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Test", notes = "" });
+        var uri = BuildCompressedUrl("r", json);
+
+        await _service.HandleAsync(uri);
+
+        _cardService.Received(1).InvalidateCache();
+        _prayerService.Received(1).InvalidateCache();
     }
 
     [Fact]
@@ -125,134 +218,53 @@ public class DeepLinkServiceTests
     }
 
     [Fact]
-    public void BuildRequestShareText_NullDetails_StillBuildsValidUrl()
+    public async Task HandleAsync_Request_UncompressedPayload_StillWorks()
     {
-        var prayer = new Prayer { Title = "Simple prayer", Details = null };
-
-        var result = _service.BuildRequestShareText(prayer);
-
-        var uriLine = result.Split('\n').First(l => l.StartsWith("https://"));
-        Assert.Contains("/share/r?v=2&d=z.", uriLine);
-        // Fallback should not include details
-        Assert.DoesNotContain("null", result.ToLowerInvariant());
-    }
-
-    // ── BuildCardShareText ───────────────────────────────────────────────────
-
-    [Fact]
-    public void BuildCardShareText_ShowsTitleAndRequestCount()
-    {
-        var card = new PrayerCard { Title = "Family Prayers" };
-        var prayers = new List<Prayer>
-        {
-            new() { Title = "Mom\u2019s health" },
-            new() { Title = "Dad\u2019s job" }
-        };
-
-        var result = _service.BuildCardShareText(card, prayers);
-
-        Assert.Contains("https://practicingprayerapp.com/share/c?v=2&d=z.", result);
-        Assert.Contains("Family Prayers", result);
-        Assert.Contains("+ 2 requests", result);
-        Assert.Contains("Shared via Practicing Prayer", result);
-        // Individual prayers should NOT be in fallback (keeps message clean)
-        Assert.DoesNotContain("Mom", result.Split('\n').Where(l => l.StartsWith("- ")).FirstOrDefault() ?? "");
-    }
-
-    [Fact]
-    public void BuildCardShareText_EmptyPrayers_StillIncludesLink()
-    {
-        var card = new PrayerCard { Title = "Empty Card" };
-        var prayers = new List<Prayer>();
-
-        var result = _service.BuildCardShareText(card, prayers);
-
-        Assert.Contains("https://practicingprayerapp.com/share/c?", result);
-        Assert.Contains("Empty Card", result);
-    }
-
-    // ── HandleAsync — Request ────────────────────────────────────────────────
-
-    [Fact]
-    public async Task HandleAsync_Request_CreatesInSharedCard()
-    {
+        // Old-format URL without z. prefix (backward compat)
         var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
         _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
 
-        // Build a share URL using the service, then handle it (roundtrip test)
-        var prayer = new Prayer { Title = "Test Prayer", Details = "Please pray" };
-        var shareText = _service.BuildRequestShareText(prayer);
-        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Old format prayer", notes = "Details here" });
+        var rawBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
-        await _service.HandleAsync(uriLine);
+        await _service.HandleAsync($"https://practicingprayerapp.com/share/r?d={rawBase64}");
 
         await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Test Prayer" &&
-            p.Details == "Please pray" &&
-            p.PrayerCardId == 10 &&
-            p.IsImported == true &&
-            p.CanNotify == false));
+            p.Title == "Old format prayer" &&
+            p.Details == "Details here"));
     }
 
-    [Fact]
-    public async Task HandleAsync_Request_NavigatesToCardsTabWithImportedFlag()
-    {
-        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
-        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
-        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
-
-        var prayer = new Prayer { Title = "Test" };
-        var shareText = _service.BuildRequestShareText(prayer);
-        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
-
-        await _service.HandleAsync(uriLine);
-
-        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
-    }
+    // ── HandleAsync — Card ──────────────────────────────────────────────────
 
     [Fact]
-    public async Task HandleAsync_Request_InvalidatesCaches()
-    {
-        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
-        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
-        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
-
-        var prayer = new Prayer { Title = "Test" };
-        var shareText = _service.BuildRequestShareText(prayer);
-        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
-
-        await _service.HandleAsync(uriLine);
-
-        _cardService.Received(1).InvalidateCache();
-        _prayerService.Received(1).InvalidateCache();
-    }
-
-    // ── HandleAsync — Card ───────────────────────────────────────────────────
-
-    [Fact]
-    public async Task HandleAsync_Card_CreatesCardWithPrayers()
+    public async Task HandleAsync_Card_GzipPayload_RoundTrips()
     {
         _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
-        _cardService.InvalidateCache();
 
-        // Build a valid card share URI with base64url-encoded requests JSON
-        var requestsJson = System.Text.Json.JsonSerializer.Serialize(new[]
+        var json = System.Text.Json.JsonSerializer.Serialize(new
         {
-            new { title = "Prayer 1", notes = "Details 1" },
-            new { title = "Prayer 2", notes = "" }
+            title = "Family Prayers",
+            requests = new[]
+            {
+                new { title = "Mom\u2019s health", notes = "Ongoing treatment" },
+                new { title = "Dad\u2019s job", notes = "" }
+            }
         });
-        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(requestsJson))
-            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
-        var uri = $"https://practicingprayerapp.com/share/c?title=Shared%20Card&requests={base64}";
+        var uri = BuildCompressedUrl("c", json);
 
         await _service.HandleAsync(uri);
 
         await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c =>
-            c.Title == "Shared Card" &&
+            c.Title == "Family Prayers" &&
             c.IsImported == true));
-        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+        // Verify individual prayer content is correctly decoded (smart quotes normalized to ASCII)
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
+            p.Title == "Mom's health" && p.Details == "Ongoing treatment" && p.IsImported == true));
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
+            p.Title == "Dad's job" && p.IsImported == true));
     }
 
     [Fact]
@@ -273,7 +285,30 @@ public class DeepLinkServiceTests
         await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
 
-    // ── HandleAsync — Invalid URIs ───────────────────────────────────────────
+    [Fact]
+    public async Task HandleAsync_Card_LegacyFormat_CreatesCardWithPrayers()
+    {
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var requestsJson = System.Text.Json.JsonSerializer.Serialize(new[]
+        {
+            new { title = "Prayer 1", notes = "Details 1" },
+            new { title = "Prayer 2", notes = "" }
+        });
+        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(requestsJson))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+        var uri = $"https://practicingprayerapp.com/share/c?title=Shared%20Card&requests={base64}";
+
+        await _service.HandleAsync(uri);
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c =>
+            c.Title == "Shared Card" &&
+            c.IsImported == true));
+        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+    }
+
+    // ── HandleAsync — Invalid URIs ──────────────────────────────────────────
 
     [Fact]
     public async Task HandleAsync_InvalidUri_NoOp()
@@ -331,112 +366,27 @@ public class DeepLinkServiceTests
     }
 
     [Fact]
-    public async Task HandleAsync_Card_InvalidBase64_NoOp()
+    public async Task HandleAsync_Card_InvalidBase64_ShowsAlert()
     {
         await _service.HandleAsync("https://practicingprayerapp.com/share/c?title=Test&requests=!!!invalid!!!");
 
-        // Should not create a card when the requests payload is corrupt
+        await _nav.Received(1).DisplayAlertAsync("Unable to Import", Arg.Any<string>(), "OK");
         await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
-        await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
     }
 
     [Fact]
-    public async Task HandleAsync_Card_InvalidJson_NoOp()
+    public async Task HandleAsync_Card_InvalidJson_ShowsAlert()
     {
-        // Valid base64 encoding of "not valid json"
         var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("not valid json"))
             .Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
         await _service.HandleAsync($"https://practicingprayerapp.com/share/c?title=Test&requests={base64}");
 
+        await _nav.Received(1).DisplayAlertAsync("Unable to Import", Arg.Any<string>(), "OK");
         await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
-        await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
     }
 
-    // ── Phase 2: GZip Compression ───────────────────────────────────────────
-
-    [Fact]
-    public void BuildRequestShareText_GzipFormat_ContainsZPrefix()
-    {
-        var prayer = new Prayer { Title = "Test prayer", Details = "Some details" };
-
-        var result = _service.BuildRequestShareText(prayer);
-
-        var uriLine = result.Split('\n').First(l => l.StartsWith("https://"));
-        // URL should contain v=2 version param and z.-prefixed compressed payload
-        Assert.Contains("v=2", uriLine);
-        Assert.Contains("d=z.", uriLine);
-    }
-
-    [Fact]
-    public async Task HandleAsync_Request_GzipPayload_RoundTrips()
-    {
-        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
-        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
-        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
-
-        // Build a compressed share URL, then handle it (roundtrip)
-        var prayer = new Prayer { Title = "Mom\u2019s surgery", Details = "Please pray for healing" };
-        var shareText = _service.BuildRequestShareText(prayer);
-        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
-
-        await _service.HandleAsync(uriLine);
-
-        // Smart quote normalized to ASCII, details preserved
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Mom's surgery" &&
-            p.Details == "Please pray for healing" &&
-            p.PrayerCardId == 10 &&
-            p.IsImported == true &&
-            p.CanNotify == false));
-    }
-
-    [Fact]
-    public async Task HandleAsync_Card_GzipPayload_RoundTrips()
-    {
-        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
-        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
-
-        var card = new PrayerCard { Title = "Family Prayers" };
-        var prayers = new List<Prayer>
-        {
-            new() { Title = "Mom\u2019s health", Details = "Ongoing treatment" },
-            new() { Title = "Dad\u2019s job", Details = null }
-        };
-
-        var shareText = _service.BuildCardShareText(card, prayers);
-        var uriLine = shareText.Split('\n').First(l => l.StartsWith("https://"));
-
-        await _service.HandleAsync(uriLine);
-
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c =>
-            c.Title == "Family Prayers" &&
-            c.IsImported == true));
-        // Verify individual prayer content is correctly decoded (smart quotes normalized)
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Mom's health" && p.Details == "Ongoing treatment" && p.IsImported == true));
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Dad's job" && p.IsImported == true));
-    }
-
-    [Fact]
-    public async Task HandleAsync_Request_UncompressedPayload_StillWorks()
-    {
-        // Manually construct an old-format URL without z. prefix (backward compat)
-        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
-        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
-        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
-
-        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Old format prayer", notes = "Details here" });
-        var rawBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json))
-            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
-
-        await _service.HandleAsync($"https://practicingprayerapp.com/share/r?d={rawBase64}");
-
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Old format prayer" &&
-            p.Details == "Details here"));
-    }
+    // ── GZip-specific ───────────────────────────────────────────────────────
 
     [Fact]
     public async Task HandleAsync_Request_GzipPayload_CorruptData_ShowsAlert()
@@ -447,10 +397,7 @@ public class DeepLinkServiceTests
 
         await _service.HandleAsync($"https://practicingprayerapp.com/share/r?v=2&d=z.{corruptBase64}");
 
-        await _nav.Received(1).DisplayAlertAsync(
-            "Unable to Import",
-            Arg.Any<string>(),
-            "OK");
+        await _nav.Received(1).DisplayAlertAsync("Unable to Import", Arg.Any<string>(), "OK");
         await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
     }
 
@@ -469,5 +416,86 @@ public class DeepLinkServiceTests
             Arg.Is<string>(s => s.Contains("newer version")),
             "OK");
         await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
+    }
+
+    // ── HandleFileAsync ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleFileAsync_ValidCardStream_CreatesCardWithPrayers()
+    {
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            title = "Shared Card",
+            requests = new[]
+            {
+                new { title = "Prayer 1", notes = "Details 1" },
+                new { title = "Prayer 2", notes = "" }
+            }
+        });
+        using var stream = CompressToStream(json);
+
+        await _service.HandleFileAsync(stream);
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c =>
+            c.Title == "Shared Card" && c.IsImported == true));
+        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+    }
+
+    [Fact]
+    public async Task HandleFileAsync_ValidRequestStream_CreatesPrayer()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Test Prayer", notes = "Details" });
+        using var stream = CompressToStream(json);
+
+        await _service.HandleFileAsync(stream);
+
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
+            p.Title == "Test Prayer" &&
+            p.Details == "Details" &&
+            p.IsImported == true &&
+            p.CanNotify == false));
+    }
+
+    [Fact]
+    public async Task HandleFileAsync_CorruptStream_ShowsAlert()
+    {
+        using var stream = new MemoryStream(new byte[] { 0xFF, 0xFE, 0xFD, 0xFC });
+
+        await _service.HandleFileAsync(stream);
+
+        await _nav.Received(1).DisplayAlertAsync("Unable to Import", Arg.Any<string>(), "OK");
+        await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
+        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
+    }
+
+    [Fact]
+    public async Task HandleFileAsync_EmptyStream_ShowsAlert()
+    {
+        using var stream = new MemoryStream();
+
+        await _service.HandleFileAsync(stream);
+
+        await _nav.Received(1).DisplayAlertAsync("Unable to Import", Arg.Any<string>(), "OK");
+        await _db.DidNotReceive().InsertAsync(Arg.Any<Prayer>());
+    }
+
+    // ── Helper ──────────────────────────────────────────────────────────────
+
+    private static MemoryStream CompressToStream(string json)
+    {
+        using var output = new MemoryStream();
+        using (var gzip = new GZipStream(output, CompressionLevel.Optimal))
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            gzip.Write(bytes);
+        }
+        return new MemoryStream(output.ToArray());
     }
 }
