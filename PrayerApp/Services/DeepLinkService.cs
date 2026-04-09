@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -27,8 +28,9 @@ public class DeepLinkService : IDeepLinkService
         var details = prayer.Details is not null ? NormalizeQuotes(prayer.Details) : null;
 
         var json = JsonSerializer.Serialize(new { title, notes = details ?? "" });
-        var base64 = ToBase64Url(Encoding.UTF8.GetBytes(json));
-        var uri = $"{BaseUrl}/r?d={base64}";
+        var compressed = GzipCompress(Encoding.UTF8.GetBytes(json));
+        var base64 = "z." + ToBase64Url(compressed);
+        var uri = $"{BaseUrl}/r?v=2&d={base64}";
 
         var fallback = string.IsNullOrWhiteSpace(details)
             ? title
@@ -42,9 +44,10 @@ public class DeepLinkService : IDeepLinkService
         var title = NormalizeQuotes(card.Title);
         var requestList = prayers.Select(p => new { title = NormalizeQuotes(p.Title), notes = p.Details is not null ? NormalizeQuotes(p.Details) : "" }).ToArray();
         var json = JsonSerializer.Serialize(new { title, requests = requestList });
-        var base64 = ToBase64Url(Encoding.UTF8.GetBytes(json));
+        var compressed = GzipCompress(Encoding.UTF8.GetBytes(json));
+        var base64 = "z." + ToBase64Url(compressed);
 
-        var uri = $"{BaseUrl}/c?d={base64}";
+        var uri = $"{BaseUrl}/c?v=2&d={base64}";
 
         var prayerCount = requestList.Length;
         var sb = new StringBuilder();
@@ -82,18 +85,33 @@ public class DeepLinkService : IDeepLinkService
     {
         string? title, detail;
 
+        // Future-proof: if a newer format version arrives, tell user to update
+        var version = query["v"];
+        if (version != null && int.TryParse(version, out var v) && v > 2)
+        {
+            await _nav.DisplayAlertAsync("Update Required",
+                "This prayer was shared from a newer version of Practicing Prayer. Please update the app to import it.", "OK");
+            return;
+        }
+
         // New format: compact Base64 payload in ?d= parameter
         var payload = query["d"];
         if (!string.IsNullOrWhiteSpace(payload))
         {
             try
             {
-                var json = Encoding.UTF8.GetString(FromBase64Url(payload));
+                byte[] jsonBytes;
+                if (payload.StartsWith("z."))
+                    jsonBytes = GzipDecompress(FromBase64Url(payload[2..]));
+                else
+                    jsonBytes = FromBase64Url(payload);
+
+                var json = Encoding.UTF8.GetString(jsonBytes);
                 var data = JsonSerializer.Deserialize<SharedRequest>(json);
                 title = NormalizeQuotes(data?.Title);
                 detail = string.IsNullOrEmpty(data?.Notes) ? null : NormalizeQuotes(data.Notes);
             }
-            catch (Exception ex) when (ex is FormatException or JsonException)
+            catch (Exception ex) when (ex is FormatException or JsonException or InvalidDataException)
             {
                 System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared request data: {ex.Message}");
                 await _nav.DisplayAlertAsync("Unable to Import", "The shared prayer link appears to be invalid or incomplete.", "OK");
@@ -139,18 +157,33 @@ public class DeepLinkService : IDeepLinkService
         string? title;
         SharedRequest[]? requests;
 
+        // Future-proof: if a newer format version arrives, tell user to update
+        var version = query["v"];
+        if (version != null && int.TryParse(version, out var v) && v > 2)
+        {
+            await _nav.DisplayAlertAsync("Update Required",
+                "This prayer was shared from a newer version of Practicing Prayer. Please update the app to import it.", "OK");
+            return;
+        }
+
         // New format: compact Base64 payload in ?d= parameter
         var payload = query["d"];
         if (!string.IsNullOrWhiteSpace(payload))
         {
             try
             {
-                var json = Encoding.UTF8.GetString(FromBase64Url(payload));
+                byte[] jsonBytes;
+                if (payload.StartsWith("z."))
+                    jsonBytes = GzipDecompress(FromBase64Url(payload[2..]));
+                else
+                    jsonBytes = FromBase64Url(payload);
+
+                var json = Encoding.UTF8.GetString(jsonBytes);
                 var data = JsonSerializer.Deserialize<SharedCard>(json);
                 title = NormalizeQuotes(data?.Title);
                 requests = data?.Requests;
             }
-            catch (Exception ex) when (ex is FormatException or JsonException)
+            catch (Exception ex) when (ex is FormatException or JsonException or InvalidDataException)
             {
                 System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared card data: {ex.Message}");
                 await _nav.DisplayAlertAsync("Unable to Import", "The shared prayer card link appears to be invalid or incomplete.", "OK");
@@ -170,7 +203,7 @@ public class DeepLinkService : IDeepLinkService
                 var json = Encoding.UTF8.GetString(FromBase64Url(requestsBase64));
                 requests = JsonSerializer.Deserialize<SharedRequest[]>(json);
             }
-            catch (Exception ex) when (ex is FormatException or JsonException)
+            catch (Exception ex) when (ex is FormatException or JsonException or InvalidDataException)
             {
                 System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared card data: {ex.Message}");
                 await _nav.DisplayAlertAsync("Unable to Import", "The shared prayer card link appears to be invalid or incomplete.", "OK");
@@ -218,6 +251,23 @@ public class DeepLinkService : IDeepLinkService
         _cardService.InvalidateCache();
         _prayerService.InvalidateCache();
         await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
+    }
+
+    private static byte[] GzipCompress(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var gzip = new GZipStream(output, CompressionLevel.Optimal))
+            gzip.Write(data);
+        return output.ToArray();
+    }
+
+    private static byte[] GzipDecompress(byte[] data)
+    {
+        using var input = new MemoryStream(data);
+        using var gzip = new GZipStream(input, CompressionMode.Decompress);
+        using var output = new MemoryStream();
+        gzip.CopyTo(output);
+        return output.ToArray();
     }
 
     private static string ToBase64Url(byte[] data)
