@@ -136,39 +136,35 @@
              tapping section headers to re-expand collapsed collections. -->
         <CollectionView.GroupHeaderTemplate>
             <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
-                <Grid ColumnDefinitions="Auto,*,Auto"
-                      Padding="4,12,4,6"
-                      AutomationId="Cards_Section_Header"
-                      SemanticProperties.Description="{Binding Name}"
-                      SemanticProperties.Hint="Double tap to expand or collapse section">
+                <VerticalStackLayout
+                    AutomationId="Cards_Section_Header"
+                    SemanticProperties.Description="{Binding Name}"
+                    SemanticProperties.Hint="Double tap to expand or collapse section">
                     <!-- BUG-59: Dim headers during multi-select so focus stays on cards -->
-                    <Grid.Triggers>
-                        <DataTrigger TargetType="Grid" Binding="{Binding IsMultiSelectMode}" Value="True">
+                    <VerticalStackLayout.Triggers>
+                        <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding IsMultiSelectMode}" Value="True">
                             <Setter Property="Opacity" Value="0.4" />
                         </DataTrigger>
-                    </Grid.Triggers>
-                    <Grid.GestureRecognizers>
+                    </VerticalStackLayout.Triggers>
+                    <VerticalStackLayout.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
-                    </Grid.GestureRecognizers>
-                    <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
-                           FontSize="11"
-                           AutomationProperties.IsInAccessibleTree="False"
-                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
-                           VerticalOptions="Center"
-                           Margin="0,0,6,0" />
-                    <Label Grid.Column="1"
-                           Text="{Binding Name}"
-                           FontSize="14"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
-                           VerticalOptions="Center" />
-                    <Label Grid.Column="2"
-                           Text="{Binding CardCount}"
-                           FontSize="13"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource TextMutedDark}}"
-                           VerticalOptions="Center" />
-                </Grid>
+                    </VerticalStackLayout.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,8">
+                        <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
+                               FontSize="10"
+                               AutomationProperties.IsInAccessibleTree="False"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                               VerticalOptions="Center"
+                               Margin="0,0,6,0" />
+                        <Label Grid.Column="1"
+                               Text="{Binding HeaderText}"
+                               FontSize="15"
+                               FontFamily="OpenSansSemibold"
+                               TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0" />
+                </VerticalStackLayout>
             </DataTemplate>
         </CollectionView.GroupHeaderTemplate>
         <!-- BUG-56: Empty collection hint — only when expanded AND 0 cards.

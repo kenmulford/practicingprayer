@@ -49,11 +49,16 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
             {
                 _name = value;
                 NotifyChanged(nameof(Name));
+                NotifyChanged(nameof(HeaderText));
             }
         }
     }
 
     public int CardCount => _backingCards.Count;
+
+    public string HeaderText => CardCount > 0
+        ? $"{Name} · {CardCount} {(CardCount == 1 ? "card" : "cards")}"
+        : Name;
 
     private bool _isMultiSelectMode;
     /// <summary>Propagated from PrayerCardsViewModel to dim headers during multi-select.</summary>
@@ -117,6 +122,7 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
     {
         _backingCards = cards.ToList();
         NotifyChanged(nameof(CardCount));
+        NotifyChanged(nameof(HeaderText));
         ApplyExpansionState();
     }
 

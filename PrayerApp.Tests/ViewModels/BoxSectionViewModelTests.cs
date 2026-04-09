@@ -168,4 +168,50 @@ public class BoxSectionViewModelTests
 
         Assert.False(section.IsMultiSelectMode);
     }
+
+    // ── HeaderText ───────────────────────────────────────────────────
+
+    [Fact]
+    public void HeaderText_NoCards_ReturnsNameOnly()
+    {
+        var box = new CardBox { Id = 1, Name = "Family" };
+        var section = new BoxSectionViewModel(box, defaultExpanded: true);
+
+        Assert.Equal("Family", section.HeaderText);
+    }
+
+    [Fact]
+    public void HeaderText_OneCard_ReturnsSingular()
+    {
+        var box = new CardBox { Id = 1, Name = "Family" };
+        var section = new BoxSectionViewModel(box, defaultExpanded: true);
+        section.SetCards(new[] { MakeCard(1, "A") });
+
+        Assert.Equal("Family · 1 card", section.HeaderText);
+    }
+
+    [Fact]
+    public void HeaderText_MultipleCards_ReturnsPlural()
+    {
+        var box = new CardBox { Id = 1, Name = "Family" };
+        var section = new BoxSectionViewModel(box, defaultExpanded: true);
+        section.SetCards(new[] { MakeCard(1, "A"), MakeCard(2, "B"), MakeCard(3, "C") });
+
+        Assert.Equal("Family · 3 cards", section.HeaderText);
+    }
+
+    [Fact]
+    public void HeaderText_UpdatesWhenCardsChange()
+    {
+        var box = new CardBox { Id = 1, Name = "Work" };
+        var section = new BoxSectionViewModel(box, defaultExpanded: true);
+
+        Assert.Equal("Work", section.HeaderText);
+
+        section.SetCards(new[] { MakeCard(1, "A") });
+        Assert.Equal("Work · 1 card", section.HeaderText);
+
+        section.SetCards(new[] { MakeCard(1, "A"), MakeCard(2, "B") });
+        Assert.Equal("Work · 2 cards", section.HeaderText);
+    }
 }
