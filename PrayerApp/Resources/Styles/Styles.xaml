@@ -590,7 +590,7 @@
          plus HeightRequest=, Opacity=, and HorizontalOptions= from the element. -->
     <Style x:Key="DividerLine" TargetType="BoxView">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="Opacity" Value="0.4" />
+        <Setter Property="Opacity" Value="{AppThemeBinding Light=0.4, Dark=0.65}" />
         <Setter Property="HeightRequest" Value="1" />
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
