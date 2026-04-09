@@ -14,3 +14,4 @@
 - **Collections start collapsed** — All collections on the Prayer Cards page now start collapsed for a cleaner view. Your expand/collapse choices are remembered between sessions.
 - **Cards indented within collections** — Cards are now visually indented under their collection headers, making it easier to see which cards belong to which collection.
 - **Accessibility improvements** — Better screen reader support: improved color contrast for muted text, fixed toggle switch announcements, cleaned up how card headers are read aloud, and hidden decorative icons from screen readers.
+- **Fixed sharing bug** — Shared prayer cards now correctly filter out empty prayer entries. Import errors now show a clear message instead of failing silently.
