@@ -146,10 +146,10 @@
                             <Setter Property="Opacity" Value="0.4" />
                         </DataTrigger>
                     </VerticalStackLayout.Triggers>
-                    <VerticalStackLayout.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
-                    </VerticalStackLayout.GestureRecognizers>
                     <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,8">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
+                        </Grid.GestureRecognizers>
                         <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
                                FontSize="10"
                                AutomationProperties.IsInAccessibleTree="False"
