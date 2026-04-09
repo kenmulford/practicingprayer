@@ -350,7 +350,9 @@ namespace PrayerApp.ViewModels
         {
             if (_prayerCard.IsSystem) return;
             var allPrayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
-            var activePrayers = allPrayers.Where(p => !p.IsAnswered).ToList();
+            var activePrayers = allPrayers
+                .Where(p => !p.IsAnswered && !string.IsNullOrWhiteSpace(p.Title))
+                .ToList();
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
             var text = deepLinkService.BuildCardShareText(_prayerCard, activePrayers);
             await Share.RequestAsync(new ShareTextRequest { Title = _prayerCard.Title, Text = text });

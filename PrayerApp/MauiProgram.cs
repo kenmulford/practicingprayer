@@ -298,6 +298,12 @@ namespace PrayerApp
             if (string.IsNullOrEmpty(url) || !url.StartsWith("https://practicingprayerapp.com/share"))
                 return;
 
+            // Strip trailing text — share messages append human-readable summary
+            // after the URL, which some apps pass through as part of the URI.
+            var endOfUrl = url.IndexOfAny(new[] { '\n', '\r', ' ' });
+            if (endOfUrl >= 0)
+                url = url[..endOfUrl];
+
             // Suppress onboarding for this session — must happen before UI dispatch
             // so MainPage.OnAppearing sees the flag when it checks.
             var onboarding = IPlatformApplication.Current?.Services?.GetService<IOnboardingService>();

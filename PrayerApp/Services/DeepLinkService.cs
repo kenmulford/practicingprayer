@@ -96,6 +96,7 @@ public class DeepLinkService : IDeepLinkService
             catch (Exception ex) when (ex is FormatException or JsonException)
             {
                 System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared request data: {ex.Message}");
+                await _nav.DisplayAlertAsync("Unable to Import", "The shared prayer link appears to be invalid or incomplete.", "OK");
                 return;
             }
         }
@@ -152,6 +153,7 @@ public class DeepLinkService : IDeepLinkService
             catch (Exception ex) when (ex is FormatException or JsonException)
             {
                 System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared card data: {ex.Message}");
+                await _nav.DisplayAlertAsync("Unable to Import", "The shared prayer card link appears to be invalid or incomplete.", "OK");
                 return;
             }
         }
@@ -171,12 +173,16 @@ public class DeepLinkService : IDeepLinkService
             catch (Exception ex) when (ex is FormatException or JsonException)
             {
                 System.Diagnostics.Debug.WriteLine($"[DeepLink] Invalid shared card data: {ex.Message}");
+                await _nav.DisplayAlertAsync("Unable to Import", "The shared prayer card link appears to be invalid or incomplete.", "OK");
                 return;
             }
         }
 
         if (string.IsNullOrWhiteSpace(title))
             return;
+
+        // Filter out empty-title requests (data quality guard)
+        requests = requests?.Where(r => !string.IsNullOrWhiteSpace(r?.Title)).ToArray();
 
         if (requests is null || requests.Length == 0)
             return;
