@@ -15,3 +15,4 @@
 - **Cards indented within collections** — Cards are now visually indented under their collection headers, making it easier to see which cards belong to which collection.
 - **Accessibility improvements** — Better screen reader support: improved color contrast for muted text, fixed toggle switch announcements, cleaned up how card headers are read aloud, and hidden decorative icons from screen readers.
 - **Fixed sharing bug** — Shared prayer cards now correctly filter out empty prayer entries. Import errors now show a clear message instead of failing silently.
+- **More reliable sharing** — Shared prayer links are now compressed so they work better with messaging apps that truncate long URLs. For prayer cards with many prayers, the app automatically shares a file attachment instead of a link.

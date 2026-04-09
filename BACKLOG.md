@@ -14,9 +14,9 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.1.1b51. 411 unit tests, 68 UITests. App live on Google Play.
-**Last completed**: BUG-63 Phase 1 share bug fixes, A11Y-4 Sprint 1, UX-31/UX-32.
-**Next up**: BUG-63 Phase 2-3 (gzip compression + .prayercard file sharing).
+**Status**: 1.1.1b51. 416 unit tests, 68 UITests. App live on Google Play.
+**Last completed**: BUG-63 Phases 2-3 (gzip compression + .prayercard file fallback).
+**Next up**: INV-6 localization decisions, A11Y-4 Sprint 2.
 
 ---
 
@@ -26,7 +26,7 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | BUG-63| Share system upgrade — gzip + file fallback                        | Ken    | Phase 1 bug fixes committed. Plan at `.claude/plans/sharing-upgrade.md`. Phase 2: gzip compression (< 1 session). Phase 3: `.prayercard` file fallback for large cards (1-2 sessions). **Ready to implement.** |
+| 1   | BUG-63| Share system upgrade — gzip + file fallback                        | Ken    | **Complete.** Phase 1: bug fixes. Phase 2: gzip compression with `z.` prefix + `?v=2` version param. Phase 3: `.prayercard` file fallback when URL > 1800 chars, IShareService abstraction, platform file type registration. Backward-compatible with all prior share formats. |
 | 2   | INV-6 | Localization support — research complete                           | Ken    | Research at `docs/research/` (plan file repurposed for BUG-63). ~300 user-facing strings, zero infra exists. 4-7 sessions for English extraction + infrastructure. **Needs decisions: culture strategy (A/B/C), target languages, RTL scope, runtime switching.** |
 | 3   | A11Y-4| Full accessibility audit — remaining fixes                          | Ken    | Sprint 1 complete (contrast, anti-patterns, decorative elements). Audit at `docs/research/a11y-4-audit.md`. Remaining: Sprint 2 (container Description cleanup, answered-state, filter chip state), Sprint 3 (missing announcements), Sprint 4 (touch targets, headings, multi-select entry). **3 sessions left, needs on-device testing.** |
 | 4   | F-23  | Dashboard: "Prayers answered on this date"                         | Ken    | Full-width card below 2x2 metric grid. Shows prayers answered on same month+day in prior years (not today). Header: "Answered prayers from [Month Day]". Lists prayer titles. Hidden when empty, no tap action. Plan at `.claude/plans/reactive-swimming-bunny.md`. **Ready to implement.** |
