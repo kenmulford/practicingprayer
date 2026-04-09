@@ -326,7 +326,7 @@ namespace PrayerApp
                 if (cursor != null && cursor.MoveToFirst())
                 {
                     var nameIndex = cursor.GetColumnIndex(
-                        Android.Provider.OpenableColumns.DisplayName);
+                        Android.Provider.IOpenableColumns.DisplayName);
                     if (nameIndex >= 0)
                     {
                         var name = cursor.GetString(nameIndex);
