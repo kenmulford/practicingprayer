@@ -262,11 +262,12 @@ public class DeepLinkService : IDeepLinkService
         if (string.IsNullOrWhiteSpace(title))
             return;
 
+        var isDuplicate = await IsDuplicateRequestAsync(data);
         var preview = string.IsNullOrWhiteSpace(detail) ? title : $"{title}\n\n{detail}";
-        var confirmed = await _nav.DisplayConfirmAsync(
+        var confirmed = await ConfirmImportAsync(
             "Prayer Shared With You",
-            $"{preview}\n\nSave to your prayer journal?",
-            "Save", "Decline");
+            preview,
+            isDuplicate ? "You've already saved this prayer." : null);
         if (!confirmed) return;
 
         var sharedCard = await _cardService.GetOrCreateSharedCardAsync();
@@ -298,12 +299,13 @@ public class DeepLinkService : IDeepLinkService
         if (requests is null || requests.Length == 0)
             return;
 
+        var isDuplicate = await IsDuplicateCardAsync(data);
         var prayerCount = requests.Length;
         var preview = $"\"{title}\" with {prayerCount} prayer{(prayerCount == 1 ? "" : "s")}";
-        var confirmed = await _nav.DisplayConfirmAsync(
+        var confirmed = await ConfirmImportAsync(
             "Prayer Card Shared With You",
-            $"{preview}\n\nSave to your prayer journal?",
-            "Save", "Decline");
+            preview,
+            isDuplicate ? "You've already imported this card." : null);
         if (!confirmed) return;
 
         var card = new PrayerCard
@@ -331,6 +333,81 @@ public class DeepLinkService : IDeepLinkService
         await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
 
+    // ── Duplicate detection ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Shows an import confirmation dialog with a "Save" button, or "Save Again"
+    /// plus a warning line when <paramref name="duplicateNotice"/> is non-null.
+    /// </summary>
+    private Task<bool> ConfirmImportAsync(string alertTitle, string preview, string? duplicateNotice)
+    {
+        var isDuplicate = duplicateNotice is not null;
+        var prompt = isDuplicate
+            ? $"{preview}\n\n{duplicateNotice}"
+            : $"{preview}\n\nSave to your prayer journal?";
+        var confirmText = isDuplicate ? "Save Again" : "Save";
+        return _nav.DisplayConfirmAsync(alertTitle, prompt, confirmText, "Decline");
+    }
+
+    /// <summary>
+    /// Checks whether an imported card with the same title and prayer title set
+    /// already exists. Only considers non-system cards flagged IsImported=true.
+    /// Match is case-insensitive, trimmed, smart-quote normalized.
+    /// </summary>
+    private async Task<bool> IsDuplicateCardAsync(SharedCard data)
+    {
+        var incomingTitle = NormalizeForMatch(data.Title);
+        var incomingPrayerTitles = (data.Requests ?? [])
+            .Where(r => !string.IsNullOrWhiteSpace(r?.Title))
+            .Select(r => NormalizeForMatch(r!.Title))
+            .OrderBy(t => t, StringComparer.Ordinal)
+            .ToList();
+
+        var cards = await _cardService.GetCardsAsync();
+        var candidates = cards.Where(c =>
+            c.IsImported && !c.IsSystem && NormalizeForMatch(c.Title) == incomingTitle);
+
+        foreach (var card in candidates)
+        {
+            var prayers = await _prayerService.GetPrayersByCardAsync(card.Id);
+            var existingTitles = prayers
+                .Where(p => !string.IsNullOrWhiteSpace(p.Title))
+                .Select(p => NormalizeForMatch(p.Title))
+                .OrderBy(t => t, StringComparer.Ordinal)
+                .ToList();
+
+            if (existingTitles.SequenceEqual(incomingPrayerTitles))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Checks whether an imported prayer with the same title and notes already
+    /// exists in the "Shared with me" card. Match is case-insensitive, trimmed,
+    /// smart-quote normalized. Returns false if the shared card doesn't exist
+    /// yet (no previous imports).
+    /// </summary>
+    private async Task<bool> IsDuplicateRequestAsync(SharedRequest data)
+    {
+        var cards = await _cardService.GetCardsAsync();
+        var sharedCard = cards.FirstOrDefault(c =>
+            c.IsSystem && c.Title == PrayerCard.TitleSharedWithMe);
+        if (sharedCard is null)
+            return false;
+
+        var incomingTitle = NormalizeForMatch(data.Title);
+        var incomingNotes = NormalizeForMatch(data.Notes);
+
+        var prayers = await _prayerService.GetPrayersByCardAsync(sharedCard.Id);
+        return prayers.Any(p =>
+            NormalizeForMatch(p.Title) == incomingTitle &&
+            NormalizeForMatch(p.Details) == incomingNotes);
+    }
+
+    private static string NormalizeForMatch(string? s)
+        => (NormalizeQuotes(s) ?? "").Trim().ToLowerInvariant();
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static bool IsUnsupportedVersion(System.Collections.Specialized.NameValueCollection query)
@@ -341,9 +418,26 @@ public class DeepLinkService : IDeepLinkService
 
     private static byte[] DecodePayload(string payload)
     {
+        // Strip trailing non-base64url characters that some messaging apps
+        // inject when they URL-encode the fallback share text into the d= param
+        // (email, Slack, Discord, Teams — SMS apps stop at literal whitespace)
+        payload = TakeBase64UrlPrefix(payload);
+
         if (payload.StartsWith("z."))
             return GzipDecompress(FromBase64Url(payload[2..]));
         return FromBase64Url(payload);
+    }
+
+    private static string TakeBase64UrlPrefix(string s)
+    {
+        for (int i = 0; i < s.Length; i++)
+        {
+            var c = s[i];
+            bool valid = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                         (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.';
+            if (!valid) return s[..i];
+        }
+        return s;
     }
 
     private static byte[] GzipCompress(byte[] data)

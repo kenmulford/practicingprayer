@@ -510,6 +510,256 @@ public class DeepLinkServiceTests : IDisposable
             p.Title == "Prayer 20" && p.IsImported == true));
     }
 
+    // ── URL cleanup: trailing fallback text from messaging apps ──────────────
+
+    [Fact]
+    public async Task HandleAsync_EmailEncodedUrlFromBugReport_ImportsSuccessfully()
+    {
+        // Actual failing URL from user bug report: email client URL-encoded
+        // the entire share text, jamming the fallback into the d= parameter.
+        // SMS worked; email/Slack/Discord/Teams need this cleanup.
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var url = "https://practicingprayerapp.com/share/c?v=2&d=z.H4sIAAAAAAAAE22TQU_cMBCF_8qQc7pCHNqKWxWpSyvRonKgUtuDSSbJaB07HY_ZRoj_3hkHlgVx2o09fvPN8_N9JSQeq_Pq08zk4SOcnZ69r-qK8W_GJKk6_3V_qLlw7HHR3RAFdav6HBnaOM0eBWFE5ykM0HOcwHmvCwwTdtQ6D-2oKxgGTJvqoX6WbJqrBlzooNmmI-Erdgv0qh4zg0fXIacaZHRhB9vYHbaabV1-2zFzO9ZFaT86gSl7odlrb6EYYE_K42PcgacdgkvwjdpdKf8al9JB1ZEYBo55Bgr2Cb1Cv-JlpGE8Ir3eIwpIhIRY0GaOd9SZEaY-Z07ZPm6MwFYuHS_KSB6txQId050SadtQGNTQHISXDRxMaGMQChk7M3vKgWR5SXWd8QipOZRj32MrCWIPc8A8xUCuhp_vTFjiFJnj3thbNYDLfVm7kWZImQd8glDzVw4rc6FFO3Or0Le-_B2dTvB4osxoUdjAC8SbOGH4nU9Pzz4k-IHC6OSI-dIFdcVqoHXMi1mGU7TL0_TszXQp0kdBWg0yy3jVU4HsOyPrc6jNtqDjq9QaDNZA68fjOXoq16TrwEU7TjqmALp2NBgXXg3RlJjB976nVs0SdhRU8a3gGlZc61KJ02NtXXY1JGJoGk036EYSSDMxSbZpHfeO8VVvzelRnwt7W_rORo2yGxj1svUixGm4y5OjgCdwgX42I_ckoy7rfS_mxD9CWVZLOpzVlaQcG_giT9fzHOGkN6K-ecJ-jYa27eytxFhspFRCf1I9_Hn4D1UzDUJMBAAA%0A%0AApril%208%202026%0A+%207%20requests%0A%0A(Shared%20via%20Practicing%20Prayer)";
+
+        await _service.HandleAsync(url);
+
+        // Should import successfully despite the trailing garbage
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c =>
+            c.Title == "April 8 2026" && c.IsImported == true));
+        await _db.Received(7).InsertAsync(Arg.Any<Prayer>());
+        // Verify no error alert was shown
+        await _nav.DidNotReceive().DisplayAlertAsync(
+            "Unable to Import", Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_UrlWithTrailingNewlineInPayload_StripsAndImports()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        // Build a valid payload, then manually append encoded newline + text
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Test", notes = "" });
+        var uri = BuildCompressedUrl("r", json);
+        // Append garbage after the payload (URL-encoded newline + prose)
+        uri += "%0A%0ASome%20trailing%20text";
+
+        await _service.HandleAsync(uri);
+
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.Title == "Test"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_UrlWithTrailingParentheses_StripsAndImports()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Test", notes = "" });
+        var uri = BuildCompressedUrl("r", json);
+        // Some apps embed the whole "(Shared via Practicing Prayer)" footer
+        uri += "%28Shared%20via%20Practicing%20Prayer%29";
+
+        await _service.HandleAsync(uri);
+
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.Title == "Test"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_UrlWithTrailingEmoji_StripsAndImports()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new { title = "Test", notes = "" });
+        var uri = BuildCompressedUrl("r", json);
+        // User reaction emoji appended (Slack/Discord behavior)
+        uri += "%F0%9F%99%8F"; // 🙏
+
+        await _service.HandleAsync(uri);
+
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.Title == "Test"));
+    }
+
+    // ── Duplicate detection ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_CardDuplicate_ShowsAlreadyImportedWarning()
+    {
+        // Existing imported card with same title and same prayer titles
+        var existingCard = new PrayerCard { Id = 42, Title = "Family", IsImported = true, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existingCard }.AsReadOnly());
+        _prayerService.GetPrayersByCardAsync(42).Returns(new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 42, Title = "Mom's health" },
+            new() { Id = 2, PrayerCardId = 42, Title = "Dad's job" }
+        }.AsReadOnly());
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        // Incoming card with identical data
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            title = "Family",
+            requests = new[]
+            {
+                new { title = "Mom's health", notes = "" },
+                new { title = "Dad's job", notes = "" }
+            }
+        });
+        var uri = BuildCompressedUrl("c", json);
+
+        await _service.HandleAsync(uri);
+
+        // Confirm dialog should mention "already imported"
+        await _nav.Received(1).DisplayConfirmAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(msg => msg.Contains("already imported", StringComparison.OrdinalIgnoreCase)),
+            Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_CardDuplicate_UserConfirms_StillImports()
+    {
+        var existingCard = new PrayerCard { Id = 42, Title = "Family", IsImported = true, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existingCard }.AsReadOnly());
+        _prayerService.GetPrayersByCardAsync(42).Returns(new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 42, Title = "Mom's health" }
+        }.AsReadOnly());
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            title = "Family",
+            requests = new[] { new { title = "Mom's health", notes = "" } }
+        });
+        var uri = BuildCompressedUrl("c", json);
+
+        await _service.HandleAsync(uri);
+
+        // Duplicate detected, user still confirmed → import proceeds
+        await _db.Received(1).InsertAsync(Arg.Any<PrayerCard>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_CardSameTitleDifferentPrayers_NoDuplicateWarning()
+    {
+        // Existing card with same title but different prayer set
+        var existingCard = new PrayerCard { Id = 42, Title = "Family", IsImported = true, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existingCard }.AsReadOnly());
+        _prayerService.GetPrayersByCardAsync(42).Returns(new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 42, Title = "Grandma's healing" }
+        }.AsReadOnly());
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        // Incoming: same title, different prayers
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            title = "Family",
+            requests = new[]
+            {
+                new { title = "Mom's health", notes = "" },
+                new { title = "Dad's job", notes = "" }
+            }
+        });
+        var uri = BuildCompressedUrl("c", json);
+
+        await _service.HandleAsync(uri);
+
+        // No duplicate warning — different prayer set
+        await _nav.DidNotReceive().DisplayConfirmAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(msg => msg.Contains("already imported", StringComparison.OrdinalIgnoreCase)),
+            Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_CardIgnoresSystemCardsForDuplicateCheck()
+    {
+        // System card "Shared with me" should not trigger false positive
+        var systemCard = new PrayerCard { Id = 1, Title = "Shared with me", IsImported = false, IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { systemCard }.AsReadOnly());
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            title = "Shared with me",
+            requests = new[] { new { title = "Test", notes = "" } }
+        });
+        var uri = BuildCompressedUrl("c", json);
+
+        await _service.HandleAsync(uri);
+
+        await _nav.DidNotReceive().DisplayConfirmAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(msg => msg.Contains("already imported", StringComparison.OrdinalIgnoreCase)),
+            Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_RequestDuplicate_ShowsAlreadySavedWarning()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { sharedCard }.AsReadOnly());
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _prayerService.GetPrayersByCardAsync(10).Returns(new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 10, Title = "Mom's surgery", Details = "Please pray" }
+        }.AsReadOnly());
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            title = "Mom's surgery",
+            notes = "Please pray"
+        });
+        var uri = BuildCompressedUrl("r", json);
+
+        await _service.HandleAsync(uri);
+
+        await _nav.Received(1).DisplayConfirmAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(msg => msg.Contains("already saved", StringComparison.OrdinalIgnoreCase)),
+            Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_RequestSameTitleDifferentNotes_NoDuplicateWarning()
+    {
+        var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { sharedCard }.AsReadOnly());
+        _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
+        _prayerService.GetPrayersByCardAsync(10).Returns(new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 10, Title = "Mom's surgery", Details = "Recovery ongoing" }
+        }.AsReadOnly());
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            title = "Mom's surgery",
+            notes = "Upcoming surgery next week"
+        });
+        var uri = BuildCompressedUrl("r", json);
+
+        await _service.HandleAsync(uri);
+
+        await _nav.DidNotReceive().DisplayConfirmAsync(
+            Arg.Any<string>(),
+            Arg.Is<string>(msg => msg.Contains("already saved", StringComparison.OrdinalIgnoreCase)),
+            Arg.Any<string>(), Arg.Any<string>());
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────────
 
     private static MemoryStream CompressToStream(string json)
