@@ -50,7 +50,13 @@ code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var
 <span class="code-comment">&lt;!-- Services --&gt;</span>
 <span class="code-tag">&lt;Compile</span> <span class="code-attr">Include</span>=<span class="code-string">"../PrayerApp/Services/CardService.cs"</span> /&gt;
 <span class="code-tag">&lt;Compile</span> <span class="code-attr">Include</span>=<span class="code-string">"../PrayerApp/Services/IDBService.cs"</span> /&gt;</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Compile these model files from the main project as if they were in the test project.</p><p class="tl">Same for services. The test project gets the exact same code &mdash; no copies, no drift.</p><p class="tl">Files that depend on MAUI (Settings.cs, platform services, UI pages) are <strong>excluded</strong> &mdash; they can't run on a desktop.</p></div></div></div>
-        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp.Tests/PrayerApp.Tests.csproj</code> &mdash; lines 37&ndash;113</p></section>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp.Tests/PrayerApp.Tests.csproj</code> &mdash; lines 37&ndash;113</p>
+        <div class="callout callout-info"><div class="callout-icon">&#x1F50D;</div><div class="callout-content"><strong class="callout-title">The safety net keeps growing</strong><p>The test suite now extends well beyond the original service tests. Think of it as a net that started under the tightrope (services) and now reaches under the trapeze (ViewModels) and the flying rings (deep linking) too:</p>
+          <div class="icon-rows stagger-children" style="margin-top:var(--space-3)">
+            <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">&#x1F517;</div><div><strong>DeepLinkServiceTests</strong><p>Tests gzip compression, file fallback, duplicate detection, URL cleanup, and backward compatibility with older share formats.</p></div></div>
+            <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">&#x1F3F7;</div><div><strong>TagPickerViewModelTests</strong><p>Tests the async modal coordination &mdash; comma-delimited batch entry, tag creation, and the TaskCompletionSource dismiss signal.</p></div></div>
+            <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">&#x1F4C2;</div><div><strong>BoxSectionViewModelTests &amp; PrayerCardsViewModelTests</strong><p>Tests collapsible sections &mdash; expand/collapse toggling, card count display, and expansion state persistence.</p></div></div>
+          </div></div></div></section>
     </div>
   </div>
 </section>
