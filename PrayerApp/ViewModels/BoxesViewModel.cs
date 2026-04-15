@@ -145,7 +145,22 @@ namespace PrayerApp.ViewModels
         public int CardCount
         {
             get => _cardCount;
-            private set => SetProperty(ref _cardCount, value);
+            private set
+            {
+                if (SetProperty(ref _cardCount, value))
+                    OnPropertyChanged(nameof(AccessibleDescription));
+            }
+        }
+
+        public string AccessibleDescription
+        {
+            get
+            {
+                var parts = new List<string> { Name };
+                parts.Add($"{CardCount} card{(CardCount == 1 ? "" : "s")}");
+                if (IsSystem) parts.Add("System");
+                return string.Join(", ", parts);
+            }
         }
 
         private bool _isSelected;
