@@ -80,6 +80,7 @@ namespace PrayerApp.ViewModels
         public ICommand CancelMultiSelectCommand { get; }
         public ICommand MoveSelectedCommand { get; }
         public ICommand LongPressCardCommand { get; }
+        public ICommand EnterMultiSelectCommand { get; }
 
         private bool _isMultiSelectMode;
         public bool IsMultiSelectMode
@@ -139,6 +140,7 @@ namespace PrayerApp.ViewModels
             {
                 if (card != null) EnterMultiSelectMode(card);
             });
+            EnterMultiSelectCommand = new RelayCommand(EnterMultiSelectModeFromToolbar);
             DismissCollectionsBannerCommand = new RelayCommand(() =>
             {
                 _settings.CollectionsBannerDismissed = true;
@@ -649,6 +651,17 @@ namespace PrayerApp.ViewModels
         #region Multi-Select
 
         private DateTime _multiSelectEnteredAt;
+
+        /// <summary>Enters multi-select mode from the toolbar without pre-selecting a card.
+        /// Provides an accessible alternative to long-press for screen reader users.</summary>
+        private void EnterMultiSelectModeFromToolbar()
+        {
+            if (IsMultiSelectMode) return;
+            _multiSelectEnteredAt = DateTime.UtcNow;
+            IsMultiSelectMode = true;
+            NotifySelectionCount();
+            _accessibilityService.Announce("Selection mode. Tap cards to select them.");
+        }
 
         /// <summary>Enters multi-select mode with the given card pre-selected.</summary>
         public void EnterMultiSelectMode(PrayerCardViewModel card)

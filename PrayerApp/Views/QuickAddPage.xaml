@@ -66,6 +66,7 @@
                         Text="Add"
                         AutomationId="QuickAdd_Btn_Add"
                         Command="{Binding SaveCommand}"
+                        SemanticProperties.Hint="Save this prayer request"
                         HorizontalOptions="Fill" />
             </Grid>
 
