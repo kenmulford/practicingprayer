@@ -1,6 +1,6 @@
 # Running the Appium UI Test Suite
 
-> 68 automated tests across 13 test files. Android tests run on **Windows (PC)**, iOS tests run on **macOS (Mac)**.
+> 81 automated tests across 15 test files. Android tests run on **Windows (PC)**, iOS tests run on **macOS (Mac)**.
 
 ---
 
@@ -23,11 +23,17 @@
 | Appium UiAutomator2 driver | latest | `appium driver install uiautomator2` |
 | Java JDK | 17+ | Required by UiAutomator2 |
 
-**Environment variables** (Android SDK):
+**Environment variables** (set permanently via PowerShell — run as Administrator):
+```powershell
+[System.Environment]::SetEnvironmentVariable("ANDROID_HOME", "$env:LOCALAPPDATA\Android\Sdk", "User")
+[System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Java\jdk-17", "User")
+
+# Add platform-tools (adb) and emulator to PATH
+$sdkPath = "$env:LOCALAPPDATA\Android\Sdk"
+$currentPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+[System.Environment]::SetEnvironmentVariable("Path", "$currentPath;$sdkPath\platform-tools;$sdkPath\emulator", "User")
 ```
-ANDROID_HOME=C:\Users\<you>\AppData\Local\Android\Sdk
-JAVA_HOME=C:\Program Files\Java\jdk-17
-```
+Restart your terminal after setting these.
 
 ### Mac (iOS)
 
@@ -44,31 +50,29 @@ JAVA_HOME=C:\Program Files\Java\jdk-17
 
 ### 1. Install Appium and drivers
 
-```bash
-# Install Appium globally
+**PC (PowerShell):**
+```powershell
 npm install -g appium
-
-# PC — install Android driver
 appium driver install uiautomator2
-
-# Mac — install iOS driver
-appium driver install xcuitest
+appium driver list --installed
 ```
 
-Verify installation:
+**Mac (Terminal):**
 ```bash
+npm install -g appium
+appium driver install xcuitest
 appium driver list --installed
 ```
 
 ### 2. Prepare the emulator / simulator
 
-**PC (Android):**
-```bash
+**PC (Android — PowerShell):**
+```powershell
 # List available AVDs
-emulator -list-avds
+& "$env:ANDROID_HOME\emulator\emulator.exe" -list-avds
 
 # Launch emulator (use the name from the list above)
-emulator -avd pixel_9_-_api_36_0
+& "$env:ANDROID_HOME\emulator\emulator.exe" -avd pixel_9_-_api_36_0
 ```
 
 If your AVD has a different name, set the `ANDROID_AVD` environment variable (see [Environment Variables](#environment-variables)).
@@ -85,18 +89,18 @@ open -a Simulator
 
 ### 3. Install the app on the device
 
-**PC — Option A: pre-install via adb** (recommended):
-```bash
+**PC — Option A: pre-install via adb** (recommended, PowerShell):
+```powershell
 # Build the APK
 dotnet build PrayerApp/PrayerApp.csproj -f net10.0-android -c Debug
 
 # Install on the running emulator
-adb install -r PrayerApp/bin/Debug/net10.0-android/com.multithreadedllc.prayercards-Signed.apk
+adb install -r PrayerApp\bin\Debug\net10.0-android\com.multithreadedllc.prayercards-Signed.apk
 ```
 
-**PC — Option B: let Appium install it** (set the APK path):
-```bash
-set PRAYER_APK_PATH=C:\path\to\com.multithreadedllc.prayercards-Signed.apk
+**PC — Option B: let Appium install it** (set the APK path, PowerShell):
+```powershell
+$env:PRAYER_APK_PATH = "C:\path\to\com.multithreadedllc.prayercards-Signed.apk"
 ```
 
 **Mac (iOS):**
@@ -113,6 +117,12 @@ xcrun simctl install booted PrayerApp/bin/Debug/net10.0-ios/iossimulator-arm64/P
 
 In a **separate terminal** (leave it running for the entire test session):
 
+**PC (PowerShell):**
+```powershell
+appium
+```
+
+**Mac (Terminal):**
 ```bash
 appium
 ```
@@ -128,17 +138,15 @@ The test suite connects to `http://127.0.0.1:4723` by default.
 
 ## Running Tests
 
-### PC (Android)
+### PC (Android — PowerShell)
 
-```bash
-# All cross-platform + Android-specific tests
+```powershell
 dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=Android"
 ```
 
-### Mac (iOS)
+### Mac (iOS — Terminal)
 
 ```bash
-# All cross-platform + iOS-specific tests
 dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=iOS"
 ```
 
@@ -159,13 +167,15 @@ Tests are organized by numbered sections:
 | `8-PrayerTime` | Prayer Time session flow |
 | `9-Settings` | Settings hub, backup, about |
 | `12-EdgeCases` | Empty states, edge behaviors |
+| `13-FeatureGaps` | F-23 card, FAQ accordion, collection scope, overdue, favorite |
 | `14-Android` | Android-only (TimePicker input mode) |
+| `15-Accessibility` | Composed descriptions, chip state, headings, tree exclusion |
 
-```bash
-# Example: run only Home tests
+```powershell
+# Run only Home tests
 dotnet test PrayerApp.UITests/ --filter "Section=2-Home"
 
-# Example: run a single test by name
+# Run a single test by name
 dotnet test PrayerApp.UITests/ --filter "FullyQualifiedName~Home_QuickAdd"
 ```
 
@@ -187,17 +197,29 @@ All optional. Set before running `dotnet test`.
 | `IOS_SIMULATOR` | `iPad (A16)` | iOS simulator device name |
 | `IOS_VERSION` | `26.4` | iOS platform version string |
 
-**PC example:**
-```bash
-set ANDROID_AVD=Pixel_8_API_35
+**PC (PowerShell — session-only):**
+```powershell
+$env:ANDROID_AVD = "Pixel_8_API_35"
 dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=Android"
 ```
 
-**Mac example:**
+To set permanently on PC:
+```powershell
+[System.Environment]::SetEnvironmentVariable("ANDROID_AVD", "Pixel_8_API_35", "User")
+```
+
+**Mac (Terminal — session-only):**
 ```bash
 export IOS_SIMULATOR="iPhone 16 Pro"
 export IOS_VERSION="26.4"
 dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=iOS"
+```
+
+To set permanently on Mac, add to `~/.zshrc`:
+```bash
+echo 'export IOS_SIMULATOR="iPhone 16 Pro"' >> ~/.zshrc
+echo 'export IOS_VERSION="26.4"' >> ~/.zshrc
+source ~/.zshrc
 ```
 
 > **Note on iOS device choice:** iPad simulators are preferred because they have a keyboard dismiss button. iPhone simulators lack this, which makes text input unreliable in Appium.
@@ -268,7 +290,8 @@ The app itself maintains an append-only diagnostic log (`IDiagnosticLog` / `Diag
 | Tests pass individually but fail together | Shared driver state; earlier test may have left app on unexpected page. Check `EnsureOnTab` calls |
 | iOS text input fails | Use iPad simulator (has keyboard dismiss button). If iPhone is needed, ensure `DismissKeyboardIfPresent()` is called |
 | Android `resource-id` not found | AutomationId maps to `content-desc` on some elements. The helpers try both strategies automatically |
-| `adb: command not found` | Add Android SDK `platform-tools/` to your PATH |
+| `adb: command not found` | Run the environment variable setup in [Prerequisites](#pc-android) to add `platform-tools` to PATH |
+| `emulator: command not found` | The emulator isn't on PATH by default — use the full path: `& "$env:ANDROID_HOME\emulator\emulator.exe"` |
 | `appium: command not found` | Run `npm install -g appium` |
 
 ---
@@ -297,5 +320,7 @@ PrayerApp.UITests/
     PrayerTimeTests.cs           # Section 8
     SettingsTests.cs             # Section 9
     EdgeCaseTests.cs             # Section 12
+    FeatureGapTests.cs           # Section 13
     AndroidTests.cs              # Section 14 (Android-only)
+    AccessibilityTests.cs        # Section 15
 ```
