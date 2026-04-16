@@ -26,6 +26,7 @@ public class HomeViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(HasOverdue));
                 OnPropertyChanged(nameof(OverdueHeadline));
+                OnPropertyChanged(nameof(OverdueAccessible));
             }
         }
     }
@@ -38,6 +39,10 @@ public class HomeViewModel : ObservableObject
         1 => "1 Overdue",
         _ => $"{OverdueCount} Overdue"
     };
+
+    public string OverdueAccessible => HasOverdue
+        ? $"Overdue prayers, {OverdueCount}. Tap to view overdue prayers."
+        : "All requests have been recently prayed for.";
 
     // ── Active card count metric ──────────────────────────────────────
 
@@ -52,6 +57,7 @@ public class HomeViewModel : ObservableObject
                 OnPropertyChanged(nameof(ActiveCardLabel));
                 OnPropertyChanged(nameof(HasActiveCards));
                 OnPropertyChanged(nameof(ActiveCardTapHint));
+                OnPropertyChanged(nameof(ActiveCardsAccessible));
             }
         }
     }
@@ -59,6 +65,10 @@ public class HomeViewModel : ObservableObject
     public string ActiveCardLabel => ActiveCardCount == 1 ? "Active Card" : "Active Cards";
     public bool HasActiveCards => ActiveCardCount > 0;
     public string ActiveCardTapHint => HasActiveCards ? "View Cards \u2192" : "Add a Card \u2192";
+
+    public string ActiveCardsAccessible => HasActiveCards
+        ? $"Active cards, {ActiveCardCount}. Tap to view prayer cards."
+        : "No active cards. Tap to create your first card.";
 
     // ── Unanswered prayer count metric ────────────────────────────────
 
@@ -73,6 +83,7 @@ public class HomeViewModel : ObservableObject
                 OnPropertyChanged(nameof(UnansweredLabel));
                 OnPropertyChanged(nameof(HasUnanswered));
                 OnPropertyChanged(nameof(UnansweredTapHint));
+                OnPropertyChanged(nameof(UnansweredAccessible));
             }
         }
     }
@@ -81,20 +92,32 @@ public class HomeViewModel : ObservableObject
     public bool HasUnanswered => UnansweredCount > 0;
     public string UnansweredTapHint => HasUnanswered ? "View Prayers \u2192" : "Quick Add \u2192";
 
+    public string UnansweredAccessible => HasUnanswered
+        ? $"Unanswered prayers, {UnansweredCount}. Tap to view prayers."
+        : "No prayers yet. Tap to add your first prayer.";
+
     // ── Last prayed date metric ───────────────────────────────────────
 
     private string _lastPrayedMonth = string.Empty;
     public string LastPrayedMonth
     {
         get => _lastPrayedMonth;
-        private set => SetProperty(ref _lastPrayedMonth, value);
+        private set
+        {
+            if (SetProperty(ref _lastPrayedMonth, value))
+                OnPropertyChanged(nameof(LastPrayedAccessible));
+        }
     }
 
     private string _lastPrayedDay = string.Empty;
     public string LastPrayedDay
     {
         get => _lastPrayedDay;
-        private set => SetProperty(ref _lastPrayedDay, value);
+        private set
+        {
+            if (SetProperty(ref _lastPrayedDay, value))
+                OnPropertyChanged(nameof(LastPrayedAccessible));
+        }
     }
 
     private bool _hasLastPrayed;
@@ -104,11 +127,18 @@ public class HomeViewModel : ObservableObject
         private set
         {
             if (SetProperty(ref _hasLastPrayed, value))
+            {
                 OnPropertyChanged(nameof(LastPrayedTapHint));
+                OnPropertyChanged(nameof(LastPrayedAccessible));
+            }
         }
     }
 
     public string LastPrayedTapHint => HasLastPrayed ? "Pray Now \u2192" : "Start Praying \u2192";
+
+    public string LastPrayedAccessible => HasLastPrayed
+        ? $"Last prayed, {LastPrayedMonth} {LastPrayedDay}."
+        : "Not yet prayed.";
 
     // ── Prayer Time readiness ─────────────────────────────────────────
 

@@ -71,7 +71,7 @@
                             Grid.Column="1"
                             Text="{Binding Name}"
                             FontSize="16"
-                            SemanticProperties.Hint="Double tap to show actions"
+                            AutomationProperties.IsInAccessibleTree="False"
                             LineBreakMode="TailTruncation"
                             VerticalOptions="Center" />
 
@@ -79,6 +79,7 @@
                         <Border
                             Grid.Column="2"
                             IsVisible="{Binding IsSystem}"
+                            AutomationProperties.IsInAccessibleTree="False"
                             BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceDark}}"
                             Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                             StrokeShape="RoundRectangle 8"
@@ -86,6 +87,7 @@
                             VerticalOptions="Center">
                             <Label Text="System"
                                    FontSize="11"
+                                   AutomationProperties.IsInAccessibleTree="False"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </Border>
 
@@ -124,6 +126,7 @@
                                     </Image.Behaviors>
                                 </Image>
                                 <Label Text="Edit" FontSize="12"
+                                       AutomationProperties.IsInAccessibleTree="False"
                                        TextColor="{AppThemeBinding
                                            Light={StaticResource Tertiary},
                                            Dark={StaticResource TextPrimaryDark}}"
@@ -154,6 +157,7 @@
                                     </Image.Behaviors>
                                 </Image>
                                 <Label Text="Delete" FontSize="12"
+                                       AutomationProperties.IsInAccessibleTree="False"
                                        TextColor="{AppThemeBinding
                                            Light={StaticResource DangerRed},
                                            Dark={StaticResource DangerRedDark}}"

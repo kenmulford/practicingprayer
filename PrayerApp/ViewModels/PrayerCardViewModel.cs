@@ -163,16 +163,18 @@ namespace PrayerApp.ViewModels
 
         /// <summary>
         /// Composed accessible label for the card header. VoiceOver reads:
-        /// "Quick Add, 3 prayers, Favorited, Collapsed".
+        /// "Quick Add, 3 prayers, Favorited, Imported, Collapsed".
         /// </summary>
         public string AccessibleCardHeader
         {
             get
             {
                 var desc = Title;
+                if (IsSystem) desc += ", System";
                 if (!IsExpanded && ActivePrayerCount > 0)
                     desc += $", {ActivePrayerCount} prayer{(ActivePrayerCount == 1 ? "" : "s")}";
                 if (IsFavorite) desc += ", Favorited";
+                if (IsImported) desc += ", Imported";
                 desc += IsExpanded ? ", Expanded" : ", Collapsed";
                 return desc;
             }

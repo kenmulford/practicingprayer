@@ -87,6 +87,7 @@
                         </Grid.GestureRecognizers>
                         <Label Text="{Binding Name}"
                                FontSize="15"
+                               AutomationProperties.IsInAccessibleTree="False"
                                TextColor="{AppThemeBinding Light={StaticResource Tertiary},
                                                            Dark={StaticResource TextPrimaryDark}}" />
                     </Grid>
