@@ -1,0 +1,301 @@
+# Running the Appium UI Test Suite
+
+> 68 automated tests across 13 test files. Android tests run on **Windows (PC)**, iOS tests run on **macOS (Mac)**.
+
+---
+
+## Prerequisites
+
+### Both Platforms
+
+| Tool | Version | Install |
+|------|---------|---------|
+| .NET SDK | 10.0+ | [dotnet.microsoft.com](https://dotnet.microsoft.com/download) |
+| Node.js | 18+ | [nodejs.org](https://nodejs.org) (needed for Appium) |
+| Appium | 2.x | `npm install -g appium` |
+
+### PC (Android)
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Android SDK | API 36+ | Via Android Studio or `sdkmanager` |
+| Android Emulator | — | Create an AVD (default: `pixel_9_-_api_36_0`) |
+| Appium UiAutomator2 driver | latest | `appium driver install uiautomator2` |
+| Java JDK | 17+ | Required by UiAutomator2 |
+
+**Environment variables** (Android SDK):
+```
+ANDROID_HOME=C:\Users\<you>\AppData\Local\Android\Sdk
+JAVA_HOME=C:\Program Files\Java\jdk-17
+```
+
+### Mac (iOS)
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Xcode | 16+ | Mac App Store |
+| Xcode Command Line Tools | — | `xcode-select --install` |
+| iOS Simulator | — | Default: `iPad (A16)` on iOS 26.4 |
+| Appium XCUITest driver | latest | `appium driver install xcuitest` |
+
+---
+
+## Setup
+
+### 1. Install Appium and drivers
+
+```bash
+# Install Appium globally
+npm install -g appium
+
+# PC — install Android driver
+appium driver install uiautomator2
+
+# Mac — install iOS driver
+appium driver install xcuitest
+```
+
+Verify installation:
+```bash
+appium driver list --installed
+```
+
+### 2. Prepare the emulator / simulator
+
+**PC (Android):**
+```bash
+# List available AVDs
+emulator -list-avds
+
+# Launch emulator (use the name from the list above)
+emulator -avd pixel_9_-_api_36_0
+```
+
+If your AVD has a different name, set the `ANDROID_AVD` environment variable (see [Environment Variables](#environment-variables)).
+
+**Mac (iOS):**
+```bash
+# List available simulators
+xcrun simctl list devices available
+
+# Boot a simulator (use the iPad A16 or similar)
+xcrun simctl boot "iPad (A16)"
+open -a Simulator
+```
+
+### 3. Install the app on the device
+
+**PC — Option A: pre-install via adb** (recommended):
+```bash
+# Build the APK
+dotnet build PrayerApp/PrayerApp.csproj -f net10.0-android -c Debug
+
+# Install on the running emulator
+adb install -r PrayerApp/bin/Debug/net10.0-android/com.multithreadedllc.prayercards-Signed.apk
+```
+
+**PC — Option B: let Appium install it** (set the APK path):
+```bash
+set PRAYER_APK_PATH=C:\path\to\com.multithreadedllc.prayercards-Signed.apk
+```
+
+**Mac (iOS):**
+```bash
+# Build for iOS Simulator
+dotnet build PrayerApp/PrayerApp.csproj -f net10.0-ios -c Debug \
+  -p:_DeviceType=Simulator
+
+# Install on booted simulator
+xcrun simctl install booted PrayerApp/bin/Debug/net10.0-ios/iossimulator-arm64/PrayerApp.app
+```
+
+### 4. Start the Appium server
+
+In a **separate terminal** (leave it running for the entire test session):
+
+```bash
+appium
+```
+
+You should see:
+```
+[Appium] Appium REST http interface listener started on 0.0.0.0:4723
+```
+
+The test suite connects to `http://127.0.0.1:4723` by default.
+
+---
+
+## Running Tests
+
+### PC (Android)
+
+```bash
+# All cross-platform + Android-specific tests
+dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=Android"
+```
+
+### Mac (iOS)
+
+```bash
+# All cross-platform + iOS-specific tests
+dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=iOS"
+```
+
+### Run a single test section
+
+Tests are organized by numbered sections:
+
+| Section | Tests |
+|---------|-------|
+| `1-Onboarding` | Onboarding flow, banner steps |
+| `2-Home` | Dashboard metrics, Quick Add |
+| `3-PrayerCards` | Card CRUD, expand/collapse, action chips |
+| `4-Prayers` | Prayer list, search, filters |
+| `5-UnsavedChanges` | Dirty-form guards on all edit pages |
+| `6-Reminders` | Notification toggle, frequency picker |
+| `7-Tags` | Tag CRUD, color picker |
+| `8-Collections` | Box CRUD, multi-select, move |
+| `8-PrayerTime` | Prayer Time session flow |
+| `9-Settings` | Settings hub, backup, about |
+| `12-EdgeCases` | Empty states, edge behaviors |
+| `14-Android` | Android-only (TimePicker input mode) |
+
+```bash
+# Example: run only Home tests
+dotnet test PrayerApp.UITests/ --filter "Section=2-Home"
+
+# Example: run a single test by name
+dotnet test PrayerApp.UITests/ --filter "FullyQualifiedName~Home_QuickAdd"
+```
+
+### Important: test order matters
+
+Tests within the `"Appium"` collection share a single driver session (one app launch for the entire run). Onboarding is dismissed once at the start. Running tests out of section order may cause failures if earlier tests create data that later tests expect.
+
+---
+
+## Environment Variables
+
+All optional. Set before running `dotnet test`.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APPIUM_SERVER_URL` | `http://127.0.0.1:4723` | Appium server endpoint |
+| `ANDROID_AVD` | `pixel_9_-_api_36_0` | Android emulator AVD name |
+| `PRAYER_APK_PATH` | _(pre-installed)_ | Path to APK; if set, Appium installs it |
+| `IOS_SIMULATOR` | `iPad (A16)` | iOS simulator device name |
+| `IOS_VERSION` | `26.4` | iOS platform version string |
+
+**PC example:**
+```bash
+set ANDROID_AVD=Pixel_8_API_35
+dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=Android"
+```
+
+**Mac example:**
+```bash
+export IOS_SIMULATOR="iPhone 16 Pro"
+export IOS_VERSION="26.4"
+dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=iOS"
+```
+
+> **Note on iOS device choice:** iPad simulators are preferred because they have a keyboard dismiss button. iPhone simulators lack this, which makes text input unreliable in Appium.
+
+---
+
+## Debugging & Error Logging
+
+### Page source dumps
+
+When a test fails or needs diagnostics, it can dump the full accessibility tree:
+
+```csharp
+driver.DumpPageSource("MyTest_FailureContext");
+```
+
+Dumps are saved as XML files to:
+```
+PrayerApp.UITests/bin/Debug/net10.0/diagnostics/
+```
+
+Each file is named `{testName}_{timestamp}.xml` and contains the platform's accessibility tree — all visible elements, their AutomationIds, text, and hierarchy. Open in any text editor to inspect element structure.
+
+Several tests already call `DumpPageSource` on failure paths (EdgeCaseTests, PrayerTimeTests, PrayerListTests).
+
+### Appium server logs
+
+The Appium server terminal shows every command the test suite sends (element finds, taps, text input). When a test times out or can't find an element, the server log shows exactly which locator strategy was tried and what the response was.
+
+For verbose output:
+```bash
+appium --log-level debug
+```
+
+Or save to a file:
+```bash
+appium --log appium.log
+```
+
+### xUnit test output
+
+Run with detailed verbosity to see per-test pass/fail timing:
+```bash
+dotnet test PrayerApp.UITests/ -v detailed
+```
+
+Or generate a results file:
+```bash
+dotnet test PrayerApp.UITests/ --logger "trx;LogFileName=results.trx"
+```
+
+The `.trx` file can be opened in Visual Studio or VS Code (with the TRX Viewer extension) for structured failure details.
+
+### In-app diagnostic log
+
+The app itself maintains an append-only diagnostic log (`IDiagnosticLog` / `DiagnosticLog`) that captures fire-and-forget async errors and crash context. Access it via **Settings > Send Diagnostic Info** which opens the OS share sheet with the log file. Useful when a test triggers a crash or unexpected behavior that isn't visible in the Appium session.
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `Could not create session` | Emulator/simulator not running, or Appium server not started |
+| `An element could not be located` | Check AutomationId matches XAML; run `driver.DumpPageSource()` to inspect the tree |
+| `Original error: Couldn't find app` | App not installed; use `adb install` (Android) or `xcrun simctl install` (iOS) |
+| `Session timed out` | App may have crashed; check Appium logs and the in-app diagnostic log |
+| Tests pass individually but fail together | Shared driver state; earlier test may have left app on unexpected page. Check `EnsureOnTab` calls |
+| iOS text input fails | Use iPad simulator (has keyboard dismiss button). If iPhone is needed, ensure `DismissKeyboardIfPresent()` is called |
+| Android `resource-id` not found | AutomationId maps to `content-desc` on some elements. The helpers try both strategies automatically |
+| `adb: command not found` | Add Android SDK `platform-tools/` to your PATH |
+| `appium: command not found` | Run `npm install -g appium` |
+
+---
+
+## Project Structure Reference
+
+```
+PrayerApp.UITests/
+  PrayerApp.UITests.csproj      # net10.0, Appium.WebDriver 8.1.0, xUnit 2.9.2
+  Infrastructure/
+    AppiumSetup.cs               # IAsyncLifetime — driver lifecycle, retry logic
+    AppiumCollection.cs          # xUnit collection fixture definition
+    TestConfig.cs                # Platform detection, timeouts, device config
+  Helpers/
+    AppExtensions.cs             # Element locators, tap/type/scroll, onboarding
+  Tests/
+    OnboardingTests.cs           # Section 1 — must run first
+    HomeTests.cs                 # Section 2
+    QuickAddTests.cs             # Section 2
+    PrayerCardTests.cs           # Section 3
+    PrayerListTests.cs           # Section 4
+    UnsavedChangesTests.cs       # Section 5
+    ReminderTests.cs             # Section 6
+    TagTests.cs                  # Section 7
+    BoxTests.cs                  # Section 8
+    PrayerTimeTests.cs           # Section 8
+    SettingsTests.cs             # Section 9
+    EdgeCaseTests.cs             # Section 12
+    AndroidTests.cs              # Section 14 (Android-only)
+```
