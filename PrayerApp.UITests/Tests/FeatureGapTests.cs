@@ -45,21 +45,11 @@ public class FeatureGapTests
 
         if (cardVisible)
         {
-            // Card IS visible — verify it contains prayer titles (at least the header text)
-            if (TestConfig.IsIOS)
-            {
-                // iOS flattens SemanticProperties.Description — check for header text in composed label
-                Assert.True(
-                    driver.IsTextContainsDisplayed("Answered prayers from", timeoutSeconds: 3),
-                    "Answered-on-this-date card should show the 'Answered prayers from' header");
-            }
-            else
-            {
-                // Android: verify the header label text is present inside the card
-                Assert.True(
-                    driver.IsTextContainsDisplayed("Answered prayers from", timeoutSeconds: 3),
-                    "Answered-on-this-date card should show the 'Answered prayers from' header");
-            }
+            // Card IS visible — verify it contains the header text (works on both platforms:
+            // Android reads child Label text, iOS reads the composed Description label)
+            Assert.True(
+                driver.IsTextContainsDisplayed("Answered prayers from", timeoutSeconds: 3),
+                "Answered-on-this-date card should show the 'Answered prayers from' header");
         }
         else
         {

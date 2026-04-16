@@ -984,19 +984,15 @@ public static class AppExtensions
         By locator = TestConfig.IsAndroid
             ? By.XPath($"//*[contains(@content-desc,'{descriptionText}')]")
             : By.XPath($"//*[contains(@label,'{descriptionText}') or contains(@name,'{descriptionText}')]");
+        var prev = driver.Manage().Timeouts().ImplicitWait;
         try
         {
-            var prev = driver.Manage().Timeouts().ImplicitWait;
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
             driver.FindElement(locator);
-            driver.Manage().Timeouts().ImplicitWait = prev;
             return true;
         }
-        catch (WebDriverException)
-        {
-            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            return false;
-        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = prev; }
     }
 
     /// <summary>
@@ -1010,19 +1006,19 @@ public static class AppExtensions
         if (TestConfig.IsIOS) return; // iOS flattening makes child-level tree assertions unreliable
 
         By locator = By.XPath($"//*[@content-desc='{text}' or @text='{text}']");
+        var prev = driver.Manage().Timeouts().ImplicitWait;
         try
         {
-            var prev = driver.Manage().Timeouts().ImplicitWait;
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
             driver.FindElement(locator);
-            driver.Manage().Timeouts().ImplicitWait = prev;
-            throw new Exception($"Element with text '{text}' should not be in the accessibility tree but was found");
+            throw new Xunit.Sdk.XunitException(
+                $"Element with text '{text}' should not be in the accessibility tree but was found");
         }
         catch (WebDriverException)
         {
             // Expected — element correctly hidden
-            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
         }
+        finally { driver.Manage().Timeouts().ImplicitWait = prev; }
     }
 
     /// <summary>
@@ -1033,12 +1029,13 @@ public static class AppExtensions
     {
         if (TestConfig.IsIOS) return; // heading attribute not exposed on iOS
 
-        var element = driver.WaitForElement(automationId, timeoutSeconds: 5);
-        if (element == null)
-            throw new Exception($"Element '{automationId}' not found for heading check");
+        var element = driver.WaitForElement(automationId, timeoutSeconds: 5)
+            ?? throw new Xunit.Sdk.XunitException(
+                $"Element '{automationId}' not found for heading check");
         var heading = element.GetDomAttribute("heading");
         if (heading != "true")
-            throw new Exception($"Element '{automationId}' expected heading='true' but got '{heading}'");
+            throw new Xunit.Sdk.XunitException(
+                $"Element '{automationId}' expected heading='true' but got '{heading}'");
     }
 
     // ── Diagnostics ──────────────────────────────────────────────

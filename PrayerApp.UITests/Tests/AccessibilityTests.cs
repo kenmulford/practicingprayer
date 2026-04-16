@@ -115,6 +115,10 @@ public class AccessibilityTests
         // which includes the prayer title. On iOS this is the flattened label.
         Assert.True(Driver.HasAccessibleElement("UI Test Prayer", timeoutSeconds: 5),
             "Prayer row should have accessible description containing the prayer title");
+
+        // Collapse the card to leave clean state for subsequent tests
+        Driver.TapByTextContains("Quick Add");
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>15.5: "Select" toolbar button exists for multi-select entry.</summary>
