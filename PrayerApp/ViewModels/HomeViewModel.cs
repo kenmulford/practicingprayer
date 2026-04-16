@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Windows.Input;
 
@@ -140,6 +141,32 @@ public class HomeViewModel : ObservableObject
         ? $"Last prayed, {LastPrayedMonth} {LastPrayedDay}."
         : "Not yet prayed.";
 
+    // ── Answered on this date ─────────────────────────────────────────
+
+    private IReadOnlyList<Prayer> _answeredOnThisDate = Array.Empty<Prayer>();
+    public IReadOnlyList<Prayer> AnsweredOnThisDate
+    {
+        get => _answeredOnThisDate;
+        private set
+        {
+            if (SetProperty(ref _answeredOnThisDate, value))
+            {
+                OnPropertyChanged(nameof(HasAnsweredOnThisDate));
+                OnPropertyChanged(nameof(AnsweredOnThisDateAccessible));
+            }
+        }
+    }
+
+    public bool HasAnsweredOnThisDate => AnsweredOnThisDate.Count > 0;
+
+    public string AnsweredOnThisDateHeader =>
+        $"Answered prayers from {DateTime.Now:MMMM d}";
+
+    public string AnsweredOnThisDateAccessible =>
+        HasAnsweredOnThisDate
+            ? $"{AnsweredOnThisDateHeader}: {string.Join(", ", AnsweredOnThisDate.Select(p => p.Title))}"
+            : string.Empty;
+
     // ── Prayer Time readiness ─────────────────────────────────────────
 
     private bool _hasActivePrayers;
@@ -246,9 +273,15 @@ public class HomeViewModel : ObservableObject
                 LastPrayedDay = string.Empty;
                 HasLastPrayed = false;
             }
+
+            // Prayers answered on this date in prior years
+            AnsweredOnThisDate = await _prayerService.GetAnsweredOnThisDateAsync()
+                ?? Array.Empty<Prayer>();
+            OnPropertyChanged(nameof(AnsweredOnThisDateHeader));
         }
         catch (Exception ex)
         {
+            AnsweredOnThisDate = Array.Empty<Prayer>();
             System.Diagnostics.Debug.WriteLine($"Failed to load home dashboard: {ex.Message}");
         }
     }

@@ -88,6 +88,20 @@ public class PrayerService : IPrayerService
         return await _dbService.GetMaxInteractionDateAsync();
     }
 
+    public async Task<IReadOnlyList<Prayer>> GetAnsweredOnThisDateAsync()
+    {
+        var today = DateTime.Now;
+        var all = await GetAllPrayersAsync();
+        return all
+            .Where(p => p.IsAnswered
+                     && p.AnsweredAt is { } at
+                     && at.Month == today.Month
+                     && at.Day == today.Day
+                     && at.Year < today.Year)
+            .ToList()
+            .AsReadOnly();
+    }
+
     public void InvalidateCache()
     {
         _cardCache = null;
