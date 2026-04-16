@@ -481,6 +481,57 @@ public class HomeViewModelTests
         Assert.Equal("Overdue prayers, 2. Tap to view overdue prayers.", sut.OverdueAccessible);
     }
 
+    // ── Answered on this date ─────────────────────────────────────────
+
+    [Fact]
+    public async Task LoadAsync_AnsweredOnThisDate_PopulatesWhenMatches()
+    {
+        SetupDefaultMocks();
+        var matches = new List<Prayer>
+        {
+            new() { Id = 10, Title = "Healing for Mom", IsAnswered = true },
+            new() { Id = 11, Title = "New job for Dad", IsAnswered = true }
+        };
+        _prayerService.GetAnsweredOnThisDateAsync().Returns(matches.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.True(sut.HasAnsweredOnThisDate);
+        Assert.Equal(2, sut.AnsweredOnThisDate.Count);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AnsweredOnThisDate_EmptyWhenNoMatches()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetAnsweredOnThisDateAsync().Returns(new List<Prayer>().AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.False(sut.HasAnsweredOnThisDate);
+        Assert.Empty(sut.AnsweredOnThisDate);
+    }
+
+    [Fact]
+    public async Task AnsweredOnThisDateAccessible_ComposesHeaderAndTitles()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetAnsweredOnThisDateAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "First answer", IsAnswered = true },
+            new() { Id = 2, Title = "Second answer", IsAnswered = true }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        Assert.Contains("First answer", sut.AnsweredOnThisDateAccessible);
+        Assert.Contains("Second answer", sut.AnsweredOnThisDateAccessible);
+        Assert.Contains(sut.AnsweredOnThisDateHeader, sut.AnsweredOnThisDateAccessible);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────
 
     /// <summary>Set up minimal mocks so LoadAsync doesn't throw.</summary>
@@ -491,6 +542,7 @@ public class HomeViewModelTests
         _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>().AsReadOnly());
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
+        _prayerService.GetAnsweredOnThisDateAsync().Returns(new List<Prayer>().AsReadOnly());
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
         _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
     }
