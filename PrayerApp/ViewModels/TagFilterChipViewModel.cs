@@ -13,8 +13,15 @@ public class TagFilterChipViewModel : ObservableObject
     public bool IsSelected
     {
         get => _isSelected;
-        set => SetProperty(ref _isSelected, value);
+        set
+        {
+            if (SetProperty(ref _isSelected, value))
+                OnPropertyChanged(nameof(AccessibleDescription));
+        }
     }
+
+    public string AccessibleDescription =>
+        $"{Tag.Name}, {(IsSelected ? "selected" : "not selected")}";
 
     public ICommand ToggleCommand { get; }
 

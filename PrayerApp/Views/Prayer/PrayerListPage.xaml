@@ -99,6 +99,7 @@
                         <DataTemplate x:DataType="viewModels:TagFilterChipViewModel">
                             <Border Padding="10,4"
                                     StrokeThickness="1.5"
+                                    SemanticProperties.Description="{Binding AccessibleDescription}"
                                     SemanticProperties.Hint="Double tap to toggle filter">
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="12" />
@@ -118,7 +119,8 @@
                                 </Border.Triggers>
                                 <Label Text="{Binding Tag.Name}"
                                        FontSize="12"
-                                       VerticalOptions="Center">
+                                       VerticalOptions="Center"
+                                       AutomationProperties.IsInAccessibleTree="False">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
                                             <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
@@ -183,11 +185,13 @@
                                FontSize="11"
                                MaxLines="3"
                                LineBreakMode="TailTruncation"
+                               AutomationProperties.IsInAccessibleTree="False"
                                Style="{StaticResource MutedText}" />
 
                         <!-- Prayer title + answered badge -->
                         <Grid Grid.Row="1"
-                              ColumnDefinitions="*, Auto">
+                              ColumnDefinitions="*, Auto"
+                              AutomationProperties.IsInAccessibleTree="False">
                             <Label Grid.Column="0"
                                    Text="{Binding Title}"
                                    FontSize="17"

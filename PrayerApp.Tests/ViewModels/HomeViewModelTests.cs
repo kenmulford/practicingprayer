@@ -403,6 +403,84 @@ public class HomeViewModelTests
         Assert.False(sut.HasUserBoxesWithCards);
     }
 
+    // ── Accessible Summaries ──────────────────────────────────────────
+
+    [Fact]
+    public async Task ActiveCardsAccessible_PopulatedAndEmpty()
+    {
+        SetupDefaultMocks();
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        Assert.Equal("No active cards. Tap to create your first card.", sut.ActiveCardsAccessible);
+
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Family" },
+            new() { Id = 2, Title = "Work" }
+        }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 },
+            new() { Id = 2, Title = "P2", PrayerCardId = 2 }
+        }.AsReadOnly());
+        await sut.LoadAsync();
+        Assert.Equal("Active cards, 2. Tap to view prayer cards.", sut.ActiveCardsAccessible);
+    }
+
+    [Fact]
+    public async Task UnansweredAccessible_PopulatedAndEmpty()
+    {
+        SetupDefaultMocks();
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        Assert.Equal("No prayers yet. Tap to add your first prayer.", sut.UnansweredAccessible);
+
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "P1", PrayerCardId = 1 },
+            new() { Id = 2, Title = "P2", PrayerCardId = 1 },
+            new() { Id = 3, Title = "P3", PrayerCardId = 1 }
+        }.AsReadOnly());
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "General" }
+        }.AsReadOnly());
+        await sut.LoadAsync();
+        Assert.Equal("Unanswered prayers, 3. Tap to view prayers.", sut.UnansweredAccessible);
+    }
+
+    [Fact]
+    public async Task LastPrayedAccessible_PopulatedAndEmpty()
+    {
+        SetupDefaultMocks();
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        Assert.Equal("Not yet prayed.", sut.LastPrayedAccessible);
+
+        var date = new DateTime(2026, 3, 15);
+        _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)date);
+        await sut.LoadAsync();
+        var expectedMonth = date.ToString("MMM").ToUpper();
+        Assert.Equal($"Last prayed, {expectedMonth} 15.", sut.LastPrayedAccessible);
+    }
+
+    [Fact]
+    public async Task OverdueAccessible_PopulatedAndEmpty()
+    {
+        SetupDefaultMocks();
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        Assert.Equal("All requests have been recently prayed for.", sut.OverdueAccessible);
+
+        _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>
+        {
+            new() { Id = 1, Title = "Overdue 1", PrayerCardId = 1 },
+            new() { Id = 2, Title = "Overdue 2", PrayerCardId = 1 }
+        }.AsReadOnly());
+        await sut.LoadAsync();
+        Assert.Equal("Overdue prayers, 2. Tap to view overdue prayers.", sut.OverdueAccessible);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────
 
     /// <summary>Set up minimal mocks so LoadAsync doesn't throw.</summary>
