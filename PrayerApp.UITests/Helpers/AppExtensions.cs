@@ -943,6 +943,104 @@ public static class AppExtensions
         return false;
     }
 
+    // ── Accessibility Assertions ───────────────────────────────
+
+    /// <summary>
+    /// Get the accessible description of an element found by AutomationId.
+    /// Android: reads content-desc. iOS: reads label attribute.
+    /// Returns empty string if attribute not found.
+    /// </summary>
+    public static string GetAccessibleDescription(this AppiumDriver driver, string automationId)
+    {
+        var element = driver.WaitForElement(automationId, timeoutSeconds: 5);
+        if (element == null) return "";
+        return TestConfig.IsAndroid
+            ? element.GetDomAttribute("content-desc") ?? ""
+            : element.GetDomAttribute("label") ?? "";
+    }
+
+    /// <summary>
+    /// Get the accessible hint of an element found by AutomationId.
+    /// Android: reads hint attribute. iOS: reads value attribute.
+    /// </summary>
+    public static string GetAccessibleHint(this AppiumDriver driver, string automationId)
+    {
+        var element = driver.WaitForElement(automationId, timeoutSeconds: 5);
+        if (element == null) return "";
+        return TestConfig.IsAndroid
+            ? element.GetDomAttribute("hint") ?? ""
+            : element.GetDomAttribute("value") ?? "";
+    }
+
+    /// <summary>
+    /// Check whether an element with the given description/label text exists in the accessibility tree.
+    /// Works on both platforms by searching content-desc (Android) or label (iOS).
+    /// Useful for elements without AutomationId that only have SemanticProperties.Description.
+    /// </summary>
+    public static bool HasAccessibleElement(this AppiumDriver driver, string descriptionText,
+        int timeoutSeconds = 3)
+    {
+        // Use contains() for partial matching — composed descriptions may have extra context
+        By locator = TestConfig.IsAndroid
+            ? By.XPath($"//*[contains(@content-desc,'{descriptionText}')]")
+            : By.XPath($"//*[contains(@label,'{descriptionText}') or contains(@name,'{descriptionText}')]");
+        try
+        {
+            var prev = driver.Manage().Timeouts().ImplicitWait;
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
+            driver.FindElement(locator);
+            driver.Manage().Timeouts().ImplicitWait = prev;
+            return true;
+        }
+        catch (WebDriverException)
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Assert that NO accessible element contains the given text.
+    /// Used to verify decorative elements are hidden from the tree.
+    /// Android-only — iOS flattening makes this unreliable for children inside Description'd containers.
+    /// </summary>
+    public static void AssertNotInAccessibleTree(this AppiumDriver driver, string text,
+        int timeoutSeconds = 2)
+    {
+        if (TestConfig.IsIOS) return; // iOS flattening makes child-level tree assertions unreliable
+
+        By locator = By.XPath($"//*[@content-desc='{text}' or @text='{text}']");
+        try
+        {
+            var prev = driver.Manage().Timeouts().ImplicitWait;
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeoutSeconds);
+            driver.FindElement(locator);
+            driver.Manage().Timeouts().ImplicitWait = prev;
+            throw new Exception($"Element with text '{text}' should not be in the accessibility tree but was found");
+        }
+        catch (WebDriverException)
+        {
+            // Expected — element correctly hidden
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+        }
+    }
+
+    /// <summary>
+    /// Android-only: Assert an element is marked as a heading in the accessibility tree.
+    /// iOS/XCUITest does not expose heading status via Appium.
+    /// </summary>
+    public static void AssertIsHeading(this AppiumDriver driver, string automationId)
+    {
+        if (TestConfig.IsIOS) return; // heading attribute not exposed on iOS
+
+        var element = driver.WaitForElement(automationId, timeoutSeconds: 5);
+        if (element == null)
+            throw new Exception($"Element '{automationId}' not found for heading check");
+        var heading = element.GetDomAttribute("heading");
+        if (heading != "true")
+            throw new Exception($"Element '{automationId}' expected heading='true' but got '{heading}'");
+    }
+
     // ── Diagnostics ──────────────────────────────────────────────
 
     /// <summary>
