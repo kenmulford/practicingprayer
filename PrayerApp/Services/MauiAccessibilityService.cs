@@ -21,6 +21,19 @@ public class MauiAccessibilityService : IAccessibilityService
         MainThread.BeginInvokeOnMainThread(() =>
             UIKit.UIAccessibility.PostNotification(
                 UIKit.UIAccessibilityPostNotification.LayoutChanged, null));
+#elif ANDROID
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (!OperatingSystem.IsAndroidVersionAtLeast(30)) return;
+            var activity = Platform.CurrentActivity;
+            if (activity == null) return;
+            var manager = (Android.Views.Accessibility.AccessibilityManager?)
+                activity.GetSystemService(Android.Content.Context.AccessibilityService);
+            if (manager?.IsEnabled != true) return;
+            var e = new Android.Views.Accessibility.AccessibilityEvent();
+            e.EventType = Android.Views.Accessibility.EventTypes.WindowContentChanged;
+            manager.SendAccessibilityEvent(e);
+        });
 #endif
     }
 }

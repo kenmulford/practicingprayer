@@ -12,8 +12,13 @@
                      SemanticProperties.Hint="Manage collections"
                      Clicked="OnCollectionsTapped"
                      Order="Primary" Priority="0" />
-        <ToolbarItem Text="Add Card" Command="{Binding NewCommand}"
+        <ToolbarItem Text="Select" AutomationId="Cards_Btn_Select"
+                     SemanticProperties.Hint="Enter multi-select mode to select multiple cards"
+                     Command="{Binding EnterMultiSelectCommand}"
                      Order="Primary" Priority="1" />
+        <ToolbarItem Text="Add Card" Command="{Binding NewCommand}"
+                     SemanticProperties.Hint="Creates a new prayer card"
+                     Order="Primary" Priority="2" />
     </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
@@ -579,6 +584,7 @@
                         Text="Cancel"
                         AutomationId="Cards_Btn_CancelSelect"
                         Command="{Binding CancelMultiSelectCommand}"
+                        SemanticProperties.Hint="Exit multi-select mode"
                         TextColor="White"
                         BackgroundColor="Transparent"
                         FontSize="14"
@@ -594,6 +600,7 @@
                         Text="Move to…"
                         AutomationId="Cards_Btn_MoveToBox"
                         Command="{Binding MoveSelectedCommand}"
+                        SemanticProperties.Hint="Move selected cards to a collection"
                         TextColor="White"
                         BackgroundColor="Transparent"
                         FontSize="14"

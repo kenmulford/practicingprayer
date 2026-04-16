@@ -17,13 +17,16 @@ public partial class PrayerDetailPage : ContentPage
 
         _editToolbarItem = new ToolbarItem { Text = "Edit" };
         _editToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.EditPrayerCommand));
+        SemanticProperties.SetHint(_editToolbarItem, "Switch to edit mode");
 
         _saveToolbarItem = new ToolbarItem { Text = "Save" };
         _saveToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveCommand));
+        SemanticProperties.SetHint(_saveToolbarItem, "Save prayer request changes");
 
         _saveAndNewToolbarItem = new ToolbarItem { Text = "Save +" };
         _saveAndNewToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveAndNewCommand));
         SemanticProperties.SetDescription(_saveAndNewToolbarItem, "Save and add another prayer");
+        SemanticProperties.SetHint(_saveAndNewToolbarItem, "Save this prayer and create a new one");
 
         vm.FormResetRequested += (_, _) =>
             Dispatcher.DispatchAsync(() => TitleEntry.Focus());

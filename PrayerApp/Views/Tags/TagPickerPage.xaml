@@ -18,6 +18,7 @@
             <Button Grid.Column="1"
                     Text="Done"
                     AutomationId="TagPicker_Btn_Done"
+                    SemanticProperties.Hint="Save tag selections and go back"
                     Style="{StaticResource GhostButton}"
                     Command="{Binding DoneCommand}" />
         </Grid>

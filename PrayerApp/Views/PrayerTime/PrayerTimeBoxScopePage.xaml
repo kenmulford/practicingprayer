@@ -38,11 +38,13 @@
                         Text="Cancel"
                         AutomationId="BoxScope_Btn_Cancel"
                         Command="{Binding CancelCommand}"
+                        SemanticProperties.Hint="Go back without starting"
                         HorizontalOptions="Fill" />
                 <Button Grid.Column="1"
                         Text="Start"
                         AutomationId="BoxScope_Btn_Start"
                         Command="{Binding StartCommand}"
+                        SemanticProperties.Hint="Begin prayer time with selected collection"
                         HorizontalOptions="Fill" />
             </Grid>
 

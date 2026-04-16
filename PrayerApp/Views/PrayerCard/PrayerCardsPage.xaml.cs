@@ -14,6 +14,38 @@ public partial class PrayerCardsPage : ContentPage
         InitializeComponent();
         BindingContext = vm;
         vm.HighlightCardRequested += OnHighlightCardRequested;
+        vm.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    /// <summary>
+    /// Hides the "Select" toolbar item when multi-select is already active.
+    /// ToolbarItem has no IsVisible binding in MAUI Shell, so we toggle it from code-behind.
+    /// </summary>
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(PrayerCardsViewModel.IsMultiSelectMode)) return;
+        var vm = (PrayerCardsViewModel)sender!;
+        var selectItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Select");
+        if (vm.IsMultiSelectMode)
+        {
+            if (selectItem != null) ToolbarItems.Remove(selectItem);
+        }
+        else
+        {
+            if (selectItem == null)
+            {
+                var item = new ToolbarItem
+                {
+                    Text = "Select",
+                    AutomationId = "Cards_Btn_Select",
+                    Order = ToolbarItemOrder.Primary,
+                    Priority = 1
+                };
+                SemanticProperties.SetHint(item, "Enter multi-select mode to select multiple cards");
+                item.SetBinding(MenuItem.CommandProperty, new Binding(nameof(PrayerCardsViewModel.EnterMultiSelectCommand)));
+                ToolbarItems.Insert(1, item);
+            }
+        }
     }
 
     private async void OnHighlightCardRequested(object? sender, PrayerCardViewModel card)

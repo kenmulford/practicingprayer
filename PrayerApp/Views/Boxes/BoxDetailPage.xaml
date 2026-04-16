@@ -10,6 +10,7 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Save"
                      Command="{Binding SaveCommand}"
+                     SemanticProperties.Hint="Save collection changes"
                      x:DataType="viewModels:BoxDetailViewModel" />
     </ContentPage.ToolbarItems>
 

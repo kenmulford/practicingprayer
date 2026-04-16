@@ -24,7 +24,14 @@
                                FontSize="15"
                                FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
-                               SemanticProperties.Hint="Double tap to expand" />
+                               SemanticProperties.HeadingLevel="Level2"
+                               SemanticProperties.Hint="Double tap to expand">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsExpanded}" Value="True">
+                                    <Setter Property="SemanticProperties.Hint" Value="Double tap to collapse" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
                         <Label Grid.Column="1"
                                Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
                                FontSize="14"
