@@ -304,10 +304,11 @@ public class BoxTests
             // If multi-select toolbar appeared, verify Cancel works
             if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 3))
             {
-                Assert.True(driver.IsDisplayed("Cards_Btn_CancelSelect"),
-                    "Cancel button should be visible in multi-select toolbar");
+                // Cancel is on the toolbar — Select item mutates to X when multi-select is active.
+                Assert.True(driver.IsDisplayed("Cards_Btn_Select"),
+                    "Toolbar Select item (now X/Cancel) should be visible in multi-select mode");
 
-                driver.Tap("Cards_Btn_CancelSelect");
+                driver.Tap("Cards_Btn_Select");
                 Thread.Sleep(TestConfig.DelayAfterTap);
 
                 Assert.False(driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2),
@@ -417,9 +418,9 @@ public class BoxTests
                 driver.TapByText("Cancel");
             Thread.Sleep(TestConfig.DelayAfterTap);
 
-            // Exit multi-select
-            if (driver.IsDisplayed("Cards_Btn_CancelSelect", timeoutSeconds: 2))
-                driver.Tap("Cards_Btn_CancelSelect");
+            // Exit multi-select — Cancel is on the toolbar (Select item mutates to X)
+            if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2))
+                driver.Tap("Cards_Btn_Select");
         }
 
         // Multi-select toolbar should be gone

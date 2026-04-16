@@ -19,8 +19,8 @@
 		<ApplicationId>com.multithreadedllc.prayercards</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.2.1</ApplicationDisplayVersion>
-		<ApplicationVersion>56</ApplicationVersion>
+		<ApplicationDisplayVersion>1.2.2</ApplicationDisplayVersion>
+		<ApplicationVersion>57</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -70,6 +70,12 @@
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\bolt_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\circle_regular_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\circle_check_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\folder_regular_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
@@ -95,6 +101,15 @@
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\person_praying_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\plus_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\list_check_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\xmark_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\share_from_square_solid_full.svg">
@@ -125,9 +140,14 @@
 
 	<ItemGroup>
 	  <None Remove="Resources\Images\FontAwesomeIcons\bolt_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\circle_regular_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\circle_check_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\folder_regular_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\link_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\pen_to_square_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\plus_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\list_check_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\xmark_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\star_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\tag_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\trash_can_solid_full.svg" />

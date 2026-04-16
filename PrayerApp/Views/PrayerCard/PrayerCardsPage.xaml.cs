@@ -18,33 +18,49 @@ public partial class PrayerCardsPage : ContentPage
     }
 
     /// <summary>
-    /// Hides the "Select" toolbar item when multi-select is already active.
-    /// ToolbarItem has no IsVisible binding in MAUI Shell, so we toggle it from code-behind.
+    /// Toggles the toolbar between normal and multi-select modes in-place.
+    /// - Select item mutates: "Select" + list-check icon + EnterMultiSelectCommand
+    ///   ↔ "Cancel" + xmark icon + CancelMultiSelectCommand.
+    /// - Collections and Add Card are disabled (greyed) in multi-select so the
+    ///   Cancel (X) action is the visual focus.
+    /// ToolbarItem has no IsVisible binding in MAUI Shell; mutating in place
+    /// avoids the remove/re-add state bugs we hit when the icon would be lost.
     /// </summary>
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(PrayerCardsViewModel.IsMultiSelectMode)) return;
-        var vm = (PrayerCardsViewModel)sender!;
+        ApplyMultiSelectToolbarState((PrayerCardsViewModel)sender!);
+    }
+
+    private void ApplyMultiSelectToolbarState(PrayerCardsViewModel vm)
+    {
         var selectItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Select");
+        var collectionsItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Collections");
+        var addItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Add");
+
         if (vm.IsMultiSelectMode)
         {
-            if (selectItem != null) ToolbarItems.Remove(selectItem);
+            if (selectItem != null)
+            {
+                selectItem.Text = "Cancel";
+                selectItem.IconImageSource = "xmark_solid_full.png";
+                selectItem.Command = vm.CancelMultiSelectCommand;
+                SemanticProperties.SetHint(selectItem, "Exit multi-select mode");
+            }
+            if (collectionsItem != null) collectionsItem.IsEnabled = false;
+            if (addItem != null) addItem.IsEnabled = false;
         }
         else
         {
-            if (selectItem == null)
+            if (selectItem != null)
             {
-                var item = new ToolbarItem
-                {
-                    Text = "Select",
-                    AutomationId = "Cards_Btn_Select",
-                    Order = ToolbarItemOrder.Primary,
-                    Priority = 1
-                };
-                SemanticProperties.SetHint(item, "Enter multi-select mode to select multiple cards");
-                item.SetBinding(MenuItem.CommandProperty, new Binding(nameof(PrayerCardsViewModel.EnterMultiSelectCommand)));
-                ToolbarItems.Insert(1, item);
+                selectItem.Text = "Select";
+                selectItem.IconImageSource = "list_check_solid_full.png";
+                selectItem.Command = vm.EnterMultiSelectCommand;
+                SemanticProperties.SetHint(selectItem, "Enter multi-select mode to select multiple cards");
             }
+            if (collectionsItem != null) collectionsItem.IsEnabled = true;
+            if (addItem != null) addItem.IsEnabled = true;
         }
     }
 

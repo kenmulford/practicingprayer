@@ -143,6 +143,16 @@ namespace PrayerApp.ViewModels
             set => SetProperty(ref _isMultiSelected, value);
         }
 
+        // Mirrored from PrayerCardsViewModel.IsMultiSelectMode so the card check slot
+        // in the DataTemplate can bind directly (CollectionView DataTemplate NameScope
+        // makes {x:Reference cardCollection} unreliable; simpler to propagate here).
+        private bool _isMultiSelectMode;
+        public bool IsMultiSelectMode
+        {
+            get => _isMultiSelectMode;
+            set => SetProperty(ref _isMultiSelectMode, value);
+        }
+
         private int _activePrayerCount;
         public int ActivePrayerCount
         {

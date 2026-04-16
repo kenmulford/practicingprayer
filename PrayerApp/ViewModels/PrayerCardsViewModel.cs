@@ -95,6 +95,9 @@ namespace PrayerApp.ViewModels
                     // Propagate to sections for header dimming
                     foreach (var section in BoxSections)
                         section.IsMultiSelectMode = value;
+                    // Propagate to cards so the check slot in the DataTemplate can bind directly
+                    foreach (var card in AllPrayerCards)
+                        card.IsMultiSelectMode = value;
                 }
             }
         }
