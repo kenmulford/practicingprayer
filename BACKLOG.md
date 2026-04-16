@@ -15,8 +15,8 @@
 > ✏️ _Update this section at the start and end of every session._
 
 **Status**: 1.2.1b56. 441 unit tests, 68 UITests. App live on Google Play.
-**Last completed**: UX-33 splash icon fix + TEST.md docs + A11Y-4 Sprint 2 + F-23 answered-on-this-date.
-**Next up**: A11Y-4 Sprint 3 (missing announcements), then INV-6 localization decisions.
+**Last completed**: A11Y-4 complete (all 4 sprints) + UX-33 splash + TEST.md + F-23 answered-on-this-date.
+**Next up**: INV-6 localization decisions, UX-18 tablet layout.
 
 ---
 
@@ -26,17 +26,17 @@ Items are listed in work order. Start at the top, work down.
 
 | #   | ID    | Item                                                               | Source | Notes                                                                                                                                                                                                                                          |
 | --- | ----- | ------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | A11Y-4| Full accessibility audit — remaining fixes                          | Ken    | Sprints 1–2 complete. Audit at `docs/research/a11y-4-audit.md`. Remaining: Sprint 3 (missing announcements — HomeVM IAccessibilityService, PrayerTime auto-mode, debounced PrayerList filter, toggle/state announcements), Sprint 4 (touch targets, headings, multi-select entry). **2 sessions left, needs on-device testing.** |
-| 2   | INV-6 | Localization support — research complete                           | Ken    | Research at `docs/research/`. ~300 user-facing strings, zero infra exists. 4-7 sessions for English extraction + infrastructure. **Needs decisions: culture strategy (A/B/C), target languages, RTL scope, runtime switching.** |
-| 3   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
-| 4   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
-| 5   | INV-5 | Voice dictation for prayer requests — research feasibility         | Ken    | User presses a mic button on the prayer request form, dictates their request aloud, and the transcription is captured as the request text. Research: platform speech-to-text APIs (iOS SFSpeechRecognizer, Android SpeechRecognizer), MAUI plugin options (e.g., Plugin.Maui.Audio, community speech-to-text libs), privacy implications (does audio leave the device?), and whether on-device vs. cloud transcription is required. Privacy-first constraint means on-device is strongly preferred. |
-| 6   | F-18  | Widget support for prayer cards                                    | Ken    | Research complete — plan at `.claude/plans/whimsical-sleeping-orbit.md`. Android doable in 1-2 sessions (C# only, no DB changes). iOS is 3-5 sessions (Swift extension, App Group DB migration, Xcode). No cross-platform abstraction exists. **Needs decision: Android-only first vs both vs shelve.** |
+| 1   | INV-6 | Localization support — research complete                           | Ken    | Research at `docs/research/`. ~300 user-facing strings, zero infra exists. 4-7 sessions for English extraction + infrastructure. **Needs decisions: culture strategy (A/B/C), target languages, RTL scope, runtime switching.** |
+| 2   | UX-18 | Tablet layout — iPad + Android tablets                             | Ken    | Tablets feel crammed for no reason. Investigate using more screen real estate (wider cards, spacing, split views) without breaking phone layouts. Must be cross-platform — any layout improvements apply to both iPad and Android tablets. **Requires plan.** |
+| 3   | F-21  | Launch Prayer Time from prayer list search results                 | Ken    | From the Prayers page, launch Prayer Time scoped to current search/filter results. Creates a one-time dynamic tag, assigns matching prayers, launches Prayer Time via that tag, then removes the tag on exit. **Requires plan before implementation.** |
+| 4   | INV-5 | Voice dictation for prayer requests — research feasibility         | Ken    | User presses a mic button on the prayer request form, dictates their request aloud, and the transcription is captured as the request text. Research: platform speech-to-text APIs (iOS SFSpeechRecognizer, Android SpeechRecognizer), MAUI plugin options (e.g., Plugin.Maui.Audio, community speech-to-text libs), privacy implications (does audio leave the device?), and whether on-device vs. cloud transcription is required. Privacy-first constraint means on-device is strongly preferred. |
+| 5   | F-18  | Widget support for prayer cards                                    | Ken    | Research complete — plan at `.claude/plans/whimsical-sleeping-orbit.md`. Android doable in 1-2 sessions (C# only, no DB changes). iOS is 3-5 sessions (Swift extension, App Group DB migration, Xcode). No cross-platform abstraction exists. **Needs decision: Android-only first vs both vs shelve.** |
 
 ### Recently Completed (this release cycle)
 
 | ID      | Item                                                                                | Completed  |
 | ------- | ----------------------------------------------------------------------------------- | ---------- |
+| A11Y-4  | **Complete.** Full accessibility audit — all 4 sprints (contrast, containers, announcements, structure)       | 2026-04-16 |
 | UX-33   | Android splash icon — stripped text from SVG, scaled hands 0.35→0.45, BaseSize 256→512                       | 2026-04-16 |
 | A11Y-4s2| A11Y-4 Sprint 2 — container Description cleanup (H2/H7/H8), filter chip state, HomeVM accessible summaries | 2026-04-16 |
 | F-23    | Dashboard "Prayers answered on this date" — full-width card, cache-based query, a11y-ready | 2026-04-16 |
@@ -225,4 +225,4 @@ Items are listed in work order. Start at the top, work down.
 
 ---
 
-_Last updated: 2026-04-16 (UX-33 splash fix + TEST.md + A11Y-4 Sprint 2 + F-23; 441 unit tests, 68 UITests, b56)_
+_Last updated: 2026-04-16 (A11Y-4 complete, UX-33, TEST.md, F-23; 441 unit tests, 68 UITests, b56)_
