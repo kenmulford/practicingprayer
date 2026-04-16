@@ -97,6 +97,19 @@ namespace PrayerApp.ViewModels
 
         public void RemoveTag(TagItemViewModel item) => Tags.Remove(item);
 
+        public void DeselectOthers(TagItemViewModel except)
+        {
+            foreach (var tag in Tags)
+                if (tag != except)
+                    tag.Deselect();
+        }
+
+        public void DeselectAll()
+        {
+            foreach (var tag in Tags)
+                tag.Deselect();
+        }
+
         private async Task AddAsync() =>
             await _navigationService.GoToAsync(Routes.TagDetailPage);
     }
@@ -113,6 +126,22 @@ namespace PrayerApp.ViewModels
         public string Name => _tag.Name;
         public bool IsSystem => _tag.IsSystem;
         public Color DotColor => TagColorPalette.Resolve(_tag.Color);
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            private set
+            {
+                if (SetProperty(ref _isSelected, value))
+                    OnPropertyChanged(nameof(ShowActions));
+            }
+        }
+
+        /// <summary>True when this tag is selected and actions should be visible.</summary>
+        public bool ShowActions => _isSelected;
+
+        public ICommand SelectCommand { get; }
         public ICommand EditCommand { get; }
         public ICommand DeleteCommand { get; }
 
@@ -124,6 +153,7 @@ namespace PrayerApp.ViewModels
             _parent = parent;
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
+            SelectCommand = new RelayCommand(ToggleSelection);
             EditCommand = new AsyncRelayCommand(EditAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !_tag.IsSystem);
         }
@@ -135,8 +165,26 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(DotColor));
         }
 
-        private async Task EditAsync() =>
+        public void Deselect() => IsSelected = false;
+
+        private void ToggleSelection()
+        {
+            if (_isSelected)
+            {
+                IsSelected = false;
+            }
+            else
+            {
+                _parent.DeselectOthers(this);
+                IsSelected = true;
+            }
+        }
+
+        private async Task EditAsync()
+        {
+            _parent.DeselectAll();
             await _navigationService.GoToAsync($"{Routes.TagDetailPage}?load={Id}");
+        }
 
         private async Task DeleteAsync()
         {

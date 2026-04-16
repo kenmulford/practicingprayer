@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="PrayerApp.Views.Tags.TagsPage"
              x:DataType="viewModels:TagsViewModel"
              Title="Tags"
@@ -11,6 +12,9 @@
     </ContentPage.ToolbarItems>
 
     <Grid>
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+        </Grid.GestureRecognizers>
 
     <!-- Loading indicator -->
     <ActivityIndicator IsRunning="{Binding IsLoading}"
@@ -38,34 +42,18 @@
 
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="viewModels:TagItemViewModel">
-                <SwipeView Threshold="80">
-                    <SwipeView.LeftItems>
-                        <SwipeItems Mode="Reveal">
-                            <SwipeItem
-                                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                                Command="{Binding EditCommand}"
-                                SemanticProperties.Description="Edit tag"
-                                Text="Edit" />
-                        </SwipeItems>
-                    </SwipeView.LeftItems>
-                    <SwipeView.RightItems>
-                        <SwipeItems Mode="Reveal">
-                            <SwipeItem
-                                BackgroundColor="{AppThemeBinding Light={StaticResource DangerRed}, Dark={StaticResource DangerRed}}"
-                                Command="{Binding DeleteCommand}"
-                                SemanticProperties.Description="Delete tag"
-                                Text="Delete" />
-                        </SwipeItems>
-                    </SwipeView.RightItems>
+                <VerticalStackLayout Spacing="0">
 
+                    <!-- Tag row -->
                     <Grid
                         Padding="20,14"
                         ColumnDefinitions="14, *, Auto, Auto"
                         ColumnSpacing="12"
                         MinimumHeightRequest="48"
-                        HorizontalOptions="Fill">
+                        HorizontalOptions="Fill"
+                        SemanticProperties.Description="{Binding Name}">
                         <Grid.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding EditCommand}" />
+                            <TapGestureRecognizer Command="{Binding SelectCommand}" />
                         </Grid.GestureRecognizers>
 
                         <!-- Color dot -->
@@ -83,7 +71,7 @@
                             Grid.Column="1"
                             Text="{Binding Name}"
                             FontSize="16"
-                            SemanticProperties.Hint="Double tap to edit. Swipe left to delete, right to edit"
+                            AutomationProperties.IsInAccessibleTree="False"
                             LineBreakMode="TailTruncation"
                             VerticalOptions="Center" />
 
@@ -91,6 +79,7 @@
                         <Border
                             Grid.Column="2"
                             IsVisible="{Binding IsSystem}"
+                            AutomationProperties.IsInAccessibleTree="False"
                             BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceDark}}"
                             Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
                             StrokeShape="RoundRectangle 8"
@@ -98,29 +87,101 @@
                             VerticalOptions="Center">
                             <Label Text="System"
                                    FontSize="11"
+                                   AutomationProperties.IsInAccessibleTree="False"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </Border>
 
                         <!-- Chevron hint -->
                         <Label
                             Grid.Column="3"
-                            Text="›"
+                            Text="{Binding IsSelected, Converter={StaticResource BoolToChevron}}"
                             FontSize="18"
                             AutomationProperties.IsInAccessibleTree="false"
                             TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                             VerticalOptions="Center" />
                     </Grid>
-                </SwipeView>
+
+                    <!-- Action chips — visible when selected -->
+                    <HorizontalStackLayout
+                        IsVisible="{Binding ShowActions}"
+                        Spacing="8"
+                        Padding="20,0,20,10">
+
+                        <!-- Edit -->
+                        <Border Style="{StaticResource ActionChip}"
+                                AutomationId="Tags_Btn_Edit"
+                                AutomationProperties.IsInAccessibleTree="true"
+                                SemanticProperties.Description="Edit tag">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding EditCommand}" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout Spacing="4">
+                                <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       VerticalOptions="Center">
+                                    <Image.Behaviors>
+                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                            Light={StaticResource Primary},
+                                            Dark={StaticResource PrimaryDark}}" />
+                                    </Image.Behaviors>
+                                </Image>
+                                <Label Text="Edit" FontSize="12"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       TextColor="{AppThemeBinding
+                                           Light={StaticResource Tertiary},
+                                           Dark={StaticResource TextPrimaryDark}}"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Delete (hidden for system tags) -->
+                        <Border Style="{StaticResource ActionChip}"
+                                AutomationId="Tags_Btn_Delete"
+                                AutomationProperties.IsInAccessibleTree="true"
+                                SemanticProperties.Description="Delete tag"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                BackgroundColor="{AppThemeBinding
+                                    Light={StaticResource ChipDangerBgLight},
+                                    Dark={StaticResource ChipDangerBgDark}}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding DeleteCommand}" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout Spacing="4">
+                                <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       VerticalOptions="Center">
+                                    <Image.Behaviors>
+                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                            Light={StaticResource DangerRed},
+                                            Dark={StaticResource DangerRedDark}}" />
+                                    </Image.Behaviors>
+                                </Image>
+                                <Label Text="Delete" FontSize="12"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       TextColor="{AppThemeBinding
+                                           Light={StaticResource DangerRed},
+                                           Dark={StaticResource DangerRedDark}}"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </HorizontalStackLayout>
+
+                    <!-- Divider between tags -->
+                    <BoxView Style="{StaticResource DividerLine}" />
+
+                </VerticalStackLayout>
             </DataTemplate>
         </CollectionView.ItemTemplate>
 
         <CollectionView.EmptyView>
-            <Label
-                Text="No tags yet. Tap Add to create your first tag."
-                HorizontalOptions="Center"
-                HorizontalTextAlignment="Center"
-                Margin="40,40"
-                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+            <ContentView>
+                <Label
+                    Text="No tags yet. Tap Add to create your first tag."
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
+                    Margin="40,40"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+            </ContentView>
         </CollectionView.EmptyView>
     </CollectionView>
 

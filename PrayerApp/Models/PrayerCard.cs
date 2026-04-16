@@ -41,6 +41,22 @@ namespace PrayerApp.Models
         [Column("IsImported")]
         public bool IsImported { get; set; } = false;
 
+        /// <summary>FK to CardBox.Id. 0 = Unboxed (no box assigned).</summary>
+        [Column("BoxId")]
+        public int BoxId { get; set; }
+
+        // Well-known SystemKey values for system cards.
+        public const string SystemKeyQuickAdd = "quick_add";
+        public const string SystemKeySharedWithMe = "shared_with_me";
+
+        // Well-known titles for system cards (shared by CardService and DBService migrations).
+        public const string TitleQuickAdd = "Quick Add";
+        public const string TitleSharedWithMe = "Shared with me";
+
+        /// <summary>Stable key for system cards: "quick_add" or "shared_with_me". Null for user cards. Used for icon mapping.</summary>
+        [Column("SystemKey"), MaxLength(20)]
+        public string? SystemKey { get; set; }
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 

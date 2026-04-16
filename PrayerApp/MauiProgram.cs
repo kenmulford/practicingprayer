@@ -96,6 +96,17 @@ namespace PrayerApp
                                 a.ActivityType == Foundation.NSUserActivityType.BrowsingWeb);
                         HandleDeepLink(activity?.WebPageUrl?.ToString());
                     });
+
+                    // File open handler (.prayercard files)
+                    ios.OpenUrl((app, url, options) =>
+                    {
+                        if (url.Path?.EndsWith(".prayercard", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            HandleFileOpen(url.Path);
+                            return true;
+                        }
+                        return false;
+                    });
                 });
 #endif
             });
@@ -131,6 +142,8 @@ namespace PrayerApp
             builder.Services.AddSingleton<IPrayerService, PrayerService>();
             // Register prayer interaction service as singleton
             builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
+            // Register box service as singleton
+            builder.Services.AddSingleton<IBoxService, BoxService>();
             // Register local notification center wrapper (wraps Plugin.LocalNotification static)
             builder.Services.AddSingleton<ILocalNotificationCenter, LocalNotificationCenterWrapper>();
             // Register notification service — Settings.AllowNotifications supplied here so
@@ -152,6 +165,8 @@ namespace PrayerApp
             // Navigation + accessibility abstractions (enable VM unit testing)
             builder.Services.AddSingleton<INavigationService, ShellNavigationService>();
             builder.Services.AddSingleton<IAccessibilityService, MauiAccessibilityService>();
+            // OS share sheet abstraction (enables unit testing of share logic)
+            builder.Services.AddSingleton<IShareService, ShareService>();
             // Deep link sharing service
             builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
 
@@ -172,8 +187,11 @@ namespace PrayerApp
             builder.Services.AddTransient<QuickAddViewModel>();
             builder.Services.AddTransient<PrayerTimeViewModel>();
             builder.Services.AddTransient<PrayerTimeScopeViewModel>();
+            builder.Services.AddTransient<PrayerTimeBoxScopeViewModel>();
             builder.Services.AddTransient<TagsViewModel>();
             builder.Services.AddTransient<TagDetailViewModel>();
+            builder.Services.AddTransient<BoxesViewModel>();
+            builder.Services.AddTransient<BoxDetailViewModel>();
 
             // Pages — Transient (Shell resolves from DI on navigation)
             builder.Services.AddTransient<MainPage>();
@@ -184,8 +202,11 @@ namespace PrayerApp
             builder.Services.AddTransient<QuickAddPage>();
             builder.Services.AddTransient<PrayerTimePage>();
             builder.Services.AddTransient<PrayerTimeScopePage>();
+            builder.Services.AddTransient<PrayerTimeBoxScopePage>();
             builder.Services.AddTransient<TagsPage>();
             builder.Services.AddTransient<TagDetailPage>();
+            builder.Services.AddTransient<Views.Boxes.BoxesPage>();
+            builder.Services.AddTransient<Views.Boxes.BoxDetailPage>();
             builder.Services.AddTransient<SettingsHubPage>();
             builder.Services.AddTransient<AppSettingsPage>();
             builder.Services.AddTransient<BackupPage>();
@@ -221,7 +242,7 @@ namespace PrayerApp
                     if (confirmed)
                     {
                         await Shell.Current.GoToAsync(
-                            $"{nameof(PrayerApp.Views.PrayerTime.PrayerTimePage)}?scope=tags&tagIds={systemTag.Id}");
+                            $"{nameof(PrayerApp.Views.PrayerTime.PrayerTimePage)}?scope={Routes.ScopeTags}&tagIds={systemTag.Id}");
                     }
                 });
             };
@@ -233,6 +254,7 @@ namespace PrayerApp
             PrayerCardTag.SetDBService(myDBService);
             Prayer.SetDBService(myDBService);
             PrayerInteraction.SetDBService(myDBService);
+            CardBox.SetDBService(myDBService);
 
             // Kick off seeding asynchronously — no blocking on the startup thread.
             // DBService internally awaits its own schema init before any query runs,
@@ -276,7 +298,65 @@ namespace PrayerApp
         {
             if (intent?.Action != Android.Content.Intent.ActionView || intent.Data is null)
                 return;
-            HandleDeepLink(intent.Data.ToString());
+
+            var uri = intent.Data.ToString();
+
+            // URL-based deep link
+            if (uri?.StartsWith("https://practicingprayerapp.com/share") == true)
+            {
+                HandleDeepLink(uri);
+                return;
+            }
+
+            // File-based import (.prayercard)
+            var mimeType = intent.Type;
+            if (mimeType == "application/x-prayercard" || IsPrayerCardFile(intent))
+            {
+                HandleFileImport(intent);
+            }
+        }
+
+        private static bool IsPrayerCardFile(Android.Content.Intent intent)
+        {
+            try
+            {
+                var context = Android.App.Application.Context;
+                using var cursor = context.ContentResolver?.Query(
+                    intent.Data!, null, null, null, null);
+                if (cursor != null && cursor.MoveToFirst())
+                {
+                    var nameIndex = cursor.GetColumnIndex(
+                        Android.Provider.IOpenableColumns.DisplayName);
+                    if (nameIndex >= 0)
+                    {
+                        var name = cursor.GetString(nameIndex);
+                        return name?.EndsWith(".prayercard", StringComparison.OrdinalIgnoreCase) == true;
+                    }
+                }
+            }
+            catch { /* Ignore cursor errors */ }
+            return false;
+        }
+
+        private static void HandleFileImport(Android.Content.Intent intent)
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await App.InitTask;
+                    var context = Android.App.Application.Context;
+                    using var inputStream = context.ContentResolver?.OpenInputStream(intent.Data!);
+                    if (inputStream == null) return;
+
+                    var svc = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+                    await svc.HandleFileAsync(inputStream);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeepLink] File import failed: {ex.Message}");
+                }
+            });
         }
 #endif
 
@@ -288,6 +368,12 @@ namespace PrayerApp
         {
             if (string.IsNullOrEmpty(url) || !url.StartsWith("https://practicingprayerapp.com/share"))
                 return;
+
+            // Strip trailing text — share messages append human-readable summary
+            // after the URL, which some apps pass through as part of the URI.
+            var endOfUrl = url.IndexOfAny(new[] { '\n', '\r', ' ' });
+            if (endOfUrl >= 0)
+                url = url[..endOfUrl];
 
             // Suppress onboarding for this session — must happen before UI dispatch
             // so MainPage.OnAppearing sees the flag when it checks.
@@ -310,6 +396,27 @@ namespace PrayerApp
         }
 
         /// <summary>
+        /// Processes a .prayercard file opened via the OS (iOS OpenUrl / Android file intent).
+        /// </summary>
+        private static void HandleFileOpen(string filePath)
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await App.InitTask;
+                    await using var stream = File.OpenRead(filePath);
+                    var svc = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
+                    await svc.HandleFileAsync(stream);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[DeepLink] File open failed: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
         /// Runs post-schema seed work asynchronously. Awaited by App.InitTask
         /// before the first page loads data.
         /// </summary>
@@ -324,9 +431,28 @@ namespace PrayerApp
             var tagService = services.GetRequiredService<ITagService>();
             await tagService.SeedSystemTagsAsync();
 
+            // Ensure system boxes (System, Archived) exist — resilience fallback
+            var boxService = services.GetRequiredService<IBoxService>();
+            await boxService.SeedSystemBoxesAsync();
+
+            // Ensure ArchivedFolderId setting is in sync (covers edge cases where
+            // DBService migration wrote it but the box was re-created by seed)
+            var archivedBox = await boxService.GetSystemBoxAsync(CardBox.SystemKeyArchived);
+            if (archivedBox != null)
+                Settings.ArchivedFolderId = archivedBox.Id;
+
             // Ensure the system "Quick Add" card exists
             var cardService = services.GetRequiredService<ICardService>();
             await cardService.GetOrCreateQuickAddCardAsync();
+
+            // BUG-58 safety net: fix ANY system cards still at BoxId=0 (legacy installs)
+            var sysBox = await boxService.GetSystemBoxAsync(CardBox.SystemKeySystem);
+            if (sysBox != null)
+            {
+                var allCards = await cardService.GetCardsAsync();
+                foreach (var card in allCards.Where(c => c.IsSystem && c.BoxId == 0))
+                    await cardService.AssignBoxAsync(card, sysBox.Id);
+            }
 
             // Load active prayers once — reused for recently-notified tagging and M-11 renewal
             var prayerService = services.GetRequiredService<IPrayerService>();

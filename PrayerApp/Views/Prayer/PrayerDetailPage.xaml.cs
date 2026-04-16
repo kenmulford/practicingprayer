@@ -1,5 +1,5 @@
-using PrayerApp.Models;
 using PrayerApp.ViewModels;
+using PrayerApp.Views.Tags;
 
 namespace PrayerApp.Views.Prayer;
 
@@ -27,31 +27,61 @@ public partial class PrayerDetailPage : ContentPage
 
         vm.FormResetRequested += (_, _) =>
             Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+
+        vm.TagPickerRequested += async pickerVm =>
+            await Shell.Current.Navigation.PushModalAsync(
+                new TagPickerPage(pickerVm));
+
+        vm.SelectedTags.CollectionChanged += (_, _) => RebuildEditTagChips(vm);
     }
 
-    private void OnTagEntryCompleted(object? sender, EventArgs e)
+    /// <summary>Rebuild tag chips in the FlexLayout, keeping the + button last.</summary>
+    private void RebuildEditTagChips(PrayerRequestDetailViewModel vm)
     {
-        // Dismiss keyboard after tag submission so Save button is accessible
-        tagEntry.Unfocus();
-    }
+        var chipTextColor = (Color)Application.Current!.Resources["White"];
 
-    private void OnSuggestionSelected(object? sender, SelectionChangedEventArgs e)
-    {
-        if (e.CurrentSelection.Count == 0) return;
+        editTagChips.Children.Clear();
+        editTagChips.Children.Add(tagsLabel);
 
-        if (sender is CollectionView cv && e.CurrentSelection.FirstOrDefault() is PrayerTag tag)
+        foreach (var chip in vm.SelectedTags)
         {
-            var tagId = tag.Id;
-            cv.SelectedItem = null; // Reset selection first
-            // Defer to next UI tick — AddSuggestedTagAsync clears SuggestedTags,
-            // and iOS UICollectionView silently fails if its data source is mutated
-            // during a SelectionChanged delegate callback.
-            Dispatcher.DispatchAsync(() =>
+            var label = new Label
             {
-                if (BindingContext is PrayerRequestDetailViewModel vm)
-                    vm.AddSuggestedTagCommand.Execute(tagId);
-            });
+                Text = chip.Name,
+                TextColor = chipTextColor,
+                FontSize = 12,
+                VerticalOptions = LayoutOptions.Center
+            };
+            var removeBtn = new Button
+            {
+                Text = "\u00D7",
+                Command = chip.RemoveCommand,
+                TextColor = chipTextColor,
+                BackgroundColor = Colors.Transparent,
+                FontSize = 14,
+                Padding = new Thickness(2, 0),
+                BorderWidth = 0,
+                MinimumWidthRequest = 24,
+                MinimumHeightRequest = 24,
+                VerticalOptions = LayoutOptions.Center
+            };
+            SemanticProperties.SetDescription(removeBtn, "Remove tag");
+            var stack = new HorizontalStackLayout { Spacing = 4 };
+            stack.Children.Add(label);
+            stack.Children.Add(removeBtn);
+            var border = new Border
+            {
+                BackgroundColor = chip.ChipColor,
+                Stroke = Colors.Transparent,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                Padding = new Thickness(6, 4),
+                Margin = new Thickness(2),
+                Content = stack
+            };
+            editTagChips.Children.Add(border);
         }
+
+        editTagChips.Children.Add(addTagButton);
     }
 
     protected override void OnAppearing()
@@ -69,7 +99,6 @@ public partial class PrayerDetailPage : ContentPage
         {
             if (_initialLoadComplete)
             {
-                // Returning from a child page (e.g. tag edit) — reload to pick up changes
                 vm.Reload();
             }
             else
@@ -124,6 +153,5 @@ public partial class PrayerDetailPage : ContentPage
     {
         if (TitleEntry.IsFocused) TitleEntry.Unfocus();
         else if (DetailsEditor.IsFocused) DetailsEditor.Unfocus();
-        else if (tagEntry.IsFocused) tagEntry.Unfocus();
     }
 }

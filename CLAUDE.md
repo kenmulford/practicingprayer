@@ -107,6 +107,7 @@ Views (XAML)
 | SQLite page size warning           | XA0141 re: Android 16 16KB pages — third-party issue, no action needed       |
 | PAT scope for CI                   | Pushing `.github/workflows/` requires `workflow` scope on GitHub PAT         |
 | BindableLayout + AppThemeBinding   | `AppThemeBinding` inside a keyed Style doesn't reliably propagate to all BindableLayout children. Use inline color bindings for BoxView/dividers inside BindableLayout DataTemplates. Exception to the "no inline colors" rule. |
+| Cross-context bindings (XC0045/XC0023) | Never use `x:DataType="{x:Null}"` — trades one warning for another across MAUI versions. Use code-behind `Tapped` handler + pattern-match `BindingContext` instead. See `TagPickerPage.xaml.cs OnSuggestionTapped`. |
 
 ---
 
@@ -154,6 +155,24 @@ A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically det
 
 **Not applicable to this project** (privacy-first, offline): `maui-authentication`, `maui-rest-api`, `maui-push-notifications`, `maui-maps`, `maui-geolocation`, `maui-aspire`, xamarin-* migration skills.
 
+### Project-Specific Skills (prayer-app-skills plugin)
+
+**Invoke during planning AND implementation — skills are the primary source of truth for this codebase's patterns, not raw file exploration.** When researching a bug or feature, invoke the relevant prayer-app skills FIRST to understand conventions, then read specific files only for details the skills don't cover. Don't send Explore agents to rediscover what the skills already document.
+
+| Area | Skill | When to invoke |
+| ---- | ----- | -------------- |
+| Models, schema, Active Record | `prayer-app-skills:prayer-app-models` | Creating/modifying models, adding columns, data relationships |
+| Database, migrations, DBService | `prayer-app-skills:prayer-app-database` | Schema changes, migrations, seed data, DB queries |
+| Service layer, caching, DI | `prayer-app-skills:prayer-app-services` | Creating/modifying services, understanding cache patterns |
+| ViewModels, MVVM, commands | `prayer-app-skills:prayer-app-viewmodels` | Creating/modifying ViewModels, data binding, commands |
+| Views, XAML, code-behind | `prayer-app-skills:prayer-app-views` | Creating/modifying pages, layout patterns, modals |
+| Colors, styles, dark mode | `prayer-app-skills:prayer-app-theming` | Styling, colors, theming, AppThemeBinding |
+| Unit tests, xUnit, mocking | `prayer-app-skills:prayer-app-unit-testing` | Writing tests, NSubstitute patterns, test project setup |
+| UI tests, Appium | `prayer-app-skills:prayer-app-ui-testing` | Writing Appium tests, platform-specific locators |
+| Android/iOS platform code | `prayer-app-skills:prayer-app-platform` | Handlers, deep linking, orientation, conditional compilation |
+| Shell navigation, routing | `prayer-app-skills:prayer-app-navigation` | Adding pages, routes, query params, modals, tabs |
+| Accessibility, screen readers | `prayer-app-skills:prayer-app-accessibility` | SemanticProperties, AutomationId, announcements |
+
 ---
 
 ## Changelog
@@ -169,7 +188,11 @@ A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically det
 
 - `BACKLOG.md` — prioritized work queue (update every session)
 - `docs/CHANGELOG.md` — app store release notes (update every session with user-facing changes)
-- `docs/plans/` — active feature implementation plans (F-10, F-13)
+- `docs/plans/` — active screenshot runbooks (completed plans archived to `docs/archive/`)
+- `docs/plans/app-store-screenshots.md` — iOS screenshot runbook (devices, seed data, capture commands)
+- `docs/plans/UX-22-android-screenshots.md` — Android screenshot runbook (emulators, seed data, adb commands)
+- `screenshots/` — app store screenshots (phone + tablet, light + dark)
+- `screenshots/android/prayer_app_seed.db` — pre-built seed DB for screenshot sessions
 - `docs/research/` — investigation notes
 - `docs/tester-feedback/feedback-log.md` — verbatim tester feedback
 - `docs/archive/` — completed plan/spec docs (historical reference)

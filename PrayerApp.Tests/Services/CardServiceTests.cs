@@ -13,6 +13,9 @@ public class CardServiceTests
     {
         _db = Substitute.For<IDBService>();
         PrayerCard.SetDBService(_db);
+        CardBox.SetDBService(_db);
+        // Default: no boxes exist (tests that need specific boxes override this)
+        _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>()));
         _service = new CardService(); // CardService uses Active Record; no IDBService ctor arg
     }
 
@@ -235,6 +238,89 @@ public class CardServiceTests
 
         // Should have queried DB twice: once for shared card creation, once after cache bust
         await _db.Received(2).GetAllAsync<PrayerCard>();
+    }
+
+    // ── AssignBoxAsync ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AssignBoxAsync_SetsBoxIdAndSaves()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.AssignBoxAsync(card, boxId: 5);
+
+        Assert.Equal(5, card.BoxId);
+        await _db.Received(1).UpdateAsync(Arg.Is<PrayerCard>(c => c.BoxId == 5));
+    }
+
+    [Fact]
+    public async Task AssignBoxAsync_Unboxed_SetsBoxIdZero()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 5 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.AssignBoxAsync(card, boxId: 0);
+
+        Assert.Equal(0, card.BoxId);
+    }
+
+    [Fact]
+    public async Task AssignBoxAsync_InvalidatesCache()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        await _service.GetCardsAsync(); // populate cache
+
+        var card = new PrayerCard { Id = 1, Title = "Test" };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        await _service.AssignBoxAsync(card, boxId: 5);
+
+        await _service.GetCardsAsync(); // should re-query
+        await _db.Received(2).GetAllAsync<PrayerCard>();
+    }
+
+    // ── BUG-58: System card creation assigns System box ────────────────────
+
+    [Fact]
+    public async Task GetOrCreateQuickAddCardAsync_NewCard_AssignsSystemBoxId()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>
+        {
+            new() { Id = 10, SystemKey = CardBox.SystemKeySystem, IsSystem = true }
+        }));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        var result = await _service.GetOrCreateQuickAddCardAsync();
+
+        Assert.Equal(10, result.BoxId);
+    }
+
+    [Fact]
+    public async Task GetOrCreateSharedCardAsync_NewCard_AssignsSystemBoxId()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>
+        {
+            new() { Id = 7, SystemKey = CardBox.SystemKeySystem, IsSystem = true }
+        }));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        var result = await _service.GetOrCreateSharedCardAsync();
+
+        Assert.Equal(7, result.BoxId);
+    }
+
+    [Fact]
+    public async Task GetOrCreateQuickAddCardAsync_NoBoxesExist_FallsBackToBoxIdZero()
+    {
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>()));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        var result = await _service.GetOrCreateQuickAddCardAsync();
+
+        Assert.Equal(0, result.BoxId);
     }
 
     // ── GetOrCreateQuickAddCardAsync — title matching ────────────────────────

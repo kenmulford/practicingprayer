@@ -105,11 +105,32 @@ namespace PrayerApp.Services
             set => Preferences.Set(nameof(QuickAddTipDismissed), value);
         }
 
+        /// <summary>True once the user dismisses the Collections education banner.</summary>
+        public static bool CollectionsBannerDismissed
+        {
+            get => Preferences.Get(nameof(CollectionsBannerDismissed), false);
+            set => Preferences.Set(nameof(CollectionsBannerDismissed), value);
+        }
+
         /// <summary>Whether Prayer Time locks to landscape orientation. Default true (landscape).</summary>
         public static bool PrayerTimeLandscape
         {
             get => Preferences.Get(nameof(PrayerTimeLandscape), true);
             set => Preferences.Set(nameof(PrayerTimeLandscape), value);
+        }
+
+        /// <summary>CardBox.Id of the Archived folder. Written during DB migration, read at runtime.</summary>
+        public static int ArchivedFolderId
+        {
+            get => Preferences.Get(nameof(ArchivedFolderId), 0);
+            set => Preferences.Set(nameof(ArchivedFolderId), value);
+        }
+
+        /// <summary>Comma-delimited BoxIds of expanded sections on the Cards page.</summary>
+        public static string ExpandedSectionIds
+        {
+            get => Preferences.Get(nameof(ExpandedSectionIds), string.Empty);
+            set => Preferences.Set(nameof(ExpandedSectionIds), value);
         }
 
         public static void ClearSettings()

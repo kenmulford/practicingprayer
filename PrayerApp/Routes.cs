@@ -16,7 +16,16 @@ public static class Routes
     public const string AboutPage = "AboutPage";
     public const string HelpPage = "HelpPage";
 
+    // Box management routes
+    public const string BoxesPage = "BoxesPage";
+    public const string BoxDetailPage = "BoxDetailPage";
+
     // Shell tab routes (absolute navigation)
     public const string PrayerCardsTab = "//CardsPage";
     public const string PrayersTab = "//PrayersPage";
+
+    // Prayer Time scope query parameter values
+    public const string ScopeAll = "all";
+    public const string ScopeTags = "tags";
+    public const string ScopeBox = "box";
 }

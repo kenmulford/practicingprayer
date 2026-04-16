@@ -31,7 +31,7 @@ Apple's docs and App Store Connect validation **disagree**. These are the valida
 | # | Screen | Filename | Notes |
 |---|--------|----------|-------|
 | 1 | Welcome / Onboarding | `01-welcome-onboarding.png` | Requires fresh install (uninstall + reinstall) |
-| 2 | Prayer Cards | `02-prayer-cards.png` | Expand "Career & Purpose" to show nested requests; other cards show badge counters |
+| 2 | Prayer Cards | `02-prayer-cards.png` | Cards organized into collection sections (Personal, Ministry). Expand one to show nested requests. |
 | 3 | Prayer Detail | `03-prayer-detail.png` | Tap "Wisdom for the job transition" — shows title, details, tags, Share/Mark Answered |
 | 4 | Prayer List (Active) | `04-prayer-list.png` | Prayers tab with Active filter, tag chips, all requests listed |
 | 5 | Answered Prayers | `05-answered-prayers.png` | Prayers tab with Answered filter — strikethrough text + date |
@@ -39,14 +39,16 @@ Apple's docs and App Store Connect validation **disagree**. These are the valida
 | 7 | Tag Detail | `07-tag-detail.png` | Tap "Family" tag — shows name, color picker swatches |
 | 8 | Prayer Time | `08-prayer-time.png` | **iPhone: landscape** (rotate image with `sips -r 270`), **iPad: portrait** |
 | 9 | Quick Add | `09-quick-add.png` | Home → Quick Add button — shows modal with prayer title field |
+| 10 | Manage Collections | `10-manage-collections.png` | Cards tab → Collections toolbar — shows user + system collections with card counts |
 
 ### Dark Mode (high-impact only, both devices)
 
-| # | Screen | Filename |
-|---|--------|----------|
-| 1 | Prayer Cards (expanded) | `dark/02-prayer-cards.png` |
-| 2 | Prayer List (Active) | `dark/04-prayer-list.png` |
-| 3 | Prayer Time | `dark/08-prayer-time.png` |
+| # | Screen | Filename | Notes |
+|---|--------|----------|-------|
+| 1 | Prayer Cards (expanded) | `dark/02-prayer-cards.png` | |
+| 2 | Prayer List (Active) | `dark/04-prayer-list.png` | |
+| 3 | Prayer Time | `dark/08-prayer-time.png` | iPhone: landscape (rotate with `sips -r 270`), iPad: portrait |
+| 4 | Manage Collections | `dark/10-manage-collections.png` | |
 
 ---
 
@@ -65,14 +67,23 @@ THREE_MONTHS  = 639092370000000000
 ANSWERED_AT   = 639101500000000000
 ```
 
+### Card Boxes (Collections)
+
+| Id | Name | IsSystem | SystemKey | SortOrder |
+|----|------|----------|-----------|-----------|
+| 1 | System | 1 | system | 900 |
+| 2 | Archived | 1 | archived | 999 |
+| 3 | Personal | 0 | (null) | 0 |
+| 4 | Ministry | 0 | (null) | 0 |
+
 ### Prayer Cards
 
-| Id | Title | IsFavorite | IsSystem | Created |
-|----|-------|-----------|----------|---------|
-| 1 | Quick Add | 0 | 1 | (auto-created by app) |
-| 2 | Family & Health | 1 | 0 | THREE_MONTHS |
-| 3 | Career & Purpose | 0 | 0 | TWO_WEEKS |
-| 4 | Gratitude | 0 | 0 | MONTH_AGO |
+| Id | Title | IsFavorite | IsSystem | BoxId | Created |
+|----|-------|-----------|----------|-------|---------|
+| 1 | Quick Add | 0 | 1 | 1 | (auto-created by app) |
+| 2 | Family & Health | 1 | 0 | 3 | THREE_MONTHS |
+| 3 | Career & Purpose | 0 | 0 | 4 | TWO_WEEKS |
+| 4 | Gratitude | 0 | 0 | 3 | MONTH_AGO |
 
 ### Prayer Requests
 
@@ -173,6 +184,8 @@ DB=$(find ~/Library/Developer/CoreSimulator/Devices/$IPHONE/data/Containers/Data
 # Run the INSERT statements from the Seed Data section above
 # Mark onboarding complete:
 xcrun simctl spawn $IPHONE defaults write com.multithreadedllc.prayercards OnboardingComplete -bool true
+xcrun simctl spawn $IPHONE defaults write com.multithreadedllc.prayercards QuickAddTipDismissed -bool true
+xcrun simctl spawn $IPHONE defaults write com.multithreadedllc.prayercards CollectionsBannerDismissed -bool true
 ```
 
 ### 5. Take Screenshots
@@ -219,11 +232,11 @@ iPad screenshots (2064×2752) need no resize.
 ```
 screenshots/
   iphone/
-    light/   01 through 09
-    dark/    02, 04, 08
+    light/   02 through 10
+    dark/    02, 04, 08, 10
   ipad/
-    light/   01 through 09
-    dark/    02, 04, 08
+    light/   01 through 10
+    dark/    02, 04, 08, 10
 ```
 
 ---
@@ -239,3 +252,20 @@ screenshots/
 | Prayer Time auto-rotates to landscape on iPhone | App setting "Landscape Mode" controls this |
 | iPad screenshots accepted as-is | 2064×2752 matches the 13" category exactly |
 | Seed data timestamps | Must be .NET ticks format, not Unix epoch |
+| **Prayer Time action sheet auto-dismissed** | Prayer Time button shows a scope picker ("All Requests" / "By Tags" / "By Collection") when data has both tags and user collections. **`autoDismissAlerts: true` silently dismisses this**, making it look like the button does nothing. Use `autoDismissAlerts: false` for the entire session. |
+| **Appium MCP screenshot too large** | `appium_screenshot` returns base64 that exceeds tool result token limits. Use `xcrun simctl io $UDID screenshot <path>` for all captures — faster and saves directly to disk. |
+| **Exiting Prayer Time via Appium unreliable** | Landscape orientation confuses Appium element finding — buttons like "I'm Done" can't be located. Workaround: `xcrun simctl terminate` + `xcrun simctl launch` to restart the app on Home. |
+| **Tag Detail requires two taps** | Tap the tag row to expand (shows Edit/Delete inline buttons), then tap Edit to navigate to the tag edit page with color picker swatches. |
+| **Keyboard on Quick Add / Tag Edit** | Quick Add modal auto-focuses the title field, showing keyboard. `mobile: hideKeyboard` fails on Quick Add. On iPad, `hideKeyboard` works. For iPhone Quick Add, accept the keyboard in the screenshot or tap an empty area to dismiss. |
+
+---
+
+## Efficiency Tips for Future Passes
+
+1. **Always use `autoDismissAlerts: false`** — prevents silent dismissal of action sheets and confirmation dialogs
+2. **Use `xcrun simctl io` for screenshots, Appium only for navigation** — avoids token limit issues and saves directly to disk
+3. **Terminate + relaunch to escape Prayer Time** — faster than finding exit buttons through Appium in landscape
+4. **Do one device fully (light + dark) before moving to the next** — reduces session creation overhead
+5. **Appium session creation per navigation burst** — sessions go stale; create fresh sessions after terminate/relaunch cycles
+6. **Absolute paths for `xcrun simctl io screenshot`** — relative paths fail silently with "No such file or directory"
+7. **Batch resize at the end** — resize all iPhone screenshots in one pass after all captures are done

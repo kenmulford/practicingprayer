@@ -153,6 +153,74 @@ public class TagsViewModelTests
         _tagService.Received().InvalidateCache();
     }
 
+    // ── Selection (BUG-7 inline chips) ──────────────────────────────
+
+    [Fact]
+    public async Task SelectCommand_TogglesIsSelected()
+    {
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag> { MakeTag(1) }.AsReadOnly());
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var item = sut.Tags[0];
+
+        Assert.False(item.IsSelected);
+
+        item.SelectCommand.Execute(null);
+        Assert.True(item.IsSelected);
+
+        item.SelectCommand.Execute(null);
+        Assert.False(item.IsSelected);
+    }
+
+    [Fact]
+    public async Task SelectCommand_DeselectsOtherItems()
+    {
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>
+        {
+            MakeTag(1, "A"), MakeTag(2, "B")
+        }.AsReadOnly());
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        sut.Tags[0].SelectCommand.Execute(null);
+        Assert.True(sut.Tags[0].IsSelected);
+
+        sut.Tags[1].SelectCommand.Execute(null);
+        Assert.False(sut.Tags[0].IsSelected);
+        Assert.True(sut.Tags[1].IsSelected);
+    }
+
+    [Fact]
+    public async Task DeselectAll_DeselectsAllItems()
+    {
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>
+        {
+            MakeTag(1, "A"), MakeTag(2, "B")
+        }.AsReadOnly());
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        sut.Tags[0].SelectCommand.Execute(null);
+        sut.DeselectAll();
+
+        Assert.False(sut.Tags[0].IsSelected);
+        Assert.False(sut.Tags[1].IsSelected);
+    }
+
+    [Fact]
+    public async Task ShowActions_TrueWhenSelected()
+    {
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag> { MakeTag(1) }.AsReadOnly());
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var item = sut.Tags[0];
+
+        Assert.False(item.ShowActions);
+
+        item.SelectCommand.Execute(null);
+        Assert.True(item.ShowActions);
+    }
+
     // ── RemoveTag ─────────────────────────────────────────────────────
 
     [Fact]

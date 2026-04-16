@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="PrayerApp.Views.Boxes.BoxesPage"
+             x:DataType="viewModels:BoxesViewModel"
+             Title="Collections"
+             SafeAreaEdges="Container">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Add" Command="{Binding AddCommand}" />
+    </ContentPage.ToolbarItems>
+
+    <Grid>
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+        </Grid.GestureRecognizers>
+
+    <!-- Loading indicator -->
+    <ActivityIndicator IsRunning="{Binding IsLoading}"
+                       IsVisible="{Binding IsLoading}"
+                       Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+
+    <CollectionView
+        AutomationId="Boxes_List_Boxes"
+        ItemsSource="{Binding Boxes}"
+        SelectionMode="None"
+        Margin="10">
+
+        <CollectionView.Header>
+            <Label
+                Text="Collections"
+                Style="{StaticResource Headline}"
+                Margin="20,20,20,10" />
+        </CollectionView.Header>
+
+        <CollectionView.ItemsLayout>
+            <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
+        </CollectionView.ItemsLayout>
+
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="viewModels:BoxItemViewModel">
+                <VerticalStackLayout Spacing="0">
+
+                    <!-- Collection row -->
+                    <Grid
+                        Padding="20,14"
+                        ColumnDefinitions="*, Auto, Auto, Auto"
+                        ColumnSpacing="12"
+                        MinimumHeightRequest="48"
+                        HorizontalOptions="Fill"
+                        SemanticProperties.Description="{Binding AccessibleDescription}">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectCommand}" />
+                        </Grid.GestureRecognizers>
+
+                        <!-- Name -->
+                        <Label
+                            Grid.Column="0"
+                            Text="{Binding Name}"
+                            FontSize="16"
+                            AutomationProperties.IsInAccessibleTree="False"
+                            LineBreakMode="TailTruncation"
+                            VerticalOptions="Center" />
+
+                        <!-- Card count -->
+                        <Label
+                            Grid.Column="1"
+                            Text="{Binding CardCount, StringFormat='{0} cards'}"
+                            FontSize="13"
+                            AutomationProperties.IsInAccessibleTree="False"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
+                            VerticalOptions="Center" />
+
+                        <!-- System badge -->
+                        <Border
+                            Grid.Column="2"
+                            IsVisible="{Binding IsSystem}"
+                            AutomationProperties.IsInAccessibleTree="False"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceDark}}"
+                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="6,2"
+                            VerticalOptions="Center">
+                            <Label Text="System"
+                                   FontSize="11"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                        </Border>
+
+                        <!-- Chevron hint -->
+                        <Label
+                            Grid.Column="3"
+                            Text="{Binding IsSelected, Converter={StaticResource BoolToChevron}}"
+                            FontSize="18"
+                            AutomationProperties.IsInAccessibleTree="false"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                            VerticalOptions="Center" />
+                    </Grid>
+
+                    <!-- Action chips — visible when selected -->
+                    <HorizontalStackLayout
+                        IsVisible="{Binding ShowActions}"
+                        Spacing="8"
+                        Padding="20,0,20,10">
+
+                        <!-- Edit -->
+                        <Border Style="{StaticResource ActionChip}"
+                                AutomationId="Boxes_Btn_Edit"
+                                AutomationProperties.IsInAccessibleTree="true"
+                                SemanticProperties.Description="Edit collection">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding EditCommand}" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout Spacing="4">
+                                <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       VerticalOptions="Center">
+                                    <Image.Behaviors>
+                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                            Light={StaticResource Primary},
+                                            Dark={StaticResource PrimaryDark}}" />
+                                    </Image.Behaviors>
+                                </Image>
+                                <Label Text="Edit" FontSize="12"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       TextColor="{AppThemeBinding
+                                           Light={StaticResource Tertiary},
+                                           Dark={StaticResource TextPrimaryDark}}"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Delete (hidden for system collections) -->
+                        <Border Style="{StaticResource ActionChip}"
+                                AutomationId="Boxes_Btn_Delete"
+                                AutomationProperties.IsInAccessibleTree="true"
+                                SemanticProperties.Description="Delete collection"
+                                IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}"
+                                BackgroundColor="{AppThemeBinding
+                                    Light={StaticResource ChipDangerBgLight},
+                                    Dark={StaticResource ChipDangerBgDark}}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding DeleteCommand}" />
+                            </Border.GestureRecognizers>
+                            <HorizontalStackLayout Spacing="4">
+                                <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       VerticalOptions="Center">
+                                    <Image.Behaviors>
+                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                            Light={StaticResource DangerRed},
+                                            Dark={StaticResource DangerRedDark}}" />
+                                    </Image.Behaviors>
+                                </Image>
+                                <Label Text="Delete" FontSize="12"
+                                       AutomationProperties.IsInAccessibleTree="False"
+                                       TextColor="{AppThemeBinding
+                                           Light={StaticResource DangerRed},
+                                           Dark={StaticResource DangerRedDark}}"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </HorizontalStackLayout>
+
+                    <!-- Divider -->
+                    <BoxView Style="{StaticResource DividerLine}" />
+
+                </VerticalStackLayout>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+
+        <CollectionView.EmptyView>
+            <ContentView>
+                <Label
+                    Text="No collections yet. Tap Add to create your first collection."
+                    HorizontalOptions="Center"
+                    HorizontalTextAlignment="Center"
+                    Margin="40,40"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+            </ContentView>
+        </CollectionView.EmptyView>
+    </CollectionView>
+
+    </Grid>
+</ContentPage>

@@ -491,6 +491,31 @@
         <Setter Property="FontSize" Value="14" />
     </Style>
 
+    <!-- ── Picker styles (depend on LabelBase above) ──────────────────── -->
+
+    <!-- PickerField: outlined dropdown border for Picker controls. -->
+    <Style x:Key="PickerField" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="8" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- PickerIndicator: decorative ▼ arrow inside a PickerField Grid column 1. -->
+    <Style x:Key="PickerIndicator" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="Text" Value="▼" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Grid.Column" Value="1" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="false" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+    </Style>
+
     <!-- ── Button variants ─────────────────────────────────────────────── -->
 
     <!-- DangerButton: delete / destructive actions -->
@@ -565,7 +590,7 @@
          plus HeightRequest=, Opacity=, and HorizontalOptions= from the element. -->
     <Style x:Key="DividerLine" TargetType="BoxView">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="Opacity" Value="0.4" />
+        <Setter Property="Opacity" Value="{AppThemeBinding Light=0.4, Dark=0.85}" />
         <Setter Property="HeightRequest" Value="1" />
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />

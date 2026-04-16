@@ -26,8 +26,8 @@
                                TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
                                SemanticProperties.Hint="Double tap to expand" />
                         <Label Grid.Column="1"
-                               Text="{Binding IsExpanded, Converter={StaticResource BoolToChevron}}"
-                               FontSize="16"
+                               Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
+                               FontSize="14"
                                VerticalOptions="Center"
                                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
                                AutomationProperties.IsInAccessibleTree="False" />

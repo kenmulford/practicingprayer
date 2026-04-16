@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Blueprint — How the App Starts | Practicing Prayer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--color-bg:#FAF7F2;--color-bg-warm:#F5F0E8;--color-bg-code:#1E1E2E;--color-text:#2C2A28;--color-text-secondary:#6B6560;--color-text-muted:#9E9790;--color-border:#E5DFD6;--color-border-light:#EEEBE5;--color-surface:#FFFFFF;--color-surface-warm:#FDF9F3;--color-accent:#6B7D5A;--color-accent-hover:#5A6B4A;--color-accent-light:#EDF2E8;--color-accent-muted:#8FA37E;--color-success:#2D8B55;--color-success-light:#E8F5EE;--color-error:#C93B3B;--color-error-light:#FDE8E8;--color-info:#2A7B9B;--color-info-light:#E4F2F7;--color-actor-1:#6B7D5A;--color-actor-2:#2A7B9B;--color-actor-3:#7B6DAA;--color-actor-4:#D4A843;--color-actor-5:#D94F30;--font-display:'Bricolage Grotesque',Georgia,serif;--font-body:'DM Sans',-apple-system,sans-serif;--font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;--text-xs:0.75rem;--text-sm:0.875rem;--text-base:1rem;--text-lg:1.125rem;--text-xl:1.25rem;--text-2xl:1.5rem;--text-3xl:1.875rem;--text-4xl:2.25rem;--text-5xl:3rem;--text-6xl:3.75rem;--leading-tight:1.15;--leading-snug:1.3;--leading-normal:1.6;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;--space-16:4rem;--space-20:5rem;--space-24:6rem;--content-width:800px;--content-width-wide:1000px;--nav-height:50px;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-full:9999px;--shadow-sm:0 1px 2px rgba(44,42,40,0.05);--shadow-md:0 4px 12px rgba(44,42,40,0.08);--shadow-lg:0 8px 24px rgba(44,42,40,0.1);--ease-out:cubic-bezier(0.16,1,0.3,1);--duration-fast:150ms;--duration-normal:300ms;--duration-slow:500ms;--stagger-delay:120ms}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-snap-type:y proximity;scroll-behavior:smooth}body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(107,125,90,0.03) 0%,transparent 50%);-webkit-font-smoothing:antialiased}pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}pre::-webkit-scrollbar,.translation-code::-webkit-scrollbar{display:none}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,247,242,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-border-light);height:var(--nav-height)}.progress-bar{position:absolute;top:0;left:0;height:3px;background:var(--color-accent);width:0%;transition:width 100ms linear}.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6)}.nav-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm)}.nav-dots{display:flex;gap:var(--space-3)}.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;transition:all var(--duration-fast);padding:0}.nav-dot:hover{border-color:var(--color-accent-muted)}.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent);box-shadow:0 0 8px rgba(107,125,90,0.3)}.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent)}
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12))}.module-content{max-width:var(--content-width);margin:0 auto}.module-header{margin-bottom:var(--space-12)}.module-number{font-family:var(--font-display);font-weight:800;font-size:var(--text-6xl);color:var(--color-accent);opacity:0.15;line-height:var(--leading-tight)}.module-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-4xl);line-height:var(--leading-tight);margin-top:calc(-1 * var(--space-4))}.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);margin-top:var(--space-3)}.screen{margin-bottom:var(--space-16)}.screen-heading{font-family:var(--font-display);font-weight:600;font-size:var(--text-2xl);margin-bottom:var(--space-6)}
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out)}.animate-in.visible{opacity:1;transform:translateY(0)}.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay))}
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0}.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden}.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent)}.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5}.translation-english .translation-label{position:relative;top:auto;right:auto;display:block;color:var(--color-text-muted);margin-bottom:var(--space-3)}.tl{margin-bottom:var(--space-3);color:var(--color-text-secondary)}.tl:last-child{margin-bottom:0}
+.code-keyword{color:#CBA6F7}.code-string{color:#A6E3A1}.code-function{color:#89B4FA}.code-comment{color:#6C7086}.code-number{color:#FAB387}.code-property{color:#F9E2AF}.code-operator{color:#94E2D5}.code-type{color:#89DCEB}
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5);border-radius:var(--radius-md);margin:var(--space-8) 0}.callout-icon{font-size:1.5rem;flex-shrink:0}.callout-content{flex:1}.callout-title{display:block;margin-bottom:var(--space-2);font-weight:600}.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent)}.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info)}.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error)}
+.pattern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4);margin:var(--space-8) 0}.pattern-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-6);box-shadow:var(--shadow-sm);transition:transform var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal)}.pattern-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}.pattern-icon{width:48px;height:48px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:var(--space-3);color:white}.pattern-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-2)}.pattern-desc{font-size:var(--text-sm);color:var(--color-text-secondary)}
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-8) 0}.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}.icon-row p{margin:0;color:var(--color-text-secondary);font-size:var(--text-sm)}.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:white}
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-8) 0}.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}.step-body p{margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-2);border-radius:4px}
+.quiz-container{margin:var(--space-8) 0}.quiz-question-block{margin-bottom:var(--space-8)}.quiz-question{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin-bottom:var(--space-4)}.quiz-options{display:flex;flex-direction:column;gap:var(--space-3)}.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;transition:border-color var(--duration-fast),background var(--duration-fast);font-family:var(--font-body);font-size:var(--text-base);text-align:left}.quiz-option:hover{border-color:var(--color-accent-muted)}.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light)}.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light)}.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light)}.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0;transition:all var(--duration-fast)}.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white}.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal),padding var(--duration-normal);border-radius:var(--radius-sm);font-size:var(--text-sm)}.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3) var(--space-4);margin-top:var(--space-2)}.quiz-feedback.success{background:var(--color-success-light);color:#1a6b3a}.quiz-feedback.error{background:var(--color-error-light);color:#a32a2a}.quiz-feedback.warning{background:var(--color-accent-light);color:var(--color-text)}.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:600;font-size:var(--text-sm);cursor:pointer;margin-top:var(--space-4);margin-right:var(--space-3)}.quiz-check-btn{background:var(--color-accent);color:white}.quiz-check-btn:hover{background:var(--color-accent-hover)}.quiz-reset-btn{background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-border)}
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative}.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent)}.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000}.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code)}.term-tooltip.visible{opacity:1}.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code)}
+.file-tree{font-family:var(--font-mono);font-size:var(--text-sm);margin:var(--space-8) 0}.ft-folder,.ft-file{padding:var(--space-2) var(--space-3);border-left:2px solid var(--color-border-light);margin-left:var(--space-4)}.ft-folder>.ft-name{color:var(--color-accent);font-weight:600}.ft-folder>.ft-name::before{content:'&#x1F4C1; '}.ft-file>.ft-name::before{content:'&#x1F4C4; '}.ft-desc{color:var(--color-text-secondary);font-family:var(--font-body);margin-left:var(--space-2);font-size:var(--text-xs)}.ft-children{margin-left:var(--space-4)}
+/* Architecture diagram */
+.arch-diagram{display:flex;flex-direction:column;gap:var(--space-2);margin:var(--space-8) 0;align-items:center}.arch-layer{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-6);border-radius:var(--radius-md);width:100%;max-width:500px;transition:transform var(--duration-normal),box-shadow var(--duration-normal)}.arch-layer:hover{transform:scale(1.02);box-shadow:var(--shadow-md)}.arch-arrow{font-size:var(--text-xl);color:var(--color-text-muted);text-align:center}
+@media(max-width:768px){:root{--text-4xl:1.875rem;--text-5xl:2.25rem;--text-6xl:3rem}.translation-block{grid-template-columns:1fr}.translation-english{border-left:none;border-top:3px solid var(--color-accent)}.pattern-cards{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){:root{--text-4xl:1.5rem;--text-5xl:1.875rem;--text-6xl:2.25rem}.module{padding:var(--space-8) var(--space-4)}.pattern-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="progress-bar" id="progress-bar"></div><div class="nav-inner"><span class="nav-title">Course 1: The Blueprint</span><div class="nav-dots"><button class="nav-dot" data-target="module-1" title="Solution Map"></button><button class="nav-dot" data-target="module-2" title="Inside the Project"></button><button class="nav-dot" data-target="module-3" title="The .csproj File"></button><button class="nav-dot" data-target="module-4" title="MauiProgram.cs"></button><button class="nav-dot" data-target="module-5" title="App &amp; AppShell"></button><button class="nav-dot" data-target="module-6" title="Startup Timeline"></button></div></div></nav>
+
+<!-- HERO -->
+<section class="module" id="module-intro" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">The Blueprint</h1><p class="module-subtitle">How the Practicing Prayer app starts up &mdash; from tapping the icon to seeing the first screen.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px">Every app has a startup sequence &mdash; a series of steps that happen between "user taps the icon" and "the screen appears." Understanding this sequence helps you debug "blank screen" bugs and tell AI exactly where to put new code.</p></section>
+      <section class="screen animate-in"><h2 class="screen-heading">The architecture at a glance</h2>
+        <div class="arch-diagram stagger-children">
+          <div class="arch-layer animate-in" style="background:var(--color-accent-light);border:2px solid var(--color-accent)"><div class="icon-circle" style="background:var(--color-actor-1);width:36px;height:36px;font-size:1rem">&#x1F4F1;</div><div><strong>Views</strong> (XAML pages)<p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">What the user sees and taps</p></div></div>
+          <div class="arch-arrow animate-in">&#x2193;</div>
+          <div class="arch-layer animate-in" style="background:var(--color-info-light);border:2px solid var(--color-info)"><div class="icon-circle" style="background:var(--color-actor-2);width:36px;height:36px;font-size:1rem">&#x1F3AF;</div><div><strong>ViewModels</strong> (screen logic)<p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">Processes user actions, manages state</p></div></div>
+          <div class="arch-arrow animate-in">&#x2193;</div>
+          <div class="arch-layer animate-in" style="background:#F3EBF8;border:2px solid var(--color-actor-3)"><div class="icon-circle" style="background:var(--color-actor-3);width:36px;height:36px;font-size:1rem">&#x2699;&#xFE0F;</div><div><strong>Services</strong> (business logic)<p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">Caching, validation, coordination</p></div></div>
+          <div class="arch-arrow animate-in">&#x2193;</div>
+          <div class="arch-layer animate-in" style="background:#FDF6E3;border:2px solid var(--color-actor-4)"><div class="icon-circle" style="background:var(--color-actor-4);width:36px;height:36px;font-size:1rem">&#x1F4BE;</div><div><strong>Models</strong> + <strong>DBService</strong><p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary)">Data shapes and SQLite storage</p></div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 1: SOLUTION MAP -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">The Solution Map</h1><p class="module-subtitle">A city zoning map &mdash; the solution is the city, each project is a district with its own building codes.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Three projects, one solution</h2><p>The Practicing Prayer app isn't one giant pile of code &mdash; it's organized into three <span class="term" data-definition="A project is a self-contained unit of code that compiles into one output. Each project has its own .csproj file that lists its dependencies and build settings. Think of it as one department in a company.">projects</span> inside a <span class="term" data-definition="A solution (.sln file) is a container that groups multiple projects together. It's like the company that owns several departments. Opening the solution in an editor loads all projects at once.">solution</span>:</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">&#x1F4F1;</div><div><strong>PrayerApp</strong><p>The main app &mdash; all the code that runs on your phone (Android + iOS)</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">&#x1F9EA;</div><div><strong>PrayerApp.Tests</strong><p>Unit tests &mdash; automated checks that verify the logic without running on a phone</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">&#x1F916;</div><div><strong>PrayerApp.UITests</strong><p>UI tests &mdash; a robot that taps buttons and reads screens on a real device</p></div></div>
+        </div></section>
+      <section class="screen animate-in"><h2 class="screen-heading">Multi-targeting: one codebase, two platforms</h2><p>The main project targets <strong>both</strong> Android and iOS from the same code. This is called <span class="term" data-definition="Multi-targeting means one project compiles for multiple platforms. The .csproj file lists both 'net10.0-android' and 'net10.0-ios' as targets. Most code is shared; platform-specific code lives in the Platforms folder.">multi-targeting</span>. Most code is shared, but the <code class="inline">Platforms/</code> folder has code that only runs on one platform.</p>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">Why this matters</strong><p>When you tell AI "add a feature," it needs to know: does this go in shared code (most things) or platform-specific code (like notification channels or deep link handlers)?</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2: INSIDE THE PROJECT -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">Inside the Main Project</h1><p class="module-subtitle">A filing cabinet with labeled drawers &mdash; each holds one type of document.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The folder structure</h2>
+        <div class="file-tree stagger-children">
+          <div class="ft-folder open animate-in"><span class="ft-name">PrayerApp/</span><span class="ft-desc">The main app project</span>
+            <div class="ft-children">
+              <div class="ft-folder animate-in"><span class="ft-name">Models/</span><span class="ft-desc">Data shapes (Prayer, PrayerCard, PrayerTag, etc.)</span></div>
+              <div class="ft-folder animate-in"><span class="ft-name">Services/</span><span class="ft-desc">Business logic (CardService, TagService, DBService)</span></div>
+              <div class="ft-folder animate-in"><span class="ft-name">ViewModels/</span><span class="ft-desc">Screen logic (HomeViewModel, PrayerCardsViewModel)</span></div>
+              <div class="ft-folder animate-in"><span class="ft-name">Views/</span><span class="ft-desc">XAML pages organized by feature (Prayer/, PrayerCard/, Tags/)</span></div>
+              <div class="ft-folder animate-in"><span class="ft-name">Converters/</span><span class="ft-desc">Type translators (bool to color, bool to strikethrough)</span></div>
+              <div class="ft-folder animate-in"><span class="ft-name">Helpers/</span><span class="ft-desc">Utility functions (notification math, task extensions)</span></div>
+              <div class="ft-folder animate-in"><span class="ft-name">Platforms/</span><span class="ft-desc">Android and iOS specific code (handlers, services)</span></div>
+              <div class="ft-folder animate-in"><span class="ft-name">Resources/</span><span class="ft-desc">Styles, colors, fonts, images, icons</span></div>
+              <div class="ft-file animate-in"><span class="ft-name">MauiProgram.cs</span><span class="ft-desc">The startup file &mdash; wires everything together</span></div>
+              <div class="ft-file animate-in"><span class="ft-name">App.xaml.cs</span><span class="ft-desc">Application entry point</span></div>
+              <div class="ft-file animate-in"><span class="ft-name">AppShell.xaml</span><span class="ft-desc">Tab navigation structure</span></div>
+              <div class="ft-file animate-in"><span class="ft-name">Routes.cs</span><span class="ft-desc">Centralized page route names</span></div>
+            </div>
+          </div>
+        </div></section>
+      <section class="screen animate-in"><h2 class="screen-heading">The naming tells you what it does</h2><p>Every folder maps to one layer of the architecture:</p>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-4)"><h4 class="pattern-title">Models/</h4><p class="pattern-desc">The <em>nouns</em> &mdash; Prayer, PrayerCard, PrayerTag. What the data <em>looks like</em>.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)"><h4 class="pattern-title">Services/</h4><p class="pattern-desc">The <em>verbs</em> &mdash; GetCards, SavePrayer, DeleteTag. What the app <em>does</em> with data.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><h4 class="pattern-title">ViewModels/</h4><p class="pattern-desc">The <em>brains</em> &mdash; decides what to show, responds to taps, talks to services.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)"><h4 class="pattern-title">Views/</h4><p class="pattern-desc">The <em>face</em> &mdash; buttons, labels, lists. What the user actually sees.</p></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3: THE .CSPROJ FILE -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">03</span><h1 class="module-title">The .csproj File</h1><p class="module-subtitle">A grocery receipt &mdash; each line is a dependency the project purchased.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">What platforms does this app target?</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;TargetFrameworks&gt;</span>net10.0-android;net10.0-ios<span class="code-tag">&lt;/TargetFrameworks&gt;</span>
+
+<span class="code-tag">&lt;ApplicationTitle&gt;</span>Practicing Prayer<span class="code-tag">&lt;/ApplicationTitle&gt;</span>
+
+<span class="code-tag">&lt;ApplicationId&gt;</span>com.multithreadedllc.prayercards<span class="code-tag">&lt;/ApplicationId&gt;</span>
+
+<span class="code-tag">&lt;ApplicationDisplayVersion&gt;</span>1.1.0<span class="code-tag">&lt;/ApplicationDisplayVersion&gt;</span>
+<span class="code-tag">&lt;ApplicationVersion&gt;</span>50<span class="code-tag">&lt;/ApplicationVersion&gt;</span></code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Build this app for both <strong>Android</strong> and <strong>iOS</strong>, using .NET 10.</p><p class="tl">The app's display name in the app store is "Practicing Prayer."</p><p class="tl">The unique bundle ID that the app stores use to identify this app.</p><p class="tl">Version 1.1.0 is what users see. Build 50 is the internal counter that must increase with every submission.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/PrayerApp.csproj</code> &mdash; lines 4&ndash;24</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The shopping list: NuGet packages</h2><p>Every outside library the app depends on is listed as a <span class="term" data-definition="A NuGet package is a pre-built library you can add to your project. Like installing an app on your phone, you add a PackageReference to your .csproj and the library becomes available. NuGet is .NET's package manager.">NuGet package</span>:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;PackageReference</span> <span class="code-attr">Include</span>=<span class="code-string">"CommunityToolkit.Mvvm"</span> <span class="code-attr">Version</span>=<span class="code-string">"8.4.1"</span> /&gt;
+<span class="code-tag">&lt;PackageReference</span> <span class="code-attr">Include</span>=<span class="code-string">"sqlite-net-pcl"</span> <span class="code-attr">Version</span>=<span class="code-string">"1.9.172"</span> /&gt;
+<span class="code-tag">&lt;PackageReference</span> <span class="code-attr">Include</span>=<span class="code-string">"Plugin.LocalNotification"</span> <span class="code-attr">Version</span>=<span class="code-string">"14.0.0"</span> /&gt;</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><strong>CommunityToolkit.Mvvm</strong> &mdash; provides the MVVM helpers (ObservableObject, RelayCommand) that connect Views to ViewModels.</p><p class="tl"><strong>sqlite-net-pcl</strong> &mdash; the local database engine that stores all prayer data on the device.</p><p class="tl"><strong>Plugin.LocalNotification</strong> &mdash; schedules prayer reminder notifications.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/PrayerApp.csproj</code> &mdash; lines 137&ndash;144</p>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Version locks matter</strong><p>CommunityToolkit.Maui 14.0.1 requires Microsoft.Maui.Controls 10.0.41 or higher. If AI suggests downgrading a package, check the version dependencies first &mdash; one wrong version can break everything.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4: MAUIPROGRAM.CS -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">MauiProgram.cs</h1><p class="module-subtitle">A spaceship pre-launch checklist &mdash; 15+ systems checks in exact sequence before liftoff.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The most important file in the project</h2><p><code class="inline">MauiProgram.cs</code> is the startup file. It runs once when the app launches and wires everything together. Think of it as the <span class="term" data-definition="Dependency Injection (DI) is a pattern where instead of each class creating its own dependencies, a central 'container' creates them and hands them out. MauiProgram registers what goes in the container; the rest of the app just asks for what it needs.">DI container</span> setup &mdash; it tells the app "when someone asks for an ICardService, give them a CardService."</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Step 1: Set the locale and init SQLite</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">var</span> culture = <span class="code-keyword">new</span> <span class="code-type">CultureInfo</span>(<span class="code-string">"en-US"</span>);
+CultureInfo.DefaultThreadCurrentCulture = culture;
+
+SQLitePCL.Batteries_V2.<span class="code-function">Init</span>();
+
+<span class="code-keyword">var</span> dbPath = Path.<span class="code-function">Combine</span>(
+    FileSystem.AppDataDirectory,
+    <span class="code-string">"prayer_app.db"</span>);</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Force English formatting everywhere (dates say "Jan" not "Ene," times use AM/PM).</p><p class="tl">Turn on the SQLite database engine &mdash; must happen before any database code.</p><p class="tl">Build the path to the database file. It lives in the app's private data folder, named "prayer_app.db."</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/MauiProgram.cs</code> &mdash; lines 25&ndash;33</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Step 2: Register services (the DI container)</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code>builder.Services.<span class="code-function">AddSingleton</span>&lt;<span class="code-type">IDBService</span>&gt;(
+    s => <span class="code-keyword">new</span> <span class="code-type">DBService</span>(dbPath));
+builder.Services.<span class="code-function">AddSingleton</span>&lt;<span class="code-type">ICardService</span>, <span class="code-type">CardService</span>&gt;();
+builder.Services.<span class="code-function">AddSingleton</span>&lt;<span class="code-type">ITagService</span>, <span class="code-type">TagService</span>&gt;();
+
+builder.Services.<span class="code-function">AddTransient</span>&lt;<span class="code-type">HomeViewModel</span>&gt;();
+builder.Services.<span class="code-function">AddTransient</span>&lt;<span class="code-type">MainPage</span>&gt;();</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Register a <strong>single</strong> database service (singleton &mdash; one instance for the entire app).</p><p class="tl">When someone asks for ICardService, give them a CardService. One shared instance.</p><p class="tl">Same for tags &mdash; one TagService shared everywhere.</p><p class="tl">ViewModels are <strong>transient</strong> &mdash; a fresh copy every time a page opens.</p><p class="tl">Pages are also transient &mdash; rebuilt on each navigation.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/MauiProgram.cs</code> &mdash; lines 125&ndash;201</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)"><h4 class="pattern-title"><span class="term" data-definition="Singleton means only ONE instance is created for the entire app lifetime. Every class that asks for ICardService gets the same CardService object. Good for services that cache data.">Singleton</span></h4><p class="pattern-desc">One instance, shared everywhere. Used for services and the database.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><h4 class="pattern-title"><span class="term" data-definition="Transient means a NEW instance is created every time someone asks for it. Every page navigation gets a fresh ViewModel and a fresh Page. Good for things that should reset between uses.">Transient</span></h4><p class="pattern-desc">Fresh copy every time. Used for ViewModels and Pages.</p></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Step 3: Wire the models to the database</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">var</span> myDBService = app.Services
+    .<span class="code-function">GetRequiredService</span>&lt;<span class="code-type">IDBService</span>&gt;();
+PrayerCard.<span class="code-function">SetDBService</span>(myDBService);
+Prayer.<span class="code-function">SetDBService</span>(myDBService);
+PrayerTag.<span class="code-function">SetDBService</span>(myDBService);
+PrayerInteraction.<span class="code-function">SetDBService</span>(myDBService);
+CardBox.<span class="code-function">SetDBService</span>(myDBService);</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Grab the database service from the container.</p><p class="tl">Tell each model class "here's your database connection." Each call sets the shared static reference (from Course 0, Module 8).</p><p class="tl">After this, any PrayerCard, Prayer, or Tag can save and load itself.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/MauiProgram.cs</code> &mdash; lines 238&ndash;244</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5: APP & APPSHELL -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">App.xaml.cs &amp; AppShell.xaml</h1><p class="module-subtitle">A house with a hallway &mdash; App unlocks the door, AppShell is the hallway connecting five rooms.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">App.xaml.cs &mdash; surprisingly small</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public partial class</span> <span class="code-type">App</span> : <span class="code-type">Application</span>
+{
+    <span class="code-keyword">public static</span> <span class="code-type">Task</span> <span class="code-property">InitTask</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+        = Task.CompletedTask;
+
+    <span class="code-keyword">public</span> <span class="code-function">App</span>()
+    {
+        <span class="code-function">InitializeComponent</span>();
+    }
+
+    <span class="code-keyword">protected override</span> <span class="code-type">Window</span> <span class="code-function">CreateWindow</span>(...)
+    {
+        <span class="code-keyword">return new</span> <span class="code-type">Window</span>(<span class="code-keyword">new</span> <span class="code-type">AppShell</span>());
+    }
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This is the App class &mdash; the top-level entry point.</p><p class="tl"><strong>InitTask</strong> is a static "receipt" that pages await before loading data. MauiProgram sets this to SeedAsync so pages don't show blank content.</p><p class="tl">The constructor loads the XAML resources (colors, styles).</p><p class="tl">When the OS asks for a window, create one containing the <strong>AppShell</strong> &mdash; the navigation structure.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/App.xaml.cs</code> &mdash; the complete file</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">AppShell.xaml &mdash; the five tabs</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;TabBar&gt;</span>
+    <span class="code-tag">&lt;ShellContent</span>
+        <span class="code-attr">Title</span>=<span class="code-string">"Home"</span>
+        <span class="code-attr">Icon</span>=<span class="code-string">"house_solid_full.png"</span>
+        <span class="code-attr">ContentTemplate</span>=<span class="code-string">"{DataTemplate views:MainPage}"</span>
+        <span class="code-attr">Route</span>=<span class="code-string">"MainPage"</span> /&gt;
+
+    <span class="code-tag">&lt;ShellContent</span>
+        <span class="code-attr">Title</span>=<span class="code-string">"Prayer Cards"</span>
+        <span class="code-attr">Route</span>=<span class="code-string">"CardsPage"</span> /&gt;
+
+    <span class="code-tag">&lt;ShellContent</span> <span class="code-attr">Title</span>=<span class="code-string">"Prayers"</span> /&gt;
+    <span class="code-tag">&lt;ShellContent</span> <span class="code-attr">Title</span>=<span class="code-string">"Tags"</span> /&gt;
+    <span class="code-tag">&lt;ShellContent</span> <span class="code-attr">Title</span>=<span class="code-string">"Settings"</span> /&gt;
+<span class="code-tag">&lt;/TabBar&gt;</span></code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Here are the tabs at the bottom of the screen:</p><p class="tl"><strong>Home</strong> tab &mdash; uses the house icon. <span class="term" data-definition="DataTemplate with ContentTemplate means the page is created lazily &mdash; only when the user first taps that tab. This speeds up startup because not all 5 pages are built immediately.">ContentTemplate</span> means the page is only created when the user taps the tab (lazy loading). Route name is "MainPage."</p><p class="tl"><strong>Prayer Cards</strong> tab &mdash; route name "CardsPage."</p><p class="tl"><strong>Prayers</strong>, <strong>Tags</strong>, and <strong>Settings</strong> tabs round out the five.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/AppShell.xaml</code> &mdash; lines 12&ndash;44</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 6: STARTUP TIMELINE -->
+<section class="module" id="module-6" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">The Startup Timeline</h1><p class="module-subtitle">A stage crew preparing for opening night &mdash; the set goes up first, props placed behind the curtain, actors wait for "places!"</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">What happens when you tap the icon</h2>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>MauiProgram.CreateMauiApp()</strong><p>Force English locale, init SQLite, build the DI container with all services.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>Register global exception handlers</strong><p>Set up crash logging so unhandled errors get written to the diagnostic log.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>Wire models to database</strong><p>Call SetDBService on each model class so they can save/load themselves.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">4</div><div class="step-body"><strong>App.InitTask = SeedAsync()</strong><p>Start async seeding &mdash; create default colors, system tags, system boxes, Quick Add card. Runs in the background.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">5</div><div class="step-body"><strong>App constructor runs</strong><p>Loads XAML resources (colors, styles).</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">6</div><div class="step-body"><strong>AppShell renders the tab bar</strong><p>The user sees the 5 tabs. The Home page is created lazily.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">7</div><div class="step-body"><strong>MainPage.OnAppearing awaits App.InitTask</strong><p>The first page waits for seeding to finish before loading data. This prevents blank screens.</p></div></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Why this order matters</h2>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">The key insight: show UI first, load data second</strong><p>The app shows the tab bar <em>before</em> seeding finishes. The user sees a loading state instead of a blank screen. Each page awaits <code class="inline">App.InitTask</code> to ensure the database is ready before querying. This is a common pattern in mobile apps &mdash; show the shell immediately, fill in the content asynchronously.</p></div></div></section>
+
+      <section class="screen animate-in" id="quiz-m6"><h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="m6q1" data-correct="opt-b" data-explain-correct="Services are singletons (one shared copy). ViewModels are transient (fresh copy per page). Services cache data, so sharing one instance avoids redundant database reads." data-explain-incorrect="Think about which type of object should persist data across page visits (singleton) vs which should reset on each visit (transient)."><h3 class="quiz-question">Why are services registered as singletons but ViewModels as transient?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Singletons are faster to create than transients</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Services cache data and should be shared; ViewModels should reset per page visit</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It's just a convention with no practical difference</span></button></div><div class="quiz-feedback"></div></div>
+          <div class="quiz-question-block" data-question="m6q2" data-correct="opt-a" data-explain-correct="Pages await App.InitTask before loading data. If seeding isn't done yet, the page waits. This ensures the database has system data (Quick Add card, tags, boxes) before any query runs." data-explain-incorrect="Think about what App.InitTask does and why a page would need to wait for it."><h3 class="quiz-question">What prevents a page from showing blank data before the database is ready?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Pages await App.InitTask, which completes after seeding finishes</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The tab bar is hidden until the database initializes</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>MauiProgram blocks the UI thread until all data is loaded</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m6')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m6')">Try Again</button>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Course complete</h2><p style="font-size:var(--text-lg)">You now understand how a .NET MAUI app is structured and boots up &mdash; from the solution file down to the DI container and async seeding.</p>
+        <div class="callout callout-accent" style="margin-top:var(--space-8)"><div class="callout-icon">&#x1F389;</div><div class="callout-content"><strong class="callout-title">What's next</strong><p><strong>Course 2: The Journey</strong> traces a single prayer card from user tap to database save and back to the screen &mdash; crossing every layer of the architecture.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}})},{rootMargin:'0px 0px -10% 0px',threshold:0.1});
+document.querySelectorAll('.animate-in').forEach(function(el){observer.observe(el)});
+document.querySelectorAll('.stagger-children').forEach(function(parent){Array.from(parent.children).forEach(function(child,i){child.style.setProperty('--stagger-index',i)})});
+var progressBar=document.getElementById('progress-bar');
+function updateProgressBar(){var s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;progressBar.style.width=(h>0?(s/h)*100:0)+'%'}
+window.addEventListener('scroll',function(){requestAnimationFrame(updateProgressBar)},{passive:true});
+var modules=document.querySelectorAll('.module[id^="module-"]'),dots=document.querySelectorAll('.nav-dot');
+dots.forEach(function(dot){dot.addEventListener('click',function(){var t=document.getElementById(dot.dataset.target);if(t)t.scrollIntoView({behavior:'smooth'})})});
+var mObs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){var num=entry.target.id.replace('module-','');dots.forEach(function(dot){var dn=dot.dataset.target.replace('module-','');if(dn===num)dot.classList.add('current');else{dot.classList.remove('current');if(parseInt(dn)<parseInt(num))dot.classList.add('visited')}})}})},{rootMargin:'-30% 0px -30% 0px',threshold:0});
+modules.forEach(function(m){if(m.id!=='module-intro')mObs.observe(m)});
+var allModules=Array.from(document.querySelectorAll('.module'));
+document.addEventListener('keydown',function(e){if(['INPUT','TEXTAREA'].indexOf(e.target.tagName)!==-1)return;if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();var c=allModules.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c<allModules.length-1)allModules[c+1].scrollIntoView({behavior:'smooth'})}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();var c2=allModules.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c2>0)allModules[c2-1].scrollIntoView({behavior:'smooth'})}});
+var activeTooltip=null;
+function positionTooltip(term,tip){var rect=term.getBoundingClientRect(),tw=Math.min(320,window.innerWidth*0.8);tip.style.width=tw+'px';var left=rect.left+rect.width/2-tw/2;left=Math.max(8,Math.min(left,window.innerWidth-tw-8));tip.style.left=left+'px';document.body.appendChild(tip);var th=tip.offsetHeight;if(rect.top-th-8<0){tip.style.top=(rect.bottom+8)+'px';tip.classList.add('flip')}else{tip.style.top=(rect.top-th-8)+'px';tip.classList.remove('flip')}}
+document.querySelectorAll('.term').forEach(function(term){var tip=document.createElement('span');tip.className='term-tooltip';tip.textContent=term.dataset.definition;term.addEventListener('mouseenter',function(){if(activeTooltip&&activeTooltip!==tip){activeTooltip.classList.remove('visible');activeTooltip.remove()}positionTooltip(term,tip);requestAnimationFrame(function(){tip.classList.add('visible')});activeTooltip=tip});term.addEventListener('mouseleave',function(){tip.classList.remove('visible');setTimeout(function(){if(!tip.classList.contains('visible'))tip.remove()},150);activeTooltip=null});term.addEventListener('click',function(e){e.stopPropagation();if(activeTooltip&&activeTooltip!==tip){activeTooltip.classList.remove('visible');activeTooltip.remove()}if(tip.classList.contains('visible')){tip.classList.remove('visible');tip.remove();activeTooltip=null}else{positionTooltip(term,tip);requestAnimationFrame(function(){tip.classList.add('visible')});activeTooltip=tip}})});
+document.addEventListener('click',function(){if(activeTooltip){activeTooltip.classList.remove('visible');activeTooltip.remove();activeTooltip=null}});
+window.selectOption=function(btn){var block=btn.closest('.quiz-question-block');if(block.querySelector('.quiz-option[disabled]'))return;block.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected')});btn.classList.add('selected')};
+function setFeedback(f,ok,txt){while(f.firstChild)f.removeChild(f.firstChild);var s=document.createElement('strong');s.textContent=ok?'Exactly! ':'Not quite. ';f.appendChild(s);f.appendChild(document.createTextNode(txt));f.className='quiz-feedback show '+(ok?'success':'error')}
+window.checkQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-question-block').forEach(function(q){var sel=q.querySelector('.quiz-option.selected'),fb=q.querySelector('.quiz-feedback'),cv=q.dataset.correct;if(!sel){fb.textContent='Pick an answer first!';fb.className='quiz-feedback show warning';return}if(sel.dataset.value===cv){sel.classList.add('correct');setFeedback(fb,true,q.dataset.explainCorrect)}else{sel.classList.add('incorrect');q.querySelector('[data-value="'+cv+'"]').classList.add('correct');setFeedback(fb,false,q.dataset.explainIncorrect)}q.querySelectorAll('.quiz-option').forEach(function(o){o.disabled=true})})};
+window.resetQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected','correct','incorrect');o.disabled=false});c.querySelectorAll('.quiz-feedback').forEach(function(f){f.className='quiz-feedback'})};
+})();
+</script>
+</body>
+</html>

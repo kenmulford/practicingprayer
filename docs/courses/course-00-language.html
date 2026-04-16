@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Language — CS Fundamentals | Practicing Prayer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — CSS Custom Properties
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --color-bg: #FAF7F2; --color-bg-warm: #F5F0E8; --color-bg-code: #1E1E2E;
+  --color-text: #2C2A28; --color-text-secondary: #6B6560; --color-text-muted: #9E9790;
+  --color-border: #E5DFD6; --color-border-light: #EEEBE5;
+  --color-surface: #FFFFFF; --color-surface-warm: #FDF9F3;
+  --color-accent: #6B7D5A; --color-accent-hover: #5A6B4A;
+  --color-accent-light: #EDF2E8; --color-accent-muted: #8FA37E;
+  --color-success: #2D8B55; --color-success-light: #E8F5EE;
+  --color-error: #C93B3B; --color-error-light: #FDE8E8;
+  --color-info: #2A7B9B; --color-info-light: #E4F2F7;
+  --color-actor-1: #6B7D5A; --color-actor-2: #2A7B9B; --color-actor-3: #7B6DAA;
+  --color-actor-4: #D4A843; --color-actor-5: #D94F30;
+  --font-display: 'Bricolage Grotesque', Georgia, serif;
+  --font-body: 'DM Sans', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem; --text-lg: 1.125rem;
+  --text-xl: 1.25rem; --text-2xl: 1.5rem; --text-3xl: 1.875rem; --text-4xl: 2.25rem;
+  --text-5xl: 3rem; --text-6xl: 3.75rem;
+  --leading-tight: 1.15; --leading-snug: 1.3; --leading-normal: 1.6;
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem;
+  --space-12: 3rem; --space-16: 4rem; --space-20: 5rem; --space-24: 6rem;
+  --content-width: 800px; --content-width-wide: 1000px; --nav-height: 50px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(44,42,40,0.05); --shadow-md: 0 4px 12px rgba(44,42,40,0.08);
+  --shadow-lg: 0 8px 24px rgba(44,42,40,0.1); --shadow-xl: 0 16px 48px rgba(44,42,40,0.12);
+  --ease-out: cubic-bezier(0.16,1,0.3,1); --ease-in-out: cubic-bezier(0.65,0,0.35,1);
+  --duration-fast: 150ms; --duration-normal: 300ms; --duration-slow: 500ms; --stagger-delay: 120ms;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-snap-type:y proximity;scroll-behavior:smooth}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(107,125,90,0.03) 0%,transparent 50%);-webkit-font-smoothing:antialiased}
+pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}
+pre::-webkit-scrollbar,.translation-code::-webkit-scrollbar{display:none}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,247,242,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-border-light);height:var(--nav-height)}
+.progress-bar{position:absolute;top:0;left:0;height:3px;background:var(--color-accent);width:0%;transition:width 100ms linear}
+.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6)}
+.nav-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm);color:var(--color-text)}
+.nav-dots{display:flex;gap:var(--space-3)}
+.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;transition:all var(--duration-fast);padding:0}
+.nav-dot:hover{border-color:var(--color-accent-muted)}
+.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent);box-shadow:0 0 8px rgba(107,125,90,0.3)}
+.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent)}
+
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12))}
+.module-content{max-width:var(--content-width);margin:0 auto}
+.module-header{margin-bottom:var(--space-12)}
+.module-number{font-family:var(--font-display);font-weight:800;font-size:var(--text-6xl);color:var(--color-accent);opacity:0.15;line-height:var(--leading-tight)}
+.module-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-4xl);line-height:var(--leading-tight);margin-top:calc(-1 * var(--space-4))}
+.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);margin-top:var(--space-3)}
+.screen{margin-bottom:var(--space-16)}
+.screen-heading{font-family:var(--font-display);font-weight:600;font-size:var(--text-2xl);margin-bottom:var(--space-6)}
+
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out)}
+.animate-in.visible{opacity:1;transform:translateY(0)}
+.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay))}
+
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0}
+.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden}
+.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}
+.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent)}
+.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5}
+.translation-english .translation-label{position:relative;top:auto;right:auto;display:block;color:var(--color-text-muted);margin-bottom:var(--space-3)}
+.tl{margin-bottom:var(--space-3);color:var(--color-text-secondary)}.tl:last-child{margin-bottom:0}
+.code-keyword{color:#CBA6F7}.code-string{color:#A6E3A1}.code-function{color:#89B4FA}.code-comment{color:#6C7086}.code-number{color:#FAB387}.code-property{color:#F9E2AF}.code-operator{color:#94E2D5}.code-type{color:#89DCEB}
+
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5);border-radius:var(--radius-md);margin:var(--space-8) 0}
+.callout-icon{font-size:1.5rem;flex-shrink:0}.callout-content{flex:1}
+.callout-title{display:block;margin-bottom:var(--space-2);font-weight:600}
+.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent)}
+.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info)}
+.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error)}
+
+.pattern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4);margin:var(--space-8) 0}
+.pattern-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-6);box-shadow:var(--shadow-sm);transition:transform var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal)}
+.pattern-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+.pattern-icon{width:48px;height:48px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:var(--space-3);color:white}
+.pattern-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-2)}
+.pattern-desc{font-size:var(--text-sm);color:var(--color-text-secondary)}
+
+.quiz-container{margin:var(--space-8) 0}.quiz-question-block{margin-bottom:var(--space-8)}
+.quiz-question{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin-bottom:var(--space-4)}
+.quiz-options{display:flex;flex-direction:column;gap:var(--space-3)}
+.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;transition:border-color var(--duration-fast),background var(--duration-fast);font-family:var(--font-body);font-size:var(--text-base);text-align:left}
+.quiz-option:hover{border-color:var(--color-accent-muted)}
+.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light)}
+.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light)}
+.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light)}
+.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0;transition:all var(--duration-fast)}
+.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white}
+.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal),padding var(--duration-normal);border-radius:var(--radius-sm);font-size:var(--text-sm)}
+.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3) var(--space-4);margin-top:var(--space-2)}
+.quiz-feedback.success{background:var(--color-success-light);color:#1a6b3a}
+.quiz-feedback.error{background:var(--color-error-light);color:#a32a2a}
+.quiz-feedback.warning{background:var(--color-accent-light);color:var(--color-text)}
+.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:600;font-size:var(--text-sm);cursor:pointer;transition:background var(--duration-fast);margin-top:var(--space-4);margin-right:var(--space-3)}
+.quiz-check-btn{background:var(--color-accent);color:white}.quiz-check-btn:hover{background:var(--color-accent-hover)}
+.quiz-reset-btn{background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-border)}.quiz-reset-btn:hover{border-color:var(--color-accent-muted)}
+
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative}
+.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent)}
+.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000}
+.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code)}
+.term-tooltip.visible{opacity:1}
+.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code)}
+
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-8) 0}
+.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}
+.icon-row p{margin:0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:white}
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-8) 0}
+.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm)}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}
+.step-body p{margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-2);border-radius:4px}
+@media(max-width:768px){:root{--text-4xl:1.875rem;--text-5xl:2.25rem;--text-6xl:3rem}.translation-block{grid-template-columns:1fr}.translation-english{border-left:none;border-top:3px solid var(--color-accent)}.pattern-cards{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){:root{--text-4xl:1.5rem;--text-5xl:1.875rem;--text-6xl:2.25rem}.module{padding:var(--space-8) var(--space-4)}.pattern-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="nav" role="navigation" aria-label="Course navigation">
+  <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0"></div>
+  <div class="nav-inner">
+    <span class="nav-title">Course 0: The Language</span>
+    <div class="nav-dots">
+      <button class="nav-dot" data-target="module-1" aria-label="Variables and Types" title="Variables &amp; Types"></button>
+      <button class="nav-dot" data-target="module-2" aria-label="Classes and Objects" title="Classes &amp; Objects"></button>
+      <button class="nav-dot" data-target="module-3" aria-label="Collections" title="Collections"></button>
+      <button class="nav-dot" data-target="module-4" aria-label="Enums and Constants" title="Enums &amp; Constants"></button>
+      <button class="nav-dot" data-target="module-5" aria-label="Interfaces" title="Interfaces"></button>
+      <button class="nav-dot" data-target="module-6" aria-label="Async and Await" title="Async &amp; Await"></button>
+      <button class="nav-dot" data-target="module-7" aria-label="Generics" title="Generics"></button>
+      <button class="nav-dot" data-target="module-8" aria-label="Static and Namespaces" title="Static &amp; Namespaces"></button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="module" id="module-intro" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">00</span>
+      <h1 class="module-title">The Language</h1>
+      <p class="module-subtitle">CS fundamentals you need to steer AI coding tools &mdash; taught through real code from the Practicing Prayer app.</p>
+    </header>
+    <div class="module-body">
+      <section class="screen animate-in">
+        <p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px">You don't need to become a software engineer. You need to <strong>read</strong> code, <strong>understand</strong> it, and <strong>direct</strong> it. This course teaches the vocabulary and concepts that make that possible.</p>
+        <p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px;margin-top:var(--space-4)">Every example uses real code from the Practicing Prayer app &mdash; a .NET MAUI mobile app for prayer journaling. No toy examples.</p>
+      </section>
+      <section class="screen animate-in">
+        <h2 class="screen-heading">What you'll learn</h2>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)"><div class="pattern-icon" style="background:var(--color-actor-1)">&#x1F3F7;</div><h4 class="pattern-title">Variables &amp; Types</h4><p class="pattern-desc">The labeled jars that hold every piece of data</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><div class="pattern-icon" style="background:var(--color-actor-2)">&#x1F3AD;</div><h4 class="pattern-title">Classes &amp; Objects</h4><p class="pattern-desc">Blueprints for creating things in code</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)"><div class="pattern-icon" style="background:var(--color-actor-3)">&#x1F4DA;</div><h4 class="pattern-title">Collections</h4><p class="pattern-desc">Lists and groups that hold many items</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-4)"><div class="pattern-icon" style="background:var(--color-actor-4)">&#x1F4CB;</div><h4 class="pattern-title">Enums &amp; Constants</h4><p class="pattern-desc">Fixed menus of named options</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-5)"><div class="pattern-icon" style="background:var(--color-actor-5)">&#x1F4DC;</div><h4 class="pattern-title">Interfaces</h4><p class="pattern-desc">Contracts that define what something can do</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-info)"><div class="pattern-icon" style="background:var(--color-info)">&#x2615;</div><h4 class="pattern-title">Async &amp; Await</h4><p class="pattern-desc">How code waits without freezing the screen</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-success)"><div class="pattern-icon" style="background:var(--color-success)">&#x1F3B0;</div><h4 class="pattern-title">Generics</h4><p class="pattern-desc">One-size-fits-all tools that work with any type</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-text-muted)"><div class="pattern-icon" style="background:var(--color-text-muted)">&#x1F527;</div><h4 class="pattern-title">Static &amp; Namespaces</h4><p class="pattern-desc">Shared tools and code organization</p></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 1: VARIABLES & TYPES -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">Variables &amp; Types</h1><p class="module-subtitle">The labeled jars in your pantry &mdash; each one holds a specific kind of ingredient.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Think of a pantry</h2><p>Imagine a pantry with labeled jars. One jar says "Sugar" and can only hold sugar. Another says "Flour" &mdash; only flour. If you try to put sugar in the flour jar, it won't fit.</p><p style="margin-top:var(--space-3)">In code, a <span class="term" data-definition="A variable is a named container that holds a piece of data. Like a labeled jar, it has a name (the label) and a type (what kind of thing it can hold).">variable</span> is a named jar. The <span class="term" data-definition="A type defines what kind of data a variable can hold. Common types: string (text), int (whole number), bool (true/false), DateTime (date and time). Types prevent you from accidentally mixing incompatible data.">type</span> tells you what it can hold.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Variables in the Prayer model</h2><p>Here are real <span class="term" data-definition="A property is a variable that belongs to a class. Properties have a name, a type, and get/set methods that control reading and writing. In C#, they look like: public int Id { get; set; }">properties</span> from the Prayer model &mdash; the code that represents a single prayer request:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public</span> <span class="code-type">int</span> <span class="code-property">Id</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+
+<span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-property">Title</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+
+<span class="code-keyword">public</span> <span class="code-type">bool</span> <span class="code-property">IsAnswered</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+
+<span class="code-keyword">public</span> <span class="code-type">DateTime</span>? <span class="code-property">AnsweredAt</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><strong>Id</strong> is a whole number. Every prayer gets a unique ID, like a ticket number at a bakery.</p><p class="tl"><strong>Title</strong> is text &mdash; the name the user gives this prayer, like "Health for Mom."</p><p class="tl"><strong>IsAnswered</strong> is a yes/no value &mdash; has this prayer been answered?</p><p class="tl"><strong>AnsweredAt</strong> is a date and time &mdash; <em>when</em> it was answered. The <code class="inline">?</code> means "this might be empty" (unanswered prayers don't have a date yet).</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Models/Prayer.cs</code> &mdash; lines 17&ndash;58</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The four types you'll see most</h2>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><h4 class="pattern-title"><code class="inline">string</code></h4><p class="pattern-desc">Text &mdash; names, titles, messages. Always in quotes: <code class="inline">"Quick Add"</code></p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-4)"><h4 class="pattern-title"><code class="inline">int</code></h4><p class="pattern-desc">Whole numbers &mdash; IDs, counts, positions. No decimal point: <code class="inline">42</code></p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-5)"><h4 class="pattern-title"><code class="inline">bool</code></h4><p class="pattern-desc">True or false &mdash; on/off switches. Is it answered? Is it a favorite?</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)"><h4 class="pattern-title"><code class="inline">DateTime</code></h4><p class="pattern-desc">A specific moment in time. When was this created? When was it answered?</p></div>
+        </div>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">Why this matters for AI</strong><p>When you tell an AI "add a field to track how many times someone prayed," the AI needs to pick a type. Knowing that a count is an <code class="inline">int</code> (not a <code class="inline">string</code>) helps you verify the AI made the right choice.</p></div></div></section>
+
+      <section class="screen animate-in" id="quiz-m1"><h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="m1q1" data-correct="opt-b" data-explain-correct="A boolean can only be true or false &mdash; perfect for a yes/no question like 'is this a favorite?'" data-explain-incorrect="Think about what values IsFavorite can have. It's either favorited or not &mdash; that's a true/false question."><h3 class="quiz-question">A prayer card has a property called <code class="inline">IsFavorite</code>. Which type makes sense?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span><code class="inline">string</code> &mdash; store "yes" or "no" as text</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span><code class="inline">bool</code> &mdash; true means favorited, false means not</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span><code class="inline">int</code> &mdash; store 1 for yes and 0 for no</span></button></div><div class="quiz-feedback"></div></div>
+          <div class="quiz-question-block" data-question="m1q2" data-correct="opt-d" data-explain-correct="The ? after DateTime means nullable &mdash; it might not have a value yet. Perfect for AnsweredAt because unanswered prayers have no date." data-explain-incorrect="The question mark after a type means the value might be empty. Think about which property could logically be missing."><h3 class="quiz-question">What does the <code class="inline">?</code> in <code class="inline">DateTime?</code> mean?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The date is uncertain or approximate</span></button><button class="quiz-option" data-value="opt-d" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The value might be empty &mdash; there's no date yet</span></button><button class="quiz-option" data-value="opt-e" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It's a required field that must always have a value</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-m1')">Try Again</button>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2: CLASSES & OBJECTS -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">Classes &amp; Objects</h1><p class="module-subtitle">Cookie cutters and cookies &mdash; the blueprint says what shape to make, each cookie is its own thing.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The cookie cutter</h2><p>A <span class="term" data-definition="A class is a blueprint that defines what data (properties) and actions (methods) something has. It's a template &mdash; you don't eat the cookie cutter, you use it to make cookies.">class</span> is a blueprint. It says: "every prayer card will have an Id, a Title, and an IsAnswered flag." But a class isn't data itself &mdash; it's the <em>shape</em> of data.</p><p style="margin-top:var(--space-3)">An <span class="term" data-definition="An object is a specific instance created from a class. If the class is the cookie cutter, the object is one actual cookie. You can make many objects from one class, each with different data.">object</span> is one actual cookie. "Health for Mom" (Id: 7, IsAnswered: false) is one PrayerCard object. "Job Interview" (Id: 12, IsAnswered: true) is another &mdash; same shape, different data.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">A real class declaration</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">namespace</span> PrayerApp.Models
+{
+    [<span class="code-function">Table</span>(<span class="code-string">"PrayerCard"</span>)]
+    <span class="code-keyword">public class</span> <span class="code-type">PrayerCard</span>
+    {
+        [<span class="code-function">PrimaryKey</span>, <span class="code-function">AutoIncrement</span>]
+        <span class="code-keyword">public</span> <span class="code-type">int</span> <span class="code-property">Id</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+
+        [<span class="code-function">Column</span>(<span class="code-string">"Title"</span>), <span class="code-function">MaxLength</span>(<span class="code-number">100</span>)]
+        <span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-property">Title</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+    }
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This code lives in the "PrayerApp.Models" folder of our project.</p><p class="tl">When saved to the database, store it in a table called "PrayerCard."</p><p class="tl">Here's the blueprint for a <strong>PrayerCard</strong> &mdash; anyone can use it.</p><p class="tl">Every card gets a unique number that counts up automatically.</p><p class="tl"><strong>Id</strong>: a whole number you can read or write.</p><p class="tl">The title column has a 100-character limit.</p><p class="tl"><strong>Title</strong>: text you can read or write.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Models/PrayerCard.cs</code> &mdash; lines 8&ndash;25</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Creating an object from a class</h2><p>When someone creates a new prayer card, the app runs code like this:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">var</span> card = <span class="code-keyword">new</span> <span class="code-type">PrayerCard</span>
+{
+    <span class="code-property">Title</span> = title,
+    <span class="code-property">IsSystem</span> = <span class="code-keyword">true</span>,
+    <span class="code-property">SystemKey</span> = systemKey,
+    <span class="code-property">BoxId</span> = sysBox?.Id ?? <span class="code-number">0</span>
+};
+<span class="code-keyword">await</span> card.<span class="code-function">SaveAsync</span>();</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Create a <strong>new</strong> PrayerCard and fill in its properties:</p><p class="tl">Set the title.</p><p class="tl">Mark it as a system card (built-in, not user-created).</p><p class="tl">Give it a system key identifier.</p><p class="tl">Put it in the system box, or box 0 if none exists yet.</p><p class="tl">Save this card to the database. Wait for the save to finish.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/CardService.cs</code> &mdash; lines 45&ndash;53</p>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">Key insight: <code class="inline">new</code> is the cookie cutter in action</strong><p>The keyword <code class="inline">new</code> stamps out a fresh object from the class blueprint. The <span class="term" data-definition="Object initializer syntax uses curly braces after 'new ClassName' to set properties immediately. It's shorthand for creating the object first, then setting properties one by one.">object initializer</span> (the curly braces) fills in the data right away.</p></div></div></section>
+
+      <section class="screen animate-in" id="quiz-m2"><h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="m2q1" data-correct="opt-b" data-explain-correct="The class defines the shape. Add the property to the PrayerCard class, and every card automatically has it." data-explain-incorrect="Think back to the cookie cutter. You change the cutter, not each individual cookie."><h3 class="quiz-question">You want to add a "Notes" field to prayer cards. Where do you add it?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>To each existing prayer card object, one by one</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>To the PrayerCard class &mdash; then every card automatically has it</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>To the database directly, the class will figure it out</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m2')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m2')">Try Again</button>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3: COLLECTIONS -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">03</span><h1 class="module-title">Collections</h1><p class="module-subtitle">A playlist vs. a single song &mdash; sometimes you need to hold many items, in order.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">One song vs. a playlist</h2><p>So far, every variable holds <em>one</em> thing. But what about "all the prayer cards"? That's a <span class="term" data-definition="A collection is a container that holds multiple items of the same type. Like a playlist holds many songs, a List holds many prayer cards. You can add, remove, count, and loop through the items.">collection</span> &mdash; a container that holds many items.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The cache in CardService</h2><p>The card service keeps a list of all prayer cards in memory so it doesn't query the database every time:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">private</span> <span class="code-type">IReadOnlyList</span>&lt;<span class="code-type">PrayerCard</span>&gt;? <span class="code-property">_cache</span>;
+
+<span class="code-keyword">public async</span> <span class="code-type">Task</span>&lt;<span class="code-type">IReadOnlyList</span>&lt;<span class="code-type">PrayerCard</span>&gt;&gt; <span class="code-function">GetCardsAsync</span>()
+{
+    <span class="code-keyword">if</span> (_cache <span class="code-keyword">is not null</span>)
+        <span class="code-keyword">return</span> _cache;
+
+    <span class="code-keyword">var</span> list = <span class="code-keyword">await</span> PrayerCard.<span class="code-function">LoadAllAsync</span>();
+    _cache = <span class="code-keyword">new</span> <span class="code-type">ReadOnlyCollection</span>&lt;<span class="code-type">PrayerCard</span>&gt;(list);
+    <span class="code-keyword">return</span> _cache;
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Keep a private <strong>read-only list</strong> of prayer cards. It might be empty (the <code class="inline">?</code>).</p><p class="tl">This method returns all cards. It's async because the database call takes time.</p><p class="tl">If we already have the list cached, return it immediately &mdash; no database trip needed.</p><p class="tl">Otherwise, load all cards from the database and wait for the result.</p><p class="tl">Wrap the list so nobody can accidentally modify it, then remember it for next time.</p><p class="tl">Hand the list back to whoever asked.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/CardService.cs</code> &mdash; lines 14&ndash;26</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Collection types you'll encounter</h2>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">[ ]</div><div><strong><code class="inline">List&lt;T&gt;</code></strong><p>The everyday <span class="term" data-definition="List is the most common collection in C#. The T in angle brackets is the type of items it holds. You can add, remove, and access items by position (index).">list</span> &mdash; add items, remove items, access by position.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">&#x1F512;</div><div><strong><code class="inline">IReadOnlyList&lt;T&gt;</code></strong><p>A list that can be read but not changed. Like a museum exhibit &mdash; look, don't touch.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">#</div><div><strong><code class="inline">Dictionary&lt;K,V&gt;</code></strong><p>A <span class="term" data-definition="A dictionary maps keys to values, like a phone book maps names to numbers. Lookup by key is instant.">lookup table</span> &mdash; find a value by its key. Like a phone book: name to number.</p></div></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Querying collections with LINQ</h2><p>Once you have a collection, you often need to filter, count, or transform it. C# has a built-in tool called <span class="term" data-definition="LINQ (Language Integrated Query) lets you filter, sort, and transform collections using readable methods like .Where(), .Select(), .Count(). It reads almost like English: 'give me all prayers where IsAnswered is false.'">LINQ</span>:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-property">ActiveCardCount</span> = activePrayers
+    .<span class="code-function">Select</span>(p => p.PrayerCardId)
+    .<span class="code-function">Distinct</span>()
+    .<span class="code-function">Count</span>();</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Start with the list of active prayers...</p><p class="tl">From each prayer, grab just the card ID it belongs to.</p><p class="tl">Remove duplicates &mdash; we only want unique card IDs.</p><p class="tl">Count how many unique cards remain.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/ViewModels/HomeViewModel.cs</code> &mdash; line 188</p>
+        <div class="callout callout-info"><div class="callout-icon">&#x1F50D;</div><div class="callout-content"><strong class="callout-title">The arrow <code class="inline">=&gt;</code> reads as "goes to"</strong><p><code class="inline">p =&gt; p.PrayerCardId</code> means "for each prayer p, give me its PrayerCardId." It's a tiny inline function called a <span class="term" data-definition="A lambda expression is an inline anonymous function. 'p => p.Title' means 'given p, return p.Title.' Lambdas are commonly used with LINQ to tell methods like .Select() and .Where() what to do with each item.">lambda</span>.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4: ENUMS & CONSTANTS -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">Enums &amp; Constants</h1><p class="module-subtitle">A menu with fixed options &mdash; you pick from a list, not free-text.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Why menus beat free-text</h2><p>Imagine a form asking "How often should we remind you?" with a blank text box. Someone types "evry day," another "daily," another "each morning." Chaos.</p><p style="margin-top:var(--space-3)">An <span class="term" data-definition="An enum (enumeration) is a type that defines a fixed set of named options. Instead of using strings like 'daily' or 'weekly' (which can be misspelled), you use PrayerFrequency.Daily. The compiler catches typos.">enum</span> is a dropdown menu in code &mdash; a fixed set of named options.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">PrayerFrequency &mdash; the real enum</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">namespace</span> PrayerApp.Models
+{
+    <span class="code-keyword">public enum</span> <span class="code-type">PrayerFrequency</span>
+    {
+        OneTime = <span class="code-number">0</span>,
+        Daily   = <span class="code-number">1</span>,
+        Weekly  = <span class="code-number">2</span>,
+        Monthly = <span class="code-number">3</span>,
+        Yearly  = <span class="code-number">4</span>
+    }
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This lives in the Models folder.</p><p class="tl">Here's a fixed menu called <strong>PrayerFrequency</strong>:</p><p class="tl">"One Time" (stored as number 0)</p><p class="tl">"Daily" (stored as 1), "Weekly" (2), "Monthly" (3), "Yearly" (4)</p><p class="tl">These are the <em>only</em> options. No misspellings possible.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Models/PrayerFrequency.cs</code> &mdash; the complete file</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Constants &mdash; values that never change</h2><p>A <span class="term" data-definition="A constant (const) is a value set once that can never be changed. If you need the same string in five places, use a constant so you only change it in one place.">constant</span> locks a value down permanently:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public const string</span> <span class="code-property">SystemKeyQuickAdd</span> = <span class="code-string">"quick_add"</span>;
+<span class="code-keyword">public const string</span> <span class="code-property">TitleQuickAdd</span> = <span class="code-string">"Quick Add"</span>;
+<span class="code-keyword">public const string</span> <span class="code-property">SystemKeySharedWithMe</span> = <span class="code-string">"shared_with_me"</span>;
+<span class="code-keyword">public const string</span> <span class="code-property">TitleSharedWithMe</span> = <span class="code-string">"Shared with me"</span>;</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">The system key for the Quick Add card is always "quick_add" &mdash; forever locked.</p><p class="tl">Its display title is always "Quick Add."</p><p class="tl">The shared card's key is "shared_with_me."</p><p class="tl">Its title is "Shared with me."</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Models/PrayerCard.cs</code> &mdash; lines 49&ndash;54</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5: INTERFACES -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">Interfaces</h1><p class="module-subtitle">A job description &mdash; defines what someone must do, not who does it.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The job posting</h2><p>When a company posts a job, they list requirements: "must store data, retrieve data, and delete data." They don't care <em>who</em> fills the role.</p><p style="margin-top:var(--space-3)">An <span class="term" data-definition="An interface defines a contract &mdash; a list of methods a class must implement. It says 'what' without saying 'how.' Any class implementing the interface must provide all the listed methods.">interface</span> is that job posting. It lists what a class must do, but doesn't include actual code. The class that <span class="term" data-definition="Implements means a class fulfills an interface's contract by providing actual code for every method. If IDBService says 'you must have GetAllAsync,' DBService implements it by writing the query code.">implements</span> the interface fills in the details.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">IDBService &mdash; the database contract</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public interface</span> <span class="code-type">IDBService</span>
+{
+    <span class="code-type">Task</span>&lt;<span class="code-type">List</span>&lt;T&gt;&gt; <span class="code-function">GetAllAsync</span>&lt;T&gt;() <span class="code-keyword">where</span> T : <span class="code-keyword">new</span>();
+    <span class="code-type">Task</span>&lt;T&gt; <span class="code-function">GetByIdAsync</span>&lt;T&gt;(<span class="code-type">int</span> Id) <span class="code-keyword">where</span> T : <span class="code-keyword">new</span>();
+    <span class="code-type">Task</span>&lt;<span class="code-type">int</span>&gt; <span class="code-function">InsertAsync</span>&lt;T&gt;(T item);
+    <span class="code-type">Task</span>&lt;<span class="code-type">int</span>&gt; <span class="code-function">UpdateAsync</span>&lt;T&gt;(T item);
+    <span class="code-type">Task</span>&lt;<span class="code-type">int</span>&gt; <span class="code-function">DeleteAsync</span>&lt;T&gt;(T item);
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Here's the contract for any database service:</p><p class="tl">You must be able to <strong>get all</strong> items of any type.</p><p class="tl">You must be able to <strong>get one</strong> item by its ID.</p><p class="tl">You must be able to <strong>insert</strong> a new item.</p><p class="tl">You must be able to <strong>update</strong> an existing item.</p><p class="tl">You must be able to <strong>delete</strong> an item.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/IDBService.cs</code> &mdash; lines 16&ndash;24</p>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">Why interfaces matter: swapping and testing</strong><p>The real app uses <code class="inline">DBService</code> (talks to SQLite). Tests use a <span class="term" data-definition="A mock is a fake version of a service used in tests. Instead of hitting a real database, the mock pretends to be a database and returns pre-set answers. This makes tests fast and isolated from real data.">mock</span> (a fake that pretends to be a database). Both implement <code class="inline">IDBService</code>, so the rest of the code doesn't know the difference.</p></div></div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Spotting interfaces in the wild</h2><p>In C#, interfaces start with a capital <strong>I</strong> by convention:</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">I</div><div><strong>IDBService</strong><p>The database contract &mdash; implemented by DBService</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">I</div><div><strong>ICardService</strong><p>The prayer card contract &mdash; implemented by CardService</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">I</div><div><strong>ITagService</strong><p>The tag management contract &mdash; implemented by TagService</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-4)">I</div><div><strong>ISettings</strong><p>The app settings contract &mdash; implemented by SettingsService</p></div></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 6: ASYNC & AWAIT -->
+<section class="module" id="module-6" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">Async &amp; Await</h1><p class="module-subtitle">Ordering coffee and waiting for your name &mdash; you don't block the whole line.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The coffee shop</h2><p>Imagine a coffee shop where you <em>must</em> stand at the counter, blocking everyone, until your latte is ready. The line would stretch around the block.</p><p style="margin-top:var(--space-3)">Instead, you order, get a number, and sit down. The barista calls your name when it's ready.</p><p style="margin-top:var(--space-3)"><span class="term" data-definition="Async (asynchronous) means code can start a slow operation (like reading from a database) and let other code run while waiting. Without async, the entire app freezes. Mobile apps MUST use async for anything that takes time.">Async</span> code works the same way. The app starts a database request, lets the screen stay responsive, and picks up the result when it's ready.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">SaveAsync &mdash; saving without freezing</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public async</span> <span class="code-type">Task</span> <span class="code-function">SaveAsync</span>()
+{
+    <span class="code-keyword">if</span> (Id == <span class="code-number">0</span>)
+    {
+        <span class="code-keyword">await</span> _dbService.<span class="code-function">InsertAsync</span>(<span class="code-keyword">this</span>);
+    }
+    <span class="code-keyword">else</span>
+    {
+        UpdatedAt = DateTime.Now;
+        <span class="code-keyword">await</span> _dbService.<span class="code-function">UpdateAsync</span>(<span class="code-keyword">this</span>);
+    }
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This method saves a prayer. <code class="inline">async</code> means "I might wait for something slow." <span class="term" data-definition="Task is C#'s way of representing work that will finish in the future. A method returning Task is like handing you a receipt that says 'your order is being prepared.' You can await the Task to get the result when done.">Task</span> is the receipt.</p><p class="tl">If the Id is 0, this prayer has never been saved.</p><p class="tl"><code class="inline">await</code> means "start the insert and wait, but let other code run."</p><p class="tl">Otherwise, this prayer already exists &mdash; we're updating it.</p><p class="tl">Stamp the current time, then await the update.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Models/Prayer.cs</code> &mdash; lines 75&ndash;88</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The three keywords</h2>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong><code class="inline">async</code></strong><p>Goes on the method declaration. Says "this method contains await calls."</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong><code class="inline">await</code></strong><p>Goes before any slow call. Says "start this, wait for it, but don't freeze the screen."</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong><code class="inline">Task</code> / <code class="inline">Task&lt;T&gt;</code></strong><p>The return type. Task = "I'll finish eventually." Task&lt;List&lt;Prayer&gt;&gt; = "I'll finish with a list of prayers."</p></div></div>
+        </div>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Common AI mistake: forgetting await</strong><p>If AI-generated code calls an async method <em>without</em> <code class="inline">await</code>, the code fires and forgets &mdash; your data might not save. Always check that every Async method call has an await.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 7: GENERICS -->
+<section class="module" id="module-7" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">07</span><h1 class="module-title">Generics</h1><p class="module-subtitle">A vending machine that works with any coin type &mdash; one mechanism, many currencies.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">One machine, many coins</h2><p>Imagine building a separate vending machine for dollars, euros, and yen. Wasteful &mdash; the mechanism is the same.</p><p style="margin-top:var(--space-3)"><span class="term" data-definition="Generics let you write code that works with any type. Instead of writing GetAllPrayers(), GetAllCards(), GetAllTags() separately, you write GetAllAsync&lt;T&gt;() once. The T is a placeholder &mdash; fill it in when you call the method.">Generics</span> do the same in code. The <code class="inline">&lt;T&gt;</code> is a placeholder &mdash; fill it in when you use it.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">GetAllAsync&lt;T&gt; &mdash; one method, every model</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-comment">// The generic method in IDBService:</span>
+<span class="code-type">Task</span>&lt;<span class="code-type">List</span>&lt;T&gt;&gt; <span class="code-function">GetAllAsync</span>&lt;T&gt;() <span class="code-keyword">where</span> T : <span class="code-keyword">new</span>();
+
+<span class="code-comment">// Using it for different types:</span>
+<span class="code-keyword">await</span> _dbService.<span class="code-function">GetAllAsync</span>&lt;<span class="code-type">Prayer</span>&gt;();
+<span class="code-keyword">await</span> _dbService.<span class="code-function">GetAllAsync</span>&lt;<span class="code-type">PrayerCard</span>&gt;();
+<span class="code-keyword">await</span> _dbService.<span class="code-function">GetAllAsync</span>&lt;<span class="code-type">PrayerTag</span>&gt;();</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This method can get all rows from <em>any</em> table. The T is a blank &mdash; fill in the type when you call it.</p><p class="tl">Get all <strong>prayers</strong> from the PrayerRequest table.</p><p class="tl">Get all <strong>prayer cards</strong> from the PrayerCard table.</p><p class="tl">Get all <strong>tags</strong> from the PrayerTag table.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/IDBService.cs</code> &mdash; line 19</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Reading the angle brackets</h2><p>Angle brackets <code class="inline">&lt; &gt;</code> always mean "of this type." Read them as "of":</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">T</div><div><strong><code class="inline">List&lt;Prayer&gt;</code></strong><p>"A list <em>of</em> prayers"</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">T</div><div><strong><code class="inline">Task&lt;int&gt;</code></strong><p>"A task that will produce <em>an</em> int when done"</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">T</div><div><strong><code class="inline">IReadOnlyList&lt;PrayerCard&gt;</code></strong><p>"A read-only list <em>of</em> prayer cards"</p></div></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 8: STATIC MEMBERS & NAMESPACES -->
+<section class="module" id="module-8" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">08</span><h1 class="module-title">Static Members &amp; Namespaces</h1><p class="module-subtitle">A shared toolbox bolted to the wall vs. tools in your personal belt.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Wall tools vs. belt tools</h2><p>On a construction site, some tools are bolted to the wall &mdash; everyone shares them. Others are in your personal tool belt &mdash; each worker has their own.</p><p style="margin-top:var(--space-3)"><span class="term" data-definition="A static member belongs to the class itself, not to any particular object. There's only one copy, shared by everyone. Call it on the class (Prayer.SetDBService) not on an object (myPrayer.SetDBService).">Static</span> members are wall tools &mdash; shared by every object. Regular members are belt tools &mdash; each object gets its own copy.</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The static database reference</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">private static</span> <span class="code-type">IDBService</span>? <span class="code-property">_dbService</span>;
+
+<span class="code-keyword">public static void</span> <span class="code-function">SetDBService</span>(<span class="code-type">IDBService</span> dbService)
+{
+    _dbService = dbService;
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">A <strong>single, shared</strong> reference to the database service. Every Prayer object uses this same reference.</p><p class="tl">A one-time setup method. Called once at app startup, then every Prayer object can save and load itself.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Models/Prayer.cs</code> &mdash; lines 14, 67&ndash;71</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Namespaces &mdash; organizing code into folders</h2><p>A <span class="term" data-definition="A namespace organizes code into logical groups, like folders in a filing cabinet. PrayerApp.Models holds data models. PrayerApp.Services holds services. Namespaces prevent naming conflicts.">namespace</span> is a folder label for your code:</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-1)">&#x1F4C1;</div><div><strong>PrayerApp.Models</strong><p>Data shapes: Prayer, PrayerCard, PrayerTag</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">&#x1F4C1;</div><div><strong>PrayerApp.Services</strong><p>Business logic: CardService, TagService, DBService</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">&#x1F4C1;</div><div><strong>PrayerApp.ViewModels</strong><p>Screen logic: HomeViewModel, PrayerCardsViewModel</p></div></div>
+        </div>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">Namespaces = vocabulary for AI</strong><p>When you tell an AI "put this in the Services namespace," it knows exactly where to create the file. Understanding namespaces helps you give AI precise directions.</p></div></div></section>
+
+      <section class="screen animate-in" id="quiz-m8"><h2 class="screen-heading">Final check</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="m8q1" data-correct="opt-b" data-explain-correct="Static means shared &mdash; one copy for all objects. You call it on the class itself (Prayer.SetDBService) not on an individual prayer." data-explain-incorrect="Think about the wall tool metaphor. A static method is bolted to the wall (the class), not in anyone's belt (an object)."><h3 class="quiz-question">You see <code class="inline">Prayer.SetDBService(db)</code> in the startup code. What does <code class="inline">static</code> mean here?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Only one specific prayer can use it</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It belongs to the Prayer class as a whole &mdash; all prayers share this setup</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The method can't be changed after it's written</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m8')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m8')">Try Again</button>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Course complete</h2><p style="font-size:var(--text-lg)">You now know the fundamental building blocks of C# &mdash; the same vocabulary every .NET developer uses daily, and that AI coding tools expect you to understand.</p>
+        <div class="callout callout-accent" style="margin-top:var(--space-8)"><div class="callout-icon">&#x1F389;</div><div class="callout-content"><strong class="callout-title">What's next</strong><p><strong>Course 1: The Blueprint</strong> shows how the app starts up &mdash; how all these classes, interfaces, and async methods get wired together into a running application.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function() {
+  'use strict';
+
+  /* Scroll-triggered animations */
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
+    });
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+  document.querySelectorAll('.animate-in').forEach(function(el) { observer.observe(el); });
+
+  /* Stagger children */
+  document.querySelectorAll('.stagger-children').forEach(function(parent) {
+    Array.from(parent.children).forEach(function(child, i) { child.style.setProperty('--stagger-index', i); });
+  });
+
+  /* Progress bar */
+  var progressBar = document.getElementById('progress-bar');
+  function updateProgressBar() {
+    var scrollTop = window.scrollY;
+    var scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    progressBar.style.width = progress + '%';
+  }
+  window.addEventListener('scroll', function() { requestAnimationFrame(updateProgressBar); }, { passive: true });
+
+  /* Nav dots */
+  var modules = document.querySelectorAll('.module[id^="module-"]');
+  var dots = document.querySelectorAll('.nav-dot');
+  dots.forEach(function(dot) {
+    dot.addEventListener('click', function() {
+      var target = document.getElementById(dot.dataset.target);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+  var moduleObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var num = entry.target.id.replace('module-', '');
+        dots.forEach(function(dot) {
+          var dotNum = dot.dataset.target.replace('module-', '');
+          if (dotNum === num) { dot.classList.add('current'); }
+          else { dot.classList.remove('current'); if (parseInt(dotNum) < parseInt(num)) dot.classList.add('visited'); }
+        });
+      }
+    });
+  }, { rootMargin: '-30% 0px -30% 0px', threshold: 0 });
+  modules.forEach(function(m) { if (m.id !== 'module-intro') moduleObserver.observe(m); });
+
+  /* Keyboard nav */
+  var allModules = Array.from(document.querySelectorAll('.module'));
+  document.addEventListener('keydown', function(e) {
+    if (['INPUT','TEXTAREA'].indexOf(e.target.tagName) !== -1) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      var curr = allModules.findIndex(function(m) { var r = m.getBoundingClientRect(); return r.top >= -100 && r.top < window.innerHeight / 2; });
+      if (curr < allModules.length - 1) allModules[curr + 1].scrollIntoView({ behavior: 'smooth' });
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      var curr2 = allModules.findIndex(function(m) { var r = m.getBoundingClientRect(); return r.top >= -100 && r.top < window.innerHeight / 2; });
+      if (curr2 > 0) allModules[curr2 - 1].scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
+  /* Glossary tooltips (position:fixed, appended to body to avoid overflow clipping) */
+  var activeTooltip = null;
+  function positionTooltip(term, tip) {
+    var rect = term.getBoundingClientRect();
+    var tipWidth = Math.min(320, window.innerWidth * 0.8);
+    tip.style.width = tipWidth + 'px';
+    var left = rect.left + rect.width / 2 - tipWidth / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tipWidth - 8));
+    tip.style.left = left + 'px';
+    document.body.appendChild(tip);
+    var tipHeight = tip.offsetHeight;
+    if (rect.top - tipHeight - 8 < 0) {
+      tip.style.top = (rect.bottom + 8) + 'px';
+      tip.classList.add('flip');
+    } else {
+      tip.style.top = (rect.top - tipHeight - 8) + 'px';
+      tip.classList.remove('flip');
+    }
+  }
+  document.querySelectorAll('.term').forEach(function(term) {
+    var tip = document.createElement('span');
+    tip.className = 'term-tooltip';
+    tip.textContent = term.dataset.definition;
+    term.addEventListener('mouseenter', function() {
+      if (activeTooltip && activeTooltip !== tip) { activeTooltip.classList.remove('visible'); activeTooltip.remove(); }
+      positionTooltip(term, tip);
+      requestAnimationFrame(function() { tip.classList.add('visible'); });
+      activeTooltip = tip;
+    });
+    term.addEventListener('mouseleave', function() {
+      tip.classList.remove('visible');
+      setTimeout(function() { if (!tip.classList.contains('visible')) tip.remove(); }, 150);
+      activeTooltip = null;
+    });
+    term.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (activeTooltip && activeTooltip !== tip) { activeTooltip.classList.remove('visible'); activeTooltip.remove(); }
+      if (tip.classList.contains('visible')) { tip.classList.remove('visible'); tip.remove(); activeTooltip = null; }
+      else { positionTooltip(term, tip); requestAnimationFrame(function() { tip.classList.add('visible'); }); activeTooltip = tip; }
+    });
+  });
+  document.addEventListener('click', function() {
+    if (activeTooltip) { activeTooltip.classList.remove('visible'); activeTooltip.remove(); activeTooltip = null; }
+  });
+
+  /* Quiz logic — uses textContent and DOM methods instead of innerHTML */
+  window.selectOption = function(btn) {
+    var block = btn.closest('.quiz-question-block');
+    if (block.querySelector('.quiz-option[disabled]')) return;
+    block.querySelectorAll('.quiz-option').forEach(function(o) { o.classList.remove('selected'); });
+    btn.classList.add('selected');
+  };
+
+  function setFeedback(feedbackEl, isCorrect, explanation) {
+    while (feedbackEl.firstChild) feedbackEl.removeChild(feedbackEl.firstChild);
+    var strong = document.createElement('strong');
+    strong.textContent = isCorrect ? 'Exactly! ' : 'Not quite. ';
+    feedbackEl.appendChild(strong);
+    feedbackEl.appendChild(document.createTextNode(explanation));
+    feedbackEl.className = 'quiz-feedback show ' + (isCorrect ? 'success' : 'error');
+  }
+
+  window.checkQuiz = function(sectionId) {
+    var container = document.getElementById(sectionId);
+    var questions = container.querySelectorAll('.quiz-question-block');
+    questions.forEach(function(q) {
+      var selected = q.querySelector('.quiz-option.selected');
+      var feedback = q.querySelector('.quiz-feedback');
+      var correctValue = q.dataset.correct;
+      if (!selected) {
+        feedback.textContent = 'Pick an answer first!';
+        feedback.className = 'quiz-feedback show warning';
+        return;
+      }
+      if (selected.dataset.value === correctValue) {
+        selected.classList.add('correct');
+        setFeedback(feedback, true, q.dataset.explainCorrect);
+      } else {
+        selected.classList.add('incorrect');
+        q.querySelector('[data-value="' + correctValue + '"]').classList.add('correct');
+        setFeedback(feedback, false, q.dataset.explainIncorrect);
+      }
+      q.querySelectorAll('.quiz-option').forEach(function(o) { o.disabled = true; });
+    });
+  };
+
+  window.resetQuiz = function(sectionId) {
+    var container = document.getElementById(sectionId);
+    container.querySelectorAll('.quiz-option').forEach(function(o) {
+      o.classList.remove('selected', 'correct', 'incorrect');
+      o.disabled = false;
+    });
+    container.querySelectorAll('.quiz-feedback').forEach(function(f) { f.className = 'quiz-feedback'; });
+  };
+})();
+</script>
+</body>
+</html>

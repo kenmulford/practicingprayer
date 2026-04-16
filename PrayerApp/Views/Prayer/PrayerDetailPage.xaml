@@ -118,22 +118,18 @@
                     <!-- Prayer Card -->
                     <Label Text="Belongs to Card"
                            Style="{StaticResource FormLabel}" />
-                    <Grid ColumnDefinitions="*, Auto">
-                        <Picker Title="Select Card"
-                                AutomationId="Detail_Picker_Card"
-                                ItemsSource="{Binding AvailableCards}"
-                                SelectedItem="{Binding SelectedCard}"
-                                ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
-                                SemanticProperties.Hint="Tap to change which card this prayer belongs to"
-                                HorizontalOptions="Fill" />
-                        <Label Grid.Column="1"
-                               Text="▼"
-                               FontSize="12"
-                               VerticalOptions="Center"
-                               Margin="0,0,4,0"
-                               AutomationProperties.IsInAccessibleTree="false"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
-                    </Grid>
+                    <Border Style="{StaticResource PickerField}">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Picker Title="Select Card"
+                                    AutomationId="Detail_Picker_Card"
+                                    ItemsSource="{Binding AvailableCards}"
+                                    SelectedItem="{Binding SelectedCard}"
+                                    ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
+                                    SemanticProperties.Hint="Tap to change which card this prayer belongs to"
+                                    HorizontalOptions="Fill" />
+                            <Label Style="{StaticResource PickerIndicator}" />
+                        </Grid>
+                    </Border>
 
                     <!-- Title -->
                     <Label Text="Title"
@@ -166,19 +162,29 @@
                                 <Switch Grid.Column="1"
                                         AutomationId="Detail_Switch_Reminders"
                                         IsToggled="{Binding CanNotify}"
-                                        SemanticProperties.Description="Enable reminders for this request"
+                                        SemanticProperties.Hint="Enable reminders for this request"
                                         VerticalOptions="Center" />
                             </Grid>
 
                             <!-- Frequency (visible when notifications enabled) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
                                 <Label Text="Frequency" Style="{StaticResource FormLabel}" />
-                                <Picker Title="Select Frequency"
-                                        AutomationId="Detail_Picker_Frequency"
-                                        ItemsSource="{Binding FrequencyOptions}"
-                                        SelectedItem="{Binding PrayerFrequency}"
-                                        SemanticProperties.Hint="How often to be reminded"
-                                        HorizontalOptions="Fill" />
+                                <Border Style="{StaticResource PickerField}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <Picker Title="Select Frequency"
+                                                AutomationId="Detail_Picker_Frequency"
+                                                ItemsSource="{Binding FrequencyOptions}"
+                                                SelectedItem="{Binding PrayerFrequency}"
+                                                SemanticProperties.Hint="How often to be reminded"
+                                                HorizontalOptions="Fill" />
+                                        <Label Grid.Column="1"
+                                               Text="▼"
+                                               FontSize="12"
+                                               VerticalOptions="Center"
+                                               AutomationProperties.IsInAccessibleTree="false"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                                    </Grid>
+                                </Border>
                             </VerticalStackLayout>
 
                             <!-- Reminder Time -->
@@ -190,19 +196,41 @@
                             <!-- Day of Week (Weekly only) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfWeek}">
                                 <Label Text="Day of Week" Style="{StaticResource FormLabel}" />
-                                <Picker AutomationId="Detail_Picker_DayOfWeek"
-                                        ItemsSource="{Binding DaysOfWeek}"
-                                        SelectedItem="{Binding SelectedDayOfWeek}"
-                                        Title="Select Day" />
+                                <Border Style="{StaticResource PickerField}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <Picker AutomationId="Detail_Picker_DayOfWeek"
+                                                ItemsSource="{Binding DaysOfWeek}"
+                                                SelectedItem="{Binding SelectedDayOfWeek}"
+                                                Title="Select Day"
+                                                HorizontalOptions="Fill" />
+                                        <Label Grid.Column="1"
+                                               Text="▼"
+                                               FontSize="12"
+                                               VerticalOptions="Center"
+                                               AutomationProperties.IsInAccessibleTree="false"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                                    </Grid>
+                                </Border>
                             </VerticalStackLayout>
 
                             <!-- Day of Month (Monthly only) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfMonth}">
                                 <Label Text="Day of Month" Style="{StaticResource FormLabel}" />
-                                <Picker AutomationId="Detail_Picker_DayOfMonth"
-                                        ItemsSource="{Binding DaysOfMonth}"
-                                        SelectedItem="{Binding SelectedDayOfMonth}"
-                                        Title="Select Day" />
+                                <Border Style="{StaticResource PickerField}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <Picker AutomationId="Detail_Picker_DayOfMonth"
+                                                ItemsSource="{Binding DaysOfMonth}"
+                                                SelectedItem="{Binding SelectedDayOfMonth}"
+                                                Title="Select Day"
+                                                HorizontalOptions="Fill" />
+                                        <Label Grid.Column="1"
+                                               Text="▼"
+                                               FontSize="12"
+                                               VerticalOptions="Center"
+                                               AutomationProperties.IsInAccessibleTree="false"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+                                    </Grid>
+                                </Border>
                             </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
@@ -213,80 +241,41 @@
                                VerticalOptions="Center" />
                         <Switch AutomationId="Detail_Switch_Answered"
                                 IsToggled="{Binding IsAnswered}"
-                                SemanticProperties.Description="Mark this request as answered"
+                                SemanticProperties.Hint="Mark this request as answered"
                                 VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
-                    <!-- Tags (edit mode) -->
-                    <Label Text="Tags" Style="{StaticResource FormLabel}" />
-
-                    <!-- Selected tag chips (removable) -->
-                    <FlexLayout BindableLayout.ItemsSource="{Binding SelectedTags}"
+                    <!-- Tags (edit mode) — label, chips, and + button flow inline -->
+                    <FlexLayout x:Name="editTagChips"
                                 Wrap="Wrap"
                                 Direction="Row"
-                                IsVisible="{Binding HasTags}">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:TagChipViewModel">
-                                <Border BackgroundColor="{Binding ChipColor}"
-                                        Stroke="Transparent"
-                                        StrokeShape="RoundRectangle 12"
-                                        Padding="6,4"
-                                        Margin="2,2">
-                                    <HorizontalStackLayout Spacing="4">
-                                        <Label Text="{Binding Name}"
-                                               TextColor="{StaticResource White}"
-                                               FontSize="12"
-                                               VerticalOptions="Center" />
-                                        <Button Text="×"
-                                                SemanticProperties.Description="Remove tag"
-                                                Command="{Binding RemoveCommand}"
-                                                TextColor="{StaticResource White}"
-                                                BackgroundColor="Transparent"
-                                                FontSize="14"
-                                                Padding="2,0"
-                                                BorderWidth="0"
-                                                MinimumWidthRequest="24"
-                                                MinimumHeightRequest="24"
-                                                VerticalOptions="Center" />
-                                    </HorizontalStackLayout>
-                                </Border>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
+                                AlignItems="Center">
+                        <!-- Label + chips rebuilt in code-behind; + button is last child -->
+                        <Label x:Name="tagsLabel" Text="Tags"
+                               Style="{StaticResource FormLabel}"
+                               VerticalOptions="Center"
+                               Margin="0,0,6,0" />
+                        <Border x:Name="addTagButton"
+                                AutomationId="Detail_Btn_AddTags"
+                                StrokeShape="RoundRectangle 14"
+                                WidthRequest="28" HeightRequest="28"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray300},
+                                                         Dark={StaticResource CardBorderDark}}"
+                                BackgroundColor="Transparent"
+                                Margin="2,2"
+                                SemanticProperties.Description="Add tags"
+                                SemanticProperties.Hint="Double tap to open tag picker">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenTagPickerCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="+"
+                                   FontSize="16"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary},
+                                                               Dark={StaticResource PrimaryDark}}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
                     </FlexLayout>
-
-                    <!-- Tag search entry -->
-                    <Entry x:Name="tagEntry"
-                           Text="{Binding TagSearchText}"
-                           AutomationId="Detail_Entry_TagSearch"
-                           Placeholder="Add tags..."
-                           ReturnCommand="{Binding SubmitTagEntryCommand}"
-                           ReturnType="Done"
-                           Completed="OnTagEntryCompleted"
-                           HorizontalOptions="Fill" />
-
-                    <!-- Suggestions list — CollectionView provides both tap (via
-                         SelectionChanged) and scrolling. HeightRequest gives iOS
-                         a definite frame; without it, CollectionView reports zero
-                         intrinsic height inside a page-level ScrollView. -->
-                    <Border IsVisible="{Binding HasSuggestions}"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}"
-                            StrokeShape="RoundRectangle 6"
-                            Padding="0">
-                        <CollectionView AutomationId="Detail_List_TagSuggestions"
-                                        ItemsSource="{Binding SuggestedTags}"
-                                        SelectionMode="Single"
-                                        SelectionChanged="OnSuggestionSelected"
-                                        HeightRequest="180">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="models:PrayerTag">
-                                    <Grid Padding="14,12">
-                                        <Label Text="{Binding Name}" FontSize="15" />
-                                    </Grid>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </Border>
 
                     <!-- Divider before action buttons -->
                     <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />

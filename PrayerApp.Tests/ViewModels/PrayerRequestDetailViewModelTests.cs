@@ -271,4 +271,33 @@ public class PrayerRequestDetailViewModelTests
 
         _notificationService.DidNotReceive().RequestPermissionAsync();
     }
+
+    // ── Reload guard ─────────────────────────────────────────────────
+
+    [Fact]
+    public void Reload_NewPrayer_DoesNotNavigateAway()
+    {
+        var sut = CreateSut();
+
+        sut.Reload();
+
+        _navigationService.DidNotReceive().GoToAsync(Arg.Any<string>());
+    }
+
+    // ── ApplyQueryAttributes re-entry guard ──────────────────────────
+
+    [Fact]
+    public void ApplyQueryAttributes_CalledTwice_DoesNotResetPrayer()
+    {
+        var sut = CreateSut();
+        var query = new Dictionary<string, object> { ["new"] = "true" };
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(query);
+        sut.Title = "My Prayer";
+
+        // Simulate Shell re-applying sticky params on modal dismiss
+        ((IQueryAttributable)sut).ApplyQueryAttributes(query);
+
+        Assert.Equal("My Prayer", sut.Title);
+    }
 }

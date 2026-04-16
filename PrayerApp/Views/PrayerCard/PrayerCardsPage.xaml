@@ -8,10 +8,15 @@
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Add Card" Command="{Binding NewCommand}" />
+        <ToolbarItem Text="Collections" AutomationId="Cards_Btn_Collections"
+                     SemanticProperties.Hint="Manage collections"
+                     Clicked="OnCollectionsTapped"
+                     Order="Primary" Priority="0" />
+        <ToolbarItem Text="Add Card" Command="{Binding NewCommand}"
+                     Order="Primary" Priority="1" />
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
         </Grid.GestureRecognizers>
@@ -39,6 +44,7 @@
                     <DataTemplate x:DataType="viewModels:TagFilterChipViewModel">
                         <Border Padding="10,4"
                                 StrokeThickness="1.5"
+                                SemanticProperties.Description="{Binding AccessibleDescription}"
                                 SemanticProperties.Hint="Double tap to toggle filter">
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="12" />
@@ -58,7 +64,8 @@
                             </Border.Triggers>
                             <Label Text="{Binding Tag.Name}"
                                    FontSize="12"
-                                   VerticalOptions="Center">
+                                   VerticalOptions="Center"
+                                   AutomationProperties.IsInAccessibleTree="False">
                                 <Label.Triggers>
                                     <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
                                         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
@@ -74,8 +81,41 @@
             </HorizontalStackLayout>
         </ScrollView>
 
+        <!-- Collections education banner — dismissed permanently via ✕ button -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding ShowCollectionsBanner}"
+                AutomationId="Cards_Banner_Collections"
+                BackgroundColor="{AppThemeBinding Light={StaticResource OverdueLight}, Dark={StaticResource OverdueDark}}"
+                StrokeThickness="0"
+                Padding="14,10"
+                Margin="12,4,12,0">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
+                <Label Text="We've added Collections to help you organize your cards. Tap 'Collections' above to get started."
+                       FontSize="13"
+                       LineBreakMode="WordWrap"
+                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="✕"
+                        AutomationId="Cards_Btn_DismissBanner"
+                        Command="{Binding DismissCollectionsBannerCommand}"
+                        SemanticProperties.Description="Dismiss collections tip"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
+                        FontSize="14"
+                        Padding="4"
+                        BorderWidth="0"
+                        WidthRequest="32"
+                        HeightRequest="32"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
         <!-- Loading indicator -->
-        <ActivityIndicator Grid.Row="2"
+        <ActivityIndicator Grid.Row="3"
                            IsRunning="{Binding IsLoading}"
                            IsVisible="{Binding IsLoading}"
                            Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
@@ -83,28 +123,93 @@
                            VerticalOptions="Center" />
 
         <CollectionView
-            Grid.Row="2"
+            Grid.Row="3"
             x:Name="cardCollection"
             AutomationId="Cards_List_Cards"
             AutomationProperties.IsInAccessibleTree="false"
-            ItemsSource="{Binding FilteredPrayerCards}"
+            IsGrouped="True"
+            ItemsSource="{Binding BoxSections}"
             ItemSizingStrategy="MeasureAllItems"
             Margin="12,8"
             SelectionMode="None">
-        <CollectionView.EmptyView>
-            <VerticalStackLayout HorizontalOptions="Center" Margin="24,32" Spacing="12">
-                <ActivityIndicator
-                    IsRunning="{Binding IsLoading}"
-                    IsVisible="{Binding IsLoading}"
-                    Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                    HorizontalOptions="Center" />
-                <Label
-                    IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
-                    Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
-                    Style="{StaticResource MutedText}"
-                    HorizontalTextAlignment="Center" />
-            </VerticalStackLayout>
-        </CollectionView.EmptyView>
+        <!-- BUG-55 fix: Empty hint lives OUTSIDE the CollectionView so it never
+             replaces group headers. Grouped CollectionView's built-in EmptyView
+             hides group headers when all groups have 0 items, which prevents
+             tapping section headers to re-expand collapsed collections. -->
+        <CollectionView.GroupHeaderTemplate>
+            <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
+                <VerticalStackLayout
+                    AutomationId="Cards_Section_Header"
+                    SemanticProperties.Description="{Binding Name}"
+                    SemanticProperties.Hint="Double tap to expand or collapse section">
+                    <!-- BUG-59: Dim headers during multi-select so focus stays on cards -->
+                    <VerticalStackLayout.Triggers>
+                        <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding IsMultiSelectMode}" Value="True">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </DataTrigger>
+                    </VerticalStackLayout.Triggers>
+                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,8">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
+                        </Grid.GestureRecognizers>
+                        <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
+                               FontSize="11"
+                               AutomationProperties.IsInAccessibleTree="False"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
+                               VerticalOptions="Center"
+                               Margin="0,0,6,0" />
+                        <Label Grid.Column="1"
+                               Text="{Binding HeaderText}"
+                               FontSize="15"
+                               FontFamily="OpenSansSemibold"
+                               AutomationProperties.IsInAccessibleTree="False"
+                               TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0"
+                             AutomationProperties.IsInAccessibleTree="False" />
+                </VerticalStackLayout>
+            </DataTemplate>
+        </CollectionView.GroupHeaderTemplate>
+        <!-- Section footer: closing divider when expanded (visual bracket),
+             plus "No cards yet" hint when expanded + empty.
+             HeightRequest="0" collapses the footer entirely for collapsed sections
+             so it doesn't contribute spacing between collapsed section headers (BUG-56). -->
+        <CollectionView.GroupFooterTemplate>
+            <DataTemplate x:DataType="viewModels:BoxSectionViewModel">
+                <VerticalStackLayout HeightRequest="0" Spacing="0">
+                    <VerticalStackLayout.Triggers>
+                        <DataTrigger TargetType="VerticalStackLayout"
+                                     Binding="{Binding IsExpanded}" Value="True">
+                            <Setter Property="HeightRequest" Value="-1" />
+                        </DataTrigger>
+                    </VerticalStackLayout.Triggers>
+                    <!-- Empty-section hint (only when expanded + 0 cards) -->
+                    <Label Text="No cards yet — move or create cards to add them here"
+                           IsVisible="False"
+                           HeightRequest="0"
+                           Style="{StaticResource MutedText}"
+                           Margin="0"
+                           FontSize="13">
+                        <Label.Triggers>
+                            <MultiTrigger TargetType="Label">
+                                <MultiTrigger.Conditions>
+                                    <BindingCondition Binding="{Binding IsExpanded}" Value="True" />
+                                    <BindingCondition Binding="{Binding CardCount}" Value="0" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="IsVisible" Value="True" />
+                                <Setter Property="HeightRequest" Value="-1" />
+                                <Setter Property="Margin" Value="46,4,16,12" />
+                            </MultiTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <!-- Closing divider (visible whenever expanded) -->
+                    <BoxView Style="{StaticResource DividerLine}"
+                             Margin="4,8,4,0"
+                             IsVisible="{Binding IsExpanded}" />
+                </VerticalStackLayout>
+            </DataTemplate>
+        </CollectionView.GroupFooterTemplate>
         <CollectionView.ItemsLayout>
             <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
         </CollectionView.ItemsLayout>
@@ -112,8 +217,11 @@
             <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
 
                 <!-- Card body — inline action buttons replace SwipeView for reliability on iOS -->
+                <!-- UX-32: Left indent reinforces nesting under section headers -->
                 <Border Style="{StaticResource PrayerCardBorder}"
-                        Padding="0">
+                        Padding="0"
+                        Margin="14,0,0,0"
+                        Loaded="OnCardBorderLoaded">
                     <Border.Triggers>
                         <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
                             <Setter Property="Stroke" Value="{AppThemeBinding
@@ -127,22 +235,31 @@
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding
                                 Light={StaticResource SystemCardLight}, Dark={StaticResource SystemCardDark}}" />
                         </DataTrigger>
+                        <DataTrigger TargetType="Border" Binding="{Binding IsMultiSelected}" Value="True">
+                            <Setter Property="Stroke" Value="{AppThemeBinding
+                                Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            <Setter Property="StrokeThickness" Value="2.5" />
+                        </DataTrigger>
                     </Border.Triggers>
+                    <!-- BUG-60: Long-press wired in code-behind — iOS via OnCardBorderLoaded, Android via OnCardHeaderLoaded -->
 
                     <VerticalStackLayout Spacing="0">
 
                         <!-- Card header: title + system badge + imported icon + count badge + favorite star -->
+                        <!-- A11Y: Description on the Grid (single tappable unit), not the Label (avoids double-read) -->
                         <Grid
                             Padding="12,10"
-                            ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                            ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+                            SemanticProperties.Description="{Binding AccessibleCardHeader}"
+                            SemanticProperties.Hint="Double tap to expand or collapse"
+                            Loaded="OnCardHeaderLoaded">
                             <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding ToggleExpandedCommand}" />
+                                <TapGestureRecognizer Tapped="OnCardHeaderTapped" />
                             </Grid.GestureRecognizers>
                             <Label
                                 Text="{Binding Title}"
                                 Style="{StaticResource CardTitle}"
-                                SemanticProperties.Description="{Binding AccessibleCardHeader}"
-                                SemanticProperties.Hint="Double tap to expand or collapse"
+                                AutomationProperties.IsInAccessibleTree="False"
                                 TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                                 VerticalOptions="Center" />
                             <!-- System badge -->
@@ -151,6 +268,7 @@
                                 Text="System"
                                 FontSize="10"
                                 IsVisible="{Binding IsSystem}"
+                                AutomationProperties.IsInAccessibleTree="False"
                                 TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                                 VerticalOptions="Center"
                                 Margin="6,0,6,0" />
@@ -163,7 +281,7 @@
                                 IsVisible="{Binding IsImported}"
                                 VerticalOptions="Center"
                                 Margin="4,0"
-                                SemanticProperties.Description="Imported card">
+                                AutomationProperties.IsInAccessibleTree="False">
                                 <Image.Behaviors>
                                     <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                 </Image.Behaviors>
@@ -194,7 +312,7 @@
                                 Grid.Column="4"
                                 Text="★"
                                 FontSize="16"
-                                SemanticProperties.Description="Favorited"
+                                AutomationProperties.IsInAccessibleTree="False"
                                 TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
                                 IsVisible="{Binding IsFavorite}"
                                 VerticalOptions="Center"
@@ -227,6 +345,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="star_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -236,6 +355,7 @@
                                     </Image>
                                     <Label Text="{Binding FavoriteLabel}"
                                            FontSize="12"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            TextColor="{AppThemeBinding
                                                Light={StaticResource Tertiary},
                                                Dark={StaticResource TextPrimaryDark}}"
@@ -260,6 +380,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="share_from_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -268,6 +389,7 @@
                                         </Image.Behaviors>
                                     </Image>
                                     <Label Text="Share" FontSize="12"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            TextColor="{AppThemeBinding
                                                Light={StaticResource Tertiary},
                                                Dark={StaticResource TextPrimaryDark}}"
@@ -284,6 +406,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -292,6 +415,7 @@
                                         </Image.Behaviors>
                                     </Image>
                                     <Label Text="Edit" FontSize="12"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            TextColor="{AppThemeBinding
                                                Light={StaticResource Tertiary},
                                                Dark={StaticResource TextPrimaryDark}}"
@@ -311,6 +435,7 @@
                                 </Border.GestureRecognizers>
                                 <HorizontalStackLayout Spacing="4">
                                     <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            VerticalOptions="Center">
                                         <Image.Behaviors>
                                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
@@ -319,6 +444,7 @@
                                         </Image.Behaviors>
                                     </Image>
                                     <Label Text="Delete" FontSize="12"
+                                           AutomationProperties.IsInAccessibleTree="False"
                                            TextColor="{AppThemeBinding
                                                Light={StaticResource DangerRed},
                                                Dark={StaticResource DangerRedDark}}"
@@ -337,14 +463,15 @@
                                     <VerticalStackLayout Spacing="0">
                                         <Grid
                                             Padding="16,10,12,10"
-                                            ColumnDefinitions="*,Auto,Auto">
+                                            ColumnDefinitions="*,Auto,Auto"
+                                            SemanticProperties.Description="{Binding AccessibleSummary}">
                                             <Grid.GestureRecognizers>
                                                 <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
                                             </Grid.GestureRecognizers>
                                             <Label
                                                 Text="{Binding Title}"
                                                 FontSize="16"
-                                                SemanticProperties.Hint="Double tap to view"
+                                                AutomationProperties.IsInAccessibleTree="False"
                                                 TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                                 TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
                                                 VerticalOptions="Center" />
@@ -356,7 +483,7 @@
                                                 IsVisible="{Binding IsImported}"
                                                 VerticalOptions="Center"
                                                 Margin="4,0"
-                                                SemanticProperties.Description="Imported prayer">
+                                                AutomationProperties.IsInAccessibleTree="False">
                                                 <Image.Behaviors>
                                                     <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                                 </Image.Behaviors>
@@ -367,7 +494,8 @@
                                                 Style="{StaticResource SuccessBadge}"
                                                 IsVisible="{Binding IsAnswered}"
                                                 VerticalOptions="Start"
-                                                Margin="6,0,0,0" />
+                                                Margin="6,0,0,0"
+                                                AutomationProperties.IsInAccessibleTree="False" />
                                         </Grid>
                                         <!-- Inline color binding — style-only AppThemeBinding
                                              doesn't reliably propagate to all BindableLayout children -->
@@ -403,19 +531,76 @@
         </CollectionView.ItemTemplate>
         </CollectionView>
 
+        <!-- BUG-55: External empty hint — InputTransparent so collapsed group headers
+             remain tappable beneath this overlay. Only visible when truly empty. -->
+        <Label Grid.Row="3"
+               IsVisible="False"
+               InputTransparent="True"
+               Text="You need to create your first prayer card! Prayer cards are meant to work like a 3x5 card — the card is a person's name, a topic, anything really. Once you create it, add one or many prayer requests to the card! Get started above by tapping 'Add Card'."
+               Style="{StaticResource MutedText}"
+               HorizontalTextAlignment="Center"
+               Margin="36,32">
+            <Label.Triggers>
+                <MultiTrigger TargetType="Label">
+                    <MultiTrigger.Conditions>
+                        <BindingCondition Binding="{Binding HasNoSections}" Value="True" />
+                        <BindingCondition Binding="{Binding IsLoading}" Value="False" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="IsVisible" Value="True" />
+                </MultiTrigger>
+            </Label.Triggers>
+        </Label>
+
         <!-- CreateCard step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="3"
+            Grid.Row="4"
             ExpectedStep="CreateCard"
             HeadlineText="Tap 'Add Card' to create your first prayer card"
             SubText="Give it a name — a person, a topic, or a place." />
 
         <!-- AddRequest step banner -->
         <onboarding:OnboardingBanner
-            Grid.Row="4"
+            Grid.Row="5"
             ExpectedStep="AddRequest"
             HeadlineText="Great! Now tap the name of your new card to expand it; then tap '+ Add prayer'"
             SubText="Add your first prayer request to this card." />
+
+        <!-- BUG-59: Multi-select toolbar overlays search/tag rows at top (visible during long-press) -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                ZIndex="10"
+                VerticalOptions="Fill"
+                AutomationId="Cards_Bar_MultiSelect"
+                IsVisible="{Binding IsMultiSelectMode}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+                StrokeThickness="0"
+                Padding="16,10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        AutomationId="Cards_Btn_CancelSelect"
+                        Command="{Binding CancelMultiSelectCommand}"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        FontSize="14"
+                        Padding="8,4" />
+                <Label Grid.Column="1"
+                       Text="{Binding SelectedCountText}"
+                       TextColor="White"
+                       FontSize="14"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="2"
+                        Text="Move to…"
+                        AutomationId="Cards_Btn_MoveToBox"
+                        Command="{Binding MoveSelectedCommand}"
+                        TextColor="White"
+                        BackgroundColor="Transparent"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        Padding="8,4" />
+            </Grid>
+        </Border>
 
     </Grid>
 </ContentPage>

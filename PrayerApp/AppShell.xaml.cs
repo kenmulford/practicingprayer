@@ -16,6 +16,7 @@ using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
 using PrayerApp.Views.PrayerTime;
 using PrayerApp.Views.Settings;
+using PrayerApp.Views.Boxes;
 using PrayerApp.Views.Tags;
 
 namespace PrayerApp
@@ -51,6 +52,8 @@ namespace PrayerApp
             Routing.RegisterRoute(nameof(PrayerDetailPage), typeof(PrayerDetailPage));
             Routing.RegisterRoute(nameof(PrayerTimePage), typeof(PrayerTimePage));
             Routing.RegisterRoute(nameof(TagDetailPage), typeof(TagDetailPage));
+            Routing.RegisterRoute(nameof(BoxesPage), typeof(BoxesPage));
+            Routing.RegisterRoute(nameof(BoxDetailPage), typeof(BoxDetailPage));
             Routing.RegisterRoute(nameof(AppSettingsPage), typeof(AppSettingsPage));
             Routing.RegisterRoute(nameof(BackupPage), typeof(BackupPage));
             Routing.RegisterRoute(nameof(AboutPage), typeof(AboutPage));
@@ -119,12 +122,6 @@ namespace PrayerApp
 
             var page = CurrentPage;
             if (page is null) return;
-
-            // Setting Opacity = 0 then fading in causes a flash: the platform renders
-            // the first frame at full opacity before we can set it to 0, so the user
-            // sees: visible → invisible → fade in. Slide-only avoids this entirely.
-            if (!page.IsAnimationEnabled)
-                return;
 
             page.TranslationX = 40;
             await page.TranslateToAsync(0, 0, 220, Easing.CubicOut);

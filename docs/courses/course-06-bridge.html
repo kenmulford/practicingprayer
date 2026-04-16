@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Bridge — Platform-Specific Code | Practicing Prayer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--color-bg:#FAF7F2;--color-bg-warm:#F5F0E8;--color-bg-code:#1E1E2E;--color-text:#2C2A28;--color-text-secondary:#6B6560;--color-text-muted:#9E9790;--color-border:#E5DFD6;--color-border-light:#EEEBE5;--color-surface:#FFFFFF;--color-surface-warm:#FDF9F3;--color-accent:#6B7D5A;--color-accent-hover:#5A6B4A;--color-accent-light:#EDF2E8;--color-accent-muted:#8FA37E;--color-success:#2D8B55;--color-success-light:#E8F5EE;--color-error:#C93B3B;--color-error-light:#FDE8E8;--color-info:#2A7B9B;--color-info-light:#E4F2F7;--color-actor-1:#6B7D5A;--color-actor-2:#2A7B9B;--color-actor-3:#7B6DAA;--color-actor-4:#D4A843;--color-actor-5:#D94F30;--font-display:'Bricolage Grotesque',Georgia,serif;--font-body:'DM Sans',-apple-system,sans-serif;--font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;--text-xs:0.75rem;--text-sm:0.875rem;--text-base:1rem;--text-lg:1.125rem;--text-xl:1.25rem;--text-2xl:1.5rem;--text-4xl:2.25rem;--text-6xl:3.75rem;--leading-tight:1.15;--leading-normal:1.6;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--space-16:4rem;--content-width:800px;--content-width-wide:1000px;--nav-height:50px;--radius-sm:8px;--radius-md:12px;--radius-full:9999px;--shadow-sm:0 1px 2px rgba(44,42,40,0.05);--shadow-md:0 4px 12px rgba(44,42,40,0.08);--shadow-lg:0 8px 24px rgba(44,42,40,0.1);--ease-out:cubic-bezier(0.16,1,0.3,1);--duration-fast:150ms;--duration-normal:300ms;--duration-slow:500ms;--stagger-delay:120ms}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-snap-type:y proximity;scroll-behavior:smooth}body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(107,125,90,0.03) 0%,transparent 50%);-webkit-font-smoothing:antialiased}pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,247,242,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-border-light);height:var(--nav-height)}.progress-bar{position:absolute;top:0;left:0;height:3px;background:var(--color-accent);width:0%}.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6)}.nav-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm)}.nav-dots{display:flex;gap:var(--space-3)}.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;transition:all var(--duration-fast);padding:0}.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent);box-shadow:0 0 8px rgba(107,125,90,0.3)}.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent)}
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12))}.module-content{max-width:var(--content-width);margin:0 auto}.module-header{margin-bottom:var(--space-12)}.module-number{font-family:var(--font-display);font-weight:800;font-size:var(--text-6xl);color:var(--color-accent);opacity:0.15;line-height:var(--leading-tight)}.module-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-4xl);line-height:var(--leading-tight);margin-top:calc(-1 * var(--space-4))}.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);margin-top:var(--space-3)}.screen{margin-bottom:var(--space-16)}.screen-heading{font-family:var(--font-display);font-weight:600;font-size:1.5rem;margin-bottom:var(--space-6)}
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out)}.animate-in.visible{opacity:1;transform:translateY(0)}.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay))}
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0}.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden}.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent)}.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5}.translation-english .translation-label{position:relative;top:auto;right:auto;display:block;color:var(--color-text-muted);margin-bottom:var(--space-3)}.tl{margin-bottom:var(--space-3);color:var(--color-text-secondary)}.tl:last-child{margin-bottom:0}
+.code-keyword{color:#CBA6F7}.code-string{color:#A6E3A1}.code-function{color:#89B4FA}.code-comment{color:#6C7086}.code-number{color:#FAB387}.code-property{color:#F9E2AF}.code-operator{color:#94E2D5}.code-type{color:#89DCEB}.code-tag{color:#F38BA8}.code-attr{color:#F9E2AF}
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5);border-radius:var(--radius-md);margin:var(--space-8) 0}.callout-icon{font-size:1.5rem;flex-shrink:0}.callout-content{flex:1}.callout-title{display:block;margin-bottom:var(--space-2);font-weight:600}.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent)}.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info)}.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error)}
+.pattern-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4);margin:var(--space-8) 0}.pattern-card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-5);box-shadow:var(--shadow-sm);transition:transform var(--duration-normal) var(--ease-out),box-shadow var(--duration-normal)}.pattern-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}.pattern-title{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin-bottom:var(--space-2)}.pattern-desc{font-size:var(--text-sm);color:var(--color-text-secondary)}
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-8) 0}.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}.icon-row p{margin:0;color:var(--color-text-secondary);font-size:var(--text-sm)}.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:white}
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-8) 0}.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}.step-body p{margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-2);border-radius:4px}
+.quiz-container{margin:var(--space-8) 0}.quiz-question-block{margin-bottom:var(--space-8)}.quiz-question{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin-bottom:var(--space-4)}.quiz-options{display:flex;flex-direction:column;gap:var(--space-3)}.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;font-family:var(--font-body);font-size:var(--text-base);text-align:left}.quiz-option:hover{border-color:var(--color-accent-muted)}.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light)}.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light)}.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light)}.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0}.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white}.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal),padding var(--duration-normal);border-radius:var(--radius-sm);font-size:var(--text-sm)}.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3) var(--space-4);margin-top:var(--space-2)}.quiz-feedback.success{background:var(--color-success-light);color:#1a6b3a}.quiz-feedback.error{background:var(--color-error-light);color:#a32a2a}.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:600;font-size:var(--text-sm);cursor:pointer;margin-top:var(--space-4);margin-right:var(--space-3)}.quiz-check-btn{background:var(--color-accent);color:white}.quiz-check-btn:hover{background:var(--color-accent-hover)}.quiz-reset-btn{background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-border)}
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative}.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent)}.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000}.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code)}.term-tooltip.visible{opacity:1}.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code)}
+@media(max-width:768px){:root{--text-4xl:1.875rem;--text-6xl:3rem}.translation-block{grid-template-columns:1fr}.translation-english{border-left:none;border-top:3px solid var(--color-accent)}.pattern-cards{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){:root{--text-4xl:1.5rem;--text-6xl:2.25rem}.module{padding:var(--space-8) var(--space-4)}.pattern-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="progress-bar" id="progress-bar"></div><div class="nav-inner"><span class="nav-title">Course 6: The Bridge</span><div class="nav-dots"><button class="nav-dot" data-target="module-1" title="Conditional Compilation"></button><button class="nav-dot" data-target="module-2" title="Custom Handlers"></button><button class="nav-dot" data-target="module-3" title="Platform Services"></button><button class="nav-dot" data-target="module-4" title="Notifications"></button><button class="nav-dot" data-target="module-5" title="Deep Linking"></button><button class="nav-dot" data-target="module-6" title="Backup"></button><button class="nav-dot" data-target="module-7" title="Entry Points"></button></div></div></nav>
+
+<!-- HERO -->
+<section class="module" id="module-intro" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">The Bridge</h1><p class="module-subtitle">How one codebase adapts to Android and iOS &mdash; conditional compilation, custom handlers, notifications, deep linking, and backup/restore.</p></header>
+    <div class="module-body"><section class="screen animate-in"><p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px">Most of the app's code is shared between Android and iOS. But some things &mdash; notification channels, deep link intent filters, gesture handlers &mdash; require platform-specific code. This course shows how the bridge between shared and platform code works.</p></section></div>
+  </div>
+</section>
+
+<!-- MODULE 1: CONDITIONAL COMPILATION -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">Conditional Compilation</h1><p class="module-subtitle">A choose-your-own-adventure book &mdash; the compiler picks which pages to include based on the target platform.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The #if directive</h2><p><span class="term" data-definition="Conditional compilation uses #if/#elif/#endif directives to include or exclude code blocks at compile time. When building for Android, only #if ANDROID blocks are included. When building for iOS, only #elif IOS blocks are included. The other platform's code doesn't exist in the final app.">Conditional compilation</span> lets you write platform-specific code in shared files:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-comment">#if ANDROID</span>
+    PrayerApp.Platforms.Android
+        .Handlers
+        .<span class="code-type">TextInputTimePickerHandler</span>
+        .<span class="code-function">Configure</span>();
+<span class="code-comment">#elif IOS</span>
+    PrayerApp.Platforms.iOS
+        .Handlers
+        .<span class="code-type">EnglishLocaleTimePickerHandler</span>
+        .<span class="code-function">Configure</span>();
+<span class="code-comment">#endif</span></code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><strong>If building for Android:</strong> register the Android time picker handler (forces text-input mode for locale safety).</p><p class="tl"><strong>If building for iOS:</strong> register the iOS time picker handler (forces English locale for AM/PM display).</p><p class="tl">Each platform has its own quirk that needs a custom fix. The <code class="inline">#if</code> ensures only the relevant fix is included.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/MauiProgram.cs</code> &mdash; lines 103&ndash;107</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2: CUSTOM HANDLERS -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">Custom Handlers</h1><p class="module-subtitle">A tailor altering off-the-rack clothing &mdash; adjusting generic controls to fit each platform's quirks.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Why handlers exist</h2><p>A <span class="term" data-definition="A handler is a class that maps a cross-platform MAUI control to its native platform equivalent. The TimePicker handler maps the MAUI TimePicker to Android's native time picker or iOS's UIDatePicker. Custom handlers let you modify this mapping to fix platform-specific bugs or quirks.">handler</span> connects a cross-platform MAUI control to its native implementation. The default handler works most of the time, but sometimes you need to fix a platform quirk:</p>
+        <div class="icon-rows stagger-children">
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-5)">&#x1F4F1;</div><div><strong>TextInputTimePickerHandler</strong> (Android)<p>Forces the time picker to use text input mode instead of the clock dial. Fixes locale-related formatting bugs.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-2)">&#x1F34E;</div><div><strong>EnglishLocaleTimePickerHandler</strong> (iOS)<p>Forces English locale on the time picker so AM/PM displays correctly regardless of device language.</p></div></div>
+          <div class="icon-row animate-in"><div class="icon-circle" style="background:var(--color-actor-3)">&#x1F4C4;</div><div><strong>ModalPageSheetHandler</strong> (iOS)<p>Customizes how modal pages slide up &mdash; using sheet-style presentation for a more native feel.</p></div></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The Switch thumb color fix</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code>SwitchHandler.Mapper
+    .<span class="code-function">AppendToMapping</span>(
+        <span class="code-string">"SyncInitialThumbColor"</span>,
+        (handler, view) =>
+{
+    <span class="code-keyword">if</span> (view <span class="code-keyword">is</span> <span class="code-type">Switch</span> sw && sw.IsToggled)
+    {
+        VisualStateManager
+            .<span class="code-function">GoToState</span>(sw, <span class="code-string">"On"</span>);
+    }
+});</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Add extra behavior to every Switch control's mapping.</p><p class="tl">"SyncInitialThumbColor" is just a label for this customization.</p><p class="tl">If the switch starts already toggled on, manually trigger the "On" visual state. Without this, the thumb color doesn't match the style until the user physically toggles the switch.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/MauiProgram.cs</code> &mdash; lines 111&ndash;118</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3: PLATFORM SERVICES -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">03</span><h1 class="module-title">Platform Services</h1><p class="module-subtitle">Embassy translators &mdash; shared code speaks through platform-specific translators using a common language.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">One interface, two implementations</h2><p>Some features need native APIs. The pattern: define an <span class="term" data-definition="A platform service uses a shared interface with platform-specific implementations. IOrientationService defines the contract. OrientationService in Platforms/Android/ uses Android APIs. OrientationService in Platforms/iOS/ uses iOS APIs. DI registration picks the right one based on the build target.">interface</span> in shared code, implement it separately for each platform:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-comment">#if ANDROID</span>
+    builder.Services.<span class="code-function">AddSingleton</span>&lt;
+        <span class="code-type">IOrientationService</span>,
+        Platforms.Android.<span class="code-type">OrientationService</span>&gt;();
+    builder.Services.<span class="code-function">AddSingleton</span>&lt;
+        <span class="code-type">IColorPickerService</span>,
+        Platforms.Android.<span class="code-type">ColorPickerService</span>&gt;();
+<span class="code-comment">#elif IOS</span>
+    builder.Services.<span class="code-function">AddSingleton</span>&lt;
+        <span class="code-type">IOrientationService</span>,
+        Platforms.iOS.<span class="code-type">OrientationService</span>&gt;();
+    builder.Services.<span class="code-function">AddSingleton</span>&lt;
+        <span class="code-type">IColorPickerService</span>,
+        Platforms.iOS.<span class="code-type">ColorPickerService</span>&gt;();
+<span class="code-comment">#endif</span></code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><strong>Android build:</strong> register the Android versions of orientation and color picker services.</p><p class="tl"><strong>iOS build:</strong> register the iOS versions instead.</p><p class="tl">The rest of the app just asks for <code class="inline">IOrientationService</code> &mdash; it doesn't know or care which platform it's on. The DI container handles the translation.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/MauiProgram.cs</code> &mdash; lines 160&ndash;166</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4: NOTIFICATIONS -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">Local Notifications</h1><p class="module-subtitle">A personal alarm clock collection &mdash; each prayer has its own clock with its own recurrence schedule.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">How prayer reminders work</h2><p>When a user enables notifications for a prayer, the app schedules <span class="term" data-definition="A local notification is a push notification that comes from the device itself, not a server. The app schedules it with the OS, specifying when to fire and what message to show. Plugin.LocalNotification handles the cross-platform scheduling.">local notifications</span> based on the prayer's frequency:</p>
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-1)"><h4 class="pattern-title">Daily</h4><p class="pattern-desc">One repeating notification. Fire at the set time every day.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-2)"><h4 class="pattern-title">Weekly</h4><p class="pattern-desc">Repeats on a specific day of the week at the set time.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-3)"><h4 class="pattern-title">Monthly</h4><p class="pattern-desc">12 individual one-shot notifications (one per month) &mdash; Android workaround for missing native monthly repeat.</p></div>
+          <div class="pattern-card animate-in" style="border-top:3px solid var(--color-actor-4)"><h4 class="pattern-title">One Time</h4><p class="pattern-desc">Single notification that fires once and is done.</p></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The scheduling code</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public async</span> <span class="code-type">Task</span> <span class="code-function">ScheduleAsync</span>(
+    <span class="code-type">Prayer</span> prayer)
+{
+    <span class="code-keyword">if</span> (!_isNotificationsAllowed())
+        <span class="code-keyword">return</span>;
+
+    _center.<span class="code-function">Cancel</span>(prayer.Id);
+    _center.<span class="code-function">CancelMonthly</span>(prayer.Id);
+    <span class="code-comment">// ... schedule based on frequency</span>
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Schedule a notification for this prayer.</p><p class="tl">First check: are notifications even allowed? (The user can disable them in settings.)</p><p class="tl">Cancel any existing notifications for this prayer &mdash; both regular and monthly variants. We cancel before rescheduling because the frequency may have changed.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/NotificationService.cs</code> &mdash; lines 37&ndash;57</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5: DEEP LINKING -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">Deep Linking</h1><p class="module-subtitle">A smart postal service &mdash; small prayers travel as links, large ones travel as file attachments, and both arrive at the same mailbox.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">How sharing works</h2><p>The share system uses a three-tier approach, automatically choosing the best delivery method based on the prayer's size:</p>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>User taps Share</strong><p>The app serializes the prayer to JSON, then <span class="term" data-definition="Gzip compression shrinks data by finding repeated patterns and replacing them with shorter codes. Think of vacuum-sealing a sweater for a suitcase &mdash; same sweater, much smaller. The app compresses the prayer JSON before encoding it, reducing URL length by about 60%.">gzip-compresses</span> it to shrink the data by about 60%. The compressed bytes are then encoded as <span class="term" data-definition="Base64 is a way to encode binary data as printable text characters. It's commonly used to embed data in URLs. The prayer's JSON is converted to base64 so it can be safely included in a URL without breaking special characters.">base64</span> with a <code class="inline">z.</code> prefix that tells the receiver &ldquo;this data is compressed.&rdquo;</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>Size check</strong><p>If the URL is under 1,800 characters, share it as a link: <code class="inline">https://practicingprayerapp.com/share/r?v=2&amp;d=z.{compressed}</code>. If the prayer is too large (many requests, long notes), the URL would break in text messages &mdash; so the app creates a <code class="inline">.prayercard</code> file instead.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>OS share sheet opens</strong><p>For links: the user picks a recipient &mdash; text message, email, etc. A plain-text summary is included as fallback. For files: any app that accepts file attachments (email, messaging, AirDrop).</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">4</div><div class="step-body"><strong>Recipient taps the link or opens the file</strong><p>If they have the app, it opens directly via <span class="term" data-definition="App Links (Android) and Universal Links (iOS) are URLs that open a specific app instead of a browser. The app registers ownership of a URL pattern with the OS. When someone taps a matching URL, the OS opens the app instead of the browser. This requires domain verification.">App Links / Universal Links</span>. The app checks for the <code class="inline">z.</code> prefix to know the data is compressed, decompresses it, and imports the prayer. Files contain the same compressed data &mdash; just delivered as an attachment instead of a URL.</p></div></div>
+        </div>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">Version compatibility</strong><p>The <code class="inline">v=2</code> parameter in the URL tells the receiving app which format to expect. If a future version (<code class="inline">v=3</code>) adds new features, older apps will show a friendly &ldquo;Please update the app&rdquo; message instead of crashing on data they can&rsquo;t understand.</p></div></div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Android intent filters</h2><p>The app registers <em>two</em> entry points with Android &mdash; one for URLs and one for files:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE &mdash; URL handler</span><pre><code>[<span class="code-function">IntentFilter</span>(
+    <span class="code-keyword">new</span>[] { Intent.ActionView },
+    Categories = <span class="code-keyword">new</span>[] {
+        Intent.CategoryDefault,
+        Intent.CategoryBrowsable },
+    DataScheme = <span class="code-string">"https"</span>,
+    DataHost = <span class="code-string">"practicingprayerapp.com"</span>,
+    DataPathPrefix = <span class="code-string">"/share"</span>,
+    AutoVerify = <span class="code-keyword">true</span>)]</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Tell Android: &ldquo;when someone taps a URL that starts with https://practicingprayerapp.com/share, open this app.&rdquo;</p><p class="tl"><span class="term" data-definition="AutoVerify means Android will check the domain to confirm this app really owns those URLs. The domain must host a Digital Asset Links file (.well-known/assetlinks.json) that lists the app's signing certificate. Without verification, the user gets a chooser instead of direct app opening.">AutoVerify</span> = true means Android checks the domain to confirm this app really owns those URLs.</p></div></div></div>
+        <div class="translation-block" style="margin-top:var(--space-4)"><div class="translation-code"><span class="translation-label">CODE &mdash; File handler</span><pre><code>[<span class="code-function">IntentFilter</span>(
+    <span class="code-keyword">new</span>[] { Intent.ActionView },
+    Categories = <span class="code-keyword">new</span>[] {
+        Intent.CategoryDefault,
+        Intent.CategoryBrowsable },
+    DataMimeType = <span class="code-string">"application/octet-stream"</span>,
+    DataScheme = <span class="code-string">"content"</span>)]</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Tell Android: &ldquo;when someone opens a <code class="inline">.prayercard</code> file, this app can handle it too.&rdquo;</p><p class="tl">This is the second front door &mdash; the same DeepLinkService processes both URLs and files, so the import experience is identical either way.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Platforms/Android/MainActivity.cs</code> &mdash; lines 12&ndash;31</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Handling real-world messiness</h2>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">URL cleanup</strong><p>When you share a link via text message, the messaging app sometimes adds extra characters when encoding the URL &mdash; like smudges on a photocopied letter. The app trims these artifacts before trying to decode the data, so sharing works reliably across different messaging platforms.</p></div></div>
+        <div class="callout callout-info" style="margin-top:var(--space-4)"><div class="callout-icon">&#x1F50D;</div><div class="callout-content"><strong class="callout-title">Duplicate detection</strong><p>When importing a shared prayer, the app checks whether you already have it (by matching the title and notes). If it finds a match, the button changes from &ldquo;Save&rdquo; to &ldquo;Save Again&rdquo; and shows a notice. This prevents accidental duplicates without blocking you from intentionally re-importing.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 6: BACKUP -->
+<section class="module" id="module-6" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">Backup &amp; Restore</h1><p class="module-subtitle">A heart transplant in three stages &mdash; old DB out, new DB in, verify heartbeat.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Export: creating a backup</h2>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>Close the database</strong><p>Run a <span class="term" data-definition="WAL (Write-Ahead Log) is a SQLite journaling mode that improves performance. Data is written to a separate .wal file first, then merged into the main .db file during checkpoints. CloseAsync forces a checkpoint so all data is in the main .db file before backup.">WAL checkpoint</span> and close the connection so all data is in the main .db file.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>Read the DB bytes</strong><p>While the connection is closed (just milliseconds), read the entire database file into memory.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>Reopen immediately</strong><p>Reinitialize the database connection so the app keeps working.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">4</div><div class="step-body"><strong>ZIP and share</strong><p>Package the DB bytes into a .pcrd file (which is a ZIP) and open the OS share sheet.</p></div></div>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The export code</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">await</span> _dbService.<span class="code-function">CloseAsync</span>();
+
+<span class="code-type">byte</span>[] dbBytes = <span class="code-keyword">await</span>
+    File.<span class="code-function">ReadAllBytesAsync</span>(_dbPath);
+
+<span class="code-keyword">await</span> _dbService
+    .<span class="code-function">ReinitializeAsync</span>(_dbPath);</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Shut down the database connection cleanly (forces WAL data into the main file).</p><p class="tl">Read the entire database file into memory as raw bytes.</p><p class="tl">Reopen the database immediately &mdash; the app is only "offline" for milliseconds.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/BackupService.cs</code> &mdash; lines 42&ndash;48</p>
+        <div class="callout callout-warning"><div class="callout-icon">&#x26A0;&#xFE0F;</div><div class="callout-content"><strong class="callout-title">Why WAL checkpoint matters</strong><p>SQLite's WAL mode writes changes to a separate file first. If you backup the .db file without checkpointing, you'll miss the most recent changes. The CloseAsync call forces all WAL data into the main file before we read it.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 7: ENTRY POINTS -->
+<section class="module" id="module-7" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">07</span><h1 class="module-title">Entry Points</h1><p class="module-subtitle">The front doors of two houses &mdash; Android's MainActivity and iOS's AppDelegate each welcome visitors in their own way.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">Android: MainActivity</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code>[<span class="code-function">Activity</span>(
+    Theme = <span class="code-string">"@style/Maui.SplashTheme"</span>,
+    MainLauncher = <span class="code-keyword">true</span>,
+    LaunchMode = LaunchMode.SingleTop,
+    ScreenOrientation =
+        ScreenOrientation.Portrait)]
+<span class="code-keyword">public class</span> <span class="code-type">MainActivity</span>
+    : <span class="code-type">MauiAppCompatActivity</span>
+{ }</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This is the <span class="term" data-definition="An Activity is Android's fundamental UI unit. MainActivity is the app's entry point &mdash; the first thing Android creates when the app launches. It shows the splash screen, then the MAUI shell takes over. Attributes on the class configure its behavior.">Activity</span> that Android launches first.</p><p class="tl"><strong>MainLauncher = true</strong> means this is the app icon's entry point.</p><p class="tl"><strong>SingleTop</strong> prevents duplicate activity stacks when a deep link arrives while the app is open.</p><p class="tl"><strong>Portrait</strong> locks the orientation &mdash; no landscape mode.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Platforms/Android/MainActivity.cs</code> &mdash; lines 8&ndash;24</p></section>
+
+      <section class="screen animate-in" id="quiz-m7"><h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="bq1" data-correct="opt-c" data-explain-correct="Conditional compilation (#if ANDROID / #elif IOS / #endif) includes only the relevant platform's code in each build. The Android build only sees the Android handler; the iOS build only sees the iOS handler." data-explain-incorrect="Think about how the app can have Android-specific and iOS-specific code in the same file. The #if directive tells the compiler which sections to include based on the build target."><h3 class="quiz-question">How does MauiProgram.cs register different handlers for Android vs iOS?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It checks the device OS at runtime and picks the right handler</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>Separate MauiProgram files exist for each platform</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>#if ANDROID / #elif IOS directives include only the relevant code at compile time</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m7')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m7')">Try Again</button>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Course complete</h2><p style="font-size:var(--text-lg)">You now understand how the app bridges shared and platform-specific code: conditional compilation, custom handlers, platform services via DI, local notifications, deep linking with App Links, and atomic backup/restore.</p>
+        <div class="callout callout-accent" style="margin-top:var(--space-8)"><div class="callout-icon">&#x1F389;</div><div class="callout-content"><strong class="callout-title">What's next</strong><p><strong>Course 7: The Safety Net</strong> &mdash; the final course &mdash; covers how automated tests, mocking, and CI/CD keep the app reliable.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}})},{rootMargin:'0px 0px -10% 0px',threshold:0.1});
+document.querySelectorAll('.animate-in').forEach(function(el){observer.observe(el)});
+document.querySelectorAll('.stagger-children').forEach(function(p){Array.from(p.children).forEach(function(c,i){c.style.setProperty('--stagger-index',i)})});
+var pb=document.getElementById('progress-bar');
+window.addEventListener('scroll',function(){requestAnimationFrame(function(){var s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;pb.style.width=(h>0?(s/h)*100:0)+'%'})},{passive:true});
+var dots=document.querySelectorAll('.nav-dot');dots.forEach(function(d){d.addEventListener('click',function(){var t=document.getElementById(d.dataset.target);if(t)t.scrollIntoView({behavior:'smooth'})})});
+var mObs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var n=e.target.id.replace('module-','');dots.forEach(function(d){var dn=d.dataset.target.replace('module-','');if(dn===n)d.classList.add('current');else{d.classList.remove('current');if(parseInt(dn)<parseInt(n))d.classList.add('visited')}})}})},{rootMargin:'-30% 0px -30% 0px',threshold:0});
+document.querySelectorAll('.module[id^="module-"]').forEach(function(m){if(m.id!=='module-intro')mObs.observe(m)});
+var allM=Array.from(document.querySelectorAll('.module'));document.addEventListener('keydown',function(e){if(['INPUT','TEXTAREA'].indexOf(e.target.tagName)!==-1)return;if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();var c=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c<allM.length-1)allM[c+1].scrollIntoView({behavior:'smooth'})}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();var c2=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c2>0)allM[c2-1].scrollIntoView({behavior:'smooth'})}});
+var at=null;function pt(term,tip){var r=term.getBoundingClientRect(),tw=Math.min(320,window.innerWidth*0.8);tip.style.width=tw+'px';var l=r.left+r.width/2-tw/2;l=Math.max(8,Math.min(l,window.innerWidth-tw-8));tip.style.left=l+'px';document.body.appendChild(tip);var th=tip.offsetHeight;if(r.top-th-8<0){tip.style.top=(r.bottom+8)+'px';tip.classList.add('flip')}else{tip.style.top=(r.top-th-8)+'px';tip.classList.remove('flip')}}
+document.querySelectorAll('.term').forEach(function(t){var tip=document.createElement('span');tip.className='term-tooltip';tip.textContent=t.dataset.definition;t.addEventListener('mouseenter',function(){if(at&&at!==tip){at.classList.remove('visible');at.remove()}pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip});t.addEventListener('mouseleave',function(){tip.classList.remove('visible');setTimeout(function(){if(!tip.classList.contains('visible'))tip.remove()},150);at=null});t.addEventListener('click',function(e){e.stopPropagation();if(at&&at!==tip){at.classList.remove('visible');at.remove()}if(tip.classList.contains('visible')){tip.classList.remove('visible');tip.remove();at=null}else{pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip}})});
+document.addEventListener('click',function(){if(at){at.classList.remove('visible');at.remove();at=null}});
+window.selectOption=function(btn){var b=btn.closest('.quiz-question-block');if(b.querySelector('.quiz-option[disabled]'))return;b.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected')});btn.classList.add('selected')};
+function sf(f,ok,txt){while(f.firstChild)f.removeChild(f.firstChild);var s=document.createElement('strong');s.textContent=ok?'Exactly! ':'Not quite. ';f.appendChild(s);f.appendChild(document.createTextNode(txt));f.className='quiz-feedback show '+(ok?'success':'error')}
+window.checkQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-question-block').forEach(function(q){var sel=q.querySelector('.quiz-option.selected'),fb=q.querySelector('.quiz-feedback'),cv=q.dataset.correct;if(!sel){fb.textContent='Pick an answer first!';fb.className='quiz-feedback show warning';return}if(sel.dataset.value===cv){sel.classList.add('correct');sf(fb,true,q.dataset.explainCorrect)}else{sel.classList.add('incorrect');q.querySelector('[data-value="'+cv+'"]').classList.add('correct');sf(fb,false,q.dataset.explainIncorrect)}q.querySelectorAll('.quiz-option').forEach(function(o){o.disabled=true})})};
+window.resetQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected','correct','incorrect');o.disabled=false});c.querySelectorAll('.quiz-feedback').forEach(function(f){f.className='quiz-feedback'})};
+})();
+</script>
+</body>
+</html>

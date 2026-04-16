@@ -23,6 +23,7 @@ namespace PrayerApp.ViewModels
         private readonly IOnboardingService _onboardingService;
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
+        private readonly IBoxService _boxService;
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
@@ -35,6 +36,9 @@ namespace PrayerApp.ViewModels
         #region Properties
 
         public string Identifier => _prayerCard.Id.ToString();
+
+        /// <summary>Backing model for batch operations (e.g., multi-select move).</summary>
+        internal PrayerCard Card => _prayerCard;
 
         public int Id
         {
@@ -96,6 +100,7 @@ namespace PrayerApp.ViewModels
 
         public bool IsSystem => _prayerCard.IsSystem;
         public bool IsImported => _prayerCard.IsImported;
+        public int BoxId => _prayerCard.BoxId;
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
         public bool CanShare => !IsSystem && ActivePrayerCount > 0;
@@ -131,6 +136,13 @@ namespace PrayerApp.ViewModels
             set => SetProperty(ref _isHighlighted, value);
         }
 
+        private bool _isMultiSelected;
+        public bool IsMultiSelected
+        {
+            get => _isMultiSelected;
+            set => SetProperty(ref _isMultiSelected, value);
+        }
+
         private int _activePrayerCount;
         public int ActivePrayerCount
         {
@@ -151,16 +163,18 @@ namespace PrayerApp.ViewModels
 
         /// <summary>
         /// Composed accessible label for the card header. VoiceOver reads:
-        /// "Quick Add, 3 prayers, Favorited, Collapsed".
+        /// "Quick Add, 3 prayers, Favorited, Imported, Collapsed".
         /// </summary>
         public string AccessibleCardHeader
         {
             get
             {
                 var desc = Title;
+                if (IsSystem) desc += ", System";
                 if (!IsExpanded && ActivePrayerCount > 0)
                     desc += $", {ActivePrayerCount} prayer{(ActivePrayerCount == 1 ? "" : "s")}";
                 if (IsFavorite) desc += ", Favorited";
+                if (IsImported) desc += ", Imported";
                 desc += IsExpanded ? ", Expanded" : ", Collapsed";
                 return desc;
             }
@@ -170,13 +184,23 @@ namespace PrayerApp.ViewModels
 
         public bool HasPrayers => Prayers.Count > 0;
 
+        /// <summary>Available collections for the picker on the card edit form. Excludes system boxes.</summary>
+        public ObservableCollection<BoxPickerItem> AvailableBoxes { get; } = new();
+
+        private BoxPickerItem? _selectedBox;
+        public BoxPickerItem? SelectedBox
+        {
+            get => _selectedBox;
+            set => SetProperty(ref _selectedBox, value);
+        }
+
         #endregion
 
         #region Constructors
 
         public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService)
+            IAccessibilityService accessibilityService, IBoxService boxService)
         {
             _prayerCard = new PrayerCard();
             _cardService = cardService;
@@ -184,6 +208,7 @@ namespace PrayerApp.ViewModels
             _onboardingService = onboardingService;
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
+            _boxService = boxService;
             SaveCommand = new AsyncRelayCommand(SaveAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsSystem);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync, () => !IsSystem);
@@ -200,7 +225,8 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>())
         { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
@@ -215,8 +241,8 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public PrayerCardViewModel(PrayerCard pc, ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService)
-            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService)
+            IAccessibilityService accessibilityService, IBoxService boxService)
+            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService, boxService)
         {
             _prayerCard = pc;
             LoadActivePrayerCountAsync().SafeFireAndForget();
@@ -249,6 +275,7 @@ namespace PrayerApp.ViewModels
         private async Task SaveAsync()
         {
             bool isNew = _prayerCard.Id == 0;
+            _prayerCard.BoxId = _selectedBox?.BoxId ?? 0;
             await _cardService.SaveCardAsync(_prayerCard);
             _originalTitle = Title; // Reset dirty state before navigation
             if (isNew)
@@ -325,10 +352,11 @@ namespace PrayerApp.ViewModels
         {
             if (_prayerCard.IsSystem) return;
             var allPrayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
-            var activePrayers = allPrayers.Where(p => !p.IsAnswered).ToList();
+            var activePrayers = allPrayers
+                .Where(p => !p.IsAnswered && !string.IsNullOrWhiteSpace(p.Title))
+                .ToList();
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
-            var text = deepLinkService.BuildCardShareText(_prayerCard, activePrayers);
-            await Share.RequestAsync(new ShareTextRequest { Title = _prayerCard.Title, Text = text });
+            await deepLinkService.ShareCardAsync(_prayerCard, activePrayers);
             _onboardingService.Advance();
         }
 
@@ -371,6 +399,25 @@ namespace PrayerApp.ViewModels
 
             _originalTitle = _prayerCard.Title ?? string.Empty;
             RefreshProperties();
+            await LoadBoxPickerAsync();
+        }
+
+        public async Task LoadBoxPickerAsync()
+        {
+            var boxes = await _boxService.GetBoxesAsync();
+            AvailableBoxes.Clear();
+
+            // "Loose Cards" (no collection) always first
+            var looseCards = new BoxPickerItem(0, BoxStrings.Unorganized);
+            AvailableBoxes.Add(looseCards);
+
+            // User-created boxes only (no System/Archived)
+            foreach (var box in boxes.Where(b => !b.IsSystem))
+                AvailableBoxes.Add(new BoxPickerItem(box.Id, box.Name));
+
+            // Set selection to match current card's BoxId
+            SelectedBox = AvailableBoxes.FirstOrDefault(b => b.BoxId == _prayerCard.BoxId)
+                          ?? looseCards;
         }
 
         public void Reload()
@@ -385,6 +432,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(IsFavorite));
             OnPropertyChanged(nameof(IsSystem));
             OnPropertyChanged(nameof(IsImported));
+            OnPropertyChanged(nameof(BoxId));
             OnPropertyChanged(nameof(IsNew));
             OnPropertyChanged(nameof(CanDelete));
             OnPropertyChanged(nameof(CanShare));
@@ -477,5 +525,28 @@ namespace PrayerApp.ViewModels
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Lightweight DTO for the Collection picker on the card edit form.
+    /// Equals/GetHashCode by BoxId so MAUI Picker SelectedItem binding works correctly.
+    /// </summary>
+    public class BoxPickerItem
+    {
+        public int BoxId { get; }
+        public string Name { get; }
+
+        public BoxPickerItem(int boxId, string name)
+        {
+            BoxId = boxId;
+            Name = name;
+        }
+
+        public override bool Equals(object? obj) =>
+            obj is BoxPickerItem other && BoxId == other.BoxId;
+
+        public override int GetHashCode() => BoxId.GetHashCode();
+
+        public override string ToString() => Name;
     }
 }

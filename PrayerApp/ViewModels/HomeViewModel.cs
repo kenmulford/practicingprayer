@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Windows.Input;
 
@@ -10,6 +11,7 @@ public class HomeViewModel : ObservableObject
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
     private readonly ITagService _tagService;
+    private readonly IBoxService _boxService;
     private readonly INavigationService _navigationService;
     private readonly ISettings _settings;
 
@@ -25,6 +27,7 @@ public class HomeViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(HasOverdue));
                 OnPropertyChanged(nameof(OverdueHeadline));
+                OnPropertyChanged(nameof(OverdueAccessible));
             }
         }
     }
@@ -37,6 +40,10 @@ public class HomeViewModel : ObservableObject
         1 => "1 Overdue",
         _ => $"{OverdueCount} Overdue"
     };
+
+    public string OverdueAccessible => HasOverdue
+        ? $"Overdue prayers, {OverdueCount}. Tap to view overdue prayers."
+        : "All requests have been recently prayed for.";
 
     // ── Active card count metric ──────────────────────────────────────
 
@@ -51,6 +58,7 @@ public class HomeViewModel : ObservableObject
                 OnPropertyChanged(nameof(ActiveCardLabel));
                 OnPropertyChanged(nameof(HasActiveCards));
                 OnPropertyChanged(nameof(ActiveCardTapHint));
+                OnPropertyChanged(nameof(ActiveCardsAccessible));
             }
         }
     }
@@ -58,6 +66,10 @@ public class HomeViewModel : ObservableObject
     public string ActiveCardLabel => ActiveCardCount == 1 ? "Active Card" : "Active Cards";
     public bool HasActiveCards => ActiveCardCount > 0;
     public string ActiveCardTapHint => HasActiveCards ? "View Cards \u2192" : "Add a Card \u2192";
+
+    public string ActiveCardsAccessible => HasActiveCards
+        ? $"Active cards, {ActiveCardCount}. Tap to view prayer cards."
+        : "No active cards. Tap to create your first card.";
 
     // ── Unanswered prayer count metric ────────────────────────────────
 
@@ -72,6 +84,7 @@ public class HomeViewModel : ObservableObject
                 OnPropertyChanged(nameof(UnansweredLabel));
                 OnPropertyChanged(nameof(HasUnanswered));
                 OnPropertyChanged(nameof(UnansweredTapHint));
+                OnPropertyChanged(nameof(UnansweredAccessible));
             }
         }
     }
@@ -80,20 +93,32 @@ public class HomeViewModel : ObservableObject
     public bool HasUnanswered => UnansweredCount > 0;
     public string UnansweredTapHint => HasUnanswered ? "View Prayers \u2192" : "Quick Add \u2192";
 
+    public string UnansweredAccessible => HasUnanswered
+        ? $"Unanswered prayers, {UnansweredCount}. Tap to view prayers."
+        : "No prayers yet. Tap to add your first prayer.";
+
     // ── Last prayed date metric ───────────────────────────────────────
 
     private string _lastPrayedMonth = string.Empty;
     public string LastPrayedMonth
     {
         get => _lastPrayedMonth;
-        private set => SetProperty(ref _lastPrayedMonth, value);
+        private set
+        {
+            if (SetProperty(ref _lastPrayedMonth, value))
+                OnPropertyChanged(nameof(LastPrayedAccessible));
+        }
     }
 
     private string _lastPrayedDay = string.Empty;
     public string LastPrayedDay
     {
         get => _lastPrayedDay;
-        private set => SetProperty(ref _lastPrayedDay, value);
+        private set
+        {
+            if (SetProperty(ref _lastPrayedDay, value))
+                OnPropertyChanged(nameof(LastPrayedAccessible));
+        }
     }
 
     private bool _hasLastPrayed;
@@ -103,11 +128,44 @@ public class HomeViewModel : ObservableObject
         private set
         {
             if (SetProperty(ref _hasLastPrayed, value))
+            {
                 OnPropertyChanged(nameof(LastPrayedTapHint));
+                OnPropertyChanged(nameof(LastPrayedAccessible));
+            }
         }
     }
 
     public string LastPrayedTapHint => HasLastPrayed ? "Pray Now \u2192" : "Start Praying \u2192";
+
+    public string LastPrayedAccessible => HasLastPrayed
+        ? $"Last prayed, {LastPrayedMonth} {LastPrayedDay}."
+        : "Not yet prayed.";
+
+    // ── Answered on this date ─────────────────────────────────────────
+
+    private IReadOnlyList<Prayer> _answeredOnThisDate = Array.Empty<Prayer>();
+    public IReadOnlyList<Prayer> AnsweredOnThisDate
+    {
+        get => _answeredOnThisDate;
+        private set
+        {
+            if (SetProperty(ref _answeredOnThisDate, value))
+            {
+                OnPropertyChanged(nameof(HasAnsweredOnThisDate));
+                OnPropertyChanged(nameof(AnsweredOnThisDateAccessible));
+            }
+        }
+    }
+
+    public bool HasAnsweredOnThisDate => AnsweredOnThisDate.Count > 0;
+
+    public string AnsweredOnThisDateHeader =>
+        $"Answered prayers from {DateTime.Now:MMMM d}";
+
+    public string AnsweredOnThisDateAccessible =>
+        HasAnsweredOnThisDate
+            ? $"{AnsweredOnThisDateHeader}: {string.Join(", ", AnsweredOnThisDate.Select(p => p.Title))}"
+            : string.Empty;
 
     // ── Prayer Time readiness ─────────────────────────────────────────
 
@@ -125,6 +183,13 @@ public class HomeViewModel : ObservableObject
         private set => SetProperty(ref _hasTags, value);
     }
 
+    private bool _hasUserBoxesWithCards;
+    public bool HasUserBoxesWithCards
+    {
+        get => _hasUserBoxesWithCards;
+        private set => SetProperty(ref _hasUserBoxesWithCards, value);
+    }
+
     // ── Commands ──────────────────────────────────────────────────────
 
     public ICommand GoToOverdueCommand { get; }
@@ -134,11 +199,12 @@ public class HomeViewModel : ObservableObject
     // ── Constructors ──────────────────────────────────────────────────
 
     public HomeViewModel(IPrayerService prayerService, ICardService cardService,
-        ITagService tagService, INavigationService navigationService, ISettings settings)
+        ITagService tagService, IBoxService boxService, INavigationService navigationService, ISettings settings)
     {
         _prayerService = prayerService;
         _cardService = cardService;
         _tagService = tagService;
+        _boxService = boxService;
         _navigationService = navigationService;
         _settings = settings;
 
@@ -151,6 +217,7 @@ public class HomeViewModel : ObservableObject
         IPlatformApplication.Current!.Services.GetRequiredService<IPrayerService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
     { }
@@ -164,6 +231,7 @@ public class HomeViewModel : ObservableObject
             _prayerService.InvalidateCache();
             _cardService.InvalidateCache();
             _tagService.InvalidateCache();
+            _boxService.InvalidateCache();
 
             // Overdue
             var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
@@ -183,6 +251,14 @@ public class HomeViewModel : ObservableObject
             var tags = await _tagService.GetTagsAsync();
             HasTags = tags.Count > 0;
 
+            // User collections with active prayers (for Prayer Time scope)
+            var boxes = await _boxService.GetBoxesAsync();
+            var cards = await _cardService.GetCardsAsync();
+            var cardIdsWithPrayers = activePrayers.Select(p => p.PrayerCardId).ToHashSet();
+            HasUserBoxesWithCards = boxes
+                .Where(b => !b.IsSystem)
+                .Any(b => cards.Any(c => c.BoxId == b.Id && cardIdsWithPrayers.Contains(c.Id)));
+
             // Last prayed date components
             var lastDate = await _prayerService.GetLastInteractionDateAsync();
             if (lastDate is not null)
@@ -197,9 +273,15 @@ public class HomeViewModel : ObservableObject
                 LastPrayedDay = string.Empty;
                 HasLastPrayed = false;
             }
+
+            // Prayers answered on this date in prior years
+            AnsweredOnThisDate = await _prayerService.GetAnsweredOnThisDateAsync()
+                ?? Array.Empty<Prayer>();
+            OnPropertyChanged(nameof(AnsweredOnThisDateHeader));
         }
         catch (Exception ex)
         {
+            AnsweredOnThisDate = Array.Empty<Prayer>();
             System.Diagnostics.Debug.WriteLine($"Failed to load home dashboard: {ex.Message}");
         }
     }

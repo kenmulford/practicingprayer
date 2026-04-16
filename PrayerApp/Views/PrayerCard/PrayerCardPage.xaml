@@ -33,6 +33,22 @@
                                Placeholder="Card title"
                                SemanticProperties.Hint="Name or topic for this prayer card" />
 
+                        <!-- Collection picker (hidden for system cards) -->
+                        <VerticalStackLayout Spacing="4"
+                                             IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}">
+                            <Label Text="Collection" Style="{StaticResource FormLabel}" />
+                            <Border Style="{StaticResource PickerField}">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <Picker ItemsSource="{Binding AvailableBoxes}"
+                                            SelectedItem="{Binding SelectedBox}"
+                                            AutomationId="Card_Picker_Box"
+                                            SemanticProperties.Hint="Choose which collection this card belongs to"
+                                            HorizontalOptions="Fill" />
+                                    <Label Style="{StaticResource PickerIndicator}" />
+                                </Grid>
+                            </Border>
+                        </VerticalStackLayout>
+
                         <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
 
                         <!-- Delete Button — Save is in the navbar, Share is on the expanded card view -->

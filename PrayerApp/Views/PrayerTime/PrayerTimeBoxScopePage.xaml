@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.PrayerTime.PrayerTimeBoxScopePage"
+             x:DataType="viewModels:PrayerTimeBoxScopeViewModel"
+             Title="Select Collection"
+             SafeAreaEdges="All">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+
+            <Label Text="Pray by Collection"
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   SemanticProperties.HeadingLevel="Level1"
+                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+
+            <Label Text="Select a collection to pray through its cards."
+                   Style="{StaticResource MutedText}" />
+
+            <Border Style="{StaticResource PrayerCardBorder}"
+                    Padding="8">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Boxes}" Spacing="0">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:SelectableBox">
+                            <RadioButton Content="{Binding Box.Name}"
+                                         IsChecked="{Binding IsSelected}"
+                                         GroupName="BoxSelection"
+                                         Padding="8,10"
+                                         SemanticProperties.Description="{Binding Box.Name}" />
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        AutomationId="BoxScope_Btn_Cancel"
+                        Command="{Binding CancelCommand}"
+                        HorizontalOptions="Fill" />
+                <Button Grid.Column="1"
+                        Text="Start"
+                        AutomationId="BoxScope_Btn_Start"
+                        Command="{Binding StartCommand}"
+                        HorizontalOptions="Fill" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

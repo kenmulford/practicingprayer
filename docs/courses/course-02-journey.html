@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Journey — Following Data End-to-End | Practicing Prayer App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--color-bg:#FAF7F2;--color-bg-warm:#F5F0E8;--color-bg-code:#1E1E2E;--color-text:#2C2A28;--color-text-secondary:#6B6560;--color-text-muted:#9E9790;--color-border:#E5DFD6;--color-border-light:#EEEBE5;--color-surface:#FFFFFF;--color-surface-warm:#FDF9F3;--color-accent:#6B7D5A;--color-accent-hover:#5A6B4A;--color-accent-light:#EDF2E8;--color-accent-muted:#8FA37E;--color-success:#2D8B55;--color-success-light:#E8F5EE;--color-error:#C93B3B;--color-error-light:#FDE8E8;--color-info:#2A7B9B;--color-info-light:#E4F2F7;--color-actor-1:#6B7D5A;--color-actor-2:#2A7B9B;--color-actor-3:#7B6DAA;--color-actor-4:#D4A843;--color-actor-5:#D94F30;--font-display:'Bricolage Grotesque',Georgia,serif;--font-body:'DM Sans',-apple-system,sans-serif;--font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;--text-xs:0.75rem;--text-sm:0.875rem;--text-base:1rem;--text-lg:1.125rem;--text-xl:1.25rem;--text-2xl:1.5rem;--text-3xl:1.875rem;--text-4xl:2.25rem;--text-5xl:3rem;--text-6xl:3.75rem;--leading-tight:1.15;--leading-snug:1.3;--leading-normal:1.6;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;--space-16:4rem;--space-20:5rem;--content-width:800px;--content-width-wide:1000px;--nav-height:50px;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-full:9999px;--shadow-sm:0 1px 2px rgba(44,42,40,0.05);--shadow-md:0 4px 12px rgba(44,42,40,0.08);--shadow-lg:0 8px 24px rgba(44,42,40,0.1);--ease-out:cubic-bezier(0.16,1,0.3,1);--duration-fast:150ms;--duration-normal:300ms;--duration-slow:500ms;--stagger-delay:120ms}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-snap-type:y proximity;scroll-behavior:smooth}body{font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal);color:var(--color-text);background:var(--color-bg);background-image:radial-gradient(ellipse at 20% 50%,rgba(107,125,90,0.03) 0%,transparent 50%);-webkit-font-smoothing:antialiased}pre,code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:var(--radius-full)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,247,242,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-border-light);height:var(--nav-height)}.progress-bar{position:absolute;top:0;left:0;height:3px;background:var(--color-accent);width:0%}.nav-inner{max-width:var(--content-width-wide);margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-6)}.nav-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-sm)}.nav-dots{display:flex;gap:var(--space-3)}.nav-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--color-text-muted);background:transparent;cursor:pointer;transition:all var(--duration-fast);padding:0}.nav-dot.current{border-color:var(--color-accent);background:var(--color-accent);box-shadow:0 0 8px rgba(107,125,90,0.3)}.nav-dot.visited{background:var(--color-accent);border-color:var(--color-accent)}
+.module{min-height:100dvh;min-height:100vh;scroll-snap-align:start;padding:var(--space-16) var(--space-6);padding-top:calc(var(--nav-height) + var(--space-12))}.module-content{max-width:var(--content-width);margin:0 auto}.module-header{margin-bottom:var(--space-12)}.module-number{font-family:var(--font-display);font-weight:800;font-size:var(--text-6xl);color:var(--color-accent);opacity:0.15;line-height:var(--leading-tight)}.module-title{font-family:var(--font-display);font-weight:700;font-size:var(--text-4xl);line-height:var(--leading-tight);margin-top:calc(-1 * var(--space-4))}.module-subtitle{font-size:var(--text-lg);color:var(--color-text-secondary);margin-top:var(--space-3)}.screen{margin-bottom:var(--space-16)}.screen-heading{font-family:var(--font-display);font-weight:600;font-size:var(--text-2xl);margin-bottom:var(--space-6)}
+.animate-in{opacity:0;transform:translateY(20px);transition:opacity var(--duration-slow) var(--ease-out),transform var(--duration-slow) var(--ease-out)}.animate-in.visible{opacity:1;transform:translateY(0)}.stagger-children>.animate-in{transition-delay:calc(var(--stagger-index,0)*var(--stagger-delay))}
+.translation-block{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-md);margin:var(--space-8) 0}.translation-code{background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-6);font-family:var(--font-mono);font-size:var(--text-sm);line-height:1.7;position:relative;overflow-x:hidden}.translation-code pre,.translation-code code{white-space:pre-wrap;word-break:break-word;overflow-x:hidden}.translation-english{background:var(--color-surface-warm);padding:var(--space-6);font-size:var(--text-sm);line-height:1.7;border-left:3px solid var(--color-accent)}.translation-label{position:absolute;top:var(--space-2);right:var(--space-3);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.1em;opacity:0.5}.translation-english .translation-label{position:relative;top:auto;right:auto;display:block;color:var(--color-text-muted);margin-bottom:var(--space-3)}.tl{margin-bottom:var(--space-3);color:var(--color-text-secondary)}.tl:last-child{margin-bottom:0}
+.code-keyword{color:#CBA6F7}.code-string{color:#A6E3A1}.code-function{color:#89B4FA}.code-comment{color:#6C7086}.code-number{color:#FAB387}.code-property{color:#F9E2AF}.code-operator{color:#94E2D5}.code-type{color:#89DCEB}.code-tag{color:#F38BA8}.code-attr{color:#F9E2AF}
+.callout{display:flex;gap:var(--space-4);padding:var(--space-5);border-radius:var(--radius-md);margin:var(--space-8) 0}.callout-icon{font-size:1.5rem;flex-shrink:0}.callout-content{flex:1}.callout-title{display:block;margin-bottom:var(--space-2);font-weight:600}.callout-accent{background:var(--color-accent-light);border-left:4px solid var(--color-accent)}.callout-info{background:var(--color-info-light);border-left:4px solid var(--color-info)}.callout-warning{background:var(--color-error-light);border-left:4px solid var(--color-error)}
+.step-cards{display:flex;flex-direction:column;gap:var(--space-3);margin:var(--space-8) 0}.step-card{display:flex;align-items:flex-start;gap:var(--space-4);padding:var(--space-4) var(--space-5);background:var(--color-surface);border-radius:var(--radius-md);border-left:3px solid var(--color-accent);box-shadow:var(--shadow-sm)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--color-accent);color:white;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);flex-shrink:0}.step-body p{margin:var(--space-1) 0 0;color:var(--color-text-secondary);font-size:var(--text-sm)}
+.icon-rows{display:flex;flex-direction:column;gap:var(--space-4);margin:var(--space-8) 0}.icon-row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm)}.icon-row p{margin:0;color:var(--color-text-secondary);font-size:var(--text-sm)}.icon-circle{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;color:white}
+code.inline{font-family:var(--font-mono);font-size:var(--text-sm);background:var(--color-bg-code);color:#CBA6F7;padding:var(--space-1) var(--space-2);border-radius:4px}
+.quiz-container{margin:var(--space-8) 0}.quiz-question-block{margin-bottom:var(--space-8)}.quiz-question{font-family:var(--font-display);font-weight:600;font-size:var(--text-xl);margin-bottom:var(--space-4)}.quiz-options{display:flex;flex-direction:column;gap:var(--space-3)}.quiz-option{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:2px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface);cursor:pointer;width:100%;font-family:var(--font-body);font-size:var(--text-base);text-align:left}.quiz-option:hover{border-color:var(--color-accent-muted)}.quiz-option.selected{border-color:var(--color-accent);background:var(--color-accent-light)}.quiz-option.correct{border-color:var(--color-success);background:var(--color-success-light)}.quiz-option.incorrect{border-color:var(--color-error);background:var(--color-error-light)}.quiz-option-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--color-border);flex-shrink:0}.quiz-option.selected .quiz-option-radio{border-color:var(--color-accent);background:var(--color-accent);box-shadow:inset 0 0 0 3px white}.quiz-feedback{max-height:0;overflow:hidden;opacity:0;transition:max-height var(--duration-normal),opacity var(--duration-normal),padding var(--duration-normal);border-radius:var(--radius-sm);font-size:var(--text-sm)}.quiz-feedback.show{max-height:200px;opacity:1;padding:var(--space-3) var(--space-4);margin-top:var(--space-2)}.quiz-feedback.success{background:var(--color-success-light);color:#1a6b3a}.quiz-feedback.error{background:var(--color-error-light);color:#a32a2a}.quiz-feedback.warning{background:var(--color-accent-light);color:var(--color-text)}.quiz-check-btn,.quiz-reset-btn{padding:var(--space-3) var(--space-6);border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:600;font-size:var(--text-sm);cursor:pointer;margin-top:var(--space-4);margin-right:var(--space-3)}.quiz-check-btn{background:var(--color-accent);color:white}.quiz-check-btn:hover{background:var(--color-accent-hover)}.quiz-reset-btn{background:var(--color-surface);color:var(--color-text);border:2px solid var(--color-border)}
+.term{border-bottom:1.5px dashed var(--color-accent-muted);cursor:pointer;position:relative}.term:hover,.term.active{border-bottom-color:var(--color-accent);color:var(--color-accent)}.term-tooltip{position:fixed;background:var(--color-bg-code);color:#CDD6F4;padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:var(--font-body);line-height:var(--leading-normal);width:max(200px,min(320px,80vw));box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transition:opacity var(--duration-fast);z-index:10000}.term-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--color-bg-code)}.term-tooltip.visible{opacity:1}.term-tooltip.flip::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--color-bg-code)}
+/* Data flow animation */
+.flow-visual{margin:var(--space-8) 0;background:var(--color-surface);border-radius:var(--radius-md);padding:var(--space-6);box-shadow:var(--shadow-md)}.flow-layers{display:flex;flex-direction:column;gap:var(--space-3);align-items:center}.flow-layer{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-5);border-radius:var(--radius-sm);width:100%;max-width:420px;transition:all var(--duration-normal)}.flow-layer.active{box-shadow:0 0 0 3px var(--color-accent),0 0 16px rgba(107,125,90,0.2);transform:scale(1.03)}.flow-arrow{text-align:center;font-size:var(--text-lg);color:var(--color-text-muted);transition:color var(--duration-normal)}.flow-arrow.active{color:var(--color-accent)}.flow-label{text-align:center;font-size:var(--text-sm);color:var(--color-text-secondary);padding:var(--space-3);min-height:48px;transition:color var(--duration-normal)}.flow-label.active{color:var(--color-text);font-weight:600}.flow-controls{display:flex;gap:var(--space-3);justify-content:center;margin-top:var(--space-6)}.flow-controls button{padding:var(--space-2) var(--space-5);border-radius:var(--radius-sm);border:2px solid var(--color-border);background:var(--color-surface);font-family:var(--font-body);font-weight:600;cursor:pointer;font-size:var(--text-sm)}.flow-controls button:hover{border-color:var(--color-accent)}
+@media(max-width:768px){:root{--text-4xl:1.875rem;--text-6xl:3rem}.translation-block{grid-template-columns:1fr}.translation-english{border-left:none;border-top:3px solid var(--color-accent)}}
+@media(max-width:480px){:root{--text-4xl:1.5rem;--text-6xl:2.25rem}.module{padding:var(--space-8) var(--space-4)}}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="progress-bar" id="progress-bar"></div><div class="nav-inner"><span class="nav-title">Course 2: The Journey</span><div class="nav-dots"><button class="nav-dot" data-target="module-1" title="The Tap"></button><button class="nav-dot" data-target="module-2" title="ViewModel Responds"></button><button class="nav-dot" data-target="module-3" title="Service Steps In"></button><button class="nav-dot" data-target="module-4" title="Model Saves"></button><button class="nav-dot" data-target="module-5" title="Data Returns"></button><button class="nav-dot" data-target="module-6" title="Screen Updates"></button></div></div></nav>
+
+<!-- HERO -->
+<section class="module" id="module-intro" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">The Journey</h1><p class="module-subtitle">Follow one prayer card from the moment you tap "Add Card" to the moment it appears on screen &mdash; crossing every layer of the architecture.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><p style="font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px">This is the course where the architecture <em>clicks</em>. Instead of learning each layer in isolation, you'll trace a single action through all of them &mdash; seeing how Views, ViewModels, Services, Models, and the Database work together.</p></section>
+      <section class="screen animate-in"><h2 class="screen-heading">The full journey at a glance</h2>
+        <div class="flow-visual" id="flow-overview">
+          <div class="flow-layers" id="flow-layers">
+            <div class="flow-layer" id="fl-view" style="background:var(--color-accent-light);border:2px solid var(--color-accent)"><div class="icon-circle" style="background:var(--color-actor-1);width:32px;height:32px;font-size:0.9rem">&#x1F4F1;</div><strong>View</strong> &mdash; user taps "Add Card"</div>
+            <div class="flow-arrow" id="fa-1">&#x2193;</div>
+            <div class="flow-layer" id="fl-vm" style="background:var(--color-info-light);border:2px solid var(--color-info)"><div class="icon-circle" style="background:var(--color-actor-2);width:32px;height:32px;font-size:0.9rem">&#x1F3AF;</div><strong>ViewModel</strong> &mdash; command fires, calls service</div>
+            <div class="flow-arrow" id="fa-2">&#x2193;</div>
+            <div class="flow-layer" id="fl-svc" style="background:#F3EBF8;border:2px solid var(--color-actor-3)"><div class="icon-circle" style="background:var(--color-actor-3);width:32px;height:32px;font-size:0.9rem">&#x2699;&#xFE0F;</div><strong>Service</strong> &mdash; saves card, clears cache</div>
+            <div class="flow-arrow" id="fa-3">&#x2193;</div>
+            <div class="flow-layer" id="fl-model" style="background:#FDF6E3;border:2px solid var(--color-actor-4)"><div class="icon-circle" style="background:var(--color-actor-4);width:32px;height:32px;font-size:0.9rem">&#x1F4BE;</div><strong>Model</strong> &mdash; PrayerCard.SaveAsync()</div>
+            <div class="flow-arrow" id="fa-4">&#x2193;</div>
+            <div class="flow-layer" id="fl-db" style="background:var(--color-error-light);border:2px solid var(--color-actor-5)"><div class="icon-circle" style="background:var(--color-actor-5);width:32px;height:32px;font-size:0.9rem">&#x1F5C4;</div><strong>SQLite</strong> &mdash; INSERT INTO PrayerCard</div>
+          </div>
+          <div class="flow-label" id="flow-label">Click "Next Step" to trace the journey</div>
+          <div class="flow-controls"><button onclick="flowNext()">Next Step</button><button onclick="flowReset()">Restart</button></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 1: THE TAP -->
+<section class="module" id="module-1" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">01</span><h1 class="module-title">The User Taps "Add Card"</h1><p class="module-subtitle">Pressing a doorbell &mdash; the wire connects the button to the chime inside.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The button in XAML</h2><p>In the Prayer Cards page, there's a toolbar button bound to a <span class="term" data-definition="A command is an object that wraps a method. Instead of calling a method directly, XAML binds to a command. When the user taps the button, the command fires the method. This keeps the View (XAML) and the logic (ViewModel) separate.">command</span>:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-tag">&lt;ToolbarItem</span>
+    <span class="code-attr">Text</span>=<span class="code-string">"Add Card"</span>
+    <span class="code-attr">Command</span>=<span class="code-string">"{Binding NewCommand}"</span>
+    <span class="code-attr">Order</span>=<span class="code-string">"Primary"</span> /&gt;</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Put a button in the toolbar labeled "Add Card."</p><p class="tl">When tapped, fire the <strong>NewCommand</strong> from the ViewModel. The <span class="term" data-definition="Data binding connects a UI element to a property on the ViewModel. {Binding NewCommand} means 'when this button is tapped, look for NewCommand on whatever object is the page's data context.' The ViewModel is that data context.">binding</span> is the invisible wire between button and method.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Views/PrayerCard/PrayerCardsPage.xaml</code> &mdash; lines 15&ndash;16</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">How the command is wired</h2><p>In the ViewModel's <span class="term" data-definition="A constructor is a special method that runs when an object is created. It sets up the object's initial state. In ViewModels, the constructor creates commands and stores service references.">constructor</span>, the command is connected to a method:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-property">NewCommand</span> = <span class="code-keyword">new</span> <span class="code-type">AsyncRelayCommand</span>(
+    NewPrayerCardAsync);</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Create a new command that, when fired, runs the <strong>NewPrayerCardAsync</strong> method. <span class="term" data-definition="AsyncRelayCommand is a command from CommunityToolkit.Mvvm that wraps an async method. It handles the async/await plumbing and prevents double-taps (disables the button while the method is running).">AsyncRelayCommand</span> handles the async plumbing and prevents double-taps.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/ViewModels/PrayerCardsViewModel.cs</code> &mdash; line 135</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 2: VIEWMODEL RESPONDS -->
+<section class="module" id="module-2" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">02</span><h1 class="module-title">The ViewModel Responds</h1><p class="module-subtitle">A dispatcher at a taxi company &mdash; receives the request, picks the right driver.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The command method</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">private async</span> <span class="code-type">Task</span> <span class="code-function">NewPrayerCardAsync</span>()
+{
+    _onboardingService.<span class="code-function">Advance</span>();
+    <span class="code-keyword">await</span> _navigationService.<span class="code-function">GoToAsync</span>(
+        Routes.PrayerCardPage);
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">When the "Add Card" button is tapped, this method runs.</p><p class="tl">Advance the onboarding tutorial (if the user is being guided through first-time setup).</p><p class="tl">Navigate to the <strong>PrayerCardPage</strong> &mdash; the form where the user names their new card. The route name comes from <code class="inline">Routes.cs</code> (centralized constants).</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/ViewModels/PrayerCardsViewModel.cs</code> &mdash; lines 197&ndash;201</p>
+        <div class="callout callout-info"><div class="callout-icon">&#x1F50D;</div><div class="callout-content"><strong class="callout-title">The ViewModel never touches the UI directly</strong><p>Notice: the ViewModel doesn't open a page itself. It asks the <span class="term" data-definition="INavigationService is an interface that wraps Shell navigation. The ViewModel calls GoToAsync on the interface; the real implementation uses Shell.Current.GoToAsync. This abstraction lets you test ViewModels without needing an actual phone screen.">navigation service</span> to do it. This separation is the heart of MVVM &mdash; the ViewModel <em>decides</em>, the infrastructure <em>executes</em>.</p></div></div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">On the card detail page, the user saves</h2><p>After the user names the card and taps Save, the PrayerCardViewModel calls the <span class="term" data-definition="A service is a singleton class that manages business logic for a specific domain. CardService manages prayer cards: getting, saving, deleting, and caching them. Services sit between ViewModels (which handle UI logic) and Models (which handle database persistence).">card service</span>:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">await</span> _cardService.<span class="code-function">SaveCardAsync</span>(card);</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">Hand the card object to the card service and ask it to save. The ViewModel doesn't know <em>how</em> saving works &mdash; it just asks the service to handle it.</p></div></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 3: SERVICE STEPS IN -->
+<section class="module" id="module-3" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">03</span><h1 class="module-title">The Service Layer Steps In</h1><p class="module-subtitle">A warehouse manager &mdash; logs the new item, tosses the old inventory list, sends it to storage.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">SaveCardAsync in CardService</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public async</span> <span class="code-type">Task</span>&lt;<span class="code-type">PrayerCard</span>&gt; <span class="code-function">SaveCardAsync</span>(
+    <span class="code-type">PrayerCard</span> card)
+{
+    <span class="code-keyword">await</span> card.<span class="code-function">SaveAsync</span>();
+    _cache = <span class="code-keyword">null</span>;
+    <span class="code-keyword">return</span> card;
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">This method takes a prayer card and saves it.</p><p class="tl">Tell the card to save itself to the database (Active Record pattern &mdash; the model knows how to persist itself).</p><p class="tl"><strong>Throw away the cache.</strong> The old list of cards is now stale because we just added or changed one. Setting it to null forces the next read to go back to the database for fresh data.</p><p class="tl">Return the saved card (it now has an Id if it was new).</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/CardService.cs</code> &mdash; lines 57&ndash;62</p>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">The cache invalidation pattern</strong><p>This two-line pattern &mdash; <code class="inline">await save; _cache = null;</code> &mdash; appears in every write method of every service. It's the simplest form of <span class="term" data-definition="Cache invalidation means marking cached data as stale so the next read fetches fresh data. Setting _cache to null is a 'nuke it' strategy: throw away all cached data and rebuild from scratch on the next read. Simple and reliable.">cache invalidation</span>: "something changed, throw away what I remembered."</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 4: MODEL SAVES -->
+<section class="module" id="module-4" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">04</span><h1 class="module-title">The Model Saves Itself</h1><p class="module-subtitle">A self-addressed envelope &mdash; the model knows its own mailing address and drops itself in the mailbox.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">PrayerCard.SaveAsync()</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public async</span> <span class="code-type">Task</span> <span class="code-function">SaveAsync</span>()
+{
+    <span class="code-keyword">if</span> (Id == <span class="code-number">0</span>)
+    {
+        <span class="code-keyword">await</span> _dbService.<span class="code-function">InsertAsync</span>(<span class="code-keyword">this</span>);
+    }
+    <span class="code-keyword">else</span>
+    {
+        UpdatedAt = DateTime.Now;
+        <span class="code-keyword">await</span> _dbService.<span class="code-function">UpdateAsync</span>(<span class="code-keyword">this</span>);
+    }
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">The card saves itself. No external code needs to know how.</p><p class="tl">If the Id is 0, this card has never been saved &mdash; it's brand new. Insert it. The database assigns an Id automatically (<span class="term" data-definition="AutoIncrement means the database automatically assigns the next available number as the Id. The first card gets Id 1, the next gets 2, etc. You never set the Id manually.">AutoIncrement</span>).</p><p class="tl">Otherwise, this card already exists &mdash; update it. Stamp the current time first so we know when it was last changed.</p><p class="tl">The <code class="inline">_dbService</code> is the shared static reference set at startup (Course 0, Module 8). It talks to SQLite.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Models/PrayerCard.cs</code> &mdash; lines 75&ndash;88</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">What happens in SQLite</h2><p>The <span class="term" data-definition="SQLite is a lightweight database engine that runs entirely on the device. No server, no internet, no accounts. The entire database is a single file (prayer_app.db) stored in the app's private data folder.">SQLite</span> database receives an INSERT command and writes a new row to the PrayerCard table. The card now has a permanent home on disk.</p>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in"><div class="step-num">1</div><div class="step-body"><strong>InsertAsync runs the SQL</strong><p>sqlite-net-pcl generates: INSERT INTO PrayerCard (Title, IsSystem, BoxId, ...) VALUES (?, ?, ?, ...)</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">2</div><div class="step-body"><strong>AutoIncrement assigns an Id</strong><p>SQLite picks the next available number (e.g., 42) and sets it as the card's Id.</p></div></div>
+          <div class="step-card animate-in"><div class="step-num">3</div><div class="step-body"><strong>The Id flows back to the object</strong><p>sqlite-net-pcl reads the generated Id and sets it on the PrayerCard object. Now card.Id is 42.</p></div></div>
+        </div></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 5: DATA RETURNS -->
+<section class="module" id="module-5" style="background:var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">05</span><h1 class="module-title">The Data Comes Back</h1><p class="module-subtitle">A boomerang &mdash; the data goes out to storage and comes back through the same layers, triggering updates on each return pass.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The user navigates back</h2><p>After saving, the user goes back to the cards list. The cards page detects the return and calls <code class="inline">RefreshAsync()</code> on its ViewModel:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public async</span> <span class="code-type">Task</span> <span class="code-function">RefreshAsync</span>()
+{
+    _cardService.<span class="code-function">InvalidateCache</span>();
+    <span class="code-keyword">var</span> cards = <span class="code-keyword">await</span> _cardService
+        .<span class="code-function">GetCardsAsync</span>();
+    <span class="code-comment">// ... update the list ...</span>
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">The ViewModel's refresh method runs when returning to this page.</p><p class="tl">First, throw away the service's cached card list (because we just saved a new card).</p><p class="tl">Then ask the service for all cards. Since the cache was just cleared, this hits the database &mdash; and the database now includes our new card.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/ViewModels/PrayerCardsViewModel.cs</code> &mdash; lines 554&ndash;560</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">GetCardsAsync rebuilds the cache</h2>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public async</span> <span class="code-type">Task</span>&lt;<span class="code-type">IReadOnlyList</span>&lt;<span class="code-type">PrayerCard</span>&gt;&gt;
+    <span class="code-function">GetCardsAsync</span>()
+{
+    <span class="code-keyword">if</span> (_cache <span class="code-keyword">is not null</span>)
+        <span class="code-keyword">return</span> _cache;
+
+    <span class="code-keyword">var</span> list = <span class="code-keyword">await</span> PrayerCard.<span class="code-function">LoadAllAsync</span>();
+    _cache = <span class="code-keyword">new</span> <span class="code-type">ReadOnlyCollection</span>&lt;<span class="code-type">PrayerCard</span>&gt;(
+        list);
+    <span class="code-keyword">return</span> _cache;
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl">If the cache still exists, return it immediately &mdash; but we just cleared it.</p><p class="tl">So this time: go to the database and load ALL prayer cards. The new card is in there now.</p><p class="tl">Wrap the fresh list in a read-only wrapper and store it as the new cache for next time.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/Services/CardService.cs</code> &mdash; lines 16&ndash;26</p></section>
+    </div>
+  </div>
+</section>
+
+<!-- MODULE 6: SCREEN UPDATES -->
+<section class="module" id="module-6" style="background:var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in"><span class="module-number">06</span><h1 class="module-title">The Screen Updates</h1><p class="module-subtitle">A sports ticker tape &mdash; when the score changes, the display automatically scrolls to show the new result.</p></header>
+    <div class="module-body">
+      <section class="screen animate-in"><h2 class="screen-heading">The ViewModel rebuilds its sections</h2><p>After getting the fresh card list, the ViewModel creates <span class="term" data-definition="BoxSectionViewModel is a grouping container. The prayer cards page shows cards grouped by their collection (box). Each BoxSectionViewModel holds the cards for one box. When the list changes, the sections are rebuilt.">BoxSectionViewModels</span> &mdash; one per collection/box &mdash; and replaces the old list. XAML's <span class="term" data-definition="ObservableCollection is a special list that notifies the UI whenever items are added or removed. Regular lists are invisible to the UI &mdash; ObservableCollection sends 'hey, I changed!' signals that data binding picks up automatically.">ObservableCollection</span> notifies the UI that data changed:</p>
+        <div class="translation-block"><div class="translation-code"><span class="translation-label">CODE</span><pre><code><span class="code-keyword">public</span> <span class="code-type">ObservableCollection</span>&lt;<span class="code-type">BoxSectionViewModel</span>&gt;
+    <span class="code-property">BoxSections</span>
+{
+    <span class="code-keyword">get</span> => _boxSections;
+    <span class="code-keyword">private set</span> => <span class="code-function">SetProperty</span>(
+        <span class="code-keyword">ref</span> _boxSections, value);
+}</code></pre></div><div class="translation-english"><span class="translation-label">PLAIN ENGLISH</span><div class="translation-lines"><p class="tl"><strong>BoxSections</strong> is the list of card groups shown in the CollectionView.</p><p class="tl">When a new list is assigned, <code class="inline">SetProperty</code> fires a <span class="term" data-definition="PropertyChanged is an event that a ViewModel fires when a property's value changes. The XAML data binding system listens for this event. When it fires, the UI element updates its display automatically. This is how the screen stays in sync with the data.">PropertyChanged</span> event. The XAML binding hears it and refreshes the list on screen.</p></div></div></div>
+        <p style="font-size:var(--text-sm);color:var(--color-text-muted)">File: <code class="inline">PrayerApp/ViewModels/PrayerCardsViewModel.cs</code> &mdash; lines 35&ndash;39</p></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">The full round trip</h2>
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in" style="border-left-color:var(--color-actor-1)"><div class="step-num" style="background:var(--color-actor-1)">1</div><div class="step-body"><strong>View:</strong> User taps "Add Card"<p>XAML fires the bound NewCommand</p></div></div>
+          <div class="step-card animate-in" style="border-left-color:var(--color-actor-2)"><div class="step-num" style="background:var(--color-actor-2)">2</div><div class="step-body"><strong>ViewModel:</strong> Navigates to card form<p>User fills in title, taps Save</p></div></div>
+          <div class="step-card animate-in" style="border-left-color:var(--color-actor-3)"><div class="step-num" style="background:var(--color-actor-3)">3</div><div class="step-body"><strong>Service:</strong> Saves card, clears cache<p>CardService.SaveCardAsync runs card.SaveAsync(), sets _cache = null</p></div></div>
+          <div class="step-card animate-in" style="border-left-color:var(--color-actor-4)"><div class="step-num" style="background:var(--color-actor-4)">4</div><div class="step-body"><strong>Model:</strong> Persists to SQLite<p>PrayerCard.SaveAsync() calls _dbService.InsertAsync(this)</p></div></div>
+          <div class="step-card animate-in" style="border-left-color:var(--color-actor-4)"><div class="step-num" style="background:var(--color-actor-4)">5</div><div class="step-body"><strong>Return trip begins</strong><p>User navigates back, RefreshAsync fires</p></div></div>
+          <div class="step-card animate-in" style="border-left-color:var(--color-actor-3)"><div class="step-num" style="background:var(--color-actor-3)">6</div><div class="step-body"><strong>Service:</strong> Rebuilds cache from DB<p>GetCardsAsync hits the database (cache was cleared), gets fresh list including new card</p></div></div>
+          <div class="step-card animate-in" style="border-left-color:var(--color-actor-1)"><div class="step-num" style="background:var(--color-actor-1)">7</div><div class="step-body"><strong>View:</strong> New card appears<p>BoxSections updated, PropertyChanged fires, CollectionView refreshes, card visible</p></div></div>
+        </div>
+        <div class="callout callout-accent"><div class="callout-icon">&#x1F4A1;</div><div class="callout-content"><strong class="callout-title">The golden rule of data flow</strong><p>Data always flows <em>down</em> through the layers (View &rarr; ViewModel &rarr; Service &rarr; Model &rarr; DB) and <em>back up</em> the same path. No layer ever skips another. This predictability is what makes bugs findable &mdash; if data isn't showing up, check each layer in order.</p></div></div></section>
+
+      <section class="screen animate-in" id="quiz-m6"><h2 class="screen-heading">Check your understanding</h2>
+        <div class="quiz-container">
+          <div class="quiz-question-block" data-question="jq1" data-correct="opt-b" data-explain-correct="Setting _cache = null forces the next GetCardsAsync call to hit the database instead of returning stale data. Without this, the new card would be invisible until the app restarts." data-explain-incorrect="Think about what would happen if the cache still held the old list after a save. The next read would return the stale list, and the new card wouldn't appear."><h3 class="quiz-question">Why does CardService set <code class="inline">_cache = null</code> after saving a card?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>To free up memory on the device</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>To force the next read to fetch fresh data from the database</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>To prevent other services from reading the card</span></button></div><div class="quiz-feedback"></div></div>
+          <div class="quiz-question-block" data-question="jq2" data-correct="opt-c" data-explain-correct="The card checks its own Id. If it's 0, the card has never been saved (new), so it calls Insert. If it's not 0, the card already exists, so it calls Update. This is the Active Record pattern &mdash; the model manages its own persistence." data-explain-incorrect="Think about what distinguishes a brand-new card from one that's been saved before. The Id is 0 until the database assigns a number on first insert."><h3 class="quiz-question">How does SaveAsync know whether to INSERT (new) or UPDATE (existing)?</h3><div class="quiz-options"><button class="quiz-option" data-value="opt-a" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It checks a separate IsNew boolean flag</span></button><button class="quiz-option" data-value="opt-b" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>The service tells it which operation to use</span></button><button class="quiz-option" data-value="opt-c" onclick="selectOption(this)"><div class="quiz-option-radio"></div><span>It checks if Id is 0 (new) or non-zero (existing)</span></button></div><div class="quiz-feedback"></div></div>
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-m6')">Check Answers</button><button class="quiz-reset-btn" onclick="resetQuiz('quiz-m6')">Try Again</button>
+        </div></section>
+
+      <section class="screen animate-in"><h2 class="screen-heading">Course complete</h2><p style="font-size:var(--text-lg)">You've traced a single prayer card through every layer of the app &mdash; from button tap to database row and back to the screen. This is the pattern every feature follows.</p>
+        <div class="callout callout-accent" style="margin-top:var(--space-8)"><div class="callout-icon">&#x1F389;</div><div class="callout-content"><strong class="callout-title">What's next</strong><p><strong>Course 3: The Conversation</strong> dives deep into how components communicate &mdash; data binding, commands, property change notifications, navigation parameters, and value converters.</p></div></div></section>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+'use strict';
+var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}})},{rootMargin:'0px 0px -10% 0px',threshold:0.1});
+document.querySelectorAll('.animate-in').forEach(function(el){observer.observe(el)});
+document.querySelectorAll('.stagger-children').forEach(function(p){Array.from(p.children).forEach(function(c,i){c.style.setProperty('--stagger-index',i)})});
+var pb=document.getElementById('progress-bar');
+window.addEventListener('scroll',function(){requestAnimationFrame(function(){var s=window.scrollY,h=document.documentElement.scrollHeight-window.innerHeight;pb.style.width=(h>0?(s/h)*100:0)+'%'})},{passive:true});
+var dots=document.querySelectorAll('.nav-dot');
+dots.forEach(function(d){d.addEventListener('click',function(){var t=document.getElementById(d.dataset.target);if(t)t.scrollIntoView({behavior:'smooth'})})});
+var mObs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){var n=e.target.id.replace('module-','');dots.forEach(function(d){var dn=d.dataset.target.replace('module-','');if(dn===n)d.classList.add('current');else{d.classList.remove('current');if(parseInt(dn)<parseInt(n))d.classList.add('visited')}})}})},{rootMargin:'-30% 0px -30% 0px',threshold:0});
+document.querySelectorAll('.module[id^="module-"]').forEach(function(m){if(m.id!=='module-intro')mObs.observe(m)});
+var allM=Array.from(document.querySelectorAll('.module'));
+document.addEventListener('keydown',function(e){if(['INPUT','TEXTAREA'].indexOf(e.target.tagName)!==-1)return;if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();var c=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c<allM.length-1)allM[c+1].scrollIntoView({behavior:'smooth'})}if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();var c2=allM.findIndex(function(m){var r=m.getBoundingClientRect();return r.top>=-100&&r.top<window.innerHeight/2});if(c2>0)allM[c2-1].scrollIntoView({behavior:'smooth'})}});
+/* Tooltips */
+var at=null;
+function pt(term,tip){var r=term.getBoundingClientRect(),tw=Math.min(320,window.innerWidth*0.8);tip.style.width=tw+'px';var l=r.left+r.width/2-tw/2;l=Math.max(8,Math.min(l,window.innerWidth-tw-8));tip.style.left=l+'px';document.body.appendChild(tip);var th=tip.offsetHeight;if(r.top-th-8<0){tip.style.top=(r.bottom+8)+'px';tip.classList.add('flip')}else{tip.style.top=(r.top-th-8)+'px';tip.classList.remove('flip')}}
+document.querySelectorAll('.term').forEach(function(t){var tip=document.createElement('span');tip.className='term-tooltip';tip.textContent=t.dataset.definition;t.addEventListener('mouseenter',function(){if(at&&at!==tip){at.classList.remove('visible');at.remove()}pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip});t.addEventListener('mouseleave',function(){tip.classList.remove('visible');setTimeout(function(){if(!tip.classList.contains('visible'))tip.remove()},150);at=null});t.addEventListener('click',function(e){e.stopPropagation();if(at&&at!==tip){at.classList.remove('visible');at.remove()}if(tip.classList.contains('visible')){tip.classList.remove('visible');tip.remove();at=null}else{pt(t,tip);requestAnimationFrame(function(){tip.classList.add('visible')});at=tip}})});
+document.addEventListener('click',function(){if(at){at.classList.remove('visible');at.remove();at=null}});
+/* Quiz */
+window.selectOption=function(btn){var b=btn.closest('.quiz-question-block');if(b.querySelector('.quiz-option[disabled]'))return;b.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected')});btn.classList.add('selected')};
+function sf(f,ok,txt){while(f.firstChild)f.removeChild(f.firstChild);var s=document.createElement('strong');s.textContent=ok?'Exactly! ':'Not quite. ';f.appendChild(s);f.appendChild(document.createTextNode(txt));f.className='quiz-feedback show '+(ok?'success':'error')}
+window.checkQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-question-block').forEach(function(q){var sel=q.querySelector('.quiz-option.selected'),fb=q.querySelector('.quiz-feedback'),cv=q.dataset.correct;if(!sel){fb.textContent='Pick an answer first!';fb.className='quiz-feedback show warning';return}if(sel.dataset.value===cv){sel.classList.add('correct');sf(fb,true,q.dataset.explainCorrect)}else{sel.classList.add('incorrect');q.querySelector('[data-value="'+cv+'"]').classList.add('correct');sf(fb,false,q.dataset.explainIncorrect)}q.querySelectorAll('.quiz-option').forEach(function(o){o.disabled=true})})};
+window.resetQuiz=function(id){var c=document.getElementById(id);c.querySelectorAll('.quiz-option').forEach(function(o){o.classList.remove('selected','correct','incorrect');o.disabled=false});c.querySelectorAll('.quiz-feedback').forEach(function(f){f.className='quiz-feedback'})};
+/* Data flow animation */
+var flowSteps=[
+  {layer:'fl-view',arrow:null,label:'User taps "Add Card" in the toolbar'},
+  {layer:'fl-vm',arrow:'fa-1',label:'NewCommand fires \u2192 ViewModel navigates to card form'},
+  {layer:'fl-svc',arrow:'fa-2',label:'CardService.SaveCardAsync() runs card.SaveAsync() and clears cache'},
+  {layer:'fl-model',arrow:'fa-3',label:'PrayerCard.SaveAsync() calls _dbService.InsertAsync(this)'},
+  {layer:'fl-db',arrow:'fa-4',label:'SQLite writes a new row to the PrayerCard table'},
+  {layer:'fl-svc',arrow:'fa-3',label:'User returns \u2192 GetCardsAsync() rebuilds cache from database'},
+  {layer:'fl-vm',arrow:'fa-2',label:'ViewModel receives fresh list, rebuilds BoxSections'},
+  {layer:'fl-view',arrow:'fa-1',label:'PropertyChanged fires \u2192 CollectionView shows new card'}
+],flowIdx=0;
+function clearFlow(){document.querySelectorAll('.flow-layer').forEach(function(l){l.classList.remove('active')});document.querySelectorAll('.flow-arrow').forEach(function(a){a.classList.remove('active')})}
+window.flowNext=function(){if(flowIdx>=flowSteps.length){flowIdx=0;clearFlow();document.getElementById('flow-label').textContent='Journey complete! Click "Next Step" to replay.';document.getElementById('flow-label').classList.remove('active');return}clearFlow();var step=flowSteps[flowIdx];document.getElementById(step.layer).classList.add('active');if(step.arrow)document.getElementById(step.arrow).classList.add('active');var lbl=document.getElementById('flow-label');lbl.textContent='Step '+(flowIdx+1)+'/'+flowSteps.length+': '+step.label;lbl.classList.add('active');flowIdx++};
+window.flowReset=function(){flowIdx=0;clearFlow();document.getElementById('flow-label').textContent='Click "Next Step" to trace the journey';document.getElementById('flow-label').classList.remove('active')};
+})();
+</script>
+</body>
+</html>

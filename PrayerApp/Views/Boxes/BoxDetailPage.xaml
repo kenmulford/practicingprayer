@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             x:Class="PrayerApp.Views.Boxes.BoxDetailPage"
+             x:DataType="viewModels:BoxDetailViewModel"
+             Title="Collection"
+             SafeAreaEdges="Container">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save"
+                     Command="{Binding SaveCommand}"
+                     x:DataType="viewModels:BoxDetailViewModel" />
+    </ContentPage.ToolbarItems>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24,20" Spacing="24">
+            <VerticalStackLayout.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+            </VerticalStackLayout.GestureRecognizers>
+
+            <!-- System collection note -->
+            <Border IsVisible="{Binding IsSystem}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource SurfaceDark}}"
+                    Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="12,10">
+                <Label Text="This is a system-managed collection. It cannot be renamed or deleted."
+                       FontSize="13"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource TextSecondaryDark}}" />
+            </Border>
+
+            <!-- Name field -->
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Name" Style="{StaticResource FormLabel}" />
+                <Entry x:Name="NameEntry"
+                       Text="{Binding Name}"
+                       AutomationId="BoxDetail_Entry_Name"
+                       Placeholder="Collection name"
+                       IsReadOnly="{Binding IsSystem}"
+                       ReturnType="Done" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

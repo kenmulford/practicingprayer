@@ -54,10 +54,27 @@ public class SettingsService : ISettings
         set => Settings.QuickAddTipDismissed = value;
     }
 
+    public bool CollectionsBannerDismissed
+    {
+        get => Settings.CollectionsBannerDismissed;
+        set => Settings.CollectionsBannerDismissed = value;
+    }
+
     public bool PrayerTimeLandscape
     {
         get => Settings.PrayerTimeLandscape;
         set => Settings.PrayerTimeLandscape = value;
     }
 
+    public int ArchivedFolderId
+    {
+        get => Settings.ArchivedFolderId;
+        set => Settings.ArchivedFolderId = value;
+    }
+
+    public string ExpandedSectionIds
+    {
+        get => Settings.ExpandedSectionIds;
+        set => Settings.ExpandedSectionIds = value;
+    }
 }

@@ -4,7 +4,8 @@ namespace PrayerApp.Services;
 
 public interface IDeepLinkService
 {
-    string BuildRequestShareText(Prayer prayer);
-    string BuildCardShareText(PrayerCard card, IEnumerable<Prayer> prayers);
+    Task ShareRequestAsync(Prayer prayer);
+    Task ShareCardAsync(PrayerCard card, IEnumerable<Prayer> prayers);
     Task HandleAsync(string uri);
+    Task HandleFileAsync(Stream fileStream);
 }

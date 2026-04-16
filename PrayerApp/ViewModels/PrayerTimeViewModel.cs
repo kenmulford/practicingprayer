@@ -228,7 +228,15 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        var scope = query.TryGetValue("scope", out var s) ? s?.ToString() : "all";
+        var scope = query.TryGetValue("scope", out var s) ? s?.ToString() : Routes.ScopeAll;
+
+        if (scope == Routes.ScopeBox && query.TryGetValue("boxId", out var bObj)
+            && bObj is string bStr && int.TryParse(bStr, out var boxId))
+        {
+            LoadEntriesAsync(tagIds: null, boxId: boxId).SafeFireAndForget();
+            return;
+        }
+
         var tagIdsStr = query.TryGetValue("tagIds", out var t) ? t?.ToString() : null;
 
         IEnumerable<int> tagIds = tagIdsStr is not null
@@ -237,10 +245,10 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                        .Where(id => id > 0)
             : Enumerable.Empty<int>();
 
-        LoadEntriesAsync(scope == "tags" ? tagIds : null).SafeFireAndForget();
+        LoadEntriesAsync(scope == Routes.ScopeTags ? tagIds : null, boxId: null).SafeFireAndForget();
     }
 
-    private async Task LoadEntriesAsync(IEnumerable<int>? tagIds)
+    private async Task LoadEntriesAsync(IEnumerable<int>? tagIds, int? boxId = null)
     {
         _loadCts.Cancel();
         _loadCts.Dispose();
@@ -258,6 +266,9 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             var allActive = await _prayerService.GetAllActivePrayersAsync();
             token.ThrowIfCancellationRequested();
 
+            var cards = await _cardService.GetCardsAsync();
+            token.ThrowIfCancellationRequested();
+
             IEnumerable<Prayer> filtered;
             if (tagIds is not null)
             {
@@ -265,13 +276,15 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                 token.ThrowIfCancellationRequested();
                 filtered = allActive.Where(p => requestIdSet.Contains(p.Id));
             }
+            else if (boxId is not null)
+            {
+                var cardIdsInBox = cards.Where(c => c.BoxId == boxId.Value).Select(c => c.Id).ToHashSet();
+                filtered = allActive.Where(p => cardIdsInBox.Contains(p.PrayerCardId));
+            }
             else
             {
                 filtered = allActive;
             }
-
-            var cards = await _cardService.GetCardsAsync();
-            token.ThrowIfCancellationRequested();
 
             var cardLookup = cards.ToDictionary(c => c.Id, c => c.Title);
 
@@ -281,6 +294,8 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
                     CardTitle: cardLookup.TryGetValue(p.PrayerCardId, out var cardTitle) ? cardTitle : "Unknown",
                     PrayerTitle: p.Title,
                     Details: p.Details ?? string.Empty))
+                .OrderBy(e => e.CardTitle, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(e => e.PrayerTitle, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             bool anyPrayers = entries.Count > 0;

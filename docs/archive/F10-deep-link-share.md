@@ -2,9 +2,9 @@
 
 ## Status
 
-**Complete.** Both phases implemented. Android App Links verification activates when app is published on Google Play.
+**Complete.** Both phases implemented and verified on both platforms.
 
-**Last updated:** 2026-03-30 — Phase 1 + Phase 2 implemented. Android `IntentFilter` with `AutoVerify` + `OnCreate`/`OnNewIntent` lifecycle handlers added. `assetlinks.json` already deployed on website.
+**Last updated:** 2026-04-02 — Android App Links verified working post-Play Store launch. iOS Universal Links previously confirmed. Full deep-link sharing operational on both platforms.
 
 ### Phased Approach
 

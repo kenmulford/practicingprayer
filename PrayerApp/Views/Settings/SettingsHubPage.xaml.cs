@@ -10,6 +10,9 @@ public partial class SettingsHubPage : ContentPage
     private async void OnAppSettingsTapped(object? sender, TappedEventArgs e)
         => await Shell.Current.GoToAsync(nameof(AppSettingsPage));
 
+    private async void OnCollectionsTapped(object? sender, TappedEventArgs e)
+        => await Shell.Current.GoToAsync(Routes.BoxesPage);
+
     private async void OnBackupTapped(object? sender, TappedEventArgs e)
         => await Shell.Current.GoToAsync(nameof(BackupPage));
 
