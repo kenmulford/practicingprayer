@@ -179,6 +179,39 @@ dotnet test PrayerApp.UITests/ --filter "Section=2-Home"
 dotnet test PrayerApp.UITests/ --filter "FullyQualifiedName~Home_QuickAdd"
 ```
 
+### Rerunning failed tests
+
+**See which tests failed (detailed output):**
+
+PC (PowerShell):
+```powershell
+dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=Android" -v detailed 2>&1 |
+  Select-String "Failed|Passed|Skipped"
+```
+
+Mac (Terminal):
+```bash
+dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=iOS" -v detailed 2>&1 |
+  grep -E "Failed|Passed|Skipped"
+```
+
+**Rerun a specific failed test by name:**
+```powershell
+dotnet test PrayerApp.UITests/ --filter "FullyQualifiedName~Cards_FilterChip"
+```
+
+**Rerun all tests in a failed section:**
+```powershell
+dotnet test PrayerApp.UITests/ --filter "Section=3-PrayerCards"
+```
+
+**Generate a structured results file** (opens in VS / VS Code with TRX Viewer extension):
+```powershell
+dotnet test PrayerApp.UITests/ --logger "trx;LogFileName=results.trx"
+```
+
+The `.trx` file is written to `PrayerApp.UITests/TestResults/results.trx` and shows a tree view of every test with pass/fail status, duration, and failure messages.
+
 ### Important: test order matters
 
 Tests within the `"Appium"` collection share a single driver session (one app launch for the entire run). Onboarding is dismissed once at the start. Running tests out of section order may cause failures if earlier tests create data that later tests expect.
