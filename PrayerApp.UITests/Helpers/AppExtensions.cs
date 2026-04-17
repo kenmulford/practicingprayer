@@ -2,6 +2,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Support.UI;
 using PrayerApp.UITests.Infrastructure;
+using System.IO;
 
 namespace PrayerApp.UITests.Helpers;
 
@@ -394,6 +395,37 @@ public static class AppExtensions
         driver.NavigateToTab(tabTitle);
     }
 
+    // ── Diagnostics ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Dump a screenshot + page source to a temp directory so that a failing test
+    /// leaves behind evidence for post-mortem triage. Returns a human-readable
+    /// suffix listing the file paths, suitable for appending to an exception message.
+    /// Never throws — if the capture fails, it returns an annotated message instead.
+    /// </summary>
+    public static string CaptureDiagnostics(this AppiumDriver driver, string reason)
+    {
+        try
+        {
+            var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff");
+            var dir = Path.Combine(Path.GetTempPath(), "prayerapp-uitest-diag");
+            Directory.CreateDirectory(dir);
+
+            var safeReason = string.Join("_", reason.Split(Path.GetInvalidFileNameChars()));
+            var screenshotPath = Path.Combine(dir, $"{timestamp}-{safeReason}.png");
+            var sourcePath = Path.Combine(dir, $"{timestamp}-{safeReason}.xml");
+
+            driver.GetScreenshot().SaveAsFile(screenshotPath);
+            File.WriteAllText(sourcePath, driver.PageSource);
+
+            return $" (diagnostics — screenshot: {screenshotPath}, page source: {sourcePath})";
+        }
+        catch (Exception ex)
+        {
+            return $" (diagnostic capture failed: {ex.GetType().Name}: {ex.Message})";
+        }
+    }
+
     /// <summary>
     /// Clear transient UI state (open alerts, multi-select mode) that a prior failing
     /// test may have left behind, so it doesn't cascade into false failures in the
@@ -738,27 +770,16 @@ public static class AppExtensions
     // ── Test Setup Helpers ─────────────────────────────────────
 
     /// <summary>
-    /// Ensures a prayer named "UI Test Prayer" exists. Creates it via QuickAdd if missing.
-    /// Call at the start of any test that depends on this prayer existing.
+    /// Lands on the Prayers tab with the list rendered. Trusts the seed DB — does NOT
+    /// verify visibility of "UI Test Prayer" because CollectionView virtualizes off-screen
+    /// rows and UIAutomator2 won't expose them, producing false-negatives on existence.
+    /// TestDataSeed is the single source of truth for the seeded prayer; callers that need
+    /// the prayer to be user-visible should drive to it explicitly (search, scroll, or card-expand).
     /// </summary>
     public static void EnsureUITestPrayerExists(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayers", setup);
-        if (driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
-            return;
-
-        // Create via QuickAdd from Home tab
-        driver.NavigateToTab("Home");
-        driver.Tap("Home_Btn_QuickAdd");
-        driver.WaitForElement("QuickAdd_Entry_Title");
-        driver.EnterText("QuickAdd_Entry_Title", "UI Test Prayer");
-        driver.Tap("QuickAdd_Btn_Add");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        // Navigate back to Prayers and wait for the new prayer to render
-        driver.NavigateToTab("Prayers");
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-        driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 5);
+        driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
     }
 
     /// <summary>
@@ -842,30 +863,15 @@ public static class AppExtensions
     }
 
     /// <summary>
-    /// Ensures a user-created card named "UITest Card" exists. Creates it via the
-    /// Prayer Cards tab toolbar if missing. Needed for tests that require a non-system card.
+    /// Lands on the Prayer Cards tab with the list rendered. Trusts the seed DB — does NOT
+    /// verify visibility of "UITest Card" (see EnsureUITestPrayerExists for rationale: visibility
+    /// is not a reliable existence proof under CollectionView virtualization, and silent
+    /// fallback-create was creating duplicate fixtures on every run).
     /// </summary>
     public static void EnsureUITestCardExists(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayer Cards", setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        bool found = TestConfig.IsIOS
-            ? driver.IsTextContainsDisplayed("UITest Card", timeoutSeconds: 3)
-            : driver.IsTextDisplayed("UITest Card", timeoutSeconds: 3);
-
-        if (found) return;
-
-        // Create via toolbar Add Card
-        driver.TapToolbarItemById("Add Card");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
-        driver.EnterText("Card_Entry_Title", "UITest Card");
-        driver.DismissKeyboardIfPresent();
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        // Return to card list
-        driver.EnsureOnTab("Prayer Cards", setup);
+        driver.WaitForElement("Cards_List_Cards", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayCollectionRender);
     }
 
@@ -873,6 +879,9 @@ public static class AppExtensions
     public static void NavigateToNewPrayer(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayers", setup);
+        // Wait for the Prayers list to render before tapping the toolbar — prevents
+        // racing the "Add" tap against an un-rendered Shell action bar.
+        driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
         if (TestConfig.IsIOS) Thread.Sleep(500); // Let Shell finish rendering toolbar items
         driver.TapToolbarItem("Add");
         driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 5);
