@@ -19,6 +19,7 @@ public class AndroidTests
     [Fact]
     public void HardwareBack_NavigatesFromSubPages()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureOnTab("Settings", _setup);
 
@@ -36,6 +37,7 @@ public class AndroidTests
     [Fact]
     public void HardwareBack_FromPrayerDetail()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 
@@ -51,6 +53,7 @@ public class AndroidTests
     [SkippableFact]
     public void HardwareBack_DirtyDetail_ShowsDiscardDialog()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         if (TestConfig.IsIOS)
             throw new SkipException("Android-only: hardware back button does not exist on iOS");
 

@@ -20,6 +20,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_PageLoads()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayers", _setup);
         Assert.True(_setup.Driver.IsDisplayed("List_Filter_Active")
                  || _setup.Driver.IsDisplayed("List_Search_Prayers"),
@@ -30,6 +31,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_SearchBar_FiltersResults()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayers", _setup);
         var driver = _setup.Driver;
 
@@ -49,6 +51,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_FilterButtons_SwitchViews()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayers", _setup);
         var driver = _setup.Driver;
 
@@ -77,6 +80,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_AddNewPrayer()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 
@@ -93,6 +97,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_TapPrayer_ShowsViewMode()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureUITestPrayerExists(_setup);
         driver.EnsureOnTab("Prayers", _setup);
@@ -141,6 +146,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_EditPrayer()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayers", _setup);
         var driver = _setup.Driver;
 
@@ -170,6 +176,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_MarkAnswered()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         // Create a prayer specifically to mark answered
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
@@ -212,6 +219,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_DeletePrayer()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         // Create a prayer to delete
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
@@ -246,6 +254,7 @@ public class PrayerListTests
     [Fact]
     public void Prayers_CrossTabFreshness()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.DismissOnboardingIfPresent(_setup);
 

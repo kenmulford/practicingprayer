@@ -26,6 +26,7 @@ public class SettingsTests
     [Fact]
     public void Settings_HubPage_Shows4Rows()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
         var driver = _setup.Driver;
 
@@ -43,6 +44,7 @@ public class SettingsTests
     [Fact]
     public void Settings_AppSettings_ShowsControls()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
         var driver = _setup.Driver;
 
@@ -59,6 +61,7 @@ public class SettingsTests
     [Fact]
     public void Settings_Backup_ShowsButtons()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
         var driver = _setup.Driver;
 
@@ -77,6 +80,7 @@ public class SettingsTests
     [Fact]
     public void Settings_Backup_DiagnosticsCheck()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
         var driver = _setup.Driver;
 
@@ -95,6 +99,7 @@ public class SettingsTests
     [Fact]
     public void Settings_About_ShowsVersionAndLinks()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
         var driver = _setup.Driver;
 
@@ -112,6 +117,7 @@ public class SettingsTests
     [Fact]
     public void Settings_Help_ShowsFaqItems()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
         var driver = _setup.Driver;
 
@@ -133,6 +139,7 @@ public class SettingsTests
     [Fact]
     public void Settings_HubNavigation_AllPagesReachable()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
         var driver = _setup.Driver;
 

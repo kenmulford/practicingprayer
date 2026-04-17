@@ -19,6 +19,7 @@ public class HomeTests
     [Fact]
     public void Home_PageLoads_ShowsDashboard()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
@@ -32,6 +33,7 @@ public class HomeTests
     [Fact]
     public void Home_MetricCards_Visible()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
@@ -53,6 +55,7 @@ public class HomeTests
     [Fact]
     public void Home_TapActiveCards_NavigatesToCardsTab()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
@@ -72,6 +75,7 @@ public class HomeTests
     [Fact]
     public void Home_TapUnanswered_NavigatesToPrayersTab()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 

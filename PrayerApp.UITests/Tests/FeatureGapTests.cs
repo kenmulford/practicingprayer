@@ -29,6 +29,7 @@ public class FeatureGapTests
     [Fact]
     public void Home_AnsweredOnThisDate_CorrectConditionalVisibility()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
@@ -71,6 +72,7 @@ public class FeatureGapTests
     [Fact]
     public void Settings_Help_FaqAccordionExpandCollapse()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.NavigateToTabRoot("Settings", "Settings_Row_Help", _setup);
 
@@ -126,6 +128,7 @@ public class FeatureGapTests
     [SkippableFact]
     public void PrayerTime_ByCollection_ShowsScopePage()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         // Ensure preconditions: prayers and a collection must exist
@@ -225,6 +228,7 @@ public class FeatureGapTests
     [Fact]
     public void Settings_OverdueThreshold_VisibleWithDefault()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.NavigateToTabRoot("Settings", "Settings_Row_AppSettings", _setup);
 
@@ -272,6 +276,7 @@ public class FeatureGapTests
     [SkippableFact]
     public void Cards_FavoriteToggle_ChangesState()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         // Ensure a non-system card exists

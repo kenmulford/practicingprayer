@@ -19,6 +19,7 @@ public class UnsavedChangesTests
     [SkippableFact]
     public void UnsavedChanges_EditTitle_BackShowsDiscardDialog()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         // iOS back button tap does not fire Shell.Navigating (dotnet/maui#15813, #7351).
         // SwipeBackHelper disables the swipe-back gesture on edit pages, but the native
         // back button in the nav bar is a separate code path that MAUI doesn't intercept.
@@ -67,6 +68,7 @@ public class UnsavedChangesTests
     [Fact]
     public void UnsavedChanges_EditTitle_TabSwitchShowsDiscardDialog()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         // EnsureOnTab handles any leftover modals/alerts from prior tests
@@ -87,6 +89,7 @@ public class UnsavedChangesTests
     [Fact]
     public void UnsavedChanges_SaveThenBack_NoPrompt()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 
@@ -105,6 +108,7 @@ public class UnsavedChangesTests
     [Fact]
     public void UnsavedChanges_NoChanges_BackNoPrompt()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 

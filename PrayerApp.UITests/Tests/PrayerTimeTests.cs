@@ -162,6 +162,7 @@ public class PrayerTimeTests
     [SkippableFact]
     public void PrayerTime_SessionStarts_ShowsCarousel()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         if (!TryStartPrayerTime())
             throw new SkipException("Could not start Prayer Time session");
 
@@ -182,6 +183,7 @@ public class PrayerTimeTests
     [SkippableFact]
     public void PrayerTime_NavigationButtons_Present()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         if (!TryStartPrayerTime())
             throw new SkipException("Could not start Prayer Time session");
 
@@ -203,6 +205,7 @@ public class PrayerTimeTests
     [SkippableFact]
     public void PrayerTime_AutoMode_CyclesInterval()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         if (!TryStartPrayerTime())
             throw new SkipException("Could not start Prayer Time session");
 
@@ -240,6 +243,7 @@ public class PrayerTimeTests
     [SkippableFact]
     public void PrayerTime_FinishButton_ExitsPrayerTime()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         if (!TryStartPrayerTime())
             throw new SkipException("Could not start Prayer Time session");
 
@@ -262,6 +266,7 @@ public class PrayerTimeTests
     [Fact]
     public void PrayerTime_TagScoped_ShowsScopePage()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         // Both prayers and tags must exist for the action sheet to appear

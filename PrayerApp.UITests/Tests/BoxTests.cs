@@ -21,6 +21,7 @@ public class BoxTests
     [Fact]
     public void Cards_SectionHeaders_Visible()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
         Thread.Sleep(TestConfig.DelayCollectionRender);
@@ -37,6 +38,7 @@ public class BoxTests
     [Fact]
     public void Cards_SectionHeader_ExpandCollapse()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
         Thread.Sleep(TestConfig.DelayCollectionRender);
@@ -60,6 +62,7 @@ public class BoxTests
     [Fact]
     public void Cards_CollectionsToolbar_NavigatesToBoxesPage()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -77,6 +80,7 @@ public class BoxTests
     [Fact]
     public void Settings_ManageCollections_NavigatesToBoxesPage()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToTabRoot("Settings", "Settings_Row_AppSettings", _setup);
         var driver = _setup.Driver;
 
@@ -100,6 +104,7 @@ public class BoxTests
     [Fact]
     public void Boxes_CreateCollection_AppearsInList()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -138,6 +143,7 @@ public class BoxTests
     [Fact]
     public void Boxes_EditCollection_UpdatesName()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureUITestCollectionExists(_setup);
         var driver = _setup.Driver;
 
@@ -174,6 +180,7 @@ public class BoxTests
     [Fact]
     public void Boxes_SystemCollections_NoDeleteAction()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -201,6 +208,7 @@ public class BoxTests
     [Fact]
     public void Boxes_DeleteCollection_UnassignCards()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
@@ -239,6 +247,7 @@ public class BoxTests
     [Fact]
     public void Cards_CreateCard_WithCollectionPicker()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -329,6 +338,7 @@ public class BoxTests
     [Fact]
     public void Boxes_DeleteCollection_DeleteAllCards()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
@@ -437,6 +447,7 @@ public class BoxTests
     [Fact]
     public void Cards_Search_ExpandsMatchingSections()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureUITestCardExists(_setup);
         var driver = _setup.Driver;
 
@@ -468,6 +479,7 @@ public class BoxTests
     [Fact]
     public void Cards_EmptyCollection_ShowsHintText()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureUITestCollectionExists(_setup);
         var driver = _setup.Driver;
 
@@ -502,6 +514,7 @@ public class BoxTests
     [Fact]
     public void Cards_ArchivedSection_VisibleAndCollapsed()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
         Thread.Sleep(TestConfig.DelayCollectionRender);

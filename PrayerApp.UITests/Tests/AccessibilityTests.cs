@@ -25,6 +25,7 @@ public class AccessibilityTests
     [Fact]
     public void Home_MetricTiles_HaveComposedDescriptions()
     {
+        Driver.ResetAppUIState(_setup);
         Driver.EnsureOnTab("Home", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
@@ -38,6 +39,7 @@ public class AccessibilityTests
     [Fact]
     public void Cards_FilterChip_AnnouncesSelectedState()
     {
+        Driver.ResetAppUIState(_setup);
         // Ensure a tag exists so filter chips render
         Driver.EnsureUITestTagExists(_setup);
         Driver.EnsureOnTab("Prayer Cards", _setup);
@@ -71,6 +73,7 @@ public class AccessibilityTests
     [Fact]
     public void Cards_CardHeader_AnnouncesExpandCollapseState()
     {
+        Driver.ResetAppUIState(_setup);
         Driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
@@ -120,6 +123,7 @@ public class AccessibilityTests
     [SkippableFact]
     public void Cards_PrayerRow_HasAccessibleSummary()
     {
+        Driver.ResetAppUIState(_setup);
         // Ensure a prayer exists in the Quick Add card
         Driver.EnsureUITestPrayerExists(_setup);
         Driver.EnsureOnTab("Prayer Cards", _setup);
@@ -162,6 +166,7 @@ public class AccessibilityTests
     [Fact]
     public void Cards_SelectToolbarItem_Exists()
     {
+        Driver.ResetAppUIState(_setup);
         Driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
@@ -183,6 +188,7 @@ public class AccessibilityTests
     [Fact]
     public void Settings_FaqQuestion_HasHint()
     {
+        Driver.ResetAppUIState(_setup);
         // Navigate to Settings > Help
         Driver.NavigateToTabRoot("Settings", "Settings_Row_Help", _setup);
         Driver.WaitAndTap("Settings_Row_Help");
@@ -221,6 +227,7 @@ public class AccessibilityTests
     [Fact]
     public void Cards_DecorativeElements_MarkedNotImportant()
     {
+        Driver.ResetAppUIState(_setup);
         if (TestConfig.IsIOS)
             return; // iOS flattening makes child-level tree assertions unreliable
 
@@ -252,6 +259,7 @@ public class AccessibilityTests
     [Fact]
     public void Cards_ToolbarItems_HaveHints()
     {
+        Driver.ResetAppUIState(_setup);
         Driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 

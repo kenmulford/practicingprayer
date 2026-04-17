@@ -19,6 +19,7 @@ public class QuickAddTests
     [Fact]
     public void QuickAdd_SaveWithTitle_DismissesModal()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
@@ -37,6 +38,7 @@ public class QuickAddTests
     [Fact]
     public void QuickAdd_SaveEmpty_ShowsValidation()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
@@ -56,6 +58,7 @@ public class QuickAddTests
     [Fact]
     public void QuickAdd_Cancel_DismissesModal()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 
@@ -73,6 +76,7 @@ public class QuickAddTests
     [Fact]
     public void QuickAdd_PrayerAppearsOnCardsTab()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Home", _setup);
         var driver = _setup.Driver;
 

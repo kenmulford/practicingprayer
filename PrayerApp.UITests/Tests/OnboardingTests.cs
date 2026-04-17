@@ -56,6 +56,7 @@ public class OnboardingTests
     [Fact]
     public void Onboarding_GotItButton_NotVisibleAfterDismiss()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureOnTab("Home", _setup);
 
@@ -70,6 +71,7 @@ public class OnboardingTests
     [SkippableFact]
     public void Sharing_PrayerDetailShareButton_Exists()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureUITestPrayerExists(_setup);
         driver.EnsureOnTab("Prayers", _setup);

@@ -19,6 +19,7 @@ public class TagTests
     [Fact]
     public void Tags_PageLoads_ShowsTagList()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Tags", _setup);
         Assert.True(_setup.Driver.IsDisplayed("Tags_List_Tags"),
             "Tag list should be visible on Tags page");
@@ -28,6 +29,7 @@ public class TagTests
     [Fact]
     public void Tags_CreateTag_AppearsInList()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Tags", _setup);
         var driver = _setup.Driver;
 
@@ -55,6 +57,7 @@ public class TagTests
     [Fact]
     public void Tags_EditTag()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Tags", _setup);
         var driver = _setup.Driver;
 
@@ -86,6 +89,7 @@ public class TagTests
     [Fact]
     public void Tags_DeleteTag()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Tags", _setup);
         var driver = _setup.Driver;
 
@@ -121,6 +125,7 @@ public class TagTests
     [Fact]
     public void Tags_AddTagToPrayer()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 
@@ -155,6 +160,7 @@ public class TagTests
     [Fact]
     public void Tags_CommaAutoSave()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 
@@ -185,6 +191,7 @@ public class TagTests
     [Fact]
     public void Tags_RemoveTagInPicker()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 

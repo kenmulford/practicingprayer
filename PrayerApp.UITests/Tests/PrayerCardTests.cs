@@ -53,6 +53,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_ListLoads_ShowsCards()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         Assert.True(_setup.Driver.IsDisplayed("Cards_List_Cards"),
             "Card collection should be visible on Prayer Cards page");
@@ -62,6 +63,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_SearchFilter_FiltersCards()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -78,6 +80,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_SearchKeyboard_DismissesOnBackground()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -104,6 +107,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_CreateCard_AppearsInList()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -126,6 +130,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_ExpandCard_ShowsPrayers()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         ExpandQuickAddCard();
 
@@ -137,6 +142,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_AddPrayerToCard()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -164,6 +170,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_EditPrayerFromCard()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureUITestPrayerExists(_setup);
 
@@ -193,6 +200,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_DeleteCard_RemovesFromList()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
         Thread.Sleep(TestConfig.DelayCollectionRender);
@@ -214,6 +222,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_ExpandedCard_ShowsActionButtons()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         driver.EnsureUITestCardExists(_setup);
@@ -241,6 +250,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_TagChips_VisibleWhenTagsExist()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         // Ensure at least one tag exists
@@ -264,6 +274,7 @@ public class PrayerCardTests
     [Fact]
     public void Cards_EditButton_NavigatesToEditPage()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
         driver.EnsureUITestCardExists(_setup);
@@ -291,6 +302,7 @@ public class PrayerCardTests
     [SkippableFact]
     public void Cards_SystemCard_ShareNotAvailable()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -317,6 +329,7 @@ public class PrayerCardTests
     [SkippableFact]
     public void Cards_SystemCard_DeleteNotAvailable()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 

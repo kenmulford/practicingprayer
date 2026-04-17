@@ -31,6 +31,7 @@ public class ReminderTests
     [Fact]
     public void Reminders_ToggleOn_ShowsPickers()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         NavigateToNewPrayerWithReminders("Reminder Test Prayer");
         var driver = _setup.Driver;
 
@@ -47,6 +48,7 @@ public class ReminderTests
     [Fact]
     public void Reminders_FrequencyPicker_HasOptions()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         NavigateToNewPrayerWithReminders("Freq Test Prayer");
         var driver = _setup.Driver;
 
@@ -94,6 +96,7 @@ public class ReminderTests
     [Fact]
     public void Reminders_ToggleOff_HidesPickers()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         NavigateToNewPrayerWithReminders("Toggle Off Test");
         var driver = _setup.Driver;
 

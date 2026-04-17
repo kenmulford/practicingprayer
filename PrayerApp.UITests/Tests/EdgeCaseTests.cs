@@ -20,6 +20,7 @@ public class EdgeCaseTests
     [Fact]
     public void Cards_EmptySearch_ShowsEmptyState()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
@@ -39,6 +40,7 @@ public class EdgeCaseTests
     [Fact]
     public void EdgeCase_LongPrayerTitle_NoLayoutBreak()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureOnTab("Home", _setup);
 
@@ -58,6 +60,7 @@ public class EdgeCaseTests
     [Fact]
     public void EdgeCase_RapidTabSwitching_NoCrash()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureOnTab("Home", _setup);
 
@@ -84,6 +87,7 @@ public class EdgeCaseTests
     [Fact]
     public void EdgeCase_DoubleTapSave_NoDuplicate()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
         driver.EnsureOnTab("Prayers", _setup);
 
@@ -108,6 +112,7 @@ public class EdgeCaseTests
     [Fact]
     public void EdgeCase_EmptyCardExpand_ShowsAddPrayer()
     {
+        _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 

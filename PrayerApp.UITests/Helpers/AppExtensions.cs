@@ -395,9 +395,10 @@ public static class AppExtensions
     }
 
     /// <summary>
-    /// Reset the app to a known-good UI baseline before a test runs. Clears transient
-    /// state (multi-select mode, open modals, open alerts) that may have been left by
-    /// a prior failing test and cascades into false failures in subsequent tests.
+    /// Clear transient UI state (open alerts, multi-select mode) that a prior failing
+    /// test may have left behind, so it doesn't cascade into false failures in the
+    /// next test. Navigation is NOT part of this helper — callers navigate to their
+    /// target tab right after.
     ///
     /// Call at the TOP of every test that assumes a clean baseline. Tests that
     /// specifically verify a transient state (e.g. `Cards_MultiSelect_ToolbarAppearsAndCancels`)
@@ -422,9 +423,6 @@ public static class AppExtensions
             }
         }
         catch { /* not on Prayer Cards or not in multi-select */ }
-
-        try { driver.EnsureOnTab("Home", setup); }
-        catch { /* best effort */ }
     }
 
     /// <summary>Go back (Android back button or iOS back nav).</summary>
