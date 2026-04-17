@@ -279,16 +279,15 @@ public class FeatureGapTests
         _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
 
-        // Ensure a non-system card exists
-        driver.EnsureUITestCardExists(_setup);
+        // Uses dedicated fixture "UITest Favorite Card" (see TestDataSeed).
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Expand the UITest Card to reveal action buttons
+        // Expand the card to reveal action buttons
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest Card");
+            driver.TapByTextContains("UITest Favorite Card");
         else
-            driver.TapByText("UITest Card");
+            driver.TapByText("UITest Favorite Card");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         // Find and read initial Favorite state

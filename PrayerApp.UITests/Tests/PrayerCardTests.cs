@@ -138,15 +138,23 @@ public class PrayerCardTests
             "Expanded card should show '+ Add prayer' button");
     }
 
-    /// <summary>3.7: Add prayer to card — expand card, tap "Add prayer", fill, save.</summary>
+    /// <summary>3.7: Add prayer to card — expand card, tap "Add prayer", fill, save.
+    /// Uses the dedicated disposable fixture "UITest AddPrayer Card" (see TestDataSeed)
+    /// so this test is independent of what other tests do to the shared seed.</summary>
     [Fact]
     public void Cards_AddPrayerToCard()
     {
         _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
+        Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        ExpandQuickAddCard();
+        // Expand the dedicated seed card
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("UITest AddPrayer Card");
+        else
+            driver.TapByText("UITest AddPrayer Card");
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
         // iOS: AutomationId invisible inside flattened CollectionView cells — use text
         if (TestConfig.IsIOS)
@@ -166,22 +174,29 @@ public class PrayerCardTests
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
     }
 
-    /// <summary>3.9: Edit prayer from card — tap prayer, view mode, tap Edit.</summary>
+    /// <summary>3.9: Edit prayer from card — expand card, tap prayer, view mode, tap Edit.
+    /// Uses dedicated fixture "UITest EditPrayer Card" containing "UITest Edit Prayer"
+    /// (see TestDataSeed). Isolated from shared-seed mutations by other tests.</summary>
     [Fact]
     public void Cards_EditPrayerFromCard()
     {
         _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
-        driver.EnsureUITestPrayerExists(_setup);
-
         driver.EnsureOnTab("Prayer Cards", _setup);
-        ExpandQuickAddCard();
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // Expand the dedicated seed card to reveal its prayer
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("UITest EditPrayer Card");
+        else
+            driver.TapByText("UITest EditPrayer Card");
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
         // iOS: prayer text is part of composed label, not a standalone element
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("UI Test Prayer", timeoutSeconds: 5);
+            driver.TapByTextContains("UITest Edit Prayer", timeoutSeconds: 5);
         else
-            driver.TapByText("UI Test Prayer");
+            driver.TapByText("UITest Edit Prayer");
 
         driver.TapToolbarItem("Edit");
         Thread.Sleep(TestConfig.DelayAfterTap);
@@ -218,22 +233,21 @@ public class PrayerCardTests
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
     }
 
-    /// <summary>3.14: Inline action buttons — expanding a user card shows Favorite, Share, Edit, Delete.</summary>
+    /// <summary>3.14: Inline action buttons — expanding a user card shows Favorite, Share, Edit, Delete.
+    /// Uses dedicated fixture "UITest Expanded Card" (see TestDataSeed).</summary>
     [Fact]
     public void Cards_ExpandedCard_ShowsActionButtons()
     {
         _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
-
-        driver.EnsureUITestCardExists(_setup);
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Expand the card by tapping it
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest Card");
+            driver.TapByTextContains("UITest Expanded Card");
         else
-            driver.TapByText("UITest Card");
+            driver.TapByText("UITest Expanded Card");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         Assert.True(driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 5),
@@ -270,22 +284,21 @@ public class PrayerCardTests
             "Tag filter chip should be visible on Prayer Cards page when tags exist");
     }
 
-    /// <summary>3.17: Edit button — tapping Edit navigates to card edit page.</summary>
+    /// <summary>3.17: Edit button — tapping Edit navigates to card edit page.
+    /// Uses dedicated fixture "UITest EditButton Card" (see TestDataSeed).</summary>
     [Fact]
     public void Cards_EditButton_NavigatesToEditPage()
     {
         _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
-
-        driver.EnsureUITestCardExists(_setup);
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Expand the card to reveal action buttons
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest Card");
+            driver.TapByTextContains("UITest EditButton Card");
         else
-            driver.TapByText("UITest Card");
+            driver.TapByText("UITest EditButton Card");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         driver.WaitAndTap("Cards_Btn_Edit", timeoutSeconds: 5);

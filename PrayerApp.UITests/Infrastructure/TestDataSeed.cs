@@ -146,6 +146,33 @@ internal static class TestDataSeed
         {
             ("Throwaway prayer", "Deleted by Cards_DeleteCard_RemovesFromList.", false),
         });
+
+        // ─── Per-test disposable fixtures ──────────────────────────────
+        // Convention: a test that taps, expands, mutates, or otherwise
+        // depends on a specific card should OWN a dedicated seed fixture
+        // named after the consuming test. Do NOT share "UITest Card" —
+        // it's a read-only canary; other destructive tests (e.g.
+        // Cards_MultiSelect_MoveToCollection) mutate it, which breaks
+        // anyone sharing it. All fixtures below live at BoxId = 0
+        // (Loose Cards) so they render flat and are always visible.
+        // See Lessons/uitest-per-test-disposable-fixtures.md.
+        await SeedCardWithPrayersAsync(boxId: 0, "UITest AddPrayer Card",
+            Array.Empty<(string, string, bool)>());
+
+        await SeedCardWithPrayersAsync(boxId: 0, "UITest EditPrayer Card", new[]
+        {
+            ("UITest Edit Prayer",
+             "Prayer tapped + edited by Cards_EditPrayerFromCard.", false),
+        });
+
+        await SeedCardWithPrayersAsync(boxId: 0, "UITest Expanded Card",
+            Array.Empty<(string, string, bool)>());
+
+        await SeedCardWithPrayersAsync(boxId: 0, "UITest EditButton Card",
+            Array.Empty<(string, string, bool)>());
+
+        await SeedCardWithPrayersAsync(boxId: 0, "UITest Favorite Card",
+            Array.Empty<(string, string, bool)>());
     }
 
     private static async Task SeedCardWithPrayersAsync(int boxId, string cardTitle,
