@@ -96,10 +96,6 @@ public partial class PrayerCardsPage : ContentPage
     {
         if (sender is not Border border) return;
 
-        // Guard against double-subscription: CollectionView can call Loaded again without
-        // a preceding Unloaded during in-place refreshes. Run any prior cleanup first.
-        (border.Tag as Action)?.Invoke();
-
         // Margin is a Thickness (not animatable by FadeTo/TranslateTo) — tween via the low-level
         // Animation class. Initial margin is set without animation to avoid a load-in jump.
         if (border.BindingContext is PrayerCardViewModel card)
@@ -113,17 +109,11 @@ public partial class PrayerCardsPage : ContentPage
             };
             card.PropertyChanged += handler;
 
-            void Detach()
-            {
-                card.PropertyChanged -= handler;
-                border.Tag = null;
-            }
-            border.Tag = (Action)Detach;
-
-            // Unsubscribe on Unloaded so CollectionView recycling doesn't leak or misfire.
+            // Unsubscribe on Unloaded so CollectionView recycling doesn't leak. MAUI
+            // guarantees Loaded/Unloaded alternate — no double-subscription guard needed.
             void OnUnloaded(object? _, EventArgs __)
             {
-                Detach();
+                card.PropertyChanged -= handler;
                 border.Unloaded -= OnUnloaded;
             }
             border.Unloaded += OnUnloaded;

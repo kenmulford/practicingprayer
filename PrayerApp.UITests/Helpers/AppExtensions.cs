@@ -457,7 +457,7 @@ public static class AppExtensions
     {
         if (TestConfig.IsIOS)
         {
-            try { text = driver.SwitchTo().Alert().Text; return true; }
+            try { text = driver.SwitchTo().Alert().Text ?? ""; return true; }
             catch (WebDriverException) { text = ""; return false; }
         }
 
