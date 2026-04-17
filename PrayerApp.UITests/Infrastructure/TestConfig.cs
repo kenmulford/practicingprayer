@@ -43,6 +43,12 @@ public static class TestConfig
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
 
+    /// <summary>App-data-relative path to the SQLite DB on Android. Used by TestDataSeed.</summary>
+    public const string AndroidAppDbRelativePath = "files/prayer_app.db";
+
+    /// <summary>Staging path on Android used when pushing a seed DB (writable by adb).</summary>
+    public const string AndroidTmpSeedPath = "/data/local/tmp/prayer_app_seed.db";
+
     /// <summary>The iOS bundle identifier.</summary>
     public const string IOSBundleId = "com.multithreadedllc.prayercards";
 

@@ -19,6 +19,12 @@ public class AppiumSetup : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        // Seed deterministic baseline data BEFORE Appium launches the app.
+        // Force-stops the app, pushes a pre-built SQLite file into the app's
+        // data dir, so every suite starts with known Collections/Cards/Prayers.
+        // No-op on iOS for now.
+        await TestDataSeed.SeedAndroidAsync();
+
         CreateDriver();
         // Wait for the app to fully load (splash screen + initial page render)
         await Task.Delay(3000);

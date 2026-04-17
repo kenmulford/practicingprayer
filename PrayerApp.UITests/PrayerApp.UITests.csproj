@@ -16,6 +16,31 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!-- Seed DB dependencies — DBService + models use sqlite-net-pcl at runtime. -->
+    <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
+  </ItemGroup>
+
+  <!--
+    Link non-MAUI source files from the main project so TestDataSeed can build a
+    seed DB using the app's own DBService — zero schema drift vs. the real app.
+    Unlike PrayerApp.Tests (which mocks IDBService), UI tests need a real SQLite
+    file to push to the device, so we link DBService.cs too.
+  -->
+  <ItemGroup>
+    <!-- Models -->
+    <Compile Include="../PrayerApp/Models/Prayer.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerCard.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerCardTag.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerTag.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerFrequency.cs" />
+    <Compile Include="../PrayerApp/Models/PrayerInteraction.cs" />
+    <Compile Include="../PrayerApp/Models/UserColor.cs" />
+    <Compile Include="../PrayerApp/Models/CardBox.cs" />
+
+    <!-- Database service (unit tests skip this; UI tests need a real SQLite file) -->
+    <Compile Include="../PrayerApp/Services/IDBService.cs" />
+    <Compile Include="../PrayerApp/Services/DBService.cs" />
   </ItemGroup>
 
 </Project>
