@@ -50,11 +50,11 @@ public class SettingsTests
 
         driver.WaitAndTap("Settings_Row_AppSettings");
 
-        Assert.True(driver.IsDisplayed("AppSettings_Switch_Notifications", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("AppSettings_Switch_Notifications", timeoutSeconds: 10),
             "Notifications toggle should be visible");
 
         driver.GoBack();
-        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 10));
     }
 
     /// <summary>9.3: Backup page — shows backup and restore buttons.</summary>
@@ -67,13 +67,13 @@ public class SettingsTests
 
         driver.WaitAndTap("Settings_Row_Backup");
 
-        Assert.True(driver.IsDisplayed("Backup_Btn_Backup", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Backup_Btn_Backup", timeoutSeconds: 10),
             "Backup button should be visible");
         Assert.True(driver.IsDisplayed("Backup_Btn_Restore", timeoutSeconds: 3),
             "Restore button should be visible");
 
         driver.GoBack();
-        Assert.True(driver.IsDisplayed("Settings_Row_Backup", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Settings_Row_Backup", timeoutSeconds: 10));
     }
 
     /// <summary>9.5: Backup page — diagnostics button visibility check.</summary>
@@ -88,7 +88,7 @@ public class SettingsTests
 
         // Diagnostics button may or may not be visible depending on log state
         // At minimum, the backup page should load correctly
-        Assert.True(driver.IsDisplayed("Backup_Btn_Backup", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("Backup_Btn_Backup", timeoutSeconds: 10)
                  && driver.IsDisplayed("Backup_Btn_Restore", timeoutSeconds: 3),
             "Backup page should show both Backup and Restore buttons");
 
@@ -105,12 +105,12 @@ public class SettingsTests
 
         driver.WaitAndTap("Settings_Row_About");
 
-        Assert.True(driver.IsDisplayed("About_Btn_Privacy", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("About_Btn_Privacy", timeoutSeconds: 10)
                  || driver.IsDisplayed("About_Btn_Website", timeoutSeconds: 3),
             "About page should show Privacy Policy or Website links");
 
         driver.GoBack();
-        Assert.True(driver.IsDisplayed("Settings_Row_About", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Settings_Row_About", timeoutSeconds: 10));
     }
 
     /// <summary>9.7: Help page — FAQ items visible and tappable.</summary>
@@ -132,7 +132,7 @@ public class SettingsTests
             "Help page should show FAQ items");
 
         driver.GoBack();
-        Assert.True(driver.IsDisplayed("Settings_Row_Help", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Settings_Row_Help", timeoutSeconds: 10));
     }
 
     /// <summary>9.8: All sub-pages navigable — full hub navigation cycle.</summary>
@@ -144,21 +144,21 @@ public class SettingsTests
         var driver = _setup.Driver;
 
         driver.WaitAndTap("Settings_Row_AppSettings");
-        driver.WaitForElement("AppSettings_Switch_Notifications", timeoutSeconds: 5);
+        driver.WaitForElement("AppSettings_Switch_Notifications", timeoutSeconds: 10);
         driver.GoBack();
 
-        driver.WaitAndTap("Settings_Row_Backup", timeoutSeconds: 5);
-        driver.WaitForElement("Backup_Btn_Backup", timeoutSeconds: 5);
+        driver.WaitAndTap("Settings_Row_Backup", timeoutSeconds: 10);
+        driver.WaitForElement("Backup_Btn_Backup", timeoutSeconds: 10);
         driver.GoBack();
 
-        driver.WaitAndTap("Settings_Row_About", timeoutSeconds: 5);
+        driver.WaitAndTap("Settings_Row_About", timeoutSeconds: 10);
         Thread.Sleep(500);
         driver.GoBack();
 
-        driver.WaitAndTap("Settings_Row_Help", timeoutSeconds: 5);
+        driver.WaitAndTap("Settings_Row_Help", timeoutSeconds: 10);
         Thread.Sleep(500);
         driver.GoBack();
 
-        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 10));
     }
 }

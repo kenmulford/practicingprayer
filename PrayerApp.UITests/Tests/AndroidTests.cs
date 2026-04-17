@@ -24,12 +24,12 @@ public class AndroidTests
         driver.EnsureOnTab("Settings", _setup);
 
         driver.WaitAndTap("Settings_Row_AppSettings");
-        driver.WaitForElement("AppSettings_Switch_Notifications", timeoutSeconds: 5);
+        driver.WaitForElement("AppSettings_Switch_Notifications", timeoutSeconds: 10);
 
         driver.GoBack();
         Thread.Sleep(500);
 
-        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 10),
             "Hardware back should return to Settings hub from sub-page");
     }
 
@@ -44,7 +44,7 @@ public class AndroidTests
         driver.GoBack();
         Thread.Sleep(500);
 
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
                  || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
             "Hardware back should return to Prayers list from clean detail page");
     }

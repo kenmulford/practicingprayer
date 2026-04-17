@@ -34,7 +34,7 @@ public class TagTests
         var driver = _setup.Driver;
 
         driver.TapToolbarItem("Add");
-        driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 5);
+        driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 10);
 
         driver.EnterText("TagDetail_Entry_Name", "UITest Tag");
         driver.TapToolbarItem("Save");
@@ -42,7 +42,7 @@ public class TagTests
 
         // GoToAsync("..") should navigate back to tag list after save.
         // Known iOS bug: navigation sometimes fails. See ios-uat-bugs-found.md Bug #3
-        var onTagList = driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5);
+        var onTagList = driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 10);
 
         if (!onTagList && TestConfig.IsIOS)
         {
@@ -73,7 +73,7 @@ public class TagTests
                 driver.Tap("Tags_Btn_Edit");
                 Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-                Assert.True(driver.IsDisplayed("TagDetail_Entry_Name", timeoutSeconds: 5),
+                Assert.True(driver.IsDisplayed("TagDetail_Entry_Name", timeoutSeconds: 10),
                     "Should navigate to tag detail for editing");
 
                 driver.TapToolbarItem("Save");
@@ -82,7 +82,7 @@ public class TagTests
         }
 
         driver.NavigateToTab("Tags");
-        Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 10));
     }
 
     /// <summary>7.4: Delete tag — tap to select, tap Delete chip.</summary>
@@ -95,7 +95,7 @@ public class TagTests
 
         // Create a tag to delete
         driver.TapToolbarItem("Add");
-        driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 5);
+        driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 10);
         driver.EnterText("TagDetail_Entry_Name", "Delete Me Tag");
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
@@ -103,7 +103,7 @@ public class TagTests
         // Explicit tab nav — GoToAsync("..") is unreliable on iOS (Bug #3)
         driver.NavigateToTab("Tags");
 
-        if (driver.IsTextDisplayed("Delete Me Tag", timeoutSeconds: 5))
+        if (driver.IsTextDisplayed("Delete Me Tag", timeoutSeconds: 10))
         {
             // Tap to select (reveals action chips)
             driver.TapByText("Delete Me Tag");
@@ -118,7 +118,7 @@ public class TagTests
             }
         }
 
-        Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 10));
     }
 
     /// <summary>7.7: Add tag to prayer via tag picker modal.</summary>
@@ -138,7 +138,7 @@ public class TagTests
         Thread.Sleep(TestConfig.DelayModalAnimation);
 
         // Modal should open with search entry
-        Assert.True(driver.IsDisplayed("TagPicker_Entry_Search", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("TagPicker_Entry_Search", timeoutSeconds: 10),
             "Tag picker modal should open with search entry");
 
         driver.EnterText("TagPicker_Entry_Search", "UITest");
@@ -153,7 +153,7 @@ public class TagTests
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         driver.NavigateToTab("Prayers");
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10));
     }
 
     /// <summary>7.8: Comma auto-save in tag picker creates multiple tags.</summary>

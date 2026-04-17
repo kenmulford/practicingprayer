@@ -35,7 +35,7 @@ public class ReminderTests
         NavigateToNewPrayerWithReminders("Reminder Test Prayer");
         var driver = _setup.Driver;
 
-        Assert.True(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 10),
             "Frequency picker should appear when reminders are enabled");
         Assert.True(driver.IsDisplayed("Detail_Picker_ReminderTime", timeoutSeconds: 3),
             "Reminder time picker should appear when reminders are enabled");

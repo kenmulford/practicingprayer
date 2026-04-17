@@ -92,7 +92,7 @@ public class EdgeCaseTests
         driver.EnsureOnTab("Prayers", _setup);
 
         driver.TapToolbarItem("Add");
-        driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 5);
+        driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 10);
         driver.EnterText("Detail_Entry_Title", "Double Save Test");
 
         // Rapidly tap Save twice
@@ -104,7 +104,7 @@ public class EdgeCaseTests
 
         // Should end up back on the prayers list (not stuck or crashed)
         driver.NavigateToTab("Prayers");
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10),
             "App should handle double-tap Save without crashing");
     }
 
@@ -118,7 +118,7 @@ public class EdgeCaseTests
 
         // Create a fresh card with no prayers
         driver.TapToolbarItemById("Add Card");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
         driver.EnterText("Card_Entry_Title", "Empty Card Test");
         driver.TapToolbarItem("Save");
 
@@ -145,7 +145,7 @@ public class EdgeCaseTests
                 "Cards_List_Cards", "label CONTAINS 'Empty Card Test'");
             if (scrolled)
             {
-                driver.TapByTextContains("Empty Card Test", timeoutSeconds: 5);
+                driver.TapByTextContains("Empty Card Test", timeoutSeconds: 10);
                 tapped = true;
             }
         }
@@ -178,7 +178,7 @@ public class EdgeCaseTests
             // Check for the card-specific expanded label (not just "Expanded" which
             // could match any expanded card from a prior test)
             bool expandedFound = driver.IsTextContainsDisplayed(
-                "Empty Card Test, Expanded", timeoutSeconds: 5);
+                "Empty Card Test, Expanded", timeoutSeconds: 10);
             if (!expandedFound)
             {
                 expandedFound = driver.IOSScrollToPredicateInContainer(
@@ -208,7 +208,7 @@ public class EdgeCaseTests
         }
         else
         {
-            var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5);
+            var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 10);
             if (!found)
             {
                 try

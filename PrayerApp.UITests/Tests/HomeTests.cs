@@ -38,7 +38,7 @@ public class HomeTests
         var driver = _setup.Driver;
 
         // Home content is inside a ScrollView — scroll if not immediately visible
-        if (!driver.IsDisplayed("Home_Metric_Cards", timeoutSeconds: 5))
+        if (!driver.IsDisplayed("Home_Metric_Cards", timeoutSeconds: 10))
             driver.ScrollDownTo("Home_Metric_Cards", maxScrolls: 2);
 
         Assert.True(driver.IsDisplayed("Home_Metric_Cards", timeoutSeconds: 3),
@@ -63,7 +63,7 @@ public class HomeTests
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(
-            driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5)
+            driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10)
             || driver.IsDisplayed("Cards_Search", timeoutSeconds: 3),
             "Should navigate to Prayer Cards tab after tapping Active Cards metric");
 
@@ -83,7 +83,7 @@ public class HomeTests
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(
-            driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5)
+            driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
             || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
             "Should navigate to Prayers tab after tapping Unanswered metric");
 

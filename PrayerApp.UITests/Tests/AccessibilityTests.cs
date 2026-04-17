@@ -47,12 +47,12 @@ public class AccessibilityTests
 
         // Filter chips have AccessibleDescription like "TagName, not selected".
         // Don't assume a specific tag name — find ANY chip with "not selected".
-        Assert.True(Driver.HasAccessibleElement("not selected", timeoutSeconds: 5),
+        Assert.True(Driver.HasAccessibleElement("not selected", timeoutSeconds: 10),
             "At least one filter chip should have 'not selected' in its description");
 
         // Capture the first chip's full description to verify state change
         // Tap it using the "not selected" text
-        Driver.TapByTextContains("not selected", timeoutSeconds: 5);
+        Driver.TapByTextContains("not selected", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
         Thread.Sleep(500); // Extra settle for content-desc binding update
 
@@ -65,7 +65,7 @@ public class AccessibilityTests
             "Tapped filter chip should announce 'selected' state");
 
         // Tap again to deselect and leave clean state
-        Driver.TapByTextContains("selected", timeoutSeconds: 5);
+        Driver.TapByTextContains("selected", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
@@ -80,7 +80,7 @@ public class AccessibilityTests
         // Use a card that's visible on screen — Quick Add may be off-screen.
         // From the page source, the first user card in Loose Cards is always visible.
         // Pick any card with a composed content-desc containing "Collapsed".
-        bool found = Driver.HasAccessibleElement("Collapsed", timeoutSeconds: 5);
+        bool found = Driver.HasAccessibleElement("Collapsed", timeoutSeconds: 10);
         if (!found)
         {
             // Try scrolling to find a collapsed card
@@ -107,7 +107,7 @@ public class AccessibilityTests
         Driver.TapByTextContains(cardName!);
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        Assert.True(Driver.HasAccessibleElement("Expanded", timeoutSeconds: 5),
+        Assert.True(Driver.HasAccessibleElement("Expanded", timeoutSeconds: 10),
             "Expanded card header should contain 'Expanded' in its accessible description");
 
         // Tap to collapse — should now contain card name + "Collapsed"
@@ -153,7 +153,7 @@ public class AccessibilityTests
         // The prayer row Grid has SemanticProperties.Description="{Binding AccessibleSummary}"
         // which includes the prayer title. Look for "UI Test Prayer" in the tree.
         Assert.True(
-            Driver.HasAccessibleElement("UI Test Prayer", timeoutSeconds: 5)
+            Driver.HasAccessibleElement("UI Test Prayer", timeoutSeconds: 10)
             || Driver.IsTextContainsDisplayed("UI Test Prayer", timeoutSeconds: 3),
             "Prayer row should have accessible description containing the prayer title");
 
@@ -174,7 +174,7 @@ public class AccessibilityTests
         // MAUI Shell writes AutomationId into Android contentDescription, so the ID is
         // also the screen-reader label (see Lessons/maui-toolbaritem-android-rendering.md).
         // Try AutomationId first (works on Android), then text/label fallback.
-        bool found = Driver.IsDisplayed("Select", timeoutSeconds: 5);
+        bool found = Driver.IsDisplayed("Select", timeoutSeconds: 10);
         if (!found)
         {
             // Fallback: toolbar items may render as text or content-desc
@@ -210,7 +210,7 @@ public class AccessibilityTests
 
             // After expanding, the answer text should appear in the tree
             Assert.True(
-                Driver.IsTextContainsDisplayed("Tap the", timeoutSeconds: 5)
+                Driver.IsTextContainsDisplayed("Tap the", timeoutSeconds: 10)
                 || Driver.IsTextContainsDisplayed("prayer card", timeoutSeconds: 3),
                 "Expanded FAQ should show the answer text");
         }

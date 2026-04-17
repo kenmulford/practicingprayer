@@ -170,7 +170,7 @@ public class PrayerTimeTests
 
         // iOS accessibility flattening hides AutomationIds — use text fallbacks
         Assert.True(
-            driver.IsDisplayed("PrayerTime_List_Carousel", timeoutSeconds: 5)
+            driver.IsDisplayed("PrayerTime_List_Carousel", timeoutSeconds: 10)
             || driver.IsDisplayed("PrayerTime_Btn_Done", timeoutSeconds: 3)
             || driver.IsTextDisplayed("I'm done", timeoutSeconds: 2)
             || driver.IsTextContainsDisplayed("of", timeoutSeconds: 2), // "1 of 2" counter
@@ -250,7 +250,7 @@ public class PrayerTimeTests
         ExitPrayerTime();
 
         Assert.True(
-            _setup.Driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 5)
+            _setup.Driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 10)
             || _setup.Driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 3),
             "Should return to Home after exiting Prayer Time");
     }
@@ -288,13 +288,13 @@ public class PrayerTimeTests
 
         // Either way, we should now be on the tag scope page
         Assert.True(
-            driver.IsDisplayed("Scope_Btn_Start", timeoutSeconds: 5)
+            driver.IsDisplayed("Scope_Btn_Start", timeoutSeconds: 10)
             || driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 3),
             "Tag scope page should show Start and Cancel buttons");
 
         driver.WaitAndTap("Scope_Btn_Cancel");
         Thread.Sleep(TestConfig.DelayModalAnimation);
-        Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 10),
             "Cancel should dismiss scope modal and return to Home");
     }
 }

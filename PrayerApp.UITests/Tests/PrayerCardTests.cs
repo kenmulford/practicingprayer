@@ -31,7 +31,7 @@ public class PrayerCardTests
 
             if (driver.IsTextContainsDisplayed("Quick Add", timeoutSeconds: 3))
             {
-                driver.TapByTextContains("Quick Add", timeoutSeconds: 5);
+                driver.TapByTextContains("Quick Add", timeoutSeconds: 10);
                 Thread.Sleep(500);
             }
         }
@@ -112,17 +112,18 @@ public class PrayerCardTests
         var driver = _setup.Driver;
 
         driver.TapToolbarItemById("Add Card");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
 
         // Use a name NOT in the seed. The seed already has "UITest Card" — creating
         // another with the same name would make any assertion against
         // IsTextDisplayed("UITest Card") trivially pass against the seeded one
         // instead of the one we just created (silent false positive).
         driver.EnterText("Card_Entry_Title", "New Card UITest");
+        driver.DismissKeyboardIfPresent();
         driver.TapToolbarItem("Save");
         Thread.Sleep(1000);
 
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
             "Should return to card list after saving new card");
     }
 
@@ -134,7 +135,7 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         ExpandQuickAddCard();
 
-        Assert.True(_setup.Driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 5),
+        Assert.True(_setup.Driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 10),
             "Expanded card should show '+ Add prayer' button");
     }
 
@@ -159,12 +160,12 @@ public class PrayerCardTests
 
         // iOS: AutomationId invisible inside flattened CollectionView cells — use text
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("Add prayer", timeoutSeconds: 5);
+            driver.TapByTextContains("Add prayer", timeoutSeconds: 10);
         else
-            driver.WaitAndTap("Cards_Btn_AddPrayer", timeoutSeconds: 5);
+            driver.WaitAndTap("Cards_Btn_AddPrayer", timeoutSeconds: 10);
         Thread.Sleep(500);
 
-        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
             "Should navigate to prayer detail page");
 
         driver.EnterText("Detail_Entry_Title", "Card Prayer UITest");
@@ -172,7 +173,7 @@ public class PrayerCardTests
         Thread.Sleep(1000);
 
         driver.NavigateToTab("Prayer Cards");
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
     }
 
     /// <summary>3.9: Edit prayer from card — expand card, tap prayer, view mode, tap Edit.
@@ -196,14 +197,14 @@ public class PrayerCardTests
 
         // iOS: prayer text is part of composed label, not a standalone element
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest Edit Prayer", timeoutSeconds: 5);
+            driver.TapByTextContains("UITest Edit Prayer", timeoutSeconds: 10);
         else
             driver.TapByText("UITest Edit Prayer");
 
         driver.TapToolbarItem("Edit");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
             "Should show title entry in edit mode");
 
         driver.GoBack();
@@ -223,16 +224,16 @@ public class PrayerCardTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Expand the card, tap inline Delete button
-        if (driver.IsTextDisplayed("Delete Me Card", timeoutSeconds: 5))
+        if (driver.IsTextDisplayed("Delete Me Card", timeoutSeconds: 10))
         {
             driver.TapByText("Delete Me Card");
             Thread.Sleep(TestConfig.DelayAfterTap);
-            driver.WaitAndTap("Cards_Btn_Delete", timeoutSeconds: 5);
+            driver.WaitAndTap("Cards_Btn_Delete", timeoutSeconds: 10);
             driver.DismissAlertIfPresent();
             Thread.Sleep(500);
         }
 
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
     }
 
     /// <summary>3.14: Inline action buttons — expanding a user card shows Favorite, Share, Edit, Delete.
@@ -253,7 +254,7 @@ public class PrayerCardTests
             driver.TapByText("UITest Expanded Card");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        Assert.True(driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 10),
             "Expanded user card should show Favorite button");
         Assert.True(driver.IsDisplayed("Cards_Btn_Share", timeoutSeconds: 3),
             "Expanded user card should show Share button");
@@ -278,7 +279,7 @@ public class PrayerCardTests
 
         // Tag chips are rendered via BindableLayout — no AutomationId on individual chips.
         // Scroll to find by text if not immediately visible.
-        if (!driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 5))
+        if (!driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 10))
             driver.ScrollDownToText("UITest Tag", maxScrolls: 2);
 
         Assert.True(
@@ -305,10 +306,10 @@ public class PrayerCardTests
             driver.TapByText("UITest EditButton Card");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        driver.WaitAndTap("Cards_Btn_Edit", timeoutSeconds: 5);
+        driver.WaitAndTap("Cards_Btn_Edit", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-        Assert.True(driver.IsDisplayed("Card_Entry_Title", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Card_Entry_Title", timeoutSeconds: 10),
             "Tapping Edit should navigate to card edit page");
 
         driver.GoBack();

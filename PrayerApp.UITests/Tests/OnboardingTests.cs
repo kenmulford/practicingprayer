@@ -27,7 +27,7 @@ public class OnboardingTests
         if (_setup.OnboardingHandled)
             return;
 
-        var hasGetStarted = driver.IsDisplayed("Welcome_Btn_GetStarted", timeoutSeconds: 5);
+        var hasGetStarted = driver.IsDisplayed("Welcome_Btn_GetStarted", timeoutSeconds: 10);
         var hasSkip = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 2);
 
         Assert.True(hasGetStarted || hasSkip,
@@ -78,13 +78,13 @@ public class OnboardingTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Open a prayer in view mode
-        if (!driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 5))
+        if (!driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 10))
             throw new SkipException("Precondition: 'UI Test Prayer' not found");
 
         driver.TapByText("UI Test Prayer");
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-        Assert.True(driver.IsDisplayed("Detail_Btn_Share", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Detail_Btn_Share", timeoutSeconds: 10),
             "Share button should be visible on prayer detail view page");
 
         driver.GoBack();

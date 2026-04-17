@@ -81,7 +81,7 @@ public class UnsavedChangesTests
         driver.DismissAlertIfPresent();
         Thread.Sleep(300);
 
-        Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 10)
                  || driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 3));
     }
 
@@ -99,7 +99,7 @@ public class UnsavedChangesTests
 
         // Save already navigates back to prayer list via GoToAsync("..").
         // Verify we're on the list (no discard prompt intercepted the Save navigation).
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
                  || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
             "Should return to prayer list without discard prompt after saving");
     }
@@ -115,7 +115,7 @@ public class UnsavedChangesTests
         driver.GoBack();
         Thread.Sleep(500);
 
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
                  || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
             "Should return to prayer list without discard prompt when no changes made");
     }

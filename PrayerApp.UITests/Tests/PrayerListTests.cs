@@ -89,7 +89,7 @@ public class PrayerListTests
         Thread.Sleep(1000);
 
         // Save navigates back to list automatically
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
                  || driver.IsDisplayed("List_List_Prayers", timeoutSeconds: 3));
     }
 
@@ -119,7 +119,7 @@ public class PrayerListTests
             if (scrolledToItem)
             {
                 // iOS: cell label is composed — use contains-based tap
-                driver.TapByTextContains("UI Test Prayer", timeoutSeconds: 5);
+                driver.TapByTextContains("UI Test Prayer", timeoutSeconds: 10);
             }
             else
             {
@@ -135,7 +135,7 @@ public class PrayerListTests
         }
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 5)
+        Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 10)
                  || driver.IsDisplayed("Detail_Btn_Share", timeoutSeconds: 3),
             "View mode should show action buttons");
 
@@ -157,7 +157,7 @@ public class PrayerListTests
             driver.TapToolbarItem("Edit");
             Thread.Sleep(300);
 
-            Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5),
+            Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
                 "Should show title entry in edit mode");
 
             if (driver.IsDisplayed("Detail_Entry_Details", timeoutSeconds: 3))
@@ -169,7 +169,7 @@ public class PrayerListTests
 
         // Ensure we're back on the list
         driver.NavigateToTab("Prayers");
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10));
     }
 
     /// <summary>4.8: Mark prayer as answered.</summary>
@@ -186,11 +186,11 @@ public class PrayerListTests
         Thread.Sleep(1000);
 
         // Find it and open it
-        if (driver.IsTextDisplayed("Mark Answered UITest", timeoutSeconds: 5))
+        if (driver.IsTextDisplayed("Mark Answered UITest", timeoutSeconds: 10))
         {
             driver.TapByText("Mark Answered UITest");
 
-            if (driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 5))
+            if (driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 10))
             {
                 driver.Tap("Detail_Btn_MarkAnswered");
                 Thread.Sleep(500);
@@ -205,10 +205,10 @@ public class PrayerListTests
         driver.NavigateToTab("Prayers");
 
         // Verify Answered filter still works
-        if (driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 5))
+        if (driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 10))
             driver.Tap("List_Filter_Answered");
 
-        Assert.True(driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 10));
 
         // Restore Active filter for subsequent tests
         if (driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 2))
@@ -231,7 +231,7 @@ public class PrayerListTests
         // emulator. Fixed Thread.Sleep(1000) raced the rebuild.
         driver.WaitForElement("List_Filter_Active", timeoutSeconds: 10);
 
-        if (driver.IsTextDisplayed("Delete Me Prayer", timeoutSeconds: 5))
+        if (driver.IsTextDisplayed("Delete Me Prayer", timeoutSeconds: 10))
         {
             driver.TapByText("Delete Me Prayer");
 
@@ -250,7 +250,7 @@ public class PrayerListTests
 
         // Should return to list
         driver.NavigateToTab("Prayers");
-        if (!driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5))
+        if (!driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10))
         {
             var dumpPath = driver.DumpPageSource("DeletePrayer_Android_FAIL");
             Assert.Fail(

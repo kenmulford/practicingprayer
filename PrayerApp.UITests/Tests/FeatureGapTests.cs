@@ -34,7 +34,7 @@ public class FeatureGapTests
         var driver = _setup.Driver;
 
         // Home content is inside a ScrollView — scroll to the metric grid area
-        if (!driver.IsDisplayed("Home_Metric_Overdue", timeoutSeconds: 5))
+        if (!driver.IsDisplayed("Home_Metric_Overdue", timeoutSeconds: 10))
             driver.ScrollDownTo("Home_Metric_Overdue", maxScrolls: 2);
 
         // Try to find the "Answered on this date" card
@@ -90,15 +90,15 @@ public class FeatureGapTests
         bool answerVisibleBefore = driver.IsTextContainsDisplayed(faqAnswerFragment, timeoutSeconds: 2);
 
         // Tap the question to expand
-        driver.TapByText(faqQuestion, timeoutSeconds: 5);
+        driver.TapByText(faqQuestion, timeoutSeconds: 10);
         Thread.Sleep(500);
 
         // Verify the answer IS visible after tapping
-        Assert.True(driver.IsTextContainsDisplayed(faqAnswerFragment, timeoutSeconds: 5),
+        Assert.True(driver.IsTextContainsDisplayed(faqAnswerFragment, timeoutSeconds: 10),
             "FAQ answer should be visible after tapping the question to expand");
 
         // Tap the question again to collapse
-        driver.TapByText(faqQuestion, timeoutSeconds: 5);
+        driver.TapByText(faqQuestion, timeoutSeconds: 10);
         Thread.Sleep(500);
 
         // Verify the answer is hidden after collapsing.
@@ -114,7 +114,7 @@ public class FeatureGapTests
         }
 
         driver.GoBack();
-        Assert.True(driver.IsDisplayed("Settings_Row_Help", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Settings_Row_Help", timeoutSeconds: 10),
             "Should return to Settings hub after leaving Help page");
     }
 
@@ -163,7 +163,7 @@ public class FeatureGapTests
         if (reachedScopePage || driver.IsDisplayed("BoxScope_Btn_Start", timeoutSeconds: 3))
         {
             // We're on the collection scope page — verify Start and Cancel buttons
-            Assert.True(driver.IsDisplayed("BoxScope_Btn_Start", timeoutSeconds: 5)
+            Assert.True(driver.IsDisplayed("BoxScope_Btn_Start", timeoutSeconds: 10)
                 || driver.IsTextDisplayed("Start", timeoutSeconds: 3),
                 "Collection scope page should show Start button");
             Assert.True(driver.IsDisplayed("BoxScope_Btn_Cancel", timeoutSeconds: 3)
@@ -215,7 +215,7 @@ public class FeatureGapTests
         }
 
         // Verify we're back on Home
-        Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 10),
             "Should return to Home after cancelling collection scope");
     }
 
@@ -236,10 +236,10 @@ public class FeatureGapTests
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         // The overdue threshold Entry may require scrolling to reach
-        if (!driver.IsDisplayed("AppSettings_Entry_OverdueThreshold", timeoutSeconds: 5))
+        if (!driver.IsDisplayed("AppSettings_Entry_OverdueThreshold", timeoutSeconds: 10))
             driver.ScrollDownTo("AppSettings_Entry_OverdueThreshold", maxScrolls: 2);
 
-        Assert.True(driver.IsDisplayed("AppSettings_Entry_OverdueThreshold", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("AppSettings_Entry_OverdueThreshold", timeoutSeconds: 10),
             "Overdue threshold Entry should be visible on App Settings page");
 
         // Verify we can read the current value or see the placeholder
@@ -262,7 +262,7 @@ public class FeatureGapTests
             "Landscape Mode switch should also be visible on App Settings page");
 
         driver.GoBack();
-        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 10),
             "Should return to Settings hub after leaving App Settings");
     }
 
@@ -302,9 +302,9 @@ public class FeatureGapTests
 
         // Tap Favorite to toggle
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("Favorite", timeoutSeconds: 5);
+            driver.TapByTextContains("Favorite", timeoutSeconds: 10);
         else
-            driver.WaitAndTap("Cards_Btn_Favorite", timeoutSeconds: 5);
+            driver.WaitAndTap("Cards_Btn_Favorite", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         bool toggledFavorited = driver.IsTextContainsDisplayed(

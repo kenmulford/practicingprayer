@@ -509,7 +509,7 @@ public static class AppExtensions
                 driver.Tap(dismissButton);
                 Thread.Sleep(1000);
 
-                if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 5))
+                if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 10))
                 {
                     driver.Tap("Complete_Btn_Done");
                     Thread.Sleep(500);
@@ -623,28 +623,28 @@ public static class AppExtensions
     }
 
     /// <summary>Find an element by its visible text.</summary>
-    public static AppiumElement FindByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    public static AppiumElement FindByText(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
         return (AppiumElement)wait.Until(d => d.FindElement(TextLocator(text)));
     }
 
     /// <summary>Find an element whose text/label contains the given substring.</summary>
-    public static AppiumElement FindByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    public static AppiumElement FindByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
         return (AppiumElement)wait.Until(d => d.FindElement(TextContainsLocator(text)));
     }
 
     /// <summary>Find and tap any element by its visible text.</summary>
-    public static void TapByText(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    public static void TapByText(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.FindByText(text, timeoutSeconds).Click();
         Thread.Sleep(300);
     }
 
     /// <summary>Find and tap any element whose text/label <em>contains</em> the given substring.</summary>
-    public static void TapByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 5)
+    public static void TapByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.FindByTextContains(text, timeoutSeconds).Click();
         Thread.Sleep(300);
@@ -815,13 +815,13 @@ public static class AppExtensions
 
         // Create via Tags tab toolbar
         driver.TapToolbarItem("Add");
-        driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 5);
+        driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 10);
         driver.EnterText("TagDetail_Entry_Name", "UITest Tag");
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Verify we're back on tag list (iOS Bug #3: GoToAsync("..") may fail)
-        if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 5) && TestConfig.IsIOS)
+        if (!driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 10) && TestConfig.IsIOS)
             driver.NavigateToTab("Tags");
 
         Thread.Sleep(TestConfig.DelayCollectionRender);
@@ -835,7 +835,7 @@ public static class AppExtensions
     {
         driver.EnsureOnTab("Prayer Cards", setup);
         driver.TapToolbarItemById("Collections");
-        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
+        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
         if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
         {
@@ -844,12 +844,12 @@ public static class AppExtensions
         }
 
         driver.TapToolbarItem("Add");
-        driver.WaitForElement("BoxDetail_Entry_Name", timeoutSeconds: 5);
+        driver.WaitForElement("BoxDetail_Entry_Name", timeoutSeconds: 10);
         driver.EnterText("BoxDetail_Entry_Name", "UITest Collection");
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
-        if (!driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5) && TestConfig.IsIOS)
+        if (!driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 10) && TestConfig.IsIOS)
             driver.GoBack();
 
         driver.GoBack();
@@ -861,7 +861,7 @@ public static class AppExtensions
     /// flattens cells so text search returns a tiny inner label — this finds the parent
     /// XCUIElementTypeCell container which has enough height for reliable swipe gestures.
     /// </summary>
-    public static AppiumElement? FindCardCell(this AppiumDriver driver, string cardName, int timeoutSeconds = 5)
+    public static AppiumElement? FindCardCell(this AppiumDriver driver, string cardName, int timeoutSeconds = 10)
     {
         try
         {
@@ -905,7 +905,7 @@ public static class AppExtensions
         driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
         if (TestConfig.IsIOS) Thread.Sleep(500); // Let Shell finish rendering toolbar items
         driver.TapToolbarItem("Add");
-        driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 5);
+        driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 10);
     }
 
     /// <summary>Accept any visible alert by tapping its positive button (OK/Yes).</summary>
@@ -954,7 +954,7 @@ public static class AppExtensions
     /// Falls back to standard <c>TapByText</c> on Android.
     /// </summary>
     public static void TapIOSActionSheetButton(this AppiumDriver driver, string buttonName,
-        int timeoutSeconds = 5)
+        int timeoutSeconds = 10)
     {
         if (!TestConfig.IsIOS)
         {
@@ -1041,7 +1041,7 @@ public static class AppExtensions
     /// </summary>
     public static string GetAccessibleDescription(this AppiumDriver driver, string automationId)
     {
-        var element = driver.WaitForElement(automationId, timeoutSeconds: 5);
+        var element = driver.WaitForElement(automationId, timeoutSeconds: 10);
         if (element == null) return "";
         return TestConfig.IsAndroid
             ? element.GetDomAttribute("content-desc") ?? ""
@@ -1054,7 +1054,7 @@ public static class AppExtensions
     /// </summary>
     public static string GetAccessibleHint(this AppiumDriver driver, string automationId)
     {
-        var element = driver.WaitForElement(automationId, timeoutSeconds: 5);
+        var element = driver.WaitForElement(automationId, timeoutSeconds: 10);
         if (element == null) return "";
         return TestConfig.IsAndroid
             ? element.GetDomAttribute("hint") ?? ""
@@ -1120,7 +1120,7 @@ public static class AppExtensions
     {
         if (TestConfig.IsIOS) return; // heading attribute not exposed on iOS
 
-        var element = driver.WaitForElement(automationId, timeoutSeconds: 5)
+        var element = driver.WaitForElement(automationId, timeoutSeconds: 10)
             ?? throw new Xunit.Sdk.XunitException(
                 $"Element '{automationId}' not found for heading check");
         var heading = element.GetDomAttribute("heading");

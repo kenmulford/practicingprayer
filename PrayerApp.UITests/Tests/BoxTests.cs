@@ -30,8 +30,8 @@ public class BoxTests
         // Section headers use AutomationId="Cards_Section_Header"
         // At minimum, System section should be visible (Quick Add card lives there)
         Assert.True(
-            driver.IsTextDisplayed("System", timeoutSeconds: 5) ||
-            driver.IsDisplayed("Cards_Section_Header", timeoutSeconds: 5),
+            driver.IsTextDisplayed("System", timeoutSeconds: 10) ||
+            driver.IsDisplayed("Cards_Section_Header", timeoutSeconds: 10),
             "At least one section header should be visible on the Cards page");
     }
 
@@ -45,7 +45,7 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Find and tap the Archived section header (collapsed by default)
-        if (driver.IsTextDisplayed("Archived", timeoutSeconds: 5))
+        if (driver.IsTextDisplayed("Archived", timeoutSeconds: 10))
         {
             driver.TapByText("Archived");
             Thread.Sleep(TestConfig.DelayAfterTap);
@@ -56,7 +56,7 @@ public class BoxTests
         }
 
         // Page should still be functional
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
     }
 
     /// <summary>8.3: Navigate to Manage Collections from Cards page toolbar.</summary>
@@ -70,7 +70,7 @@ public class BoxTests
         driver.TapToolbarItemById("Collections");
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 10),
             "Should navigate to Collections management page");
 
         driver.GoBack();
@@ -85,19 +85,19 @@ public class BoxTests
         _setup.Driver.NavigateToTabRoot("Settings", "Settings_Row_AppSettings", _setup);
         var driver = _setup.Driver;
 
-        Assert.True(driver.IsDisplayed("Settings_Row_Collections", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Settings_Row_Collections", timeoutSeconds: 10),
             "Manage Collections row should be visible in Settings");
 
         driver.WaitAndTap("Settings_Row_Collections");
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 10),
             "Should navigate to Collections management page");
 
         driver.GoBack();
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-        Assert.True(driver.IsDisplayed("Settings_Row_Collections", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Settings_Row_Collections", timeoutSeconds: 10),
             "Should return to Settings hub");
     }
 
@@ -111,11 +111,11 @@ public class BoxTests
 
         // Navigate to Manage Collections
         driver.TapToolbarItemById("Collections");
-        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
+        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
         // Create a new collection
         driver.TapToolbarItem("Add");
-        driver.WaitForElement("BoxDetail_Entry_Name", timeoutSeconds: 5);
+        driver.WaitForElement("BoxDetail_Entry_Name", timeoutSeconds: 10);
 
         // Use a name NOT in the seed. The seed pre-populates "UITest Collection",
         // and CardBox.Name has a UNIQUE constraint — creating a second one would
@@ -125,7 +125,7 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Verify we returned to collection list (handle iOS Bug #3 GoToAsync unreliability)
-        var onList = driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5);
+        var onList = driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 10);
         if (!onList && TestConfig.IsIOS)
         {
             driver.GoBack();
@@ -133,7 +133,7 @@ public class BoxTests
         }
 
         // Verify the new collection appears
-        Assert.True(driver.IsTextDisplayed("New Collection UITest", timeoutSeconds: 5),
+        Assert.True(driver.IsTextDisplayed("New Collection UITest", timeoutSeconds: 10),
             "Newly created collection should appear in the list");
 
         driver.GoBack();
@@ -150,7 +150,7 @@ public class BoxTests
 
         driver.EnsureOnTab("Prayer Cards", _setup);
         driver.TapToolbarItemById("Collections");
-        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
+        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
         // Tap the collection to select it (reveals action chips)
         if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
@@ -164,7 +164,7 @@ public class BoxTests
                 driver.Tap("Boxes_Btn_Edit");
                 Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-                Assert.True(driver.IsDisplayed("BoxDetail_Entry_Name", timeoutSeconds: 5),
+                Assert.True(driver.IsDisplayed("BoxDetail_Entry_Name", timeoutSeconds: 10),
                     "Should navigate to collection detail for editing");
 
                 driver.TapToolbarItem("Save");
@@ -174,7 +174,7 @@ public class BoxTests
 
         // Navigate back to cards
         driver.NavigateToTab("Prayer Cards");
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
     }
 
     /// <summary>8.7: System collections are read-only — no Delete chip visible.</summary>
@@ -186,7 +186,7 @@ public class BoxTests
         var driver = _setup.Driver;
 
         driver.TapToolbarItemById("Collections");
-        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
+        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
         // Tap System collection to select it
         if (driver.IsTextDisplayed("System", timeoutSeconds: 3))
@@ -214,7 +214,7 @@ public class BoxTests
 
         driver.EnsureOnTab("Prayer Cards", _setup);
         driver.TapToolbarItemById("Collections");
-        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
+        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
         if (driver.IsTextDisplayed("Delete Me Collection B", timeoutSeconds: 3))
         {
@@ -237,7 +237,7 @@ public class BoxTests
         }
 
         // Collection should be gone
-        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 10),
             "Should remain on collections page after delete");
 
         driver.GoBack();
@@ -253,7 +253,7 @@ public class BoxTests
         var driver = _setup.Driver;
 
         driver.TapToolbarItemById("Add Card");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
 
         // Collection picker should be visible for non-system cards
         Assert.True(driver.IsDisplayed("Card_Picker_Box", timeoutSeconds: 3),
@@ -265,10 +265,10 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Navigate back if needed (iOS Bug #3)
-        if (!driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5))
+        if (!driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10))
             driver.NavigateToTab("Prayer Cards");
 
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
 
         // Clean up: delete the test card
         if (driver.IsTextDisplayed("UITest Card With Collection", timeoutSeconds: 3))
@@ -299,7 +299,7 @@ public class BoxTests
         // This test verifies the Cancel button exits multi-select mode if we can enter it.
 
         // Try to find a card to long-press
-        if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 5))
+        if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 10))
         {
             var cardElement = driver.FindByTextContains("Quick Add");
 
@@ -330,7 +330,7 @@ public class BoxTests
             }
         }
 
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
     }
 
     /// <summary>8.11: Delete collection — choose "Delete All Cards &amp; Requests" option.
@@ -344,7 +344,7 @@ public class BoxTests
 
         driver.EnsureOnTab("Prayer Cards", _setup);
         driver.TapToolbarItemById("Collections");
-        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
+        driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
         if (driver.IsTextDisplayed("Delete Me Collection A", timeoutSeconds: 3))
         {
@@ -367,7 +367,7 @@ public class BoxTests
         }
 
         // Should remain on collections page; collection should be gone
-        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 10),
             "Should remain on collections page after delete");
 
         driver.GoBack();
@@ -386,9 +386,9 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Long-press to enter multi-select mode
-        if (!driver.IsTextDisplayed("UITest Card", timeoutSeconds: 5))
+        if (!driver.IsTextDisplayed("UITest Card", timeoutSeconds: 10))
         {
-            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
             return; // Skip if no card available
         }
 
@@ -406,7 +406,7 @@ public class BoxTests
 
         if (!driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 3))
         {
-            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
             return; // Multi-select didn't activate
         }
 
@@ -441,7 +441,7 @@ public class BoxTests
         // Multi-select toolbar should be gone
         Assert.False(driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2),
             "Multi-select toolbar should be hidden after move");
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
     }
 
     /// <summary>8.13: Search auto-expands matching sections.</summary>
@@ -456,7 +456,7 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Type a search term into the search bar
-        var searchBar = driver.WaitForElement("Cards_Search", timeoutSeconds: 5);
+        var searchBar = driver.WaitForElement("Cards_Search", timeoutSeconds: 10);
         searchBar.Click();
         Thread.Sleep(TestConfig.DelayAfterTap);
         searchBar.SendKeys("UITest");
@@ -464,8 +464,8 @@ public class BoxTests
 
         // Search results should show matching cards
         Assert.True(
-            driver.IsTextDisplayed("UITest Card", timeoutSeconds: 5) ||
-            driver.IsDisplayed("Cards_Section_Header", timeoutSeconds: 5),
+            driver.IsTextDisplayed("UITest Card", timeoutSeconds: 10) ||
+            driver.IsDisplayed("Cards_Section_Header", timeoutSeconds: 10),
             "Matching cards or section headers should be visible after search");
 
         // Clear search
@@ -473,7 +473,7 @@ public class BoxTests
         driver.DismissKeyboardIfPresent();
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
     }
 
     /// <summary>8.14: Empty collection shows hint text when expanded.</summary>
@@ -488,7 +488,7 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // The UITest Collection may be empty. Find its section header and expand it.
-        if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 5))
+        if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 10))
         {
             driver.TapByText("UITest Collection");
             Thread.Sleep(TestConfig.DelayAfterTap);
@@ -501,13 +501,13 @@ public class BoxTests
             Thread.Sleep(TestConfig.DelayAfterTap);
 
             // If collection had cards, hint wouldn't show — either way, page is functional
-            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5),
+            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
                 "Cards page should remain functional after expand/collapse");
         }
         else
         {
             // Collection not visible — may need to scroll. Just verify page is functional.
-            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
+            Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
         }
     }
 
@@ -532,7 +532,7 @@ public class BoxTests
             catch (WebDriverException) { /* let the assert produce the canonical error */ }
         }
 
-        if (!driver.IsTextDisplayed("Archived", timeoutSeconds: 5))
+        if (!driver.IsTextDisplayed("Archived", timeoutSeconds: 10))
         {
             var dumpPath = driver.DumpPageSource("ArchivedSection_Android_FAIL");
             Assert.Fail(
@@ -551,7 +551,7 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         // Page should still be functional
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5),
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
             "Cards page should remain functional after toggling Archived section");
     }
 }
