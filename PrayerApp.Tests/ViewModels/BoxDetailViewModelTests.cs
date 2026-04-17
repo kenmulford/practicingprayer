@@ -3,6 +3,7 @@ using NSubstitute;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
+using SQLite;
 
 namespace PrayerApp.Tests.ViewModels;
 
@@ -63,6 +64,24 @@ public class BoxDetailViewModelTests
 
         await _boxService.Received(1).SaveBoxAsync(Arg.Is<CardBox>(b => b.Name == "Family"));
         await _navigationService.Received(1).GoToAsync("..");
+    }
+
+    [Fact]
+    public async Task SaveCommand_DuplicateName_ShowsAlert_DoesNotNavigate()
+    {
+        _boxService.SaveBoxAsync(Arg.Any<CardBox>()).Returns<CardBox>(_ =>
+            throw SQLiteException.New(SQLite3.Result.Constraint,
+                "UNIQUE constraint failed: CardBox.Name"));
+        var sut = CreateSut();
+        sut.Name = "Family";
+
+        await ((AsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _navigationService.Received(1).DisplayAlertAsync(
+            Arg.Is<string>(t => t.Contains("Duplicate")),
+            Arg.Is<string>(m => m.Contains("Family")),
+            "OK");
+        await _navigationService.DidNotReceive().GoToAsync(Arg.Any<string>());
     }
 
     [Fact]

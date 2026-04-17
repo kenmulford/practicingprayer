@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using SQLite;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
@@ -94,7 +95,19 @@ namespace PrayerApp.ViewModels
                 return;
             }
 
-            await _boxService.SaveBoxAsync(_box);
+            try
+            {
+                await _boxService.SaveBoxAsync(_box);
+            }
+            catch (SQLiteException ex) when (ex.Result == SQLite3.Result.Constraint)
+            {
+                await _navigationService.DisplayAlertAsync(
+                    $"Duplicate {BoxStrings.Word} Name",
+                    $"A {BoxStrings.Word.ToLowerInvariant()} named '{Name}' already exists. Please choose a different name.",
+                    "OK");
+                return;
+            }
+
             CaptureOriginals();
             _accessibilityService.Announce($"{BoxStrings.Word} saved");
             await _navigationService.GoToAsync("..");

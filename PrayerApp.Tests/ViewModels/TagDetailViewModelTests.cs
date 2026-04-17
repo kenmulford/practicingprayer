@@ -3,6 +3,7 @@ using NSubstitute;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
+using SQLite;
 
 namespace PrayerApp.Tests.ViewModels;
 
@@ -75,6 +76,24 @@ public class TagDetailViewModelTests
         await _tagService.Received(1).SaveTagAsync(Arg.Any<PrayerTag>());
         _accessibilityService.Received(1).Announce("Tag saved");
         await _navigationService.Received(1).GoToAsync("..");
+    }
+
+    [Fact]
+    public async Task SaveCommand_DuplicateName_ShowsAlert_DoesNotNavigate()
+    {
+        _tagService.SaveTagAsync(Arg.Any<PrayerTag>()).Returns<PrayerTag>(_ =>
+            throw SQLiteException.New(SQLite3.Result.Constraint,
+                "UNIQUE constraint failed: PrayerTag.Name"));
+        var sut = CreateSut();
+        sut.Name = "Family";
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _navigationService.Received(1).DisplayAlertAsync(
+            Arg.Is<string>(t => t.Contains("Duplicate")),
+            Arg.Is<string>(m => m.Contains("Family")),
+            "OK");
+        await _navigationService.DidNotReceive().GoToAsync(Arg.Any<string>());
     }
 
     // ── CanLeaveAsync ─────────────────────────────────────────────────

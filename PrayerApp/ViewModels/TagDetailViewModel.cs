@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
+using SQLite;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -184,7 +185,18 @@ namespace PrayerApp.ViewModels
             }
 
             _tag.Color = SelectedColorHex;
-            await _tagService.SaveTagAsync(_tag);
+            try
+            {
+                await _tagService.SaveTagAsync(_tag);
+            }
+            catch (SQLiteException ex) when (ex.Result == SQLite3.Result.Constraint)
+            {
+                await _navigationService.DisplayAlertAsync(
+                    "Duplicate Tag Name",
+                    $"A tag named '{Name}' already exists. Please choose a different name.",
+                    "OK");
+                return;
+            }
             CaptureOriginals();
             _accessibilityService.Announce("Tag saved");
 

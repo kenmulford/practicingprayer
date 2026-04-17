@@ -412,6 +412,10 @@ public static class AppExtensions
     public static void EnsureOnTab(this AppiumDriver driver, string tabTitle, AppiumSetup setup)
     {
         setup.EnsureSessionAlive();
+        // iOS: the software keyboard persists across navigations and can cover the
+        // tab bar / toolbar items. Dismiss before attempting tab navigation.
+        // See Lessons/maui-ios-appium-locators.md. No-op on Android.
+        driver.DismissKeyboardIfPresent();
         driver.DismissOnboardingIfPresent(setup);
         driver.NavigateToTab(tabTitle);
     }
@@ -913,8 +917,21 @@ public static class AppExtensions
     {
         if (TestConfig.IsIOS)
         {
-            try { driver.SwitchTo().Alert().Accept(); Thread.Sleep(300); }
-            catch (WebDriverException) { }
+            // Some iOS modals need two accept attempts — the first dismisses the
+            // visible alert but a follow-up system alert (e.g. permission) may
+            // pop immediately after. See Lessons/uitest-per-test-ui-state-reset.md.
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                try
+                {
+                    driver.SwitchTo().Alert().Accept();
+                    Thread.Sleep(TestConfig.DelayAfterDismiss);
+                }
+                catch (WebDriverException)
+                {
+                    return; // no (more) alerts
+                }
+            }
             return;
         }
 

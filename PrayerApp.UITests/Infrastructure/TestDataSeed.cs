@@ -16,6 +16,15 @@ namespace PrayerApp.UITests.Infrastructure;
 /// </summary>
 internal static class TestDataSeed
 {
+    /// <summary>Seed the platform's device/simulator before the suite runs. No-op off-platform.</summary>
+    public static async Task SeedAsync()
+    {
+        if (TestConfig.IsAndroid)
+            await SeedAndroidAsync();
+        else if (TestConfig.IsIOS)
+            await SeedIOSAsync();
+    }
+
     public static async Task SeedAndroidAsync()
     {
         if (!TestConfig.IsAndroid) return;
@@ -30,6 +39,31 @@ internal static class TestDataSeed
         {
             await BuildSeedDbAsync(tempPath);
             await PushSeedToDeviceAsync(tempPath);
+        }
+        finally
+        {
+            TryDelete(tempPath);
+        }
+    }
+
+    public static async Task SeedIOSAsync()
+    {
+        if (!TestConfig.IsIOS) return;
+
+        // Fresh temp file per run (see SeedAndroidAsync for rationale).
+        string tempPath = Path.Combine(Path.GetTempPath(), $"prayer_seed_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            await BuildSeedDbAsync(tempPath);
+            await PushSeedToSimulatorAsync(tempPath);
+        }
+        catch (Exception ex)
+        {
+            // Don't block the run on a seed failure — let the suite start against
+            // whatever state the sim has and surface data-dependent failures in
+            // triage. Matches the Android intent (seed is best-effort baseline).
+            Console.WriteLine($"[TestDataSeed] iOS seed failed: {ex.Message}");
         }
         finally
         {
@@ -235,10 +269,66 @@ internal static class TestDataSeed
         await RunAdbAsync($"shell rm -f {stagePath}", allowFailure: true);
     }
 
+    private static async Task PushSeedToSimulatorAsync(string localPath)
+    {
+        //  1. terminate the app so SQLite releases its handle
+        //  2. resolve the app's data container via `xcrun simctl get_app_container`
+        //  3. File.Copy the seed into <container>/<IOSAppDbRelativePath>
+        //  4. remove stale WAL/SHM sidecars so SQLite doesn't replay them on next launch
+        //
+        // Unlike Android we don't need run-as — simulator container files are
+        // directly accessible from the host filesystem.
+
+        var bundleId = TestConfig.IOSBundleId;
+
+        await RunSimctlAsync($"terminate booted {bundleId}", allowFailure: true);
+
+        string? container = await RunSimctlCaptureAsync($"get_app_container booted {bundleId} data");
+        if (string.IsNullOrWhiteSpace(container))
+            throw new InvalidOperationException(
+                $"Could not resolve data container for {bundleId}. Is the app installed on the booted simulator?");
+
+        container = container.Trim();
+        var destPath = Path.Combine(container, TestConfig.IOSAppDbRelativePath);
+        var destDir = Path.GetDirectoryName(destPath)!;
+        Directory.CreateDirectory(destDir);
+
+        File.Copy(localPath, destPath, overwrite: true);
+
+        TryDelete(destPath + "-wal");
+        TryDelete(destPath + "-shm");
+    }
+
     /// <summary>Runs an adb command. Throws if adb exits non-zero unless allowFailure is true.</summary>
     private static async Task RunAdbAsync(string arguments, bool allowFailure = false)
     {
-        var psi = new ProcessStartInfo("adb", arguments)
+        _ = await RunProcessAsync("adb", arguments, allowFailure,
+            notFoundHint: "Is Android SDK platform-tools on PATH?");
+    }
+
+    /// <summary>Runs an xcrun simctl command. Throws on non-zero exit unless allowFailure is true.</summary>
+    private static async Task RunSimctlAsync(string arguments, bool allowFailure = false)
+    {
+        _ = await RunProcessAsync("xcrun", "simctl " + arguments, allowFailure,
+            notFoundHint: "Are Xcode command-line tools installed?");
+    }
+
+    /// <summary>Runs `xcrun simctl &lt;args&gt;` and returns stdout. Throws on non-zero exit.</summary>
+    private static async Task<string> RunSimctlCaptureAsync(string arguments)
+    {
+        var (stdout, _) = await RunProcessAsync("xcrun", "simctl " + arguments,
+            allowFailure: false, notFoundHint: "Are Xcode command-line tools installed?");
+        return stdout;
+    }
+
+    /// <summary>
+    /// Launches a process and returns its stdout/stderr. Reads streams before
+    /// <c>WaitForExitAsync</c> to avoid pipe-buffer deadlocks on large outputs.
+    /// </summary>
+    private static async Task<(string stdout, string stderr)> RunProcessAsync(
+        string fileName, string arguments, bool allowFailure, string notFoundHint)
+    {
+        var psi = new ProcessStartInfo(fileName, arguments)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -247,17 +337,19 @@ internal static class TestDataSeed
         };
 
         using var proc = Process.Start(psi)
-            ?? throw new InvalidOperationException("Failed to start adb. Is Android SDK platform-tools on PATH?");
+            ?? throw new InvalidOperationException($"Failed to start {fileName}. {notFoundHint}");
 
+        var stdoutTask = proc.StandardOutput.ReadToEndAsync();
+        var stderrTask = proc.StandardError.ReadToEndAsync();
         await proc.WaitForExitAsync();
+        var stdout = await stdoutTask;
+        var stderr = await stderrTask;
 
         if (proc.ExitCode != 0 && !allowFailure)
-        {
-            var stdout = await proc.StandardOutput.ReadToEndAsync();
-            var stderr = await proc.StandardError.ReadToEndAsync();
             throw new InvalidOperationException(
-                $"adb {arguments} failed (exit {proc.ExitCode}).\nstdout: {stdout}\nstderr: {stderr}");
-        }
+                $"{fileName} {arguments} failed (exit {proc.ExitCode}).\nstdout: {stdout}\nstderr: {stderr}");
+
+        return (stdout, stderr);
     }
 
     private static void TryDelete(string path)

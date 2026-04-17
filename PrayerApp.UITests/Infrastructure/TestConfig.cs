@@ -52,6 +52,13 @@ public static class TestConfig
     /// <summary>The iOS bundle identifier.</summary>
     public const string IOSBundleId = "com.multithreadedllc.prayercards";
 
+    /// <summary>App-container-relative path to the SQLite DB on iOS. Used by TestDataSeed.</summary>
+    /// <remarks>
+    /// MAUI's <c>FileSystem.AppDataDirectory</c> maps to <c>Library/</c> on iOS
+    /// (not <c>Documents/</c>). Verified 2026-04-17 against the iPad (A16) sim.
+    /// </remarks>
+    public const string IOSAppDbRelativePath = "Library/prayer_app.db";
+
     public static AppiumOptions GetOptions()
     {
         if (IsAndroid)
@@ -97,6 +104,8 @@ public static class TestConfig
         options.PlatformName = "iOS";
         options.AutomationName = "XCUITest";
         options.AddAdditionalAppiumOption("bundleId", IOSBundleId);
+        // Preserve app data (incl. the DB seeded by TestDataSeed) across driver creation.
+        options.AddAdditionalAppiumOption("noReset", true);
         // Auto-dismiss iOS system alerts (permissions, dictation prompts).
         options.AddAdditionalAppiumOption("autoDismissAlerts", true);
         // Hardware keyboard hides software keyboard — prevents SendKeys from
