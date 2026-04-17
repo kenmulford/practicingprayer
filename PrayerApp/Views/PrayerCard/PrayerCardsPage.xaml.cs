@@ -94,9 +94,44 @@ public partial class PrayerCardsPage : ContentPage
 
     private void OnCardBorderLoaded(object? sender, EventArgs e)
     {
+        if (sender is not Border border) return;
+
+        // Guard against double-subscription: CollectionView can call Loaded again without
+        // a preceding Unloaded during in-place refreshes. Run any prior cleanup first.
+        (border.Tag as Action)?.Invoke();
+
+        // Margin is a Thickness (not animatable by FadeTo/TranslateTo) — tween via the low-level
+        // Animation class. Initial margin is set without animation to avoid a load-in jump.
+        if (border.BindingContext is PrayerCardViewModel card)
+        {
+            border.Margin = CardMarginFor(card.IsExpanded);
+
+            System.ComponentModel.PropertyChangedEventHandler handler = (_, ev) =>
+            {
+                if (ev.PropertyName == nameof(PrayerCardViewModel.IsExpanded) && border.BindingContext is PrayerCardViewModel c)
+                    AnimateCardMargin(border, CardMarginFor(c.IsExpanded));
+            };
+            card.PropertyChanged += handler;
+
+            void Detach()
+            {
+                card.PropertyChanged -= handler;
+                border.Tag = null;
+            }
+            border.Tag = (Action)Detach;
+
+            // Unsubscribe on Unloaded so CollectionView recycling doesn't leak or misfire.
+            void OnUnloaded(object? _, EventArgs __)
+            {
+                Detach();
+                border.Unloaded -= OnUnloaded;
+            }
+            border.Unloaded += OnUnloaded;
+        }
+
 #if !ANDROID
         // iOS: TouchBehavior on the Border coexists with child tap gestures natively.
-        if (sender is not Border border || BindingContext is not PrayerCardsViewModel vm) return;
+        if (BindingContext is not PrayerCardsViewModel vm) return;
         var behavior = border.Behaviors.OfType<CommunityToolkit.Maui.Behaviors.TouchBehavior>().FirstOrDefault();
         if (behavior is null)
         {
@@ -111,6 +146,21 @@ public partial class PrayerCardsPage : ContentPage
         behavior.SetBinding(CommunityToolkit.Maui.Behaviors.TouchBehavior.LongPressCommandParameterProperty,
             new Binding("BindingContext", source: border));
 #endif
+    }
+
+    private static Thickness CardMarginFor(bool expanded)
+        => expanded ? new Thickness(0, 8) : new Thickness(14, 0, 0, 0);
+
+    private static void AnimateCardMargin(Border border, Thickness target)
+    {
+        // Android respects system animation settings automatically; no reduced-motion guard needed.
+        var from = border.Margin;
+        var tween = new Animation(v => border.Margin = new Thickness(
+            from.Left   + (target.Left   - from.Left)   * v,
+            from.Top    + (target.Top    - from.Top)    * v,
+            from.Right  + (target.Right  - from.Right)  * v,
+            from.Bottom + (target.Bottom - from.Bottom) * v), 0, 1);
+        tween.Commit(border, "CardMarginTween", rate: 16, length: 200, easing: Easing.CubicInOut);
     }
 
     // BUG-60: On Android, MAUI TapGestureRecognizer and native GestureDetector conflict.

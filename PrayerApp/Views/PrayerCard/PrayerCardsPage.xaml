@@ -262,17 +262,33 @@
                     <Border Grid.Column="1"
                             Style="{StaticResource PrayerCardBorder}"
                             Padding="0"
-                            Margin="14,0,0,0"
                             Loaded="OnCardBorderLoaded">
+                        <!-- Margin is animated in code-behind via OnCardBorderLoaded:
+                             collapsed: 14,0,0,0 (14px indent under collections)
+                             expanded:  0,8      (full-width, 8px vertical breathing room) -->
                         <Border.Triggers>
                             <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
                                 <Setter Property="Stroke" Value="{AppThemeBinding
                                     Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
                                 <Setter Property="StrokeThickness" Value="2.5" />
                             </DataTrigger>
+                            <!-- Expanded cards get a subtle "lifted paper" shadow. iOS Shadow rendering
+                                 can be uneven — keep it soft so absence isn't visually jarring. -->
                             <DataTrigger TargetType="Border" Binding="{Binding IsExpanded}" Value="True">
-                                <Setter Property="Margin" Value="0,8" />
+                                <Setter Property="Shadow">
+                                    <Shadow Brush="Black" Opacity="0.15" Radius="8" Offset="0,2" />
+                                </Setter>
                             </DataTrigger>
+                            <!-- Warm tint on expanded non-system cards. System cards already set their own
+                                 BackgroundColor (below) — MultiTrigger with IsSystem=False avoids override. -->
+                            <MultiTrigger TargetType="Border">
+                                <MultiTrigger.Conditions>
+                                    <BindingCondition Binding="{Binding IsExpanded}" Value="True" />
+                                    <BindingCondition Binding="{Binding IsSystem}"   Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding
+                                    Light={StaticResource CardExpandedLight}, Dark={StaticResource CardExpandedDark}}" />
+                            </MultiTrigger>
                             <DataTrigger TargetType="Border" Binding="{Binding IsSystem}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{AppThemeBinding
                                     Light={StaticResource SystemCardLight}, Dark={StaticResource SystemCardDark}}" />

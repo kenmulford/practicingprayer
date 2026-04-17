@@ -980,9 +980,11 @@ public static class AppExtensions
     public static bool HasAccessibleElement(this AppiumDriver driver, string descriptionText,
         int timeoutSeconds = 3)
     {
-        // Use contains() for partial matching — composed descriptions may have extra context
+        // Use contains() for partial matching — composed descriptions may have extra context.
+        // Android: search both @content-desc and @text because UiAutomator2 may not expose
+        // layout containers (Grid) as nodes — the text can live on child views instead.
         By locator = TestConfig.IsAndroid
-            ? By.XPath($"//*[contains(@content-desc,'{descriptionText}')]")
+            ? By.XPath($"//*[contains(@content-desc,'{descriptionText}') or contains(@text,'{descriptionText}')]")
             : By.XPath($"//*[contains(@label,'{descriptionText}') or contains(@name,'{descriptionText}')]");
         var prev = driver.Manage().Timeouts().ImplicitWait;
         try

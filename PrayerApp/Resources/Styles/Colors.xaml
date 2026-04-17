@@ -43,6 +43,9 @@
     <Color x:Key="CardBorderDark">#2a2e26</Color>
     <Color x:Key="SystemCardLight">#F0F3EC</Color>
     <Color x:Key="SystemCardDark">#1e201b</Color>
+    <!-- Expanded (active) prayer card — subtle "lifted paper" tint used with a soft Shadow -->
+    <Color x:Key="CardExpandedLight">#FFFAF0</Color>
+    <Color x:Key="CardExpandedDark">#20221D</Color>
 
     <!-- Action chip backgrounds -->
     <Color x:Key="ChipBgLight">#F0F0F0</Color>
