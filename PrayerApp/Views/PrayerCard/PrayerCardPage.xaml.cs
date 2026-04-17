@@ -22,7 +22,13 @@ public partial class PrayerCardPage : ContentPage
             if (vm.AvailableBoxes.Count == 0)
                 await vm.LoadBoxPickerAsync();
             if (vm.IsNew)
-                _ = Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+            {
+                // Delay past the Shell push animation (~220ms) so the platform Entry view
+                // is stable when Focus() is called. Dispatcher.DispatchAsync alone resolves
+                // immediately on the UI thread and fires Focus() mid-animation (BUG-70).
+                await Task.Delay(300);
+                TitleEntry.Focus();
+            }
         }
     }
 
