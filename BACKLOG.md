@@ -14,7 +14,7 @@
 
 > ✏️ _Update this section at the start and end of every session._
 
-**Status**: 1.2.1b56. 441 unit tests, 68 UITests. App live on Google Play.
+**Status**: 1.2.3b58. 441 unit tests, 96 UITests. App live on Google Play.
 **Last completed**: A11Y-4 complete (all 4 sprints) + UX-33 splash + TEST.md + F-23 answered-on-this-date.
 **Next up**: INV-6 localization decisions, UX-18 tablet layout.
 
