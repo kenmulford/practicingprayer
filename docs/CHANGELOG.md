@@ -13,3 +13,5 @@
 - **Clearer multi-select on cards** — Selecting cards now shows a check circle on the left of each card (filled green when selected, empty otherwise). The whole card shifts right in selection mode so the checks line up cleanly. The Select toolbar button doubles as the Cancel (X) while selecting, and the other toolbar actions are dimmed — making it obvious how to leave selection mode.
 - **Bigger splash screen icon** — The praying hands icon is now larger and sharper on the launch screen, especially on high-resolution Android devices.
 - **Smooth card expand animation** — Prayer cards now animate open and closed with a 200ms ease. Expanded cards are also given a subtle warm tint and a soft shadow, making it easy to see which card is active at a glance.
+- **Fixed: delete from edit screen returns to your prayer list** — Previously, deleting a prayer while editing it could leave you on a blank add-prayer form. Now delete always returns you cleanly to the prayer list.
+- **Fixed: new prayer card title auto-focuses** — When you tap "+ New Card," the Title field now opens focused with the keyboard ready, so you can start typing right away.

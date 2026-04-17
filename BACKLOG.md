@@ -16,7 +16,13 @@
 
 **Status**: 1.2.3b58. 441 unit tests, 96 UITests. App live on Google Play.
 **Last completed**: BUG-69 (delete-from-edit landed on blank Add form) + BUG-70 (new-card Title autofocus regression). 2026-04-17 PM.
-**Next up**: INV-6 localization decisions, UX-18 tablet layout.
+**Pre-release gating (before next dot release):**
+1. Re-test BUG-64 (tag save return) — canary passed unexpectedly, needs full-suite confirmation
+2. Re-test BUG-65 (post-delete IEditGuard dialog) — verify still reproduces or is fixed by BUG-69's option E
+3. Re-test BUG-66 (empty loose card missing post-save) — investigate race vs. manual
+4. Run full UITest suite on Android and log results
+5. Start iOS UITest review process — macOS setup, initial run, triage what's applicable
+**Next up:** INV-6 localization decisions, UX-18 tablet layout.
 
 ---
 
