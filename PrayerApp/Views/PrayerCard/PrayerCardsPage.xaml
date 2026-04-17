@@ -10,17 +10,20 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Collections" AutomationId="Cards_Btn_Collections"
                      IconImageSource="folder_regular_full.png"
+                     SemanticProperties.Description="Collections"
                      SemanticProperties.Hint="Manage collections"
                      Clicked="OnCollectionsTapped"
                      Order="Primary" Priority="0" />
         <ToolbarItem Text="Select" AutomationId="Cards_Btn_Select"
                      IconImageSource="list_check_solid_full.png"
+                     SemanticProperties.Description="Select"
                      SemanticProperties.Hint="Enter multi-select mode to select multiple cards"
                      Command="{Binding EnterMultiSelectCommand}"
                      Order="Primary" Priority="1" />
         <ToolbarItem Text="Add Card" AutomationId="Cards_Btn_Add"
                      IconImageSource="plus_solid_full.png"
                      Command="{Binding NewCommand}"
+                     SemanticProperties.Description="Add Card"
                      SemanticProperties.Hint="Creates a new prayer card"
                      Order="Primary" Priority="2" />
     </ContentPage.ToolbarItems>

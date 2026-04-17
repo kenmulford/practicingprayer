@@ -492,7 +492,35 @@ public static class AppExtensions
 
     // ── Toolbar / Text Finders ────────────────────────────────────
 
-    /// <summary>Tap a Shell ToolbarItem by its text label (e.g., "Save", "Edit", "Add Card").</summary>
+    /// <summary>
+    /// Tap a Shell ToolbarItem by its <c>AutomationId</c>. Preferred over
+    /// <see cref="TapToolbarItem"/> for any iconized toolbar: once a ToolbarItem has
+    /// <c>IconImageSource</c>, MAUI Shell renders it as an icon-only button on Android
+    /// and the visible <c>Text</c> is no longer a <c>TextView</c> in the UiAutomator2
+    /// tree. <c>AutomationId</c> is the stable contract and works for text-only AND
+    /// icon-only ToolbarItems on both platforms.
+    /// </summary>
+    public static void TapToolbarItemById(this AppiumDriver driver, string automationId,
+        int timeoutSeconds = 10)
+    {
+        driver.DismissKeyboardIfPresent();
+        if (TestConfig.IsIOS) Thread.Sleep(300);
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        var locator = AutomationIdLocator(automationId);
+
+        var element = wait.Until(d => d.FindElement(locator));
+        element.Click();
+        Thread.Sleep(300);
+    }
+
+    /// <summary>
+    /// Tap a Shell ToolbarItem by visible text (e.g. "Save", "Edit"). Works for
+    /// text-only toolbars (no <c>IconImageSource</c>). For iconized ToolbarItems, use
+    /// <see cref="TapToolbarItemById"/> instead — icon-only rendering removes the
+    /// visible <c>Text</c> from the UiAutomator2 tree on Android, which makes text
+    /// lookup fragile. See <c>Lessons/uitest-automation-ids-over-visible-text.md</c>.
+    /// </summary>
     public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.DismissKeyboardIfPresent();
@@ -733,7 +761,7 @@ public static class AppExtensions
     public static void EnsureUITestCollectionExists(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayer Cards", setup);
-        driver.TapToolbarItem("Collections");
+        driver.TapToolbarItemById("Cards_Btn_Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
@@ -798,7 +826,7 @@ public static class AppExtensions
         if (found) return;
 
         // Create via toolbar Add Card
-        driver.TapToolbarItem("Add Card");
+        driver.TapToolbarItemById("Cards_Btn_Add");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
         driver.EnterText("Card_Entry_Title", "UITest Card");
         driver.DismissKeyboardIfPresent();

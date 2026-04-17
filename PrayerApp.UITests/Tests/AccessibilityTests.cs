@@ -240,35 +240,44 @@ public class AccessibilityTests
         Assert.DoesNotContain("content-desc=\"\u25BC\"", source);
     }
 
-    /// <summary>15.8: Toolbar items have accessible hints (spot check on Prayer Cards).</summary>
+    /// <summary>15.8: All Prayer Cards toolbar items are present in the accessibility
+    /// tree with a non-empty accessible name. Tests the accessibility CONTRACT
+    /// (<c>AutomationId</c> resolves + <c>SemanticProperties.Description</c> present),
+    /// not the visual rendering. An icon-only button with a proper Description
+    /// passes; one without fails. Also verifies the Select↔Cancel multi-select
+    /// toggle keeps the accessible name in sync with the visual state.</summary>
     [Fact]
     public void Cards_ToolbarItems_HaveHints()
     {
         Driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // The "Collections" toolbar item has SemanticProperties.Hint="Manage collections"
-        // Check that the toolbar item is reachable and has meaningful text
-        if (TestConfig.IsIOS)
+        // Every iconized toolbar item needs a meaningful accessible name. Locate by
+        // stable AutomationId — survives iconization, localization, and layout rework.
+        // Do NOT search by visible text; MAUI Shell renders iconized ToolbarItems as
+        // image-only buttons on Android, removing @text from the tree.
+        foreach (var id in new[] { "Cards_Btn_Collections", "Cards_Btn_Select", "Cards_Btn_Add" })
         {
-            // iOS toolbar buttons: verify "Collections" exists as a tappable button
-            try
-            {
-                Driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
-                var element = Driver.FindElement(
-                    By.XPath("//XCUIElementTypeButton[@name='Collections' or @label='Collections']"));
-                Assert.True(element.Displayed, "Collections toolbar button should be visible on iOS");
-            }
-            finally
-            {
-                Driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
-            }
+            var name = Driver.GetAccessibleDescription(id);
+            Assert.False(string.IsNullOrWhiteSpace(name),
+                $"{id} should have a non-empty accessible name (SemanticProperties.Description " +
+                "or equivalent). Screen reader users rely on this.");
         }
-        else
-        {
-            // Android: verify the Collections toolbar item is displayed
-            Assert.True(Driver.IsTextDisplayed("Collections", timeoutSeconds: 5),
-                "Collections toolbar item should be visible on Android");
-        }
+
+        // Multi-select toggle mutates Text/Icon/Description at runtime. Verify the
+        // Description stays in sync — entering multi-select should change the Select
+        // button's accessible name (to "Cancel" or similar, not empty/stale).
+        var selectNameBefore = Driver.GetAccessibleDescription("Cards_Btn_Select");
+        Driver.Tap("Cards_Btn_Select");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        var selectNameAfter = Driver.GetAccessibleDescription("Cards_Btn_Select");
+        Assert.False(string.IsNullOrWhiteSpace(selectNameAfter),
+            "Select toolbar item should still have an accessible name in multi-select mode.");
+        Assert.NotEqual(selectNameBefore, selectNameAfter);
+
+        // Leave the page in its normal state for subsequent tests.
+        Driver.Tap("Cards_Btn_Select");
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 }

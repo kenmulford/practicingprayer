@@ -17,21 +17,23 @@ public partial class PrayerCardsPage : ContentPage
         vm.PropertyChanged += OnViewModelPropertyChanged;
     }
 
-    /// <summary>
-    /// Toggles the toolbar between normal and multi-select modes in-place.
-    /// - Select item mutates: "Select" + list-check icon + EnterMultiSelectCommand
-    ///   ↔ "Cancel" + xmark icon + CancelMultiSelectCommand.
-    /// - Collections and Add Card are disabled (greyed) in multi-select so the
-    ///   Cancel (X) action is the visual focus.
-    /// ToolbarItem has no IsVisible binding in MAUI Shell; mutating in place
-    /// avoids the remove/re-add state bugs we hit when the icon would be lost.
-    /// </summary>
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(PrayerCardsViewModel.IsMultiSelectMode)) return;
         ApplyMultiSelectToolbarState((PrayerCardsViewModel)sender!);
     }
 
+    /// <summary>
+    /// Toggles the toolbar between normal and multi-select modes in-place.
+    /// - Select item mutates: Text/Icon/Command plus SemanticProperties Description
+    ///   and Hint — "Select" + list-check icon + EnterMultiSelectCommand ↔
+    ///   "Cancel" + xmark icon + CancelMultiSelectCommand. Description must be
+    ///   kept in sync with Text so screen readers announce the current mode.
+    /// - Collections and Add Card are disabled (greyed) in multi-select so the
+    ///   Cancel (X) action is the visual focus.
+    /// ToolbarItem has no IsVisible binding in MAUI Shell; mutating in place
+    /// avoids the remove/re-add state bugs we hit when the icon would be lost.
+    /// </summary>
     private void ApplyMultiSelectToolbarState(PrayerCardsViewModel vm)
     {
         var selectItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Select");
@@ -45,6 +47,7 @@ public partial class PrayerCardsPage : ContentPage
                 selectItem.Text = "Cancel";
                 selectItem.IconImageSource = "xmark_solid_full.png";
                 selectItem.Command = vm.CancelMultiSelectCommand;
+                SemanticProperties.SetDescription(selectItem, "Cancel");
                 SemanticProperties.SetHint(selectItem, "Exit multi-select mode");
             }
             if (collectionsItem != null) collectionsItem.IsEnabled = false;
@@ -57,6 +60,7 @@ public partial class PrayerCardsPage : ContentPage
                 selectItem.Text = "Select";
                 selectItem.IconImageSource = "list_check_solid_full.png";
                 selectItem.Command = vm.EnterMultiSelectCommand;
+                SemanticProperties.SetDescription(selectItem, "Select");
                 SemanticProperties.SetHint(selectItem, "Enter multi-select mode to select multiple cards");
             }
             if (collectionsItem != null) collectionsItem.IsEnabled = true;

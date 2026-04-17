@@ -107,7 +107,7 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItem("Add Card");
+        driver.TapToolbarItemById("Cards_Btn_Add");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
 
         driver.EnterText("Card_Entry_Title", "UITest Card");
@@ -190,7 +190,7 @@ public class PrayerCardTests
         var driver = _setup.Driver;
 
         // Create a card to delete
-        driver.TapToolbarItem("Add Card");
+        driver.TapToolbarItemById("Cards_Btn_Add");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
         driver.EnterText("Card_Entry_Title", "Delete Me Card");
         driver.TapToolbarItem("Save");

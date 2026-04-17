@@ -63,7 +63,7 @@ public class BoxTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItem("Collections");
+        driver.TapToolbarItemById("Cards_Btn_Collections");
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5),
@@ -104,7 +104,7 @@ public class BoxTests
         var driver = _setup.Driver;
 
         // Navigate to Manage Collections
-        driver.TapToolbarItem("Collections");
+        driver.TapToolbarItemById("Cards_Btn_Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         // Create a new collection
@@ -139,7 +139,7 @@ public class BoxTests
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
-        driver.TapToolbarItem("Collections");
+        driver.TapToolbarItemById("Cards_Btn_Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         // Tap the collection to select it (reveals action chips)
@@ -174,7 +174,7 @@ public class BoxTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItem("Collections");
+        driver.TapToolbarItemById("Cards_Btn_Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         // Tap System collection to select it
@@ -200,7 +200,7 @@ public class BoxTests
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
-        driver.TapToolbarItem("Collections");
+        driver.TapToolbarItemById("Cards_Btn_Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
@@ -238,7 +238,7 @@ public class BoxTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItem("Add Card");
+        driver.TapToolbarItemById("Cards_Btn_Add");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
 
         // Collection picker should be visible for non-system cards
@@ -328,7 +328,7 @@ public class BoxTests
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
-        driver.TapToolbarItem("Collections");
+        driver.TapToolbarItemById("Cards_Btn_Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
