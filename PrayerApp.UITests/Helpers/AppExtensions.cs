@@ -418,6 +418,72 @@ public static class AppExtensions
         driver.DismissKeyboardIfPresent();
         driver.DismissOnboardingIfPresent(setup);
         driver.NavigateToTab(tabTitle);
+
+        // TD-17 step 1: on the Cards tab, force every collection section to "expanded"
+        // so downstream assertions that look for cards inside a collection don't time
+        // out against a collapsed section. Preferences default is "all collapsed" on
+        // first launch — which is what every seeded test session starts from.
+        if (tabTitle == "Prayer Cards")
+        {
+            driver.EnsureAllSectionsExpanded();
+        }
+    }
+
+    /// <summary>
+    /// Expand every collapsed collection section on the Cards page. No-op for
+    /// sections that are already expanded.
+    ///
+    /// Why this exists: MAUI persists <c>ExpandedSectionIds</c> in Preferences
+    /// and the default (empty) state renders every section collapsed. Many
+    /// UITests assert on cards inside a collection without expanding it first;
+    /// on a freshly-seeded session they time out. See TD-17 / the
+    /// uitest-fix-harness-globals-before-per-test-audits lesson.
+    ///
+    /// Detection heuristic: the triangle indicator and HeaderText labels inside
+    /// the section header are marked <c>AutomationProperties.IsInAccessibleTree="False"</c>,
+    /// so we can't read "▷" vs "▼" from the a11y tree. Instead we look at the
+    /// vertical gap between consecutive section headers: collapsed sections sit
+    /// flush against their footer (HeightRequest=0 when collapsed per
+    /// PrayerCardsPage.xaml), so the gap to the next header is tiny. Expanded
+    /// sections have 60+ px per card between headers.
+    /// </summary>
+    public static void EnsureAllSectionsExpanded(this AppiumDriver driver)
+    {
+        var headers = driver.FindElements(AutomationIdLocator("Cards_Section_Header"))
+            .OfType<AppiumElement>()
+            .OrderBy(h => h.Location.Y)
+            .ToList();
+
+        if (headers.Count == 0) return;
+
+        // Gap threshold: a collapsed section's footer collapses to HeightRequest=0,
+        // so consecutive header tops differ by just the header's own height
+        // (~60-120 px depending on platform). An expanded section adds at least one
+        // ~60+ px card row, pushing the gap above 120 px. 100 px is the safe floor.
+        const int CollapsedGapThreshold = 100;
+
+        for (int i = 0; i < headers.Count; i++)
+        {
+            int headerBottom = headers[i].Location.Y + headers[i].Size.Height;
+            int nextHeaderTop = (i + 1 < headers.Count)
+                ? headers[i + 1].Location.Y
+                : int.MaxValue;
+
+            bool looksCollapsed = (nextHeaderTop - headerBottom) < CollapsedGapThreshold;
+            if (!looksCollapsed) continue;
+
+            try
+            {
+                headers[i].Click();
+                Thread.Sleep(TestConfig.DelayAfterTap);
+            }
+            catch (WebDriverException)
+            {
+                // Best-effort: if a header becomes stale after a prior tap reflowed
+                // the list, swallow and move on. Tests that genuinely need a specific
+                // section will fall back to their own TapByText(sectionName).
+            }
+        }
     }
 
     // ── Diagnostics ──────────────────────────────────────────────
