@@ -48,11 +48,11 @@ public class AndroidTests
     }
 
     /// <summary>14.1 (variant): Hardware back with dirty state shows discard dialog.</summary>
-    [Fact]
+    [SkippableFact]
     public void HardwareBack_DirtyDetail_ShowsDiscardDialog()
     {
         if (TestConfig.IsIOS)
-            throw Xunit.Sdk.SkipException.ForSkip("Android-only: hardware back button does not exist on iOS");
+            throw new SkipException("Android-only: hardware back button does not exist on iOS");
 
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;

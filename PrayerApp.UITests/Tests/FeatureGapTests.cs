@@ -123,7 +123,7 @@ public class FeatureGapTests
     /// Requires both active prayers and user-created collections with cards to trigger
     /// the action sheet with the "By Collection" option.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public void PrayerTime_ByCollection_ShowsScopePage()
     {
         var driver = _setup.Driver;
@@ -206,7 +206,7 @@ public class FeatureGapTests
                 Thread.Sleep(TestConfig.DelayModalAnimation);
             }
 
-            throw Xunit.Sdk.SkipException.ForSkip(
+            throw new SkipException(
                 "Precondition: 'By Collection' action sheet option not available — "
                 + "requires user-created collections containing cards with active prayers");
         }
@@ -269,7 +269,7 @@ public class FeatureGapTests
     /// On Android, uses AutomationId "Cards_Btn_Favorite". On iOS, uses text-contains
     /// search for "Favorite" due to CollectionView accessibility flattening.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public void Cards_FavoriteToggle_ChangesState()
     {
         var driver = _setup.Driver;
@@ -321,7 +321,7 @@ public class FeatureGapTests
         }
 
         if (!favoriteFound)
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: Favorite button not found on expanded card");
+            throw new SkipException("Precondition: Favorite button not found on expanded card");
 
         // Tap Favorite to toggle
         if (TestConfig.IsIOS)

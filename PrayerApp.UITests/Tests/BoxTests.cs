@@ -63,7 +63,7 @@ public class BoxTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItemById("Cards_Btn_Collections");
+        driver.TapToolbarItemById("Collections");
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 5),
@@ -104,14 +104,17 @@ public class BoxTests
         var driver = _setup.Driver;
 
         // Navigate to Manage Collections
-        driver.TapToolbarItemById("Cards_Btn_Collections");
+        driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         // Create a new collection
         driver.TapToolbarItem("Add");
         driver.WaitForElement("BoxDetail_Entry_Name", timeoutSeconds: 5);
 
-        driver.EnterText("BoxDetail_Entry_Name", "UITest Collection");
+        // Use a name NOT in the seed. The seed pre-populates "UITest Collection",
+        // and CardBox.Name has a UNIQUE constraint — creating a second one would
+        // silently fail the save. See Lessons/uitest-destructive-tests-use-throwaways.md.
+        driver.EnterText("BoxDetail_Entry_Name", "New Collection UITest");
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
@@ -124,7 +127,7 @@ public class BoxTests
         }
 
         // Verify the new collection appears
-        Assert.True(driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 5),
+        Assert.True(driver.IsTextDisplayed("New Collection UITest", timeoutSeconds: 5),
             "Newly created collection should appear in the list");
 
         driver.GoBack();
@@ -139,7 +142,7 @@ public class BoxTests
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
-        driver.TapToolbarItemById("Cards_Btn_Collections");
+        driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         // Tap the collection to select it (reveals action chips)
@@ -174,7 +177,7 @@ public class BoxTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItemById("Cards_Btn_Collections");
+        driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         // Tap System collection to select it
@@ -192,20 +195,21 @@ public class BoxTests
         Thread.Sleep(TestConfig.DelayAfterNavigation);
     }
 
-    /// <summary>8.8: Delete collection — select, tap Delete chip, choose Unassign.</summary>
+    /// <summary>8.8: Delete collection — select, tap Delete chip, choose Unassign.
+    /// Targets the "Delete Me Collection B" throwaway entry from the seed so this
+    /// destructive test doesn't wipe the shared UITest Collection baseline.</summary>
     [Fact]
     public void Boxes_DeleteCollection_UnassignCards()
     {
-        _setup.Driver.EnsureUITestCollectionExists(_setup);
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
-        driver.TapToolbarItemById("Cards_Btn_Collections");
+        driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
-        if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
+        if (driver.IsTextDisplayed("Delete Me Collection B", timeoutSeconds: 3))
         {
-            driver.TapByText("UITest Collection");
+            driver.TapByText("Delete Me Collection B");
             Thread.Sleep(TestConfig.DelayAfterTap);
 
             if (driver.IsDisplayed("Boxes_Btn_Delete", timeoutSeconds: 3))
@@ -238,7 +242,7 @@ public class BoxTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItemById("Cards_Btn_Add");
+        driver.TapToolbarItemById("Add Card");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
 
         // Collection picker should be visible for non-system cards
@@ -273,7 +277,7 @@ public class BoxTests
     }
 
     /// <summary>8.10: Multi-select toolbar — verify it appears and Cancel exits.</summary>
-    [Fact]
+    [SkippableFact]
     public void Cards_MultiSelect_ToolbarAppearsAndCancels()
     {
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
@@ -297,7 +301,7 @@ public class BoxTests
             }
             catch (Exception ex)
             {
-                throw Xunit.Sdk.SkipException.ForSkip(
+                throw new SkipException(
                     $"Long-press not supported in this Appium config: {ex.Message}");
             }
 
@@ -305,10 +309,10 @@ public class BoxTests
             if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 3))
             {
                 // Cancel is on the toolbar — Select item mutates to X when multi-select is active.
-                Assert.True(driver.IsDisplayed("Cards_Btn_Select"),
+                Assert.True(driver.IsDisplayed("Select"),
                     "Toolbar Select item (now X/Cancel) should be visible in multi-select mode");
 
-                driver.Tap("Cards_Btn_Select");
+                driver.Tap("Select");
                 Thread.Sleep(TestConfig.DelayAfterTap);
 
                 Assert.False(driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2),
@@ -319,21 +323,21 @@ public class BoxTests
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 5));
     }
 
-    /// <summary>8.11: Delete collection — choose "Delete All Cards &amp; Requests" option.</summary>
+    /// <summary>8.11: Delete collection — choose "Delete All Cards &amp; Requests" option.
+    /// Targets the "Delete Me Collection A" throwaway entry from the seed so this
+    /// destructive test doesn't wipe the shared UITest Collection baseline.</summary>
     [Fact]
     public void Boxes_DeleteCollection_DeleteAllCards()
     {
-        // Create a throwaway collection for this test
-        _setup.Driver.EnsureUITestCollectionExists(_setup);
         var driver = _setup.Driver;
 
         driver.EnsureOnTab("Prayer Cards", _setup);
-        driver.TapToolbarItemById("Cards_Btn_Collections");
+        driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
-        if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
+        if (driver.IsTextDisplayed("Delete Me Collection A", timeoutSeconds: 3))
         {
-            driver.TapByText("UITest Collection");
+            driver.TapByText("Delete Me Collection A");
             Thread.Sleep(TestConfig.DelayAfterTap);
 
             if (driver.IsDisplayed("Boxes_Btn_Delete", timeoutSeconds: 3))
@@ -360,7 +364,7 @@ public class BoxTests
     }
 
     /// <summary>8.12: Multi-select move workflow — select 2 cards, Move to collection, verify.</summary>
-    [Fact]
+    [SkippableFact]
     public void Cards_MultiSelect_MoveToCollection()
     {
         _setup.Driver.EnsureUITestCollectionExists(_setup);
@@ -385,7 +389,7 @@ public class BoxTests
         }
         catch (Exception ex)
         {
-            throw Xunit.Sdk.SkipException.ForSkip(
+            throw new SkipException(
                 $"Long-press not supported in this Appium config: {ex.Message}");
         }
 
@@ -420,7 +424,7 @@ public class BoxTests
 
             // Exit multi-select — Cancel is on the toolbar (Select item mutates to X)
             if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2))
-                driver.Tap("Cards_Btn_Select");
+                driver.Tap("Select");
         }
 
         // Multi-select toolbar should be gone

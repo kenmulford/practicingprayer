@@ -19,6 +19,7 @@
     <!-- Seed DB dependencies — DBService + models use sqlite-net-pcl at runtime. -->
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.5.61" />
   </ItemGroup>
 
   <!--

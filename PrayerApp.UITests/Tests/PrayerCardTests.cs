@@ -107,10 +107,14 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        driver.TapToolbarItemById("Cards_Btn_Add");
+        driver.TapToolbarItemById("Add Card");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
 
-        driver.EnterText("Card_Entry_Title", "UITest Card");
+        // Use a name NOT in the seed. The seed already has "UITest Card" — creating
+        // another with the same name would make any assertion against
+        // IsTextDisplayed("UITest Card") trivially pass against the seeded one
+        // instead of the one we just created (silent false positive).
+        driver.EnterText("Card_Entry_Title", "New Card UITest");
         driver.TapToolbarItem("Save");
         Thread.Sleep(1000);
 
@@ -182,19 +186,16 @@ public class PrayerCardTests
         driver.DismissAlertIfPresent();
     }
 
-    /// <summary>3.12: Delete card — create card, navigate to detail, delete, confirm.</summary>
+    /// <summary>3.12: Delete card — navigate to the pre-seeded "Delete Me Card",
+    /// expand it, delete via the inline Delete button, confirm. The target card
+    /// is a throwaway from the seed; destroying it does not affect the shared
+    /// UITest baseline.</summary>
     [Fact]
     public void Cards_DeleteCard_RemovesFromList()
     {
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
-
-        // Create a card to delete
-        driver.TapToolbarItemById("Cards_Btn_Add");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
-        driver.EnterText("Card_Entry_Title", "Delete Me Card");
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Expand the card, tap inline Delete button
         if (driver.IsTextDisplayed("Delete Me Card", timeoutSeconds: 5))
@@ -287,7 +288,7 @@ public class PrayerCardTests
     }
 
     /// <summary>3.18: System card protection — Quick Add should not show action buttons when expanded.</summary>
-    [Fact]
+    [SkippableFact]
     public void Cards_SystemCard_ShareNotAvailable()
     {
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
@@ -304,7 +305,7 @@ public class PrayerCardTests
         }
         catch (WebDriverException)
         {
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'Quick Add' system card not found");
+            throw new SkipException("Precondition: 'Quick Add' system card not found");
         }
 
         // System cards should not show action buttons
@@ -313,7 +314,7 @@ public class PrayerCardTests
     }
 
     /// <summary>3.15: System card protection — Quick Add card's Delete button is hidden.</summary>
-    [Fact]
+    [SkippableFact]
     public void Cards_SystemCard_DeleteNotAvailable()
     {
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
@@ -330,7 +331,7 @@ public class PrayerCardTests
         }
         catch (WebDriverException)
         {
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'Quick Add' system card not found");
+            throw new SkipException("Precondition: 'Quick Add' system card not found");
         }
 
         // System cards should not show action buttons

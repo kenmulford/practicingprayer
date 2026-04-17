@@ -36,9 +36,9 @@ public partial class PrayerCardsPage : ContentPage
     /// </summary>
     private void ApplyMultiSelectToolbarState(PrayerCardsViewModel vm)
     {
-        var selectItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Select");
-        var collectionsItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Collections");
-        var addItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Cards_Btn_Add");
+        var selectItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Select");
+        var collectionsItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Collections");
+        var addItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Add Card");
 
         if (vm.IsMultiSelectMode)
         {

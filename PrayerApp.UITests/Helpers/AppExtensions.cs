@@ -394,6 +394,39 @@ public static class AppExtensions
         driver.NavigateToTab(tabTitle);
     }
 
+    /// <summary>
+    /// Reset the app to a known-good UI baseline before a test runs. Clears transient
+    /// state (multi-select mode, open modals, open alerts) that may have been left by
+    /// a prior failing test and cascades into false failures in subsequent tests.
+    ///
+    /// Call at the TOP of every test that assumes a clean baseline. Tests that
+    /// specifically verify a transient state (e.g. `Cards_MultiSelect_ToolbarAppearsAndCancels`)
+    /// should NOT call this — but the NEXT test always should.
+    ///
+    /// See Lessons/uitest-per-test-ui-state-reset.md for rationale.
+    /// </summary>
+    public static void ResetAppUIState(this AppiumDriver driver, AppiumSetup setup)
+    {
+        try { driver.DismissAlertIfPresent(); } catch { /* best effort */ }
+
+        // The Select AutomationId is stable across multi-select toggle — the visible text
+        // mutates between "Select" and "Cancel" but the ID stays "Select" for automation.
+        // 0-second timeout: ~99% of tests don't need this, and a 1-second implicit wait
+        // per call would add ~90s to the suite on the cold path.
+        try
+        {
+            if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 0))
+            {
+                driver.TapToolbarItemById("Select");
+                Thread.Sleep(TestConfig.DelayAfterTap);
+            }
+        }
+        catch { /* not on Prayer Cards or not in multi-select */ }
+
+        try { driver.EnsureOnTab("Home", setup); }
+        catch { /* best effort */ }
+    }
+
     /// <summary>Go back (Android back button or iOS back nav).</summary>
     public static void GoBack(this AppiumDriver driver)
         => driver.Navigate().Back();
@@ -761,7 +794,7 @@ public static class AppExtensions
     public static void EnsureUITestCollectionExists(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayer Cards", setup);
-        driver.TapToolbarItemById("Cards_Btn_Collections");
+        driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 5);
 
         if (driver.IsTextDisplayed("UITest Collection", timeoutSeconds: 3))
@@ -826,7 +859,7 @@ public static class AppExtensions
         if (found) return;
 
         // Create via toolbar Add Card
-        driver.TapToolbarItemById("Cards_Btn_Add");
+        driver.TapToolbarItemById("Add Card");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
         driver.EnterText("Card_Entry_Title", "UITest Card");
         driver.DismissKeyboardIfPresent();

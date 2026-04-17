@@ -16,7 +16,7 @@ public class UnsavedChangesTests
     public UnsavedChangesTests(AppiumSetup setup) => _setup = setup;
 
     /// <summary>5.1: Edit title → back button → discard dialog appears.</summary>
-    [Fact]
+    [SkippableFact]
     public void UnsavedChanges_EditTitle_BackShowsDiscardDialog()
     {
         // iOS back button tap does not fire Shell.Navigating (dotnet/maui#15813, #7351).
@@ -25,7 +25,7 @@ public class UnsavedChangesTests
         // Skip until MAUI fixes Shell.Navigating for iOS back button, or we find a
         // non-BackButtonBehavior workaround (BBB corrupts Shell nav stack — see run history).
         if (TestConfig.IsIOS)
-            throw Xunit.Sdk.SkipException.ForSkip(
+            throw new SkipException(
                 "iOS back button does not fire Shell.Navigating — swipe-back is disabled but back button still bypasses guard (MAUI #15813)");
 
         _setup.Driver.NavigateToNewPrayer(_setup);

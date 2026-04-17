@@ -67,7 +67,7 @@ public class OnboardingTests
     // Card share button is covered by Cards_EditPage_ShowsShareButton in PrayerCardTests.
 
     /// <summary>1.11: Share button exists on prayer detail view page.</summary>
-    [Fact]
+    [SkippableFact]
     public void Sharing_PrayerDetailShareButton_Exists()
     {
         var driver = _setup.Driver;
@@ -77,7 +77,7 @@ public class OnboardingTests
 
         // Open a prayer in view mode
         if (!driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 5))
-            throw Xunit.Sdk.SkipException.ForSkip("Precondition: 'UI Test Prayer' not found");
+            throw new SkipException("Precondition: 'UI Test Prayer' not found");
 
         driver.TapByText("UI Test Prayer");
         Thread.Sleep(TestConfig.DelayAfterNavigation);

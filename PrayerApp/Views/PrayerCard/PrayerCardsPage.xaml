@@ -8,19 +8,25 @@
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Collections" AutomationId="Cards_Btn_Collections"
+        <!-- AutomationId on MAUI Shell ToolbarItem becomes the Android contentDescription
+             (what TalkBack announces) because the Shell handler doesn't honor
+             SemanticProperties.Description on these. AutomationIds here MUST be
+             human-readable labels, not the {Page}_{Type}_{Name} convention used
+             elsewhere. Description is kept for iOS where accessibilityIdentifier and
+             accessibilityLabel are separate properties. -->
+        <ToolbarItem Text="Collections" AutomationId="Collections"
                      IconImageSource="folder_regular_full.png"
                      SemanticProperties.Description="Collections"
                      SemanticProperties.Hint="Manage collections"
                      Clicked="OnCollectionsTapped"
                      Order="Primary" Priority="0" />
-        <ToolbarItem Text="Select" AutomationId="Cards_Btn_Select"
+        <ToolbarItem Text="Select" AutomationId="Select"
                      IconImageSource="list_check_solid_full.png"
                      SemanticProperties.Description="Select"
                      SemanticProperties.Hint="Enter multi-select mode to select multiple cards"
                      Command="{Binding EnterMultiSelectCommand}"
                      Order="Primary" Priority="1" />
-        <ToolbarItem Text="Add Card" AutomationId="Cards_Btn_Add"
+        <ToolbarItem Text="Add Card" AutomationId="Add Card"
                      IconImageSource="plus_solid_full.png"
                      Command="{Binding NewCommand}"
                      SemanticProperties.Description="Add Card"

@@ -112,7 +112,7 @@ public class EdgeCaseTests
         var driver = _setup.Driver;
 
         // Create a fresh card with no prayers
-        driver.TapToolbarItemById("Cards_Btn_Add");
+        driver.TapToolbarItemById("Add Card");
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
         driver.EnterText("Card_Entry_Title", "Empty Card Test");
         driver.TapToolbarItem("Save");

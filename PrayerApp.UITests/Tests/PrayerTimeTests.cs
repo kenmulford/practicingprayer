@@ -159,11 +159,11 @@ public class PrayerTimeTests
     }
 
     /// <summary>8.1: Prayer Time session starts — carousel and nav buttons visible.</summary>
-    [Fact]
+    [SkippableFact]
     public void PrayerTime_SessionStarts_ShowsCarousel()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
+            throw new SkipException("Could not start Prayer Time session");
 
         var driver = _setup.Driver;
 
@@ -179,11 +179,11 @@ public class PrayerTimeTests
     }
 
     /// <summary>8.2: Navigation buttons — Previous/Next are present.</summary>
-    [Fact]
+    [SkippableFact]
     public void PrayerTime_NavigationButtons_Present()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
+            throw new SkipException("Could not start Prayer Time session");
 
         var driver = _setup.Driver;
 
@@ -200,11 +200,11 @@ public class PrayerTimeTests
     }
 
     /// <summary>8.3: Auto-mode button cycles timer intervals.</summary>
-    [Fact]
+    [SkippableFact]
     public void PrayerTime_AutoMode_CyclesInterval()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
+            throw new SkipException("Could not start Prayer Time session");
 
         var driver = _setup.Driver;
 
@@ -237,11 +237,11 @@ public class PrayerTimeTests
     }
 
     /// <summary>8.5: "I'm Done" / Finish button exits prayer time.</summary>
-    [Fact]
+    [SkippableFact]
     public void PrayerTime_FinishButton_ExitsPrayerTime()
     {
         if (!TryStartPrayerTime())
-            throw Xunit.Sdk.SkipException.ForSkip("Could not start Prayer Time session");
+            throw new SkipException("Could not start Prayer Time session");
 
         ExitPrayerTime();
 

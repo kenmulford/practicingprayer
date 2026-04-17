@@ -110,9 +110,41 @@ internal static class TestDataSeed
             ("Class of '22 reunion", "Good turnout.", false),
         });
 
-        await SeedCardWithPrayersAsync(uitestBox.Id, "UITest Card", new[]
+        // UITest Card lives at top level (BoxId = 0, "Loose Cards") — NOT inside
+        // UITest Collection. User-box accordion sections render collapsed by default
+        // on the Prayer Cards page, which would hide a card inside them from the UI
+        // tree and break any test that scrolls for "UITest Card" by visible text.
+        // Loose Cards renders flat and is always visible.
+        await SeedCardWithPrayersAsync(boxId: 0, "UITest Card", new[]
         {
             ("UI Test Prayer", "Canonical test prayer used by existing UI tests.", false),
+        });
+
+        // Dedicated throwaway targets for destructive tests. Each delete test
+        // targets its own "Delete Me" entry instead of the shared UITest
+        // baseline — so UITest Collection / UITest Card remain stable for
+        // downstream non-destructive tests regardless of run order.
+        var deleteColA = new CardBox { Name = "Delete Me Collection A", IsSystem = false, SortOrder = 0, CreatedAt = now, UpdatedAt = now };
+        await deleteColA.SaveAsync();
+        await SeedCardWithPrayersAsync(deleteColA.Id, "Delete Me Card A", new[]
+        {
+            ("Throwaway prayer A", "Deleted by Boxes_DeleteCollection_DeleteAllCards.", false),
+        });
+
+        var deleteColB = new CardBox { Name = "Delete Me Collection B", IsSystem = false, SortOrder = 0, CreatedAt = now, UpdatedAt = now };
+        await deleteColB.SaveAsync();
+        await SeedCardWithPrayersAsync(deleteColB.Id, "Delete Me Card B", new[]
+        {
+            ("Throwaway prayer B", "Deleted by Boxes_DeleteCollection_UnassignCards.", false),
+        });
+
+        // Standalone throwaway card for Cards_DeleteCard_RemovesFromList.
+        // Lives at top level (BoxId = 0, "Loose Cards") so it's always visible —
+        // user boxes render as collapsed accordion sections on first load and
+        // would hide the card from the UI tree.
+        await SeedCardWithPrayersAsync(boxId: 0, "Delete Me Card", new[]
+        {
+            ("Throwaway prayer", "Deleted by Cards_DeleteCard_RemovesFromList.", false),
         });
     }
 
