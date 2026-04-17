@@ -364,7 +364,7 @@ namespace PrayerApp.ViewModels
             SaveAndNewCommand = new AsyncRelayCommand(SaveAndNewAsync);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
-            EditPrayerCommand = new AsyncRelayCommand(EditPrayerAsync);
+            EditPrayerCommand = new RelayCommand(EditPrayer);
             MarkAnsweredCommand = new AsyncRelayCommand(MarkAnsweredAsync);
             ShareCommand = new AsyncRelayCommand(ShareAsync);
             OpenTagPickerCommand = new AsyncRelayCommand(OpenTagPickerAsync);
@@ -511,16 +511,13 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        private async Task EditPrayerAsync()
+        private void EditPrayer()
         {
-            if (ReturnToCards)
-            {
-                await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={Identifier}&edit=true&returnToCards=true&parentCardId={PrayerCardId}");
-            }
-            else
-            {
-                await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?load={Identifier}&edit=true");
-            }
+            // Toggle the same page instance into edit mode instead of pushing a second
+            // PrayerDetailPage. Keeps a single detail page on the Shell stack so Save's
+            // "..?saved=X" and Delete's "..?deleted=X" pop cleanly to the parent list
+            // (fixes BUG-69, where Shell couldn't disambiguate two same-route stack entries).
+            IsReadOnly = false;
         }
 
         private async Task MarkAnsweredAsync()
