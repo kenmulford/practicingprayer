@@ -273,104 +273,46 @@ public class FeatureGapTests
     /// On Android, uses AutomationId "Cards_Btn_Favorite". On iOS, uses text-contains
     /// search for "Favorite" due to CollectionView accessibility flattening.
     /// </summary>
-    [SkippableFact]
+    [Fact]
     public void Cards_FavoriteToggle_ChangesState()
     {
         _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
+        const string cardName = "UITest Favorite Card";
 
         // Uses dedicated fixture "UITest Favorite Card" (see TestDataSeed).
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.EnsureCardVisible(cardName);
 
-        // Expand the card to reveal action buttons
+        // Expand the card to reveal the Favorite button.
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest Favorite Card");
+            driver.TapByTextContains(cardName);
         else
-            driver.TapByText("UITest Favorite Card");
+            driver.TapByText(cardName);
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        // Find and read initial Favorite state
-        string? initialText = null;
-        bool favoriteFound = false;
-
-        if (TestConfig.IsIOS)
-        {
-            // iOS: CollectionView flattens cells — look for text containing "Favorite"
-            // The composed label will include "Favorite" or "Favorited"
-            favoriteFound = driver.IsTextContainsDisplayed("Favorite", timeoutSeconds: 5);
-            if (favoriteFound)
-            {
-                try
-                {
-                    var element = driver.FindByTextContains("Favorite", timeoutSeconds: 3);
-                    initialText = element.Text ?? element.GetAttribute("name") ?? element.GetAttribute("label");
-                }
-                catch (WebDriverException) { /* best-effort text capture */ }
-            }
-        }
-        else
-        {
-            // Android: AutomationId accessible on expanded card action buttons
-            favoriteFound = driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 5);
-            if (favoriteFound)
-            {
-                try
-                {
-                    var element = driver.FindByAutomationId("Cards_Btn_Favorite");
-                    initialText = element.Text ?? element.GetAttribute("text") ?? element.GetAttribute("content-desc");
-                }
-                catch (WebDriverException) { /* best-effort text capture */ }
-            }
-        }
-
-        if (!favoriteFound)
-            throw new SkipException("Precondition: Favorite button not found on expanded card");
+        // Favorite state lives on the card HEADER's composed accessibility
+        // description — the Favorite BUTTON's content-desc is a static action
+        // label ("Toggle favorite") and doesn't reflect state. The header reads
+        // "{CardName}, Favorited, Expanded" when favorited and "{CardName}, Expanded"
+        // when not.
+        bool initialFavorited = driver.IsTextContainsDisplayed(
+            $"{cardName}, Favorited", timeoutSeconds: 2);
 
         // Tap Favorite to toggle
         if (TestConfig.IsIOS)
             driver.TapByTextContains("Favorite", timeoutSeconds: 5);
         else
-            driver.Tap("Cards_Btn_Favorite");
+            driver.WaitAndTap("Cards_Btn_Favorite", timeoutSeconds: 5);
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        // Read the new state after toggle
-        string? toggledText = null;
-        if (TestConfig.IsIOS)
-        {
-            // Re-find after toggle — the text should change ("Favorite" <-> "Favorited")
-            try
-            {
-                var element = driver.FindByTextContains("Favorite", timeoutSeconds: 3);
-                toggledText = element.Text ?? element.GetAttribute("name") ?? element.GetAttribute("label");
-            }
-            catch (WebDriverException) { /* text may have shifted */ }
-        }
-        else
-        {
-            try
-            {
-                var element = driver.FindByAutomationId("Cards_Btn_Favorite");
-                toggledText = element.Text ?? element.GetAttribute("text") ?? element.GetAttribute("content-desc");
-            }
-            catch (WebDriverException) { /* button may have shifted */ }
-        }
+        bool toggledFavorited = driver.IsTextContainsDisplayed(
+            $"{cardName}, Favorited", timeoutSeconds: 2);
 
-        // Verify: either the text changed, or the button is still present (toggle didn't crash)
-        if (initialText != null && toggledText != null)
-        {
-            Assert.NotEqual(initialText, toggledText);
-        }
-        else
-        {
-            // Fallback: at minimum, verify the card is still expanded and functional
-            Assert.True(
-                driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 3)
-                || driver.IsTextContainsDisplayed("Favorite", timeoutSeconds: 3),
-                "Favorite button should still be accessible after toggling");
-        }
+        Assert.NotEqual(initialFavorited, toggledFavorited);
 
-        // Tap Favorite again to restore original state
+        // Restore original state so a re-run starts clean.
         try
         {
             if (TestConfig.IsIOS)

@@ -148,6 +148,7 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
         Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.EnsureCardVisible("UITest AddPrayer Card");
 
         // Expand the dedicated seed card
         if (TestConfig.IsIOS)
@@ -184,6 +185,7 @@ public class PrayerCardTests
         var driver = _setup.Driver;
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.EnsureCardVisible("UITest EditPrayer Card");
 
         // Expand the dedicated seed card to reveal its prayer
         if (TestConfig.IsIOS)
@@ -242,6 +244,7 @@ public class PrayerCardTests
         var driver = _setup.Driver;
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.EnsureCardVisible("UITest Expanded Card");
 
         // Expand the card by tapping it
         if (TestConfig.IsIOS)
@@ -293,6 +296,7 @@ public class PrayerCardTests
         var driver = _setup.Driver;
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.EnsureCardVisible("UITest EditButton Card");
 
         // Expand the card to reveal action buttons
         if (TestConfig.IsIOS)

@@ -175,6 +175,27 @@ public static class AppExtensions
         => ScrollDownUntil(driver, TextLocator(text),
             $"Text '{text}'", maxScrolls, scrollableAutomationId);
 
+    /// <summary>
+    /// Ensure a card on the Prayer Cards page is scrolled into view. No-op if the card
+    /// text is already visible. Safe to call before any <c>TapByText</c> / <c>TapByTextContains</c>
+    /// on a card name — protects tests from position-in-list variance as the Loose Cards
+    /// section accumulates disposable fixtures. Swallows NotFound so the subsequent tap
+    /// raises the canonical "could not locate" error instead of a masked scroll error.
+    /// </summary>
+    public static void EnsureCardVisible(this AppiumDriver driver, string cardName)
+    {
+        bool visible = TestConfig.IsIOS
+            ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 2)
+            : driver.IsTextDisplayed(cardName, timeoutSeconds: 2);
+        if (visible) return;
+        try
+        {
+            driver.ScrollDownToText(cardName, maxScrolls: 3,
+                scrollableAutomationId: "Cards_List_Cards");
+        }
+        catch (WebDriverException) { /* let the caller's tap raise the canonical error */ }
+    }
+
     /// <summary>Scroll down until a locator matches a visible element.</summary>
     private static AppiumElement ScrollDownUntil(AppiumDriver driver, By locator,
         string description, int maxScrolls, string? scrollableAutomationId)
