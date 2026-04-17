@@ -92,7 +92,11 @@ namespace PrayerApp
         {
             // iOS swipe-back gesture may fire as Unknown — include it so the
             // unsaved-changes guard isn't bypassed on iOS back navigation.
+            // PopToRoot fires from the Android CustomShellRenderer when the
+            // active tab is tapped — guard it too so a dirty detail page
+            // doesn't silently discard on tab reselection.
             if (args.Source is not (ShellNavigationSource.Pop
+                or ShellNavigationSource.PopToRoot
                 or ShellNavigationSource.ShellItemChanged
                 or ShellNavigationSource.ShellSectionChanged
                 or ShellNavigationSource.Unknown))

@@ -40,6 +40,16 @@ namespace PrayerApp
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                })
+                .ConfigureMauiHandlers(handlers =>
+                {
+#if ANDROID
+                    // Tap-the-active-tab pops that tab's nav stack to root.
+                    // Shell's default no-ops (dotnet/maui#15301); custom renderer
+                    // overrides OnTabReselected. See CustomShellRenderer.cs.
+                    handlers.AddHandler(typeof(Shell),
+                        typeof(Platforms.Android.CustomShellRenderer));
+#endif
                 });
 
             builder.UseMauiCommunityToolkit();
