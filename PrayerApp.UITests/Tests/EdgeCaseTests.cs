@@ -121,7 +121,12 @@ public class EdgeCaseTests
         driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 5);
         driver.EnterText("Card_Entry_Title", "Empty Card Test");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+
+        // Save triggers GoToAsync("..") after the DB write; manual repro showed the
+        // round-trip taking ~5s on emulator. A fixed Thread.Sleep(1000) raced the
+        // section rebuild, so the new card was absent when we nav'd away.
+        driver.WaitForElement("Cards_List_Cards", timeoutSeconds: 10);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Navigate away and back to ensure all cards are collapsed (clean state)
         driver.NavigateToTab("Home");

@@ -226,7 +226,10 @@ public class PrayerListTests
 
         driver.EnterText("Detail_Entry_Title", "Delete Me Prayer");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+
+        // Save triggers GoToAsync("..") after the DB write; round-trip is ~5s on
+        // emulator. Fixed Thread.Sleep(1000) raced the rebuild.
+        driver.WaitForElement("List_Filter_Active", timeoutSeconds: 10);
 
         if (driver.IsTextDisplayed("Delete Me Prayer", timeoutSeconds: 5))
         {
@@ -247,7 +250,12 @@ public class PrayerListTests
 
         // Should return to list
         driver.NavigateToTab("Prayers");
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5));
+        if (!driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 5))
+        {
+            var dumpPath = driver.DumpPageSource("DeletePrayer_Android_FAIL");
+            Assert.Fail(
+                $"Expected to land on Prayers list (List_Filter_Active visible) after delete. Page source: {dumpPath}");
+        }
     }
 
     /// <summary>4.10: Cross-tab freshness — navigating between tabs doesn't crash.</summary>

@@ -1,3 +1,4 @@
+using OpenQA.Selenium;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -519,9 +520,24 @@ public class BoxTests
         var driver = _setup.Driver;
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Archived section should be visible as a section header
-        Assert.True(driver.IsTextDisplayed("Archived", timeoutSeconds: 5),
-            "Archived section header should be visible on the Cards page");
+        // Archived is the LAST section on the Cards page — below all user boxes,
+        // Loose Cards, and the System section. Scroll it into view before asserting.
+        if (!driver.IsTextDisplayed("Archived", timeoutSeconds: 2))
+        {
+            try
+            {
+                driver.ScrollDownToText("Archived", maxScrolls: 5,
+                    scrollableAutomationId: "Cards_List_Cards");
+            }
+            catch (WebDriverException) { /* let the assert produce the canonical error */ }
+        }
+
+        if (!driver.IsTextDisplayed("Archived", timeoutSeconds: 5))
+        {
+            var dumpPath = driver.DumpPageSource("ArchivedSection_Android_FAIL");
+            Assert.Fail(
+                $"Archived section header should be visible on the Cards page. Page source: {dumpPath}");
+        }
 
         // The triangle indicator shows collapsed state (▶) vs expanded (▼)
         // Since Archived is collapsed by default, its cards should NOT be visible.
