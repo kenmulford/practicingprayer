@@ -193,10 +193,11 @@ public static class AppExtensions
     /// </summary>
     public static void EnsureCardVisible(this AppiumDriver driver, string cardName)
     {
-        bool visible = TestConfig.IsIOS
+        bool IsVisible() => TestConfig.IsIOS
             ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 2)
             : driver.IsTextDisplayed(cardName, timeoutSeconds: 2);
-        if (visible) return;
+
+        if (IsVisible()) return;
 
         bool TryScroll()
         {
@@ -210,11 +211,25 @@ public static class AppExtensions
 
         if (TryScroll()) return;
 
-        // Row missing from the rendered CollectionView — the parent section is
-        // likely collapsed. Expand all sections and retry; swallow the final
-        // NotFound so the caller's tap raises the canonical error.
+        // Row missing from the rendered CollectionView — the parent section may
+        // be collapsed. Expand all and retry.
         driver.EnsureAllSectionsExpanded();
-        TryScroll();
+        if (TryScroll()) return;
+
+        // Last resort (lesson: uitest-visibility-not-existence-under-virtualization.md):
+        // type the card name into the in-page search to force MAUI to materialize the
+        // matching row. TD-19 validated this pattern for freshly-created cards on iOS.
+        // ResetAppUIState clears Cards_Search at the start of the next test.
+        try
+        {
+            driver.EnterText("Cards_Search", cardName);
+            Thread.Sleep(TestConfig.DelayCollectionRender);
+        }
+        catch (WebDriverException)
+        {
+            // Search bar unavailable (off-page, multi-select mode, etc.) — caller's
+            // tap raises the canonical NotFound error.
+        }
     }
 
     /// <summary>Scroll down until a locator matches a visible element.</summary>
@@ -455,41 +470,59 @@ public static class AppExtensions
     /// inferred from the vertical gap to the next header (collapsed footer collapses
     /// to HeightRequest=0; expanded footer has at least one card row, ~60+ px).
     /// </summary>
+    /// <remarks>
+    /// Fixed-point loop: each iteration re-finds all headers and acts on the first
+    /// collapsed one, then re-evaluates. Caching the header list upfront is unsafe —
+    /// clicking to expand reflows the CollectionView, which invalidates later
+    /// references with <c>StaleElementReferenceException</c> when reading Location/Size.
+    /// Follows the re-find-per-iteration pattern used by <see cref="ScrollDownUntil"/>.
+    /// </remarks>
     public static void EnsureAllSectionsExpanded(this AppiumDriver driver)
     {
-        var headers = driver.FindElements(AutomationIdLocator("Cards_Section_Header"))
-            .OfType<AppiumElement>()
-            .OrderBy(h => h.Location.Y)
-            .ToList();
-
-        if (headers.Count == 0) return;
-
         // Gap threshold: a collapsed section's footer collapses to HeightRequest=0,
         // so consecutive header tops differ by just the header's own height
         // (~60-120 px depending on platform). An expanded section adds at least one
         // ~60+ px card row, pushing the gap above 120 px. 100 px is the safe floor.
         const int CollapsedGapThreshold = 100;
+        const int MaxIterations = 20;
 
-        for (int i = 0; i < headers.Count; i++)
+        for (int iteration = 0; iteration < MaxIterations; iteration++)
         {
-            int headerBottom = headers[i].Location.Y + headers[i].Size.Height;
-            int nextHeaderTop = (i + 1 < headers.Count)
-                ? headers[i + 1].Location.Y
-                : int.MaxValue;
+            var headers = driver.FindElements(AutomationIdLocator("Cards_Section_Header"))
+                .OfType<AppiumElement>()
+                .Select(h =>
+                {
+                    try { return (elem: h, top: h.Location.Y, bottom: h.Location.Y + h.Size.Height); }
+                    catch (WebDriverException) { return (elem: h, top: -1, bottom: -1); }
+                })
+                .Where(t => t.top >= 0)
+                .OrderBy(t => t.top)
+                .ToList();
 
-            bool looksCollapsed = (nextHeaderTop - headerBottom) < CollapsedGapThreshold;
-            if (!looksCollapsed) continue;
+            if (headers.Count == 0) return;
+
+            int? firstCollapsed = null;
+            for (int i = 0; i < headers.Count; i++)
+            {
+                int nextHeaderTop = (i + 1 < headers.Count) ? headers[i + 1].top : int.MaxValue;
+                if (nextHeaderTop - headers[i].bottom < CollapsedGapThreshold)
+                {
+                    firstCollapsed = i;
+                    break;
+                }
+            }
+
+            if (firstCollapsed == null) return;
 
             try
             {
-                headers[i].Click();
+                headers[firstCollapsed.Value].elem.Click();
                 Thread.Sleep(TestConfig.DelayAfterTap);
             }
             catch (WebDriverException)
             {
-                // Best-effort: if a header becomes stale after a prior tap reflowed
-                // the list, swallow and move on. Tests that genuinely need a specific
-                // section will fall back to their own TapByText(sectionName).
+                // Element went stale between re-find and click — next iteration will
+                // re-find and retry. Bail only if we hit MaxIterations.
             }
         }
     }
