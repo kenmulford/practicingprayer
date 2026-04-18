@@ -6,6 +6,7 @@
                x:Class="PrayerApp.Views.PrayerCard.CardsOverflowPopup"
                x:DataType="viewModels:PrayerCardsViewModel"
                Padding="0"
+               BackgroundColor="Transparent"
                CanBeDismissedByTappingOutsideOfPopup="True">
 
     <!-- CT.Maui v14 Popup presents in a detached visual tree that does NOT
@@ -22,14 +23,6 @@
         </ResourceDictionary>
     </toolkit:Popup.Resources>
 
-    <!-- The "white frame" seen in earlier builds was CT.Maui v14's default
-         PopupOptions.Shape (a white-filled RoundRectangle rendered behind the
-         popup content). We disable it by passing PopupOptions { Shape = null }
-         when calling ShowPopupAsync (see PrayerCardsPage.OnOverflowTapped) —
-         our own Border below owns the visible shape instead: rounded corners
-         + Primary stroke that meets WCAG 3:1 UI-contrast in both themes.
-         Do NOT set Popup.Color — v14 has a markup-extension regression on it
-         that crashes XAML parsing (ApplyPropertiesVisitor.ProvideValue). -->
     <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
             Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
             StrokeThickness="1.5"
