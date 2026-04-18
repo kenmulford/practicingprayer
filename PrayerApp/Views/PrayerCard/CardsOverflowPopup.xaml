@@ -5,15 +5,31 @@
                xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
                x:Class="PrayerApp.Views.PrayerCard.CardsOverflowPopup"
                x:DataType="viewModels:PrayerCardsViewModel"
-               Color="Transparent"
+               Padding="0"
                CanBeDismissedByTappingOutsideOfPopup="True">
 
-    <!-- Color="Transparent" on the Popup removes the default white backdrop
-         frame (CT.Maui's outer container) — without it the themed Border
-         below is surrounded by a 20-30px white ring in dark mode. The Border
-         itself carries the visible surface: elevated card tone + a Primary
-         stroke that meets WCAG 3:1 UI-contrast against the page so the
-         popup's boundary is identifiable in both themes. -->
+    <!-- CT.Maui v14 Popup presents in a detached visual tree that does NOT
+         inherit App.Resources — StaticResource lookup for Colors.xaml tokens
+         returns null from inside the Popup, which makes every AppThemeBinding
+         silently fall back to defaults (stuck in "light"). Explicitly merge
+         Colors.xaml into the popup's own Resources so tokens resolve and the
+         theme bindings flip correctly with system dark mode. -->
+    <toolkit:Popup.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../../Resources/Styles/Colors.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </toolkit:Popup.Resources>
+
+    <!-- The "white frame" seen in earlier builds was CT.Maui v14's default
+         PopupOptions.Shape (a white-filled RoundRectangle rendered behind the
+         popup content). We disable it by passing PopupOptions { Shape = null }
+         when calling ShowPopupAsync (see PrayerCardsPage.OnOverflowTapped) —
+         our own Border below owns the visible shape instead: rounded corners
+         + Primary stroke that meets WCAG 3:1 UI-contrast in both themes.
+         Do NOT set Popup.Color — v14 has a markup-extension regression on it
+         that crashes XAML parsing (ApplyPropertiesVisitor.ProvideValue). -->
     <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
             Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
             StrokeThickness="1.5"

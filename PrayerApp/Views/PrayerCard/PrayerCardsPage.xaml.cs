@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Extensions;
 using PrayerApp.ViewModels;
 #if ANDROID
@@ -33,23 +34,30 @@ public partial class PrayerCardsPage : ContentPage
     /// instead of "Cancel" because Shell ToolbarItem on Android uses AutomationId
     /// as contentDescription and ignores SemanticProperties.Description). Acceptable
     /// trade-off — the Cards_Bar_MultiSelect Border below carries the mode context.
+    /// Icon files are selected per-theme because Shell.ForegroundColor doesn't
+    /// reliably tint ToolbarItem bitmaps on Android (the SVG-rasterized PNG is
+    /// baked black); the *_dark variants have explicit light fills.
     /// </summary>
     private void ApplyMultiSelectToolbarState(PrayerCardsViewModel vm)
     {
         var item = ToolbarItems.FirstOrDefault();
         if (item is null) return;
 
+        var isDark = Application.Current?.RequestedTheme == AppTheme.Dark;
+
         if (vm.IsMultiSelectMode)
         {
             item.Text = "Cancel";
-            item.IconImageSource = "xmark_solid_full.png";
+            item.IconImageSource = isDark ? "xmark_solid_full_dark.png" : "xmark_solid_full.png";
             SemanticProperties.SetDescription(item, "Cancel");
             SemanticProperties.SetHint(item, "Exit multi-select mode");
         }
         else
         {
             item.Text = "More";
-            item.IconImageSource = "ellipsis_vertical_solid_full.png";
+            item.IconImageSource = isDark
+                ? "ellipsis_vertical_solid_full_dark.png"
+                : "ellipsis_vertical_solid_full.png";
             SemanticProperties.SetDescription(item, "More actions");
             SemanticProperties.SetHint(item, "Opens a menu with Add Card, Manage Collections, and Select");
         }
@@ -265,7 +273,10 @@ public partial class PrayerCardsPage : ContentPage
             return;
         }
 
-        await this.ShowPopupAsync(new CardsOverflowPopup(vm), null, CancellationToken.None);
+        // Shape = null disables CT.Maui v14's default white-filled RoundRectangle
+        // frame — our inner Border owns the rounded themed surface instead.
+        var options = new PopupOptions { Shape = null };
+        await this.ShowPopupAsync(new CardsOverflowPopup(vm), options, CancellationToken.None);
     }
 
     private void OnSearchButtonPressed(object? sender, EventArgs e)

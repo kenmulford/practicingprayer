@@ -14,7 +14,7 @@
              full theming + a11y. In multi-select mode, the button mutates in place to a
              Cancel X (AutomationId switches to "Select" to match existing UITest callers). -->
         <ToolbarItem Text="More" AutomationId="More"
-                     IconImageSource="ellipsis_vertical_solid_full.png"
+                     IconImageSource="{AppThemeBinding Light=ellipsis_vertical_solid_full.png, Dark=ellipsis_vertical_solid_full_dark.png}"
                      SemanticProperties.Description="More actions"
                      SemanticProperties.Hint="Opens a menu with Add Card, Manage Collections, and Select"
                      Clicked="OnOverflowTapped"
