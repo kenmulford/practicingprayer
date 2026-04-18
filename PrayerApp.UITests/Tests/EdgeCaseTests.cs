@@ -137,36 +137,14 @@ public class EdgeCaseTests
         driver.EnsureAllSectionsExpanded();
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        // Find and tap the card. On iOS, CollectionView virtualizes off-screen cells
-        // so scroll-by-text can't find a freshly-created row until it's in the tree.
-        // Filter via the search bar to force MAUI to materialize the matching row.
-        // The next test's ResetAppUIState clears the search term.
-        bool tapped = false;
+        // EnsureCardVisible handles scrolling, section expansion, and a search-bar
+        // fallback for virtualized / off-tree rows (TD-19 pattern, cross-platform).
+        // ResetAppUIState clears Cards_Search at the start of the next test.
+        driver.EnsureCardVisible("Empty Card Test");
         if (TestConfig.IsIOS)
-        {
-            driver.EnterText("Cards_Search", "Empty Card Test");
-            Thread.Sleep(TestConfig.DelayCollectionRender);
-            try
-            {
-                driver.TapByTextContains("Empty Card Test", timeoutSeconds: 10);
-                tapped = true;
-            }
-            catch (WebDriverException) { }
-        }
-
-        if (!tapped)
-        {
-            try
-            {
-                driver.ScrollDownToText("Empty Card Test", maxScrolls: 3,
-                    scrollableAutomationId: "Cards_List_Cards").Click();
-            }
-            catch (WebDriverException)
-            {
-                Thread.Sleep(TestConfig.DelayAfterTap);
-                driver.TapByText("Empty Card Test");
-            }
-        }
+            driver.TapByTextContains("Empty Card Test", timeoutSeconds: 10);
+        else
+            driver.TapByText("Empty Card Test");
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Verify the card expanded and shows the "Add prayer" option.
