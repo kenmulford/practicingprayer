@@ -128,11 +128,14 @@ public class EdgeCaseTests
         driver.WaitForElement("Cards_List_Cards", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Navigate away and back to ensure all cards are collapsed (clean state)
+        // Collapse any expanded card rows by navigating away; then expand sections so
+        // newly-created cards in collapsed Loose Cards are renderable for find+tap.
         driver.NavigateToTab("Home");
         Thread.Sleep(TestConfig.DelayAfterTap);
         driver.NavigateToTab("Prayer Cards");
         Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.EnsureAllSectionsExpanded();
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
         // Find and tap the card to expand it.
         // iOS: CollectionView flattens cells — use CONTAINS predicate to find the card,

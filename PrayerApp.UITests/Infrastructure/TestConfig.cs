@@ -55,7 +55,7 @@ public static class TestConfig
     /// <summary>App-container-relative path to the SQLite DB on iOS. Used by TestDataSeed.</summary>
     /// <remarks>
     /// MAUI's <c>FileSystem.AppDataDirectory</c> maps to <c>Library/</c> on iOS
-    /// (not <c>Documents/</c>). Verified 2026-04-17 against the iPad (A16) sim.
+    /// (not <c>Documents/</c>).
     /// </remarks>
     public const string IOSAppDbRelativePath = "Library/prayer_app.db";
 
@@ -106,8 +106,8 @@ public static class TestConfig
         options.AddAdditionalAppiumOption("bundleId", IOSBundleId);
         // Preserve app data (incl. the DB seeded by TestDataSeed) across driver creation.
         options.AddAdditionalAppiumOption("noReset", true);
-        // Auto-dismiss iOS system alerts (permissions, dictation prompts).
-        options.AddAdditionalAppiumOption("autoDismissAlerts", true);
+        // Do NOT set autoDismissAlerts: it auto-taps Cancel, trapping us in
+        // Discard/Cancel dialogs. Tests dismiss alerts via DismissAlertIfPresent.
         // Hardware keyboard hides software keyboard — prevents SendKeys from
         // hitting dictation/emoji buttons. Only works when Appium boots the
         // simulator itself (not pre-booted). Shut down simulator before test run.

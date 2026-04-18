@@ -300,11 +300,9 @@ public class FeatureGapTests
         bool initialFavorited = driver.IsTextContainsDisplayed(
             $"{cardName}, Favorited", timeoutSeconds: 2);
 
-        // Tap Favorite to toggle
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Favorite", timeoutSeconds: 10);
-        else
-            driver.WaitAndTap("Cards_Btn_Favorite", timeoutSeconds: 10);
+        // AutomationId over text fallback: the card header contains the substring
+        // "Favorite" and would hijack a TapByTextContains.
+        driver.WaitAndTap("Cards_Btn_Favorite", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         bool toggledFavorited = driver.IsTextContainsDisplayed(
@@ -315,10 +313,7 @@ public class FeatureGapTests
         // Restore original state so a re-run starts clean.
         try
         {
-            if (TestConfig.IsIOS)
-                driver.TapByTextContains("Favorite", timeoutSeconds: 3);
-            else
-                driver.Tap("Cards_Btn_Favorite");
+            driver.Tap("Cards_Btn_Favorite");
             Thread.Sleep(TestConfig.DelayAfterTap);
         }
         catch (WebDriverException) { /* best-effort restore */ }

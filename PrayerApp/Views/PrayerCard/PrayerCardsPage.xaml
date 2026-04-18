@@ -14,18 +14,22 @@
              human-readable labels, not the {Page}_{Type}_{Name} convention used
              elsewhere. Description is kept for iOS where accessibilityIdentifier and
              accessibilityLabel are separate properties. -->
+        <!-- iOS Secondary + no icon: MAUI's UIMenu preserves accessibilityLabel.
+             Primary with 3+ items triggers UIKit overflow that strips a11y labels. -->
         <ToolbarItem Text="Collections" AutomationId="Collections"
-                     IconImageSource="folder_regular_full.png"
+                     IconImageSource="{OnPlatform Android=folder_regular_full.png}"
                      SemanticProperties.Description="Collections"
                      SemanticProperties.Hint="Manage collections"
                      Clicked="OnCollectionsTapped"
-                     Order="Primary" Priority="0" />
+                     Order="{OnPlatform Primary, iOS=Secondary, MacCatalyst=Secondary}"
+                     Priority="0" />
         <ToolbarItem Text="Select" AutomationId="Select"
-                     IconImageSource="list_check_solid_full.png"
+                     IconImageSource="{OnPlatform Android=list_check_solid_full.png}"
                      SemanticProperties.Description="Select"
                      SemanticProperties.Hint="Enter multi-select mode to select multiple cards"
                      Command="{Binding EnterMultiSelectCommand}"
-                     Order="Primary" Priority="1" />
+                     Order="{OnPlatform Primary, iOS=Secondary, MacCatalyst=Secondary}"
+                     Priority="1" />
         <ToolbarItem Text="Add Card" AutomationId="Add Card"
                      IconImageSource="plus_solid_full.png"
                      Command="{Binding NewCommand}"

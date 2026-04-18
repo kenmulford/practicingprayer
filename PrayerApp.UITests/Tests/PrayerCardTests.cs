@@ -277,14 +277,10 @@ public class PrayerCardTests
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Tag chips are rendered via BindableLayout — no AutomationId on individual chips.
-        // Scroll to find by text if not immediately visible.
-        if (!driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 10))
-            driver.ScrollDownToText("UITest Tag", maxScrolls: 2);
-
+        // Chip inner Label is not in the a11y tree; Border Description is a phrase
+        // ("UITest Tag, not selected"), so match by substring.
         Assert.True(
-            driver.IsTextDisplayed("UITest Tag", timeoutSeconds: 3)
-            || driver.IsTextContainsDisplayed("UITest Tag", timeoutSeconds: 3),
+            driver.IsTextContainsDisplayed("UITest Tag", timeoutSeconds: 10),
             "Tag filter chip should be visible on Prayer Cards page when tags exist");
     }
 

@@ -27,6 +27,11 @@ public partial class PrayerDetailPage : ContentPage
         _saveAndNewToolbarItem.SetBinding(ToolbarItem.CommandProperty, nameof(PrayerRequestDetailViewModel.SaveAndNewCommand));
         SemanticProperties.SetDescription(_saveAndNewToolbarItem, "Save and add another prayer");
         SemanticProperties.SetHint(_saveAndNewToolbarItem, "Save this prayer and create a new one");
+#if IOS || MACCATALYST
+        // Secondary on iOS keeps Save as the sole Primary; UIKit auto-overflow would
+        // drop a11y labels on the overflowed buttons.
+        _saveAndNewToolbarItem.Order = ToolbarItemOrder.Secondary;
+#endif
 
         vm.FormResetRequested += (_, _) =>
             Dispatcher.DispatchAsync(() => TitleEntry.Focus());

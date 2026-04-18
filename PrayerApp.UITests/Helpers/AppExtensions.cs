@@ -19,10 +19,15 @@ public static class AppExtensions
     private const int IOSSwipeVelocity = 1500;
 
     /// <summary>Dismiss the software keyboard if showing on iOS. No-op on Android.</summary>
+    /// <remarks>
+    /// Catches every exception: Appium 2 returns "resource not found" for HideKeyboard
+    /// which the .NET client surfaces as <see cref="NotImplementedException"/>, not
+    /// <see cref="WebDriverException"/>.
+    /// </remarks>
     public static void DismissKeyboardIfPresent(this AppiumDriver driver)
     {
         if (!TestConfig.IsIOS) return;
-        try { driver.HideKeyboard(); } catch (WebDriverException) { }
+        try { driver.HideKeyboard(); } catch { /* keyboard not shown, endpoint unavailable, etc. */ }
     }
 
     /// <summary>Build the correct locator for an AutomationId on the current platform.</summary>
@@ -54,6 +59,10 @@ public static class AppExtensions
             return By.XPath($"//*[contains(@name,'{text}') or contains(@label,'{text}')]");
         return By.XPath($"//*[contains(@text,'{text}') or contains(@content-desc,'{text}')]");
     }
+
+    /// <summary>iOS XPath to find a button by its exact name or label.</summary>
+    private static By IOSButtonByNameOrLabel(string value)
+        => By.XPath($"//XCUIElementTypeButton[@name='{value}' or @label='{value}']");
 
     // ── Element Finders ──────────────────────────────────────────
 
@@ -188,12 +197,24 @@ public static class AppExtensions
             ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 2)
             : driver.IsTextDisplayed(cardName, timeoutSeconds: 2);
         if (visible) return;
-        try
+
+        bool TryScroll()
         {
-            driver.ScrollDownToText(cardName, maxScrolls: 3,
-                scrollableAutomationId: "Cards_List_Cards");
+            try
+            {
+                driver.ScrollDownToText(cardName, maxScrolls: 3, scrollableAutomationId: "Cards_List_Cards");
+                return true;
+            }
+            catch (WebDriverException) { return false; }
         }
-        catch (WebDriverException) { /* let the caller's tap raise the canonical error */ }
+
+        if (TryScroll()) return;
+
+        // Row missing from the rendered CollectionView — the parent section is
+        // likely collapsed. Expand all sections and retry; swallow the final
+        // NotFound so the caller's tap raises the canonical error.
+        driver.EnsureAllSectionsExpanded();
+        TryScroll();
     }
 
     /// <summary>Scroll down until a locator matches a visible element.</summary>
@@ -339,12 +360,20 @@ public static class AppExtensions
     }
 
     /// <summary>Try to find and tap a tab by AccessibilityId. Returns true on success.</summary>
+    /// <remarks>
+    /// iOS scopes the query to <c>XCUIElementTypeTabBar</c>: a bare name lookup matches
+    /// the NavBar title and any StaticText on the current page too, and WebDriver picks
+    /// the first (non-interactive) match.
+    /// </remarks>
     private static bool TryTapTab(AppiumDriver driver, string tabTitle)
     {
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-            var tab = driver.FindElement(MobileBy.AccessibilityId(tabTitle));
+            By locator = TestConfig.IsIOS
+                ? By.XPath($"//XCUIElementTypeTabBar//XCUIElementTypeButton[@name='{tabTitle}']")
+                : MobileBy.AccessibilityId(tabTitle);
+            var tab = driver.FindElement(locator);
             tab.Click();
             Thread.Sleep(500);
             return true;
@@ -418,34 +447,13 @@ public static class AppExtensions
         driver.DismissKeyboardIfPresent();
         driver.DismissOnboardingIfPresent(setup);
         driver.NavigateToTab(tabTitle);
-
-        // TD-17 step 1: on the Cards tab, force every collection section to "expanded"
-        // so downstream assertions that look for cards inside a collection don't time
-        // out against a collapsed section. Preferences default is "all collapsed" on
-        // first launch — which is what every seeded test session starts from.
-        if (tabTitle == "Prayer Cards")
-        {
-            driver.EnsureAllSectionsExpanded();
-        }
     }
 
     /// <summary>
-    /// Expand every collapsed collection section on the Cards page. No-op for
-    /// sections that are already expanded.
-    ///
-    /// Why this exists: MAUI persists <c>ExpandedSectionIds</c> in Preferences
-    /// and the default (empty) state renders every section collapsed. Many
-    /// UITests assert on cards inside a collection without expanding it first;
-    /// on a freshly-seeded session they time out. See TD-17 / the
-    /// uitest-fix-harness-globals-before-per-test-audits lesson.
-    ///
-    /// Detection heuristic: the triangle indicator and HeaderText labels inside
-    /// the section header are marked <c>AutomationProperties.IsInAccessibleTree="False"</c>,
-    /// so we can't read "▷" vs "▼" from the a11y tree. Instead we look at the
-    /// vertical gap between consecutive section headers: collapsed sections sit
-    /// flush against their footer (HeightRequest=0 when collapsed per
-    /// PrayerCardsPage.xaml), so the gap to the next header is tiny. Expanded
-    /// sections have 60+ px per card between headers.
+    /// Expand every collapsed collection section on the Cards page. The section's
+    /// triangle + header text are hidden from the a11y tree, so collapsed state is
+    /// inferred from the vertical gap to the next header (collapsed footer collapses
+    /// to HeightRequest=0; expanded footer has at least one card row, ~60+ px).
     /// </summary>
     public static void EnsureAllSectionsExpanded(this AppiumDriver driver)
     {
@@ -518,25 +526,19 @@ public static class AppExtensions
     }
 
     /// <summary>
-    /// Clear transient UI state (open alerts, multi-select mode) that a prior failing
-    /// test may have left behind, so it doesn't cascade into false failures in the
-    /// next test. Navigation is NOT part of this helper — callers navigate to their
-    /// target tab right after.
-    ///
-    /// Call at the TOP of every test that assumes a clean baseline. Tests that
-    /// specifically verify a transient state (e.g. `Cards_MultiSelect_ToolbarAppearsAndCancels`)
-    /// should NOT call this — but the NEXT test always should.
-    ///
+    /// Clear transient UI state left by a prior test (open alerts, multi-select mode,
+    /// leaked search term, stale deep-nav) so failures don't cascade. Tests that
+    /// verify a transient state (e.g. multi-select toolbar) should NOT call this.
     /// See Lessons/uitest-per-test-ui-state-reset.md for rationale.
     /// </summary>
     public static void ResetAppUIState(this AppiumDriver driver, AppiumSetup setup)
     {
+        // Fast path: already at a tab root with no pending alert.
+        if (!driver.IsAlertPresent() && driver.IsDisplayed("Home", timeoutSeconds: 0))
+            return;
+
         try { driver.DismissAlertIfPresent(); } catch { /* best effort */ }
 
-        // The Select AutomationId is stable across multi-select toggle — the visible text
-        // mutates between "Select" and "Cancel" but the ID stays "Select" for automation.
-        // 0-second timeout: ~99% of tests don't need this, and a 1-second implicit wait
-        // per call would add ~90s to the suite on the cold path.
         try
         {
             if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 0))
@@ -546,6 +548,26 @@ public static class AppExtensions
             }
         }
         catch { /* not on Prayer Cards or not in multi-select */ }
+
+        try
+        {
+            if (driver.IsDisplayed("Cards_Search", timeoutSeconds: 0) &&
+                !string.IsNullOrEmpty(driver.GetText("Cards_Search")))
+            {
+                driver.EnterText("Cards_Search", "");
+                Thread.Sleep(TestConfig.DelayAfterTap);
+            }
+        }
+        catch { /* not on Prayer Cards or search bar not rendered */ }
+
+        // Back out to a tab root, dismissing any alert each Back may raise (e.g.
+        // "Discard changes?"). Bounded so tab-bar-hidden states (Prayer Time) don't stall.
+        for (int i = 0; i < 5; i++)
+        {
+            try { driver.DismissAlertIfPresent(); } catch { /* best effort */ }
+            if (driver.IsDisplayed("Home", timeoutSeconds: 0)) break;
+            try { driver.Navigate().Back(); Thread.Sleep(200); } catch (WebDriverException) { break; }
+        }
     }
 
     /// <summary>Go back (Android back button or iOS back nav).</summary>
@@ -563,6 +585,14 @@ public static class AppExtensions
     public static void DismissOnboardingIfPresent(this AppiumDriver driver, AppiumSetup setup)
     {
         if (setup.OnboardingHandled) return;
+
+        // Fast path: if the tab bar is already rendered, no onboarding popup is
+        // blocking. Saves up to 3s on test #1 vs probing Welcome_Btn_Skip first.
+        if (driver.IsDisplayed("Home", timeoutSeconds: 1))
+        {
+            setup.OnboardingHandled = true;
+            return;
+        }
 
         // Retry loop — the welcome popup renders asynchronously from OnAppearing
         // and may not be visible immediately, especially on slow emulators.
@@ -647,12 +677,10 @@ public static class AppExtensions
     // ── Toolbar / Text Finders ────────────────────────────────────
 
     /// <summary>
-    /// Tap a Shell ToolbarItem by its <c>AutomationId</c>. Preferred over
-    /// <see cref="TapToolbarItem"/> for any iconized toolbar: once a ToolbarItem has
-    /// <c>IconImageSource</c>, MAUI Shell renders it as an icon-only button on Android
-    /// and the visible <c>Text</c> is no longer a <c>TextView</c> in the UiAutomator2
-    /// tree. <c>AutomationId</c> is the stable contract and works for text-only AND
-    /// icon-only ToolbarItems on both platforms.
+    /// Tap a Shell ToolbarItem by its <c>AutomationId</c>. On iOS falls back to the
+    /// Secondary <c>UIMenu</c> pull-down when the item isn't inline — the menu's
+    /// <c>UIAction</c> carries only its title, so the tap assumes AutomationId matches
+    /// the item's <c>Text</c> (codebase convention).
     /// </summary>
     public static void TapToolbarItemById(this AppiumDriver driver, string automationId,
         int timeoutSeconds = 10)
@@ -660,12 +688,107 @@ public static class AppExtensions
         driver.DismissKeyboardIfPresent();
         if (TestConfig.IsIOS) Thread.Sleep(300);
 
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
         var locator = AutomationIdLocator(automationId);
 
-        var element = wait.Until(d => d.FindElement(locator));
-        element.Click();
-        Thread.Sleep(300);
+        if (TestConfig.IsAndroid)
+        {
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+            wait.Until(d => d.FindElement(locator)).Click();
+            Thread.Sleep(300);
+            return;
+        }
+
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            var el = driver.FindElement(locator);
+            el.Click();
+            Thread.Sleep(300);
+            return;
+        }
+        catch (WebDriverException) { }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+        if (TryTapIOSSecondaryMenuItem(driver, automationId))
+            return;
+
+        throw new NoSuchElementException(
+            $"Toolbar item '{automationId}' not found in Primary toolbar or Secondary UIMenu.");
+    }
+
+    /// <summary>
+    /// Whether a ToolbarItem is reachable either directly or behind MAUI's iOS
+    /// <c>SecondaryToolbarMenuButton</c>. Use in "does this toolbar item exist"
+    /// assertions where <see cref="IsDisplayed"/> would miss a Secondary item.
+    /// </summary>
+    public static bool IsToolbarItemAvailable(this AppiumDriver driver, string automationId,
+        int timeoutSeconds = 3)
+    {
+        if (driver.IsDisplayed(automationId, timeoutSeconds)) return true;
+        if (!TestConfig.IsIOS) return false;
+
+        if (!OpenIOSSecondaryMenu(driver)) return false;
+        try
+        {
+            return driver.FindElements(IOSButtonByNameOrLabel(automationId)).Count > 0;
+        }
+        finally { CloseIOSPopover(driver); }
+    }
+
+    /// <summary>Open MAUI's iOS Secondary toolbar menu. Returns true on success.</summary>
+    /// <remarks>1s sleep: UIMenu popover animation + XCUITest tree settle; 500ms races on cold-start.</remarks>
+    private static bool OpenIOSSecondaryMenu(AppiumDriver driver)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            driver.FindElement(MobileBy.AccessibilityId("SecondaryToolbarMenuButton")).Click();
+            Thread.Sleep(1000);
+            return true;
+        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+    }
+
+    /// <summary>
+    /// Dismiss the iOS <c>UIMenu</c> popover by tapping mid-screen. Re-tapping the
+    /// trigger selects the first menu item instead of toggling the menu closed.
+    /// </summary>
+    private static void CloseIOSPopover(AppiumDriver driver)
+    {
+        try
+        {
+            var size = driver.Manage().Window.Size;
+            driver.ExecuteScript("mobile: tap", new Dictionary<string, object>
+            {
+                { "x", size.Width / 2 }, { "y", size.Height / 2 }
+            });
+            Thread.Sleep(300);
+        }
+        catch (WebDriverException) { /* best effort */ }
+    }
+
+    /// <summary>
+    /// iOS: open the Secondary toolbar menu and tap a menu item whose name/label
+    /// matches <paramref name="itemText"/>. UIMenu items carry no accessibilityIdentifier —
+    /// only their title — so lookup is by name/label.
+    /// </summary>
+    private static bool TryTapIOSSecondaryMenuItem(AppiumDriver driver, string itemText)
+    {
+        if (!OpenIOSSecondaryMenu(driver)) return false;
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            driver.FindElement(IOSButtonByNameOrLabel(itemText)).Click();
+            Thread.Sleep(300);
+            return true;
+        }
+        catch (WebDriverException)
+        {
+            CloseIOSPopover(driver);
+            return false;
+        }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
     }
 
     /// <summary>
@@ -682,10 +805,7 @@ public static class AppExtensions
 
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
 
-        // iOS Shell toolbar items render as XCUIElementTypeButton — use specific locator
-        By locator = TestConfig.IsIOS
-            ? By.XPath($"//XCUIElementTypeButton[@name='{text}' or @label='{text}']")
-            : TextLocator(text);
+        By locator = TestConfig.IsIOS ? IOSButtonByNameOrLabel(text) : TextLocator(text);
 
         var element = wait.Until(d => d.FindElement(locator));
         element.Click();
@@ -823,6 +943,28 @@ public static class AppExtensions
         }
     }
 
+    /// <summary>
+    /// iOS: tap an alert button by its visible label using Appium's native
+    /// <c>mobile: alert</c>. Returns false if no alert or no such button. Preferred
+    /// over XPath — iPad renders <c>UIAlertController</c> with styles that don't
+    /// always surface as <c>XCUIElementTypeAlert</c> in the XCUI tree.
+    /// </summary>
+    private static bool TryTapIOSAlertButton(AppiumDriver driver, string buttonLabel)
+    {
+        if (!TestConfig.IsIOS) return false;
+        try
+        {
+            driver.ExecuteScript("mobile: alert", new Dictionary<string, object>
+            {
+                { "action", "accept" },
+                { "buttonLabel", buttonLabel }
+            });
+            Thread.Sleep(TestConfig.DelayAfterDismiss);
+            return true;
+        }
+        catch (WebDriverException) { return false; }
+    }
+
     /// <summary>Check if an alert dialog is currently showing.</summary>
     public static bool IsAlertPresent(this AppiumDriver driver)
     {
@@ -919,6 +1061,16 @@ public static class AppExtensions
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
+        // CollectionView virtualization can hide an existing row from the text check
+        // above, so Save may raise a "Duplicate Name" alert. Accept it, discard the
+        // dirty form, and return to the list instead of hanging.
+        if (driver.IsAlertPresent())
+        {
+            driver.DismissAlertIfPresent();
+            driver.GoBack();
+            driver.DismissAlertIfPresent();
+        }
+
         if (!driver.IsDisplayed("Boxes_List_Boxes", timeoutSeconds: 10) && TestConfig.IsIOS)
             driver.GoBack();
 
@@ -988,6 +1140,11 @@ public static class AppExtensions
             // pop immediately after. See Lessons/uitest-per-test-ui-state-reset.md.
             for (int attempt = 0; attempt < 2; attempt++)
             {
+                // App-level DisplayAlertAsync "Unsaved Changes → Discard changes?" uses
+                // Discard (destructive) + Cancel. Appium's `autoDismissAlerts` auto-taps
+                // Cancel, leaving the form dirty and trapping the back-out loop. Explicit
+                // Discard tap escapes. Mirrors any other destructive confirm we may add.
+                if (TryTapIOSAlertButton(driver, "Discard")) continue;
                 try
                 {
                     driver.SwitchTo().Alert().Accept();
@@ -1046,9 +1203,7 @@ public static class AppExtensions
         }
 
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-        var locator = By.XPath(
-            $"//XCUIElementTypeButton[@name='{buttonName}' or @label='{buttonName}']");
-        var element = (AppiumElement)wait.Until(d => d.FindElement(locator));
+        var element = (AppiumElement)wait.Until(d => d.FindElement(IOSButtonByNameOrLabel(buttonName)));
 
         // Use XCUITest native tap instead of WebDriver Click() — immune to
         // iPad popover animation coordinate drift
@@ -1122,26 +1277,51 @@ public static class AppExtensions
     /// Android: reads content-desc. iOS: reads label attribute.
     /// Returns empty string if attribute not found.
     /// </summary>
+    /// <remarks>
+    /// iOS Secondary toolbar items live in a <c>UIMenu</c> pull-down, not in the
+    /// navbar tree. If direct lookup fails on iOS, open the Secondary menu and read
+    /// the <c>UIAction</c>'s label there, then close the menu.
+    /// </remarks>
     public static string GetAccessibleDescription(this AppiumDriver driver, string automationId)
-    {
-        var element = driver.WaitForElement(automationId, timeoutSeconds: 10);
-        if (element == null) return "";
-        return TestConfig.IsAndroid
-            ? element.GetDomAttribute("content-desc") ?? ""
-            : element.GetDomAttribute("label") ?? "";
-    }
+        => ReadToolbarAccessibleAttribute(driver, automationId,
+            androidAttr: "content-desc", iosAttr: "label");
 
     /// <summary>
     /// Get the accessible hint of an element found by AutomationId.
     /// Android: reads hint attribute. iOS: reads value attribute.
     /// </summary>
     public static string GetAccessibleHint(this AppiumDriver driver, string automationId)
+        => ReadToolbarAccessibleAttribute(driver, automationId,
+            androidAttr: "hint", iosAttr: "value");
+
+    /// <summary>
+    /// Shared implementation: read an accessibility attribute by AutomationId, with
+    /// iOS Secondary-menu fallback for items that only render inside MAUI's UIMenu.
+    /// </summary>
+    private static string ReadToolbarAccessibleAttribute(AppiumDriver driver,
+        string automationId, string androidAttr, string iosAttr)
     {
+        string Attr(AppiumElement el) => TestConfig.IsAndroid
+            ? el.GetDomAttribute(androidAttr) ?? ""
+            : el.GetDomAttribute(iosAttr) ?? "";
+
+        // Fast path: item is in the tree directly. 0s wait lets us reuse FindByAutomationId.
+        if (driver.IsDisplayed(automationId, timeoutSeconds: 2))
+            return Attr(driver.FindByAutomationId(automationId));
+
+        if (TestConfig.IsIOS && OpenIOSSecondaryMenu(driver))
+        {
+            try
+            {
+                return Attr((AppiumElement)driver.FindElement(IOSButtonByNameOrLabel(automationId)));
+            }
+            catch (WebDriverException) { }
+            finally { CloseIOSPopover(driver); }
+        }
+
+        // Last resort: let the standard WaitForElement surface the canonical error.
         var element = driver.WaitForElement(automationId, timeoutSeconds: 10);
-        if (element == null) return "";
-        return TestConfig.IsAndroid
-            ? element.GetDomAttribute("hint") ?? ""
-            : element.GetDomAttribute("value") ?? "";
+        return element == null ? "" : Attr(element);
     }
 
     /// <summary>

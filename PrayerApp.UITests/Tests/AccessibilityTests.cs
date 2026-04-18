@@ -170,18 +170,8 @@ public class AccessibilityTests
         Driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // The Select toolbar item has AutomationId="Select", added at page construction.
-        // MAUI Shell writes AutomationId into Android contentDescription, so the ID is
-        // also the screen-reader label (see Lessons/maui-toolbaritem-android-rendering.md).
-        // Try AutomationId first (works on Android), then text/label fallback.
-        bool found = Driver.IsDisplayed("Select", timeoutSeconds: 10);
-        if (!found)
-        {
-            // Fallback: toolbar items may render as text or content-desc
-            found = Driver.IsTextDisplayed("Select", timeoutSeconds: 3)
-                 || Driver.IsTextContainsDisplayed("Select", timeoutSeconds: 2);
-        }
-        Assert.True(found, "Select toolbar button should be visible");
+        Assert.True(Driver.IsToolbarItemAvailable("Select", timeoutSeconds: 10),
+            "Select toolbar button should be available");
     }
 
     /// <summary>15.6: FAQ question hint is present on the Help page.</summary>
