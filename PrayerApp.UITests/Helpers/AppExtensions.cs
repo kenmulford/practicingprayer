@@ -1187,10 +1187,10 @@ public static class AppExtensions
 
     /// <summary>
     /// iOS-specific: Tap a button in an action sheet using <c>mobile: tap</c> with the
-    /// element's native ID. On iPad, action sheets render as popovers whose animation
-    /// causes WebDriver's <c>Click()</c> to send stale coordinates. Using <c>mobile: tap</c>
-    /// with <c>elementId</c> delegates coordinate resolution to XCUITest, which taps the
-    /// element's actual current position.
+    /// element's center coordinates. On iPad, action sheets render as popovers whose
+    /// animation causes WebDriver's <c>Click()</c> to send stale coordinates; the XCUITest
+    /// native tap avoids that. Callers must ensure the popover has finished animating
+    /// before invoking this (the element's rect is read before the tap fires).
     /// Falls back to standard <c>TapByText</c> on Android.
     /// </summary>
     public static void TapIOSActionSheetButton(this AppiumDriver driver, string buttonName,
@@ -1205,11 +1205,14 @@ public static class AppExtensions
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
         var element = (AppiumElement)wait.Until(d => d.FindElement(IOSButtonByNameOrLabel(buttonName)));
 
-        // Use XCUITest native tap instead of WebDriver Click() — immune to
-        // iPad popover animation coordinate drift
+        // Use XCUITest native tap with element center coords — immune to iPad popover
+        // animation coordinate drift, and the driver no longer accepts elementId alone.
+        var loc = element.Location;
+        var size = element.Size;
         driver.ExecuteScript("mobile: tap", new Dictionary<string, object>
         {
-            { "elementId", element.Id }
+            { "x", loc.X + size.Width / 2 },
+            { "y", loc.Y + size.Height / 2 }
         });
         Thread.Sleep(300);
     }

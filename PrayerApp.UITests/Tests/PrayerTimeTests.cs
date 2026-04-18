@@ -258,10 +258,8 @@ public class PrayerTimeTests
     /// <summary>8.6: Tag-scoped session — scope page shows Cancel/Start.</summary>
     /// <remarks>
     /// Commit 84d4b11: action sheet only appears when both prayers AND tags exist.
-    /// This test ensures a tag exists so the action sheet is shown.
-    /// On iOS with autoDismissAlerts, Appium auto-taps the bottom action sheet button
-    /// ("By Tags") ~1s after it appears — either autoDismissAlerts taps it for us, or
-    /// we tap it manually. Either way we end up on the tag scope page.
+    /// This test ensures a tag exists so the action sheet is shown, then taps
+    /// "By Tags" to land on the tag scope page.
     /// </remarks>
     [Fact]
     public void PrayerTime_TagScoped_ShowsScopePage()
@@ -277,16 +275,11 @@ public class PrayerTimeTests
 
         driver.WaitAndTap("Home_Btn_PrayerTime");
 
-        // NO DELAYS — on iOS, autoDismissAlerts will tap "By Tags" for us.
-        // On Android, brief wait for the action sheet to appear.
-        if (!TestConfig.IsIOS) Thread.Sleep(500);
+        // Let the action sheet / iPad popover finish animating before tapping —
+        // on iPad, mid-animation hits on "By Tags" land on "By Collection" below it.
+        Thread.Sleep(TestConfig.DelayModalAnimation);
+        driver.TapIOSActionSheetButton("By Tags", timeoutSeconds: 5);
 
-        // Try to tap "By Tags" explicitly (may already be auto-tapped on iOS).
-        // Short timeout — autoDismissAlerts fires ~1s after the sheet appears.
-        try { driver.TapIOSActionSheetButton("By Tags", timeoutSeconds: 2); }
-        catch (WebDriverException) { /* autoDismissAlerts already handled it */ }
-
-        // Either way, we should now be on the tag scope page
         Assert.True(
             driver.IsDisplayed("Scope_Btn_Start", timeoutSeconds: 10)
             || driver.IsDisplayed("Scope_Btn_Cancel", timeoutSeconds: 3),
