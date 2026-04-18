@@ -5,14 +5,21 @@
                xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
                x:Class="PrayerApp.Views.PrayerCard.CardsOverflowPopup"
                x:DataType="viewModels:PrayerCardsViewModel"
+               Color="Transparent"
                CanBeDismissedByTappingOutsideOfPopup="True">
 
+    <!-- Color="Transparent" on the Popup removes the default white backdrop
+         frame (CT.Maui's outer container) — without it the themed Border
+         below is surrounded by a 20-30px white ring in dark mode. The Border
+         itself carries the visible surface: elevated card tone + a Primary
+         stroke that meets WCAG 3:1 UI-contrast against the page so the
+         popup's boundary is identifiable in both themes. -->
     <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
-            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}"
-            StrokeThickness="1"
+            Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
+            StrokeThickness="1.5"
             MinimumWidthRequest="240">
         <Border.StrokeShape>
-            <RoundRectangle CornerRadius="12" />
+            <RoundRectangle CornerRadius="8" />
         </Border.StrokeShape>
 
         <VerticalStackLayout Spacing="0">
