@@ -33,8 +33,8 @@ public partial class PrayerDetailPage : ContentPage
         _saveAndNewToolbarItem.Order = ToolbarItemOrder.Secondary;
 #endif
 
-        vm.FormResetRequested += (_, _) =>
-            Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+        vm.FormResetRequested += async (_, _) =>
+            await FocusTitleAsync(selectAll: false);
 
         vm.TagPickerRequested += async pickerVm =>
             await Shell.Current.Navigation.PushModalAsync(
@@ -92,7 +92,7 @@ public partial class PrayerDetailPage : ContentPage
         editTagChips.Children.Add(addTagButton);
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
 #if IOS
@@ -117,10 +117,27 @@ public partial class PrayerDetailPage : ContentPage
 
             UpdateToolbarItems(vm);
 
-            if (vm.IsEditable && string.IsNullOrEmpty(vm.Title))
+            if (vm.IsEditable)
             {
-                Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+                // New mode: focus Title so the keyboard opens immediately.
+                // Edit mode: focus Title AND select all existing text so typing replaces it.
+                await FocusTitleAsync(selectAll: !vm.IsNew);
             }
+        }
+    }
+
+    /// <summary>
+    /// Focus the Title entry after the Shell push animation settles. Delay past the
+    /// ~220ms push animation (see BUG-70) so the platform Entry view is stable when
+    /// Focus() is called; firing mid-animation silently no-ops.
+    /// </summary>
+    private async Task FocusTitleAsync(bool selectAll)
+    {
+        await Task.Delay(300);
+        if (TitleEntry.Focus() && selectAll)
+        {
+            TitleEntry.CursorPosition = 0;
+            TitleEntry.SelectionLength = TitleEntry.Text?.Length ?? 0;
         }
     }
 

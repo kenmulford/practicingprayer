@@ -8,34 +8,17 @@
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
-        <!-- AutomationId on MAUI Shell ToolbarItem becomes the Android contentDescription
-             (what TalkBack announces) because the Shell handler doesn't honor
-             SemanticProperties.Description on these. AutomationIds here MUST be
-             human-readable labels, not the {Page}_{Type}_{Name} convention used
-             elsewhere. Description is kept for iOS where accessibilityIdentifier and
-             accessibilityLabel are separate properties. -->
-        <!-- iOS Secondary + no icon: MAUI's UIMenu preserves accessibilityLabel.
-             Primary with 3+ items triggers UIKit overflow that strips a11y labels. -->
-        <ToolbarItem Text="Collections" AutomationId="Collections"
-                     IconImageSource="{OnPlatform Android=folder_regular_full.png}"
-                     SemanticProperties.Description="Collections"
-                     SemanticProperties.Hint="Manage collections"
-                     Clicked="OnCollectionsTapped"
-                     Order="{OnPlatform Primary, iOS=Secondary, MacCatalyst=Secondary}"
-                     Priority="0" />
-        <ToolbarItem Text="Select" AutomationId="Select"
-                     IconImageSource="{OnPlatform Android=list_check_solid_full.png}"
-                     SemanticProperties.Description="Select"
-                     SemanticProperties.Hint="Enter multi-select mode to select multiple cards"
-                     Command="{Binding EnterMultiSelectCommand}"
-                     Order="{OnPlatform Primary, iOS=Secondary, MacCatalyst=Secondary}"
-                     Priority="1" />
-        <ToolbarItem Text="Add Card" AutomationId="Add Card"
-                     IconImageSource="plus_solid_full.png"
-                     Command="{Binding NewCommand}"
-                     SemanticProperties.Description="Add Card"
-                     SemanticProperties.Hint="Creates a new prayer card"
-                     Order="Primary" Priority="2" />
+        <!-- Single overflow button opens CardsOverflowPopup (Add Card, Manage Collections,
+             Select Cards). Replaces the prior 3-Primary / iOS-Secondary split: the iOS
+             UIMenu was unreadable in dark mode, and a unified MAUI-controlled popup gives
+             full theming + a11y. In multi-select mode, the button mutates in place to a
+             Cancel X (AutomationId switches to "Select" to match existing UITest callers). -->
+        <ToolbarItem Text="More" AutomationId="More"
+                     IconImageSource="ellipsis_vertical_solid_full.png"
+                     SemanticProperties.Description="More actions"
+                     SemanticProperties.Hint="Opens a menu with Add Card, Manage Collections, and Select"
+                     Clicked="OnOverflowTapped"
+                     Order="Primary" Priority="0" />
     </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
@@ -257,6 +240,9 @@
                         VerticalOptions="Start"
                         IsVisible="{Binding IsMultiSelectMode}"
                         AutomationProperties.IsInAccessibleTree="False">
+                        <Image.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCheckCircleTapped" />
+                        </Image.GestureRecognizers>
                         <Image.Behaviors>
                             <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
                         </Image.Behaviors>

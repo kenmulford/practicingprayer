@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui.Extensions;
 using PrayerApp.ViewModels;
 #if ANDROID
 using Android.Views;
@@ -24,47 +25,33 @@ public partial class PrayerCardsPage : ContentPage
     }
 
     /// <summary>
-    /// Toggles the toolbar between normal and multi-select modes in-place.
-    /// - Select item mutates: Text/Icon/Command plus SemanticProperties Description
-    ///   and Hint — "Select" + list-check icon + EnterMultiSelectCommand ↔
-    ///   "Cancel" + xmark icon + CancelMultiSelectCommand. Description must be
-    ///   kept in sync with Text so screen readers announce the current mode.
-    /// - Collections and Add Card are disabled (greyed) in multi-select so the
-    ///   Cancel (X) action is the visual focus.
-    /// ToolbarItem has no IsVisible binding in MAUI Shell; mutating in place
-    /// avoids the remove/re-add state bugs we hit when the icon would be lost.
+    /// Mutates the single overflow toolbar item between "More" (opens popup) and
+    /// "Cancel" (exits multi-select). <b>AutomationId is never reassigned</b> — MAUI's
+    /// `BindableProperty` enforces set-once on AutomationId and throws on mutation.
+    /// Only Text/Icon/SemanticProperties change between modes. Screen-reader labels
+    /// degrade slightly on Android in multi-select mode (TalkBack announces "More"
+    /// instead of "Cancel" because Shell ToolbarItem on Android uses AutomationId
+    /// as contentDescription and ignores SemanticProperties.Description). Acceptable
+    /// trade-off — the Cards_Bar_MultiSelect Border below carries the mode context.
     /// </summary>
     private void ApplyMultiSelectToolbarState(PrayerCardsViewModel vm)
     {
-        var selectItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Select");
-        var collectionsItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Collections");
-        var addItem = ToolbarItems.FirstOrDefault(t => t.AutomationId == "Add Card");
+        var item = ToolbarItems.FirstOrDefault();
+        if (item is null) return;
 
         if (vm.IsMultiSelectMode)
         {
-            if (selectItem != null)
-            {
-                selectItem.Text = "Cancel";
-                selectItem.IconImageSource = "xmark_solid_full.png";
-                selectItem.Command = vm.CancelMultiSelectCommand;
-                SemanticProperties.SetDescription(selectItem, "Cancel");
-                SemanticProperties.SetHint(selectItem, "Exit multi-select mode");
-            }
-            if (collectionsItem != null) collectionsItem.IsEnabled = false;
-            if (addItem != null) addItem.IsEnabled = false;
+            item.Text = "Cancel";
+            item.IconImageSource = "xmark_solid_full.png";
+            SemanticProperties.SetDescription(item, "Cancel");
+            SemanticProperties.SetHint(item, "Exit multi-select mode");
         }
         else
         {
-            if (selectItem != null)
-            {
-                selectItem.Text = "Select";
-                selectItem.IconImageSource = "list_check_solid_full.png";
-                selectItem.Command = vm.EnterMultiSelectCommand;
-                SemanticProperties.SetDescription(selectItem, "Select");
-                SemanticProperties.SetHint(selectItem, "Enter multi-select mode to select multiple cards");
-            }
-            if (collectionsItem != null) collectionsItem.IsEnabled = true;
-            if (addItem != null) addItem.IsEnabled = true;
+            item.Text = "More";
+            item.IconImageSource = "ellipsis_vertical_solid_full.png";
+            SemanticProperties.SetDescription(item, "More actions");
+            SemanticProperties.SetHint(item, "Opens a menu with Add Card, Manage Collections, and Select");
         }
     }
 
@@ -249,8 +236,37 @@ public partial class PrayerCardsPage : ContentPage
             card.ToggleExpandedCommand.Execute(null);
     }
 
-    private async void OnCollectionsTapped(object? sender, EventArgs e)
-        => await Shell.Current.GoToAsync(Routes.BoxesPage);
+    /// <summary>
+    /// The check circle (left of the card in multi-select mode) toggles selection.
+    /// Card body tap already toggles via OnCardHeaderTapped / CardGestureListener; this
+    /// handler covers users who aim at the circle specifically (iOS Mail pattern).
+    /// </summary>
+    private void OnCheckCircleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Image img && img.BindingContext is PrayerCardViewModel card
+            && BindingContext is PrayerCardsViewModel vm && vm.IsMultiSelectMode)
+        {
+            vm.ToggleCardSelection(card);
+        }
+    }
+
+    /// <summary>
+    /// Overflow toolbar handler. In multi-select mode, tapping exits multi-select
+    /// directly (fast path, no popup). Otherwise opens the CardsOverflowPopup with
+    /// the three actions (Add Card / Manage Collections / Select Cards).
+    /// </summary>
+    private async void OnOverflowTapped(object? sender, EventArgs e)
+    {
+        if (BindingContext is not PrayerCardsViewModel vm) return;
+
+        if (vm.IsMultiSelectMode)
+        {
+            vm.CancelMultiSelectCommand.Execute(null);
+            return;
+        }
+
+        await this.ShowPopupAsync(new CardsOverflowPopup(vm), null, CancellationToken.None);
+    }
 
     private void OnSearchButtonPressed(object? sender, EventArgs e)
         => searchBar.Unfocus();

@@ -10,14 +10,27 @@ public partial class BoxDetailPage : ContentPage
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
 #if IOS
         Platforms.iOS.Helpers.SwipeBackHelper.DisableSwipeBack(this);
 #endif
-        if (BindingContext is BoxDetailViewModel vm && !vm.IsExisting)
-            Dispatcher.DispatchAsync(() => NameEntry.Focus());
+        if (BindingContext is BoxDetailViewModel vm && !vm.IsSystem)
+        {
+            // Delay past the Shell push animation (~220ms) so the platform Entry view
+            // is stable when Focus() is called. Dispatcher.DispatchAsync alone resolves
+            // immediately on the UI thread and fires Focus() mid-animation (BUG-70).
+            // 300ms also gives ApplyQueryAttributes → LoadAsync time to populate Name
+            // for edit mode before we compute the selection length.
+            await Task.Delay(300);
+            if (NameEntry.Focus() && vm.IsExisting)
+            {
+                // Edit mode: select all existing text so typing replaces it cleanly.
+                NameEntry.CursorPosition = 0;
+                NameEntry.SelectionLength = NameEntry.Text?.Length ?? 0;
+            }
+        }
     }
 
     protected override void OnDisappearing()

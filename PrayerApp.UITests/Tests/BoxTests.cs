@@ -318,11 +318,13 @@ public class BoxTests
             // If multi-select toolbar appeared, verify Cancel works
             if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 3))
             {
-                // Cancel is on the toolbar — Select item mutates to X when multi-select is active.
-                Assert.True(driver.IsDisplayed("Select"),
-                    "Toolbar Select item (now X/Cancel) should be visible in multi-select mode");
+                // Cancel is the overflow toolbar button — in multi-select mode it
+                // mutates to an X (Text="Cancel", Icon=xmark) but AutomationId stays
+                // "More" because MAUI enforces set-once on AutomationId.
+                Assert.True(driver.IsDisplayed("More"),
+                    "Overflow toolbar button (now X/Cancel) should be visible in multi-select mode");
 
-                driver.Tap("Select");
+                driver.Tap("More");
                 Thread.Sleep(TestConfig.DelayAfterTap);
 
                 Assert.False(driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2),
@@ -433,9 +435,10 @@ public class BoxTests
                 driver.TapByText("Cancel");
             Thread.Sleep(TestConfig.DelayAfterTap);
 
-            // Exit multi-select — Cancel is on the toolbar (Select item mutates to X)
+            // Exit multi-select — overflow button mutates to X in multi-select mode
+            // but keeps AutomationId="More" (MAUI enforces set-once on AutomationId).
             if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2))
-                driver.Tap("Select");
+                driver.Tap("More");
         }
 
         // Multi-select toolbar should be gone

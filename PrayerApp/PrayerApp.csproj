@@ -20,7 +20,7 @@
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
-		<ApplicationVersion>58</ApplicationVersion>
+		<ApplicationVersion>59</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -118,6 +118,9 @@
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\list_check_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\ellipsis_vertical_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\xmark_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
@@ -156,6 +159,7 @@
 	  <None Remove="Resources\Images\FontAwesomeIcons\pen_to_square_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\plus_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\list_check_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\ellipsis_vertical_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\xmark_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\star_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\tag_solid_full.svg" />

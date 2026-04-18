@@ -576,7 +576,9 @@ public static class AppExtensions
         {
             if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 0))
             {
-                driver.TapToolbarItemById("Select");
+                // Overflow button mutates visually to X/Cancel in multi-select mode
+                // but keeps AutomationId="More" (MAUI AutomationId is set-once).
+                driver.TapToolbarItemById("More");
                 Thread.Sleep(TestConfig.DelayAfterTap);
             }
         }
@@ -710,10 +712,11 @@ public static class AppExtensions
     // ── Toolbar / Text Finders ────────────────────────────────────
 
     /// <summary>
-    /// Tap a Shell ToolbarItem by its <c>AutomationId</c>. On iOS falls back to the
-    /// Secondary <c>UIMenu</c> pull-down when the item isn't inline — the menu's
-    /// <c>UIAction</c> carries only its title, so the tap assumes AutomationId matches
-    /// the item's <c>Text</c> (codebase convention).
+    /// Tap a Shell ToolbarItem by its <c>AutomationId</c>. Fallback order: direct
+    /// AutomationId → PrayerCardsPage overflow popup (cross-platform, common case
+    /// for Add Card / Collections / Select) → iOS Secondary <c>UIMenu</c> (legacy
+    /// path kept for PrayerDetailPage's Save+New). The last two fallbacks are tried
+    /// only if the direct lookup misses.
     /// </summary>
     public static void TapToolbarItemById(this AppiumDriver driver, string automationId,
         int timeoutSeconds = 10)
@@ -723,41 +726,39 @@ public static class AppExtensions
 
         var locator = AutomationIdLocator(automationId);
 
-        if (TestConfig.IsAndroid)
-        {
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
-            wait.Until(d => d.FindElement(locator)).Click();
-            Thread.Sleep(300);
-            return;
-        }
-
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-            var el = driver.FindElement(locator);
-            el.Click();
+            driver.FindElement(locator).Click();
             Thread.Sleep(300);
             return;
         }
         catch (WebDriverException) { }
         finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
 
-        if (TryTapIOSSecondaryMenuItem(driver, automationId))
+        if (TryTapOverflowPopupItem(driver, automationId))
+            return;
+
+        if (TestConfig.IsIOS && TryTapIOSSecondaryMenuItem(driver, automationId))
             return;
 
         throw new NoSuchElementException(
-            $"Toolbar item '{automationId}' not found in Primary toolbar or Secondary UIMenu.");
+            $"Toolbar item '{automationId}' not found on toolbar, in the overflow popup, or in the Secondary UIMenu.");
     }
 
     /// <summary>
-    /// Whether a ToolbarItem is reachable either directly or behind MAUI's iOS
-    /// <c>SecondaryToolbarMenuButton</c>. Use in "does this toolbar item exist"
-    /// assertions where <see cref="IsDisplayed"/> would miss a Secondary item.
+    /// Whether a ToolbarItem is reachable directly, inside the PrayerCardsPage
+    /// overflow popup, or behind MAUI's iOS <c>SecondaryToolbarMenuButton</c>. Use
+    /// in "does this toolbar item exist" assertions where <see cref="IsDisplayed"/>
+    /// alone would miss an item tucked behind an overflow.
     /// </summary>
     public static bool IsToolbarItemAvailable(this AppiumDriver driver, string automationId,
         int timeoutSeconds = 3)
     {
         if (driver.IsDisplayed(automationId, timeoutSeconds)) return true;
+
+        if (IsInOverflowPopup(driver, automationId)) return true;
+
         if (!TestConfig.IsIOS) return false;
 
         if (!OpenIOSSecondaryMenu(driver)) return false;
@@ -766,6 +767,86 @@ public static class AppExtensions
             return driver.FindElements(IOSButtonByNameOrLabel(automationId)).Count > 0;
         }
         finally { CloseIOSPopover(driver); }
+    }
+
+    /// <summary>
+    /// Open the "More" overflow button's popup, tap an item inside by AutomationId,
+    /// and let the popup auto-close on tap. Returns false if the overflow button
+    /// isn't present or the item isn't in the opened popup (popup is closed on miss).
+    /// </summary>
+    private static bool TryTapOverflowPopupItem(AppiumDriver driver, string automationId)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            driver.FindElement(MobileBy.AccessibilityId("More")).Click();
+        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+        Thread.Sleep(400); // popup animation settle
+
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            driver.FindElement(AutomationIdLocator(automationId)).Click();
+            Thread.Sleep(300);
+            return true;
+        }
+        catch (WebDriverException)
+        {
+            CloseOverflowPopupIfOpen(driver);
+            return false;
+        }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+    }
+
+    /// <summary>Does the target live inside the overflow popup? Opens+peeks+closes.</summary>
+    private static bool IsInOverflowPopup(AppiumDriver driver, string automationId)
+    {
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+            driver.FindElement(MobileBy.AccessibilityId("More")).Click();
+        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+        Thread.Sleep(400);
+
+        bool found;
+        try
+        {
+            found = driver.FindElements(AutomationIdLocator(automationId)).Count > 0;
+        }
+        finally { CloseOverflowPopupIfOpen(driver); }
+        return found;
+    }
+
+    /// <summary>
+    /// Dismiss the overflow popup by tapping outside its content. Popup is centered
+    /// by default, so we tap near the top-left where the popup Border never extends.
+    /// Android also accepts system back.
+    /// </summary>
+    private static void CloseOverflowPopupIfOpen(AppiumDriver driver)
+    {
+        try
+        {
+            if (TestConfig.IsAndroid)
+            {
+                driver.Navigate().Back();
+            }
+            else
+            {
+                var size = driver.Manage().Window.Size;
+                driver.ExecuteScript("mobile: tap", new Dictionary<string, object>
+                {
+                    { "x", 10 }, { "y", size.Height - 20 }
+                });
+            }
+            Thread.Sleep(300);
+        }
+        catch (WebDriverException) { /* best effort */ }
     }
 
     /// <summary>Open MAUI's iOS Secondary toolbar menu. Returns true on success.</summary>

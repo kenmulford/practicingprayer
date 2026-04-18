@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+               x:Class="PrayerApp.Views.PrayerCard.CardsOverflowPopup"
+               x:DataType="viewModels:PrayerCardsViewModel"
+               CanBeDismissedByTappingOutsideOfPopup="True">
+
+    <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}"
+            Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}"
+            StrokeThickness="1"
+            MinimumWidthRequest="240">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="12" />
+        </Border.StrokeShape>
+
+        <VerticalStackLayout Spacing="0">
+
+            <!-- Add Card -->
+            <Grid AutomationId="Add Card"
+                  SemanticProperties.Description="Add Card"
+                  SemanticProperties.Hint="Creates a new prayer card"
+                  Padding="16,14"
+                  ColumnDefinitions="Auto,*"
+                  ColumnSpacing="14">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAddCardTapped" />
+                </Grid.GestureRecognizers>
+                <Image Source="plus_solid_full.png"
+                       HeightRequest="18" WidthRequest="18"
+                       VerticalOptions="Center"
+                       AutomationProperties.IsInAccessibleTree="False">
+                    <Image.Behaviors>
+                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                    </Image.Behaviors>
+                </Image>
+                <Label Grid.Column="1"
+                       Text="Add Card"
+                       FontSize="15"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                       AutomationProperties.IsInAccessibleTree="False" />
+            </Grid>
+
+            <BoxView Color="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}"
+                     HeightRequest="1"
+                     AutomationProperties.IsInAccessibleTree="False" />
+
+            <!-- Manage Collections -->
+            <Grid AutomationId="Collections"
+                  SemanticProperties.Description="Manage Collections"
+                  SemanticProperties.Hint="Opens the collections page"
+                  Padding="16,14"
+                  ColumnDefinitions="Auto,*"
+                  ColumnSpacing="14">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnCollectionsTapped" />
+                </Grid.GestureRecognizers>
+                <Image Source="folder_regular_full.png"
+                       HeightRequest="18" WidthRequest="18"
+                       VerticalOptions="Center"
+                       AutomationProperties.IsInAccessibleTree="False">
+                    <Image.Behaviors>
+                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                    </Image.Behaviors>
+                </Image>
+                <Label Grid.Column="1"
+                       Text="Manage Collections"
+                       FontSize="15"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                       AutomationProperties.IsInAccessibleTree="False" />
+            </Grid>
+
+            <BoxView Color="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}"
+                     HeightRequest="1"
+                     AutomationProperties.IsInAccessibleTree="False" />
+
+            <!-- Select cards (enters multi-select mode) -->
+            <Grid AutomationId="Select"
+                  SemanticProperties.Description="Select cards"
+                  SemanticProperties.Hint="Enter multi-select mode to select multiple cards"
+                  Padding="16,14"
+                  ColumnDefinitions="Auto,*"
+                  ColumnSpacing="14">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnSelectTapped" />
+                </Grid.GestureRecognizers>
+                <Image Source="list_check_solid_full.png"
+                       HeightRequest="18" WidthRequest="18"
+                       VerticalOptions="Center"
+                       AutomationProperties.IsInAccessibleTree="False">
+                    <Image.Behaviors>
+                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                    </Image.Behaviors>
+                </Image>
+                <Label Grid.Column="1"
+                       Text="Select Cards"
+                       FontSize="15"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
+                       AutomationProperties.IsInAccessibleTree="False" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </Border>
+</toolkit:Popup>

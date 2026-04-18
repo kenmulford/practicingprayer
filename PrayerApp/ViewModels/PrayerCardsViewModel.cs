@@ -81,6 +81,7 @@ namespace PrayerApp.ViewModels
         public ICommand MoveSelectedCommand { get; }
         public ICommand LongPressCardCommand { get; }
         public ICommand EnterMultiSelectCommand { get; }
+        public ICommand OpenCollectionsCommand { get; }
 
         private bool _isMultiSelectMode;
         public bool IsMultiSelectMode
@@ -144,6 +145,7 @@ namespace PrayerApp.ViewModels
                 if (card != null) EnterMultiSelectMode(card);
             });
             EnterMultiSelectCommand = new RelayCommand(EnterMultiSelectModeFromToolbar);
+            OpenCollectionsCommand = new AsyncRelayCommand(() => _navigationService.GoToAsync(Routes.BoxesPage));
             DismissCollectionsBannerCommand = new RelayCommand(() =>
             {
                 _settings.CollectionsBannerDismissed = true;
