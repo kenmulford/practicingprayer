@@ -36,7 +36,8 @@ public class TagTests
         driver.TapToolbarItem("Add");
         driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 10);
 
-        driver.EnterText("TagDetail_Entry_Name", "UITest Tag");
+        // Unique-per-run to avoid colliding with the seed "UITest Tag".
+        driver.EnterText("TagDetail_Entry_Name", $"UITest Tag {DateTime.UtcNow.Ticks}");
         driver.TapToolbarItem("Save");
         Thread.Sleep(1500);
 
@@ -93,20 +94,20 @@ public class TagTests
         _setup.Driver.EnsureOnTab("Tags", _setup);
         var driver = _setup.Driver;
 
-        // Create a tag to delete
+        // Unique-per-run to avoid collision with prior-run residue.
+        var tagName = $"Delete Me Tag {DateTime.UtcNow.Ticks}";
         driver.TapToolbarItem("Add");
         driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 10);
-        driver.EnterText("TagDetail_Entry_Name", "Delete Me Tag");
+        driver.EnterText("TagDetail_Entry_Name", tagName);
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Explicit tab nav — GoToAsync("..") is unreliable on iOS (Bug #3)
         driver.NavigateToTab("Tags");
 
-        if (driver.IsTextDisplayed("Delete Me Tag", timeoutSeconds: 10))
+        if (driver.IsTextDisplayed(tagName, timeoutSeconds: 10))
         {
-            // Tap to select (reveals action chips)
-            driver.TapByText("Delete Me Tag");
+            driver.TapByText(tagName);
             Thread.Sleep(TestConfig.DelayAfterTap);
 
             // Tap Delete action chip

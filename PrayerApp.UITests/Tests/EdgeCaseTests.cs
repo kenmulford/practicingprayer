@@ -137,25 +137,25 @@ public class EdgeCaseTests
         driver.EnsureAllSectionsExpanded();
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        // Find and tap the card to expand it.
-        // iOS: CollectionView flattens cells — use CONTAINS predicate to find the card,
-        // then use TapByTextContains. Android: standard text scroll works.
+        // Find and tap the card. On iOS, CollectionView virtualizes off-screen cells
+        // so scroll-by-text can't find a freshly-created row until it's in the tree.
+        // Filter via the search bar to force MAUI to materialize the matching row.
+        // The next test's ResetAppUIState clears the search term.
         bool tapped = false;
         if (TestConfig.IsIOS)
         {
-            // Scroll the CollectionView to find the card cell by composed label
-            var scrolled = driver.IOSScrollToPredicateInContainer(
-                "Cards_List_Cards", "label CONTAINS 'Empty Card Test'");
-            if (scrolled)
+            driver.EnterText("Cards_Search", "Empty Card Test");
+            Thread.Sleep(TestConfig.DelayCollectionRender);
+            try
             {
                 driver.TapByTextContains("Empty Card Test", timeoutSeconds: 10);
                 tapped = true;
             }
+            catch (WebDriverException) { }
         }
 
         if (!tapped)
         {
-            // Android, or iOS fallback
             try
             {
                 driver.ScrollDownToText("Empty Card Test", maxScrolls: 3,

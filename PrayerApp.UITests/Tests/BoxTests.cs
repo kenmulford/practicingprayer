@@ -117,10 +117,10 @@ public class BoxTests
         driver.TapToolbarItem("Add");
         driver.WaitForElement("BoxDetail_Entry_Name", timeoutSeconds: 10);
 
-        // Use a name NOT in the seed. The seed pre-populates "UITest Collection",
-        // and CardBox.Name has a UNIQUE constraint — creating a second one would
-        // silently fail the save. See Lessons/uitest-destructive-tests-use-throwaways.md.
-        driver.EnterText("BoxDetail_Entry_Name", "New Collection UITest");
+        // Unique-per-run name so a re-run under noReset doesn't collide with prior
+        // residue and trigger the Duplicate Collection Name guard.
+        var collectionName = $"New Collection UITest {DateTime.UtcNow.Ticks}";
+        driver.EnterText("BoxDetail_Entry_Name", collectionName);
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
@@ -132,8 +132,8 @@ public class BoxTests
             Thread.Sleep(TestConfig.DelayAfterNavigation);
         }
 
-        // Verify the new collection appears
-        Assert.True(driver.IsTextDisplayed("New Collection UITest", timeoutSeconds: 10),
+        // iOS composes the row label as "{name}, {count} cards" — use contains match.
+        Assert.True(driver.IsTextContainsDisplayed(collectionName, timeoutSeconds: 10),
             "Newly created collection should appear in the list");
 
         driver.GoBack();
