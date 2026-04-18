@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="PrayerApp.Views.Settings.SettingsHubPage"
              Title="Settings"
              SafeAreaEdges="Container">
@@ -12,13 +13,25 @@
                 <VerticalStackLayout Spacing="0">
 
                     <!-- App Settings -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="16,14"
                           AutomationId="Settings_Row_AppSettings"
                           SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnAppSettingsTapped" />
                         </Grid.GestureRecognizers>
-                        <VerticalStackLayout Spacing="2">
+                        <Image Grid.Column="0"
+                               Source="gear_solid_full.png"
+                               HeightRequest="22" WidthRequest="22"
+                               VerticalOptions="Center"
+                               Margin="0,0,14,0"
+                               AutomationProperties.IsInAccessibleTree="False">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                    Light={StaticResource Gray600},
+                                    Dark={StaticResource TextSecondaryDark}}" />
+                            </Image.Behaviors>
+                        </Image>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
                             <Label Text="App Settings"
                                    FontSize="16"
                                    FontAttributes="Bold"
@@ -27,7 +40,7 @@
                                    FontSize="13"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </VerticalStackLayout>
-                        <Label Grid.Column="1"
+                        <Label Grid.Column="2"
                                Text="›"
                                FontSize="20"
                                VerticalOptions="Center"
@@ -38,13 +51,25 @@
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Manage Collections -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="16,14"
                           AutomationId="Settings_Row_Collections"
                           SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCollectionsTapped" />
                         </Grid.GestureRecognizers>
-                        <VerticalStackLayout Spacing="2">
+                        <Image Grid.Column="0"
+                               Source="list_solid_full.png"
+                               HeightRequest="22" WidthRequest="22"
+                               VerticalOptions="Center"
+                               Margin="0,0,14,0"
+                               AutomationProperties.IsInAccessibleTree="False">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                    Light={StaticResource Gray600},
+                                    Dark={StaticResource TextSecondaryDark}}" />
+                            </Image.Behaviors>
+                        </Image>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
                             <Label Text="Manage Collections"
                                    FontSize="16"
                                    FontAttributes="Bold"
@@ -53,7 +78,7 @@
                                    FontSize="13"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </VerticalStackLayout>
-                        <Label Grid.Column="1"
+                        <Label Grid.Column="2"
                                Text="›"
                                FontSize="20"
                                VerticalOptions="Center"
@@ -64,13 +89,25 @@
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Backup & Restore -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="16,14"
                           AutomationId="Settings_Row_Backup"
                           SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnBackupTapped" />
                         </Grid.GestureRecognizers>
-                        <VerticalStackLayout Spacing="2">
+                        <Image Grid.Column="0"
+                               Source="cloud_arrow_up_solid_full.png"
+                               HeightRequest="22" WidthRequest="22"
+                               VerticalOptions="Center"
+                               Margin="0,0,14,0"
+                               AutomationProperties.IsInAccessibleTree="False">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                    Light={StaticResource Gray600},
+                                    Dark={StaticResource TextSecondaryDark}}" />
+                            </Image.Behaviors>
+                        </Image>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
                             <Label Text="Backup &amp; Restore"
                                    FontSize="16"
                                    FontAttributes="Bold"
@@ -79,7 +116,7 @@
                                    FontSize="13"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </VerticalStackLayout>
-                        <Label Grid.Column="1"
+                        <Label Grid.Column="2"
                                Text="›"
                                FontSize="20"
                                VerticalOptions="Center"
@@ -90,13 +127,25 @@
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- About -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="16,14"
                           AutomationId="Settings_Row_About"
                           SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnAboutTapped" />
                         </Grid.GestureRecognizers>
-                        <VerticalStackLayout Spacing="2">
+                        <Image Grid.Column="0"
+                               Source="circle_info_solid_full.png"
+                               HeightRequest="22" WidthRequest="22"
+                               VerticalOptions="Center"
+                               Margin="0,0,14,0"
+                               AutomationProperties.IsInAccessibleTree="False">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                    Light={StaticResource Gray600},
+                                    Dark={StaticResource TextSecondaryDark}}" />
+                            </Image.Behaviors>
+                        </Image>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
                             <Label Text="About"
                                    FontSize="16"
                                    FontAttributes="Bold"
@@ -105,7 +154,7 @@
                                    FontSize="13"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </VerticalStackLayout>
-                        <Label Grid.Column="1"
+                        <Label Grid.Column="2"
                                Text="›"
                                FontSize="20"
                                VerticalOptions="Center"
@@ -116,13 +165,25 @@
                     <BoxView Style="{StaticResource DividerLine}" />
 
                     <!-- Help -->
-                    <Grid ColumnDefinitions="*,Auto" Padding="16,14"
+                    <Grid ColumnDefinitions="Auto,*,Auto" Padding="16,14"
                           AutomationId="Settings_Row_Help"
                           SemanticProperties.Hint="Double tap to open">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnHelpTapped" />
                         </Grid.GestureRecognizers>
-                        <VerticalStackLayout Spacing="2">
+                        <Image Grid.Column="0"
+                               Source="circle_question_solid_full.png"
+                               HeightRequest="22" WidthRequest="22"
+                               VerticalOptions="Center"
+                               Margin="0,0,14,0"
+                               AutomationProperties.IsInAccessibleTree="False">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                    Light={StaticResource Gray600},
+                                    Dark={StaticResource TextSecondaryDark}}" />
+                            </Image.Behaviors>
+                        </Image>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
                             <Label Text="Help"
                                    FontSize="16"
                                    FontAttributes="Bold"
@@ -131,7 +192,7 @@
                                    FontSize="13"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </VerticalStackLayout>
-                        <Label Grid.Column="1"
+                        <Label Grid.Column="2"
                                Text="›"
                                FontSize="20"
                                VerticalOptions="Center"

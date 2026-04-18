@@ -82,6 +82,15 @@
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\link_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\circle_info_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\circle_question_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\cloud_arrow_up_solid_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\gear_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
