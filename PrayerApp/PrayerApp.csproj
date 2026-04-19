@@ -20,7 +20,7 @@
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.2.3</ApplicationDisplayVersion>
-		<ApplicationVersion>61</ApplicationVersion>
+		<ApplicationVersion>62</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">16.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -124,10 +124,10 @@
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\ellipsis_vertical_solid_full_dark.svg" BaseSize="24,24">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
-		<MauiImage Include="Resources\Images\FontAwesomeIcons\xmark_solid_full.svg">
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\xmark_solid_full.svg" BaseSize="24,24">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
-		<MauiImage Include="Resources\Images\FontAwesomeIcons\xmark_solid_full_dark.svg">
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\xmark_solid_full_dark.svg" BaseSize="24,24">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\share_from_square_solid_full.svg">

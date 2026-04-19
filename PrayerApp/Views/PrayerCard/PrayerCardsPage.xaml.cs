@@ -96,27 +96,44 @@ public partial class PrayerCardsPage : ContentPage
         if (sender is not Border border) return;
 
         // Margin is a Thickness (not animatable by FadeTo/TranslateTo) — tween via the low-level
-        // Animation class. Initial margin is set without animation to avoid a load-in jump.
-        if (border.BindingContext is PrayerCardViewModel card)
+        // Animation class. CollectionView recycles Borders by swapping BindingContext *without*
+        // firing Loaded/Unloaded, so we must re-subscribe on BindingContextChanged — otherwise a
+        // recycled Border stays subscribed to its previous card and animates margins driven by the
+        // wrong card's IsExpanded changes (cards appear at the wrong indent after a tap).
+        PrayerCardViewModel? subscribed = null;
+        System.ComponentModel.PropertyChangedEventHandler handler = (_, ev) =>
         {
-            border.Margin = CardMarginFor(card.IsExpanded);
+            if (ev.PropertyName == nameof(PrayerCardViewModel.IsExpanded) && subscribed is not null)
+                AnimateCardMargin(border, CardMarginFor(subscribed.IsExpanded));
+        };
 
-            System.ComponentModel.PropertyChangedEventHandler handler = (_, ev) =>
+        void Rebind()
+        {
+            if (subscribed is not null) subscribed.PropertyChanged -= handler;
+            subscribed = border.BindingContext as PrayerCardViewModel;
+            if (subscribed is not null)
             {
-                if (ev.PropertyName == nameof(PrayerCardViewModel.IsExpanded) && border.BindingContext is PrayerCardViewModel c)
-                    AnimateCardMargin(border, CardMarginFor(c.IsExpanded));
-            };
-            card.PropertyChanged += handler;
-
-            // Unsubscribe on Unloaded so CollectionView recycling doesn't leak. MAUI
-            // guarantees Loaded/Unloaded alternate — no double-subscription guard needed.
-            void OnUnloaded(object? _, EventArgs __)
-            {
-                card.PropertyChanged -= handler;
-                border.Unloaded -= OnUnloaded;
+                subscribed.PropertyChanged += handler;
+                // Snap (no tween) to the new card's state so recycled borders don't animate from
+                // the previous card's margin.
+                border.AbortAnimation("CardMarginTween");
+                border.Margin = CardMarginFor(subscribed.IsExpanded);
             }
-            border.Unloaded += OnUnloaded;
         }
+
+        Rebind();
+        border.BindingContextChanged -= OnBindingContextChanged;
+        border.BindingContextChanged += OnBindingContextChanged;
+        void OnBindingContextChanged(object? _, EventArgs __) => Rebind();
+
+        void OnUnloaded(object? _, EventArgs __)
+        {
+            if (subscribed is not null) subscribed.PropertyChanged -= handler;
+            border.BindingContextChanged -= OnBindingContextChanged;
+            border.Unloaded -= OnUnloaded;
+        }
+        border.Unloaded -= OnUnloaded;
+        border.Unloaded += OnUnloaded;
 
 #if !ANDROID
         // iOS: TouchBehavior on the Border coexists with child tap gestures natively.
