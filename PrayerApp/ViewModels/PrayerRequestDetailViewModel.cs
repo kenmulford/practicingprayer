@@ -526,6 +526,7 @@ namespace PrayerApp.ViewModels
             await _notificationService.CancelAsync(_prayer.Id, _prayer.PrayerFrequency);
             await _prayerService.SavePrayerAsync(_prayer);
             CaptureOriginals(); // Reset dirty state before navigation
+            _accessibilityService.Announce("Prayer marked as answered");
 
             // Navigate back so parent page (list or card accordion) picks up the change
             if (ReturnToCards)

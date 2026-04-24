@@ -85,6 +85,10 @@ public partial class PrayerCardsPage : ContentPage
         {
             section.IsExpanded = !section.IsExpanded;
 
+            SemanticScreenReader.Announce(section.IsExpanded
+                ? $"Expanded {section.Name}"
+                : $"Collapsed {section.Name}");
+
             // Persist expansion state so it survives app restarts
             if (BindingContext is PrayerCardsViewModel vm)
                 vm.SaveSectionExpansionState();

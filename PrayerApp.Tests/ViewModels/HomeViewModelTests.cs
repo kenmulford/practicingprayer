@@ -13,9 +13,10 @@ public class HomeViewModelTests
     private readonly ITagService _tagService = Substitute.For<ITagService>();
     private readonly IBoxService _boxService = Substitute.For<IBoxService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
+    private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
 
-    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _tagService, _boxService, _navigationService, _settings);
+    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _tagService, _boxService, _navigationService, _accessibilityService, _settings);
 
     // ── LoadAsync ──────────────────────────────────────────────────────
 

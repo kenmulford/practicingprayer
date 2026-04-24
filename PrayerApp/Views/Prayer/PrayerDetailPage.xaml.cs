@@ -117,6 +117,19 @@ public partial class PrayerDetailPage : ContentPage
 
             UpdateToolbarItems(vm);
 
+            // BUG-75 safety net: if the platform layer silently drops the toolbar
+            // items during a modal-dismiss layout race (seen once on iPhone 17 after
+            // TagPickerPage dismiss), retry on the next dispatcher tick once the
+            // modal animation has settled.
+            _ = Dispatcher.DispatchAsync(() =>
+            {
+                if (vm.IsEditable && ToolbarItems.Count == 0)
+                {
+                    System.Diagnostics.Debug.WriteLine("[BUG-75] Rebuilding empty ToolbarItems in edit mode");
+                    UpdateToolbarItems(vm);
+                }
+            });
+
             if (vm.IsEditable)
             {
                 // New mode: focus Title so the keyboard opens immediately.
@@ -151,19 +164,28 @@ public partial class PrayerDetailPage : ContentPage
         }
     }
 
+    // Diff-update instead of unconditional Clear+Add. When the desired set already
+    // matches, no platform mutation happens — which avoids a Shell chrome race on
+    // iOS after modal dismiss where the re-add could silently no-op (BUG-75).
     private void UpdateToolbarItems(PrayerRequestDetailViewModel vm)
     {
-        ToolbarItems.Clear();
+        var desired = new List<ToolbarItem>(2);
         if (vm.IsReadOnly)
         {
-            ToolbarItems.Add(_editToolbarItem);
+            desired.Add(_editToolbarItem);
         }
         else
         {
             if (vm.ShowSaveAndNew)
-                ToolbarItems.Add(_saveAndNewToolbarItem);
-            ToolbarItems.Add(_saveToolbarItem);
+                desired.Add(_saveAndNewToolbarItem);
+            desired.Add(_saveToolbarItem);
         }
+
+        if (ToolbarItems.SequenceEqual(desired)) return;
+
+        ToolbarItems.Clear();
+        foreach (var item in desired)
+            ToolbarItems.Add(item);
     }
 
     protected override void OnDisappearing()

@@ -423,6 +423,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         // If auto-mode is running, reset the countdown to the new interval immediately
         if (IsAutoMode)
             CountdownSeconds = SelectedIntervalSeconds;
+        _accessibilityService.Announce($"Interval set to {IntervalLabel(SelectedIntervalSeconds)}");
     }
 
     private void StartAutoMode()
@@ -435,6 +436,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         _autoTimer.Interval = TimeSpan.FromSeconds(1);
         _autoTimer.Tick += OnAutoTimerTick;
         _autoTimer.Start();
+        _accessibilityService.Announce("Auto-advance started");
     }
 
     /// <summary>
@@ -460,11 +462,13 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         {
             IsPaused = false;
             _autoTimer?.Start();
+            _accessibilityService.Announce("Resumed");
         }
         else
         {
             IsPaused = true;
             _autoTimer?.Stop();
+            _accessibilityService.Announce("Paused");
         }
     }
 

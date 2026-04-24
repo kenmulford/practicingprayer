@@ -23,6 +23,7 @@ namespace PrayerApp.ViewModels
         private readonly IAccessibilityService _accessibilityService;
         private readonly ISettings _settings;
         private Dictionary<int, string> _cardTitleLookup = new();
+        private CancellationTokenSource? _filterAnnounceCts;
 
         private bool _isLoading = true;
         public bool IsLoading
@@ -371,10 +372,23 @@ namespace PrayerApp.ViewModels
             FilteredPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(sorted);
 
             if (!_suppressAnnounce)
+            {
                 _accessibilityService.NotifyLayoutChanged();
+                AnnounceFilterCountDebounced(FilteredPrayers.Count);
+            }
+        }
 
-            if (!_suppressAnnounce)
-                _accessibilityService.Announce($"Showing {FilteredPrayers.Count} prayers");
+        private void AnnounceFilterCountDebounced(int count)
+        {
+            _filterAnnounceCts?.Cancel();
+            _filterAnnounceCts?.Dispose();
+            _filterAnnounceCts = new CancellationTokenSource();
+            var token = _filterAnnounceCts.Token;
+            Task.Delay(400, token).ContinueWith(_ =>
+            {
+                if (!token.IsCancellationRequested)
+                    _accessibilityService.Announce($"Showing {count} prayers");
+            }, token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
         }
 
         private async Task AddNewPrayerAsync(string? prayerIdString)

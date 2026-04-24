@@ -345,6 +345,7 @@ namespace PrayerApp.ViewModels
             {
                 IsFavorite = !IsFavorite;
                 await _cardService.SaveCardAsync(_prayerCard);
+                _accessibilityService.Announce(IsFavorite ? "Marked as favorite" : "Removed from favorites");
             }
             finally
             {

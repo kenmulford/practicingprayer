@@ -13,6 +13,7 @@ public class HomeViewModel : ObservableObject
     private readonly ITagService _tagService;
     private readonly IBoxService _boxService;
     private readonly INavigationService _navigationService;
+    private readonly IAccessibilityService _accessibilityService;
     private readonly ISettings _settings;
 
     // ── Overdue metric ────────────────────────────────────────────────
@@ -199,13 +200,15 @@ public class HomeViewModel : ObservableObject
     // ── Constructors ──────────────────────────────────────────────────
 
     public HomeViewModel(IPrayerService prayerService, ICardService cardService,
-        ITagService tagService, IBoxService boxService, INavigationService navigationService, ISettings settings)
+        ITagService tagService, IBoxService boxService, INavigationService navigationService,
+        IAccessibilityService accessibilityService, ISettings settings)
     {
         _prayerService = prayerService;
         _cardService = cardService;
         _tagService = tagService;
         _boxService = boxService;
         _navigationService = navigationService;
+        _accessibilityService = accessibilityService;
         _settings = settings;
 
         GoToOverdueCommand = new AsyncRelayCommand(GoToOverdueAsync);
@@ -219,6 +222,7 @@ public class HomeViewModel : ObservableObject
         IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
     { }
 
@@ -278,11 +282,14 @@ public class HomeViewModel : ObservableObject
             AnsweredOnThisDate = await _prayerService.GetAnsweredOnThisDateAsync()
                 ?? Array.Empty<Prayer>();
             OnPropertyChanged(nameof(AnsweredOnThisDateHeader));
+
+            _accessibilityService.Announce("Dashboard loaded");
         }
         catch (Exception ex)
         {
             AnsweredOnThisDate = Array.Empty<Prayer>();
             System.Diagnostics.Debug.WriteLine($"Failed to load home dashboard: {ex.Message}");
+            _accessibilityService.Announce("Failed to load dashboard");
         }
     }
 

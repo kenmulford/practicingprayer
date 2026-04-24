@@ -688,6 +688,7 @@ namespace PrayerApp.ViewModels
             if ((DateTime.UtcNow - _multiSelectEnteredAt).TotalMilliseconds < 300) return;
             card.IsMultiSelected = !card.IsMultiSelected;
             NotifySelectionCount();
+            _accessibilityService.Announce(SelectedCountText);
         }
 
         private void ExitMultiSelectMode()
