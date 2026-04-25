@@ -352,4 +352,54 @@ public class PrayerRequestDetailViewModelTests
         var evt = typeof(PrayerRequestDetailViewModel).GetEvent("FormResetRequested");
         Assert.Null(evt);
     }
+
+    // ── IsBusy on Save ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveCommand_SetsIsBusyDuringExecution_AndResetsAfter()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+        bool capturedIsBusy = false;
+        _prayerService.SavePrayerAsync(Arg.Any<Prayer>()).Returns(call =>
+        {
+            capturedIsBusy = sut.IsBusy;
+            return Task.FromResult((Prayer)call[0]);
+        });
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        Assert.True(capturedIsBusy);
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_ResetsIsBusyAfterException()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+        _prayerService.SavePrayerAsync(Arg.Any<Prayer>())
+            .Returns(_ => Task.FromException<Prayer>(new InvalidOperationException("boom")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null));
+
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_DoubleInvoke_RunsServiceOnlyOnce()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+        var tcs = new TaskCompletionSource<Prayer>();
+        _prayerService.SavePrayerAsync(Arg.Any<Prayer>()).Returns(tcs.Task);
+
+        var first = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        var second = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        tcs.SetResult(new Prayer());
+        await Task.WhenAll(first, second);
+
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>());
+    }
 }

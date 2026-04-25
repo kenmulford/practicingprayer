@@ -42,6 +42,21 @@ namespace PrayerApp.ViewModels
                 "Unsaved Changes", "Discard changes?", "Discard", "Cancel");
         }
 
+        /// <summary>
+        /// True while SaveAsync is in flight. Drives the page-level ActivityIndicator
+        /// and gates SaveCommand canExecute against double-tap.
+        /// </summary>
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            private set
+            {
+                if (SetProperty(ref _isBusy, value))
+                    (SaveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+            }
+        }
+
         public ICommand SaveCommand { get; }
 
         public BoxDetailViewModel(IBoxService boxService, INavigationService navigationService,
@@ -50,7 +65,7 @@ namespace PrayerApp.ViewModels
             _boxService = boxService ?? throw new ArgumentNullException(nameof(boxService));
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
-            SaveCommand = new AsyncRelayCommand(SaveAsync);
+            SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             CaptureOriginals();
         }
 
@@ -88,6 +103,7 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
+            if (IsBusy) return;
             if (string.IsNullOrWhiteSpace(Name))
             {
                 await _navigationService.DisplayAlertAsync("Validation",
@@ -95,9 +111,13 @@ namespace PrayerApp.ViewModels
                 return;
             }
 
+            IsBusy = true;
             try
             {
                 await _boxService.SaveBoxAsync(_box);
+                CaptureOriginals();
+                _accessibilityService.Announce($"{BoxStrings.Word} saved");
+                await _navigationService.GoToAsync("..");
             }
             catch (SQLiteException ex) when (ex.Result == SQLite3.Result.Constraint)
             {
@@ -105,12 +125,8 @@ namespace PrayerApp.ViewModels
                     $"Duplicate {BoxStrings.Word} Name",
                     $"A {BoxStrings.Word.ToLowerInvariant()} named '{Name}' already exists. Please choose a different name.",
                     "OK");
-                return;
             }
-
-            CaptureOriginals();
-            _accessibilityService.Announce($"{BoxStrings.Word} saved");
-            await _navigationService.GoToAsync("..");
+            finally { IsBusy = false; }
         }
 
         private void CaptureOriginals()

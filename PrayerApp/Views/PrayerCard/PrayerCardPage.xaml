@@ -73,5 +73,11 @@
             HeadlineText="Give it a name — a person, a topic, your church"
             SubText="Then tap Save." />
 
+        <!-- Save indicator -->
+        <ActivityIndicator Grid.Row="0" Grid.RowSpan="2"
+                           Style="{StaticResource SaveActivityIndicator}"
+                           IsRunning="{Binding IsBusy}"
+                           IsVisible="{Binding IsBusy}" />
+
     </Grid>
 </ContentPage>

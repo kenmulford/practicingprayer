@@ -14,6 +14,7 @@
                      x:DataType="viewModels:BoxDetailViewModel" />
     </ContentPage.ToolbarItems>
 
+    <Grid>
     <ScrollView>
         <VerticalStackLayout Padding="24,20" Spacing="24">
             <VerticalStackLayout.GestureRecognizers>
@@ -44,4 +45,10 @@
 
         </VerticalStackLayout>
     </ScrollView>
+
+    <!-- Save indicator -->
+    <ActivityIndicator Style="{StaticResource SaveActivityIndicator}"
+                       IsRunning="{Binding IsBusy}"
+                       IsVisible="{Binding IsBusy}" />
+    </Grid>
 </ContentPage>

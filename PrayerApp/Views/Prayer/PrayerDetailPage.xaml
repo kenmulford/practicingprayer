@@ -302,5 +302,11 @@
             ExpectedStep="NameRequest"
             HeadlineText="Enter your prayer request and tap Save" />
 
+        <!-- Save indicator -->
+        <ActivityIndicator Grid.Row="0" Grid.RowSpan="3"
+                           Style="{StaticResource SaveActivityIndicator}"
+                           IsRunning="{Binding IsBusy}"
+                           IsVisible="{Binding IsBusy}" />
+
     </Grid>
 </ContentPage>

@@ -130,4 +130,54 @@ public class TagDetailViewModelTests
 
         await _navigationService.Received(1).GoToAsync(Arg.Is<string>(s => s.Contains("PrayersPage")));
     }
+
+    // ── IsBusy on Save ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveCommand_SetsIsBusyDuringExecution_AndResetsAfter()
+    {
+        var sut = CreateSut();
+        sut.Name = "Test";
+        bool capturedIsBusy = false;
+        _tagService.SaveTagAsync(Arg.Any<PrayerTag>()).Returns(call =>
+        {
+            capturedIsBusy = sut.IsBusy;
+            return Task.FromResult((PrayerTag)call[0]);
+        });
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        Assert.True(capturedIsBusy);
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_ResetsIsBusyAfterException()
+    {
+        var sut = CreateSut();
+        sut.Name = "Test";
+        _tagService.SaveTagAsync(Arg.Any<PrayerTag>())
+            .Returns(_ => Task.FromException<PrayerTag>(new InvalidOperationException("boom")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null));
+
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_DoubleInvoke_RunsServiceOnlyOnce()
+    {
+        var sut = CreateSut();
+        sut.Name = "Test";
+        var tcs = new TaskCompletionSource<PrayerTag>();
+        _tagService.SaveTagAsync(Arg.Any<PrayerTag>()).Returns(tcs.Task);
+
+        var first = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        var second = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        tcs.SetResult(new PrayerTag());
+        await Task.WhenAll(first, second);
+
+        await _tagService.Received(1).SaveTagAsync(Arg.Any<PrayerTag>());
+    }
 }

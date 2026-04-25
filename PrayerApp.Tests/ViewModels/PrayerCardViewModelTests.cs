@@ -294,4 +294,57 @@ public class PrayerCardViewModelTests
 
         Assert.NotEqual(a, b);
     }
+
+    // ── IsBusy on Save ─────────────────────────────────────────────────
+    // Save flows show no progress affordance and don't gate against double-tap. IsBusy
+    // drives an ActivityIndicator and the SaveCommand canExecute, so a second tap can't
+    // duplicate the work.
+
+    [Fact]
+    public async Task SaveCommand_SetsIsBusyDuringExecution_AndResetsAfter()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+        bool capturedIsBusy = false;
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>()).Returns(call =>
+        {
+            capturedIsBusy = sut.IsBusy;
+            return Task.FromResult((PrayerCard)call[0]);
+        });
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        Assert.True(capturedIsBusy);
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_ResetsIsBusyAfterException()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>())
+            .Returns(_ => Task.FromException<PrayerCard>(new InvalidOperationException("boom")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null));
+
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_DoubleInvoke_RunsServiceOnlyOnce()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+        var tcs = new TaskCompletionSource<PrayerCard>();
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>()).Returns(tcs.Task);
+
+        var first = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        var second = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        tcs.SetResult(new PrayerCard());
+        await Task.WhenAll(first, second);
+
+        await _cardService.Received(1).SaveCardAsync(Arg.Any<PrayerCard>());
+    }
 }

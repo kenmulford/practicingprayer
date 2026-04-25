@@ -26,6 +26,25 @@ namespace PrayerApp.ViewModels
         private readonly ISettings _settings;
         private List<PrayerTag> _allTags = new();
 
+        /// <summary>
+        /// True while SaveAsync or SaveAndNewAsync is in flight. Drives the page-level
+        /// ActivityIndicator and gates SaveCommand/SaveAndNewCommand canExecute so a
+        /// double-tap can't duplicate the row.
+        /// </summary>
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            private set
+            {
+                if (SetProperty(ref _isBusy, value))
+                {
+                    (SaveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+                    (SaveAndNewCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+                }
+            }
+        }
+
         public ICommand SaveCommand { get; private set; }
         public ICommand SaveAndNewCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
@@ -372,8 +391,8 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _settings = settings;
-            SaveCommand = new AsyncRelayCommand(SaveAsync);
-            SaveAndNewCommand = new AsyncRelayCommand(SaveAndNewAsync);
+            SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
+            SaveAndNewCommand = new AsyncRelayCommand(SaveAndNewAsync, () => !IsBusy);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync);
             SelectPrayerCommand = new AsyncRelayCommand(SelectPrayerAsync);
             EditPrayerCommand = new RelayCommand(EditPrayer);
@@ -431,37 +450,42 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
-            var origCardId = _originalPrayerCardId; // capture before CoreSaveAsync resets originals
-            bool isNew = await CoreSaveAsync();
+            if (IsBusy) return;
+            try
+            {
+                IsBusy = true;
+                var origCardId = _originalPrayerCardId; // capture before CoreSaveAsync resets originals
+                bool isNew = await CoreSaveAsync();
 
-            if (ReturnToCards)
-            {
-                string route = isNew ? ".." : "../..";
-                bool cardChanged = !isNew && origCardId != 0 && origCardId != PrayerCardId;
-                var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
-                if (cardChanged)
-                    queryParts += $"&oldCardId={origCardId}";
-                await _navigationService.GoToAsync($"{route}?{queryParts}");
+                if (ReturnToCards)
+                {
+                    string route = isNew ? ".." : "../..";
+                    bool cardChanged = !isNew && origCardId != 0 && origCardId != PrayerCardId;
+                    var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
+                    if (cardChanged)
+                        queryParts += $"&oldCardId={origCardId}";
+                    await _navigationService.GoToAsync($"{route}?{queryParts}");
+                }
+                else
+                {
+                    await _navigationService.GoToAsync($"..?{_savedQueryKey}={Identifier}");
+                }
             }
-            else
-            {
-                await _navigationService.GoToAsync($"..?{_savedQueryKey}={Identifier}");
-            }
+            finally { IsBusy = false; }
         }
 
-        private bool _saving;
         private async Task SaveAndNewAsync()
         {
-            if (_saving) return;
+            if (IsBusy) return;
             if (string.IsNullOrWhiteSpace(Title))
             {
                 await _navigationService.DisplayAlertAsync("Required", "Please enter a prayer title.", "OK");
                 return;
             }
 
-            _saving = true;
             try
             {
+                IsBusy = true;
                 var savedTitle = Title;
                 var cardId = PrayerCardId;
                 await CoreSaveAsync();
@@ -469,7 +493,7 @@ namespace PrayerApp.ViewModels
                 await CommunityToolkit.Maui.Alerts.Toast.Make($"Saved \"{savedTitle}\"").Show();
                 ResetForNewPrayer(cardId);
             }
-            finally { _saving = false; }
+            finally { IsBusy = false; }
         }
 
         private Prayer CreateDefaultPrayer(int? cardId = null) => new()

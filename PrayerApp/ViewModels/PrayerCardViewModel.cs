@@ -25,6 +25,21 @@ namespace PrayerApp.ViewModels
         private readonly IAccessibilityService _accessibilityService;
         private readonly IBoxService _boxService;
 
+        /// <summary>
+        /// True while SaveAsync is in flight. Drives the page-level ActivityIndicator
+        /// and gates the SaveCommand canExecute so a double-tap can't duplicate the row.
+        /// </summary>
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            private set
+            {
+                if (SetProperty(ref _isBusy, value))
+                    (SaveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+            }
+        }
+
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
         public ICommand SelectCardCommand { get; }
@@ -219,7 +234,7 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _boxService = boxService;
-            SaveCommand = new AsyncRelayCommand(SaveAsync);
+            SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsSystem);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync, () => !IsSystem);
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
@@ -284,14 +299,20 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
-            bool isNew = _prayerCard.Id == 0;
-            _prayerCard.BoxId = _selectedBox?.BoxId ?? 0;
-            await _cardService.SaveCardAsync(_prayerCard);
-            _originalTitle = Title; // Reset dirty state before navigation
-            if (isNew)
-                _onboardingService.Advance(); // NameCard → AddRequest
-            _accessibilityService.Announce("Card saved");
-            await _navigationService.GoToAsync($"..?saved={Identifier}");
+            if (IsBusy) return;
+            try
+            {
+                IsBusy = true;
+                bool isNew = _prayerCard.Id == 0;
+                _prayerCard.BoxId = _selectedBox?.BoxId ?? 0;
+                await _cardService.SaveCardAsync(_prayerCard);
+                _originalTitle = Title; // Reset dirty state before navigation
+                if (isNew)
+                    _onboardingService.Advance(); // NameCard → AddRequest
+                _accessibilityService.Announce("Card saved");
+                await _navigationService.GoToAsync($"..?saved={Identifier}");
+            }
+            finally { IsBusy = false; }
         }
 
         private async Task DeleteAsync()

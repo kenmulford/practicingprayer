@@ -72,6 +72,21 @@ namespace PrayerApp.ViewModels
 
         public bool IsExisting => _tag.Id > 0;
 
+        /// <summary>
+        /// True while SaveAsync is in flight. Drives the page-level ActivityIndicator
+        /// and gates SaveCommand canExecute against double-tap.
+        /// </summary>
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            private set
+            {
+                if (SetProperty(ref _isBusy, value))
+                    (SaveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+            }
+        }
+
         public ICommand SaveCommand { get; }
         public ICommand AddColorCommand { get; }
         public ICommand ViewPrayersCommand { get; }
@@ -86,7 +101,7 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _firstDefaultHex = _userColorService.GetFirstDefaultHex();
-            SaveCommand = new AsyncRelayCommand(SaveAsync);
+            SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             AddColorCommand = new AsyncRelayCommand(AddColorAsync);
             ViewPrayersCommand = new AsyncRelayCommand(ViewPrayersAsync);
 
@@ -178,6 +193,7 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
+            if (IsBusy) return;
             if (string.IsNullOrWhiteSpace(Name))
             {
                 await _navigationService.DisplayAlertAsync("Validation", "Tag name cannot be empty.", "OK");
@@ -185,9 +201,19 @@ namespace PrayerApp.ViewModels
             }
 
             _tag.Color = SelectedColorHex;
+            IsBusy = true;
             try
             {
                 await _tagService.SaveTagAsync(_tag);
+                CaptureOriginals();
+                _accessibilityService.Announce("Tag saved");
+
+                // Cancel any in-flight async work (LoadSwatchesAsync, etc.) BEFORE
+                // navigating. This prevents ObservableCollection modifications during
+                // page teardown — the root cause of the iOS SIGABRT crash (BUG-1).
+                CancelPendingWork();
+
+                await _navigationService.GoToAsync("..");
             }
             catch (SQLiteException ex) when (ex.Result == SQLite3.Result.Constraint)
             {
@@ -195,17 +221,8 @@ namespace PrayerApp.ViewModels
                     "Duplicate Tag Name",
                     $"A tag named '{Name}' already exists. Please choose a different name.",
                     "OK");
-                return;
             }
-            CaptureOriginals();
-            _accessibilityService.Announce("Tag saved");
-
-            // Cancel any in-flight async work (LoadSwatchesAsync, etc.) BEFORE
-            // navigating. This prevents ObservableCollection modifications during
-            // page teardown — the root cause of the iOS SIGABRT crash (BUG-1).
-            CancelPendingWork();
-
-            await _navigationService.GoToAsync("..");
+            finally { IsBusy = false; }
         }
 
         private void CaptureOriginals()

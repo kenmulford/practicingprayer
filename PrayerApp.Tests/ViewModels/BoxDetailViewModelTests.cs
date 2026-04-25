@@ -162,4 +162,54 @@ public class BoxDetailViewModelTests
         Assert.True(sut.IsSystem);
         Assert.False(sut.IsNameEditable);
     }
+
+    // ── IsBusy on Save ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveCommand_SetsIsBusyDuringExecution_AndResetsAfter()
+    {
+        var sut = CreateSut();
+        sut.Name = "Test";
+        bool capturedIsBusy = false;
+        _boxService.SaveBoxAsync(Arg.Any<CardBox>()).Returns(call =>
+        {
+            capturedIsBusy = sut.IsBusy;
+            return Task.FromResult((CardBox)call[0]);
+        });
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        Assert.True(capturedIsBusy);
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_ResetsIsBusyAfterException()
+    {
+        var sut = CreateSut();
+        sut.Name = "Test";
+        _boxService.SaveBoxAsync(Arg.Any<CardBox>())
+            .Returns(_ => Task.FromException<CardBox>(new InvalidOperationException("boom")));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null));
+
+        Assert.False(sut.IsBusy);
+    }
+
+    [Fact]
+    public async Task SaveCommand_DoubleInvoke_RunsServiceOnlyOnce()
+    {
+        var sut = CreateSut();
+        sut.Name = "Test";
+        var tcs = new TaskCompletionSource<CardBox>();
+        _boxService.SaveBoxAsync(Arg.Any<CardBox>()).Returns(tcs.Task);
+
+        var first = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        var second = ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        tcs.SetResult(new CardBox());
+        await Task.WhenAll(first, second);
+
+        await _boxService.Received(1).SaveBoxAsync(Arg.Any<CardBox>());
+    }
 }
