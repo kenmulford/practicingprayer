@@ -158,6 +158,64 @@ public class PrayerCardTests
         }
     }
 
+    /// <summary>
+    /// Regression: rapidly tapping Save twice on the new-card form previously could
+    /// invoke SaveCardAsync twice — duplicate row attempt + UNIQUE constraint alert at
+    /// best, two near-identical cards at worst. SaveCommand now gates on IsBusy so the
+    /// second invocation is a no-op until the first completes.
+    /// </summary>
+    [Fact]
+    public void Cards_Save_DoubleTapCreatesOnlyOneCard()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+
+        var title = $"DoubleTap {DateTime.Now:HHmmssfff}";
+
+        driver.TapToolbarItemById("Add Card");
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
+        driver.EnterText("Card_Entry_Title", title);
+        driver.DismissKeyboardIfPresent();
+
+        // Two taps in immediate succession (no inter-tap delay). Without the IsBusy
+        // gate, the second tap re-invokes SaveCardAsync. With it, the second tap is
+        // dropped (canExecute=false during the first save).
+        driver.TapToolbarItem("Save");
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
+            "Should return to card list after saving.");
+
+        // Search-filter the new title and assert only one row matches.
+        driver.EnsureCardVisible(title);
+        driver.EnterText("Cards_Search", title);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        var matchLocator = TestConfig.IsIOS
+            ? OpenQA.Selenium.By.XPath($"//*[@name='{title}' or @label='{title}']")
+            : OpenQA.Selenium.By.XPath($"//*[@text='{title}' or @content-desc='{title}']");
+        var matches = driver.FindElements(matchLocator);
+        Assert.Single(matches);
+
+        // Cleanup: clear search, delete the test card.
+        driver.EnterText("Cards_Search", string.Empty);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+        driver.EnsureCardVisible(title);
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains(title);
+        else
+            driver.TapByText(title);
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        if (driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 3))
+        {
+            driver.Tap("Cards_Btn_Delete");
+            driver.DismissAlertIfPresent();
+            Thread.Sleep(TestConfig.DelayAfterSave);
+        }
+    }
+
     /// <summary>3.4: Create new card — tap "Add Card", fill title, save. Card appears in list.</summary>
     [Fact]
     public void Cards_CreateCard_AppearsInList()
