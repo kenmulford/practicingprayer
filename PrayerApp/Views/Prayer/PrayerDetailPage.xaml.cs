@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 using PrayerApp.Views.Tags;
 
@@ -32,9 +33,6 @@ public partial class PrayerDetailPage : ContentPage
         // drop a11y labels on the overflowed buttons.
         _saveAndNewToolbarItem.Order = ToolbarItemOrder.Secondary;
 #endif
-
-        vm.FormResetRequested += async (_, _) =>
-            await FocusTitleAsync(selectAll: false);
 
         vm.TagPickerRequested += async pickerVm =>
             await Shell.Current.Navigation.PushModalAsync(
@@ -140,27 +138,53 @@ public partial class PrayerDetailPage : ContentPage
     }
 
     /// <summary>
-    /// Focus the Title entry after the Shell push animation settles. Delay past the
-    /// ~220ms push animation (see BUG-70) so the platform Entry view is stable when
-    /// Focus() is called; firing mid-animation silently no-ops.
+    /// Focus the Title entry. Drains the Shell push layout pass first so the platform
+    /// Entry view is stable when Focus() runs (firing mid-animation silently no-ops —
+    /// BUG-70). Harmless when called from PendingFocusTitle after Save &amp; Add Another
+    /// (no Shell push to wait on, but the gate adds no observable latency).
     /// </summary>
     private async Task FocusTitleAsync(bool selectAll)
     {
-        await Task.Delay(300);
-        if (TitleEntry.Focus() && selectAll)
+        await Dispatcher.DrainLayoutPassAsync();
+        try
         {
-            TitleEntry.CursorPosition = 0;
-            TitleEntry.SelectionLength = TitleEntry.Text?.Length ?? 0;
+            if (TitleEntry.Focus() && selectAll)
+            {
+                TitleEntry.CursorPosition = 0;
+                TitleEntry.SelectionLength = TitleEntry.Text?.Length ?? 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.ResolveLog()?.Log("PrayerDetailPage.FocusTitleAsync", ex);
         }
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (sender is PrayerRequestDetailViewModel vm &&
-            (e.PropertyName == nameof(PrayerRequestDetailViewModel.IsReadOnly) ||
-             e.PropertyName == nameof(PrayerRequestDetailViewModel.ShowSaveAndNew)))
+        if (sender is not PrayerRequestDetailViewModel vm) return;
+
+        if (e.PropertyName == nameof(PrayerRequestDetailViewModel.IsReadOnly) ||
+            e.PropertyName == nameof(PrayerRequestDetailViewModel.ShowSaveAndNew))
         {
             UpdateToolbarItems(vm);
+        }
+        else if (e.PropertyName == nameof(PrayerRequestDetailViewModel.PendingFocusTitle)
+                 && vm.PendingFocusTitle)
+        {
+            _ = FocusAfterResetAsync(vm);
+        }
+    }
+
+    private async Task FocusAfterResetAsync(PrayerRequestDetailViewModel vm)
+    {
+        try
+        {
+            await FocusTitleAsync(selectAll: false);
+        }
+        finally
+        {
+            vm.ConsumePendingFocusTitle();
         }
     }
 

@@ -218,13 +218,12 @@ public class PrayerRequestDetailViewModelTests
         sut.Title = "First prayer";
         sut.ReturnToCards = true;
 
-        var formResetFired = false;
-        sut.FormResetRequested += (_, _) => formResetFired = true;
-
         await ((IAsyncRelayCommand)sut.SaveAndNewCommand).ExecuteAsync(null);
 
         await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>());
-        Assert.True(formResetFired);
+        // FormResetRequested event was replaced by PendingFocusTitle property
+        // (see SaveAndNewCommand_ValidTitle_SetsPendingFocusTitleTrue for the explicit
+        // assertion); here we only confirm the form-reset side effects.
         Assert.True(sut.IsNew); // form was reset
     }
 
@@ -299,5 +298,58 @@ public class PrayerRequestDetailViewModelTests
         ((IQueryAttributable)sut).ApplyQueryAttributes(query);
 
         Assert.Equal("My Prayer", sut.Title);
+    }
+
+    // ── PendingFocusTitle (replaces FormResetRequested event) ──
+    // Same defect family as the card-create crash: a C# event whose handler
+    // touched native UI state. Replaced with an observable property the View
+    // consumes via PropertyChanged on the lifecycle channel.
+
+    [Fact]
+    public async Task SaveAndNewCommand_ValidTitle_SetsPendingFocusTitleTrue()
+    {
+        var sut = CreateSut();
+        sut.Title = "First prayer";
+        sut.ReturnToCards = true;
+        Assert.False(sut.PendingFocusTitle);
+
+        await ((IAsyncRelayCommand)sut.SaveAndNewCommand).ExecuteAsync(null);
+
+        Assert.True(sut.PendingFocusTitle);
+        Assert.True(sut.IsNew); // form was reset
+    }
+
+    [Fact]
+    public async Task ConsumePendingFocusTitle_WhenTrue_ClearsFlag()
+    {
+        var sut = CreateSut();
+        sut.Title = "Test";
+        sut.ReturnToCards = true;
+        await ((IAsyncRelayCommand)sut.SaveAndNewCommand).ExecuteAsync(null);
+        Assert.True(sut.PendingFocusTitle);
+
+        sut.ConsumePendingFocusTitle();
+
+        Assert.False(sut.PendingFocusTitle);
+    }
+
+    [Fact]
+    public void ConsumePendingFocusTitle_WhenFalse_StaysFalse()
+    {
+        var sut = CreateSut();
+        Assert.False(sut.PendingFocusTitle);
+
+        sut.ConsumePendingFocusTitle();
+
+        Assert.False(sut.PendingFocusTitle);
+    }
+
+    [Fact]
+    public void FormResetRequested_EventIsRemoved()
+    {
+        // Reflection guard tripwire: the VM→View C# event was the same defect family
+        // as the card-create crash. Don't reintroduce.
+        var evt = typeof(PrayerRequestDetailViewModel).GetEvent("FormResetRequested");
+        Assert.Null(evt);
     }
 }

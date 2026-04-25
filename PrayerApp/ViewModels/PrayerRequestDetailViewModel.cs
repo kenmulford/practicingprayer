@@ -59,8 +59,20 @@ namespace PrayerApp.ViewModels
         public bool ShowSaveAndNew => IsNew && ReturnToCards;
 
 
-        /// <summary>Raised after Save &amp; Add Another resets the form, so the view can focus the title entry.</summary>
-        public event EventHandler? FormResetRequested;
+        /// <summary>
+        /// Lifecycle-gated focus signal raised after Save &amp; Add Another resets the form.
+        /// PrayerDetailPage observes via PropertyChanged and focuses the title entry on
+        /// the dispatcher channel — direct C# event handlers raced platform layout state.
+        /// </summary>
+        private bool _pendingFocusTitle;
+        public bool PendingFocusTitle
+        {
+            get => _pendingFocusTitle;
+            private set => SetProperty(ref _pendingFocusTitle, value);
+        }
+
+        /// <summary>View clears the signal after focusing — prevents re-fire on next OnAppearing.</summary>
+        public void ConsumePendingFocusTitle() => PendingFocusTitle = false;
 
         private bool _isReadOnly;
         public bool IsReadOnly
@@ -475,7 +487,7 @@ namespace PrayerApp.ViewModels
             CaptureOriginals();
             OnPropertyChanged(nameof(IsNew));
             OnPropertyChanged(nameof(ShowSaveAndNew));
-            FormResetRequested?.Invoke(this, EventArgs.Empty);
+            PendingFocusTitle = true;
         }
 
         private async Task DeleteAsync()
