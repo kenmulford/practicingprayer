@@ -103,6 +103,61 @@ public class PrayerCardTests
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
     }
 
+    /// <summary>
+    /// Regression: tester reproducibly crashed on Samsung Galaxy Ultra after creating a
+    /// new card. Root cause was VM→View C# event firing CollectionView.ScrollTo against
+    /// a MauiRecyclerView whose adapter snapshot hadn't committed the BoxSections
+    /// rebuild — Java.Lang.IllegalArgumentException "Invalid target position." The fix
+    /// replaces the event with a lifecycle-gated PendingSavedIdentifier consumed in
+    /// OnAppearing with two dispatcher ticks before ScrollTo. Test asserts (a) the app
+    /// survives the post-save lifecycle and (b) the new card row materialized in the
+    /// CollectionView. Note: doesn't reproducibly RED on emulator (race window too narrow);
+    /// serves as a regression safety net for any future device where the race opens up.
+    /// </summary>
+    [Fact]
+    public void Cards_CreateCard_PostSaveLifecycle_DoesNotCrash_AndCardIsVisible()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+
+        // Timestamped title to dodge UNIQUE-constraint dup alerts (BUG-74).
+        var title = $"Race Regression {DateTime.Now:HHmmss}";
+
+        driver.TapToolbarItemById("Add Card");
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
+        driver.EnterText("Card_Entry_Title", title);
+        driver.DismissKeyboardIfPresent();
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+
+        // (a) Process survival check — if the post-save scroll-to crashed, this
+        //     element wait would fail with a session error, not a NoSuchElement.
+        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
+            "Cards page should still render after save (no crash).");
+
+        // (b) New card row materialized in the virtualized CollectionView.
+        driver.EnsureCardVisible(title);
+        Assert.True(
+            TestConfig.IsIOS
+                ? driver.IsTextContainsDisplayed(title, timeoutSeconds: 5)
+                : driver.IsTextDisplayed(title, timeoutSeconds: 5),
+            $"Newly created card '{title}' should be visible in the list.");
+
+        // Cleanup: delete the disposable card so reruns don't accumulate fixtures.
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains(title);
+        else
+            driver.TapByText(title);
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        if (driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 3))
+        {
+            driver.Tap("Cards_Btn_Delete");
+            driver.DismissAlertIfPresent();
+            Thread.Sleep(TestConfig.DelayAfterSave);
+        }
+    }
+
     /// <summary>3.4: Create new card — tap "Add Card", fill title, save. Card appears in list.</summary>
     [Fact]
     public void Cards_CreateCard_AppearsInList()

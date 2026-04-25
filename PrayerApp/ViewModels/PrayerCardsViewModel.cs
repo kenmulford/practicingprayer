@@ -114,8 +114,19 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        /// <summary>Raised when a newly created card should be scrolled to and highlighted.</summary>
-        public event EventHandler<PrayerCardViewModel>? HighlightCardRequested;
+        /// <summary>
+        /// Lifecycle-gated post-save signal. ApplyQueryAttributes("saved") stages the
+        /// identifier here; PrayerCardsPage.OnAppearing consumes it via ConsumePendingSavedAsync.
+        /// Direct C# event handlers crashed on Android because the MauiRecyclerView adapter
+        /// snapshot lagged the BoxSections rebuild — the property/lifecycle pattern lets
+        /// the View gate the scroll on the dispatcher instead.
+        /// </summary>
+        private string? _pendingSavedIdentifier;
+        public string? PendingSavedIdentifier
+        {
+            get => _pendingSavedIdentifier;
+            private set => SetProperty(ref _pendingSavedIdentifier, value);
+        }
 
         #region Constructors
 
@@ -227,21 +238,11 @@ namespace PrayerApp.ViewModels
             }
             else if (query.ContainsKey("saved"))
             {
-                string? PrayerCardString = query["saved"].ToString();
-                PrayerCardViewModel? matched = AllPrayerCards.Where((c) => c.Identifier == PrayerCardString).FirstOrDefault();
-
-                // If card is found, update it
-                if (matched != null)
-                {
-                    matched.Reload();
-                    // Card's BoxId may have changed — rebuild sections
-                    RebuildSections();
-                }
-                // If card isn't found, it's new; add it.
-                else
-                {
-                    AddNewCardAsync(PrayerCardString).SafeFireAndForget();
-                }
+                // Stage the identifier; ConsumePendingSavedAsync (called from OnAppearing)
+                // does the actual work on the lifecycle channel — keeps the View free of
+                // the VM→View C# event whose handler raced the MauiRecyclerView adapter
+                // snapshot on Galaxy Ultra.
+                PendingSavedIdentifier = query["saved"].ToString();
             }
             else if (query.ContainsKey("prayerSaved") && query.ContainsKey("parentCardId"))
             {
@@ -287,27 +288,45 @@ namespace PrayerApp.ViewModels
 
         #region Helper Methods
 
-        private async Task AddNewCardAsync(string? cardIdString)
+        /// <summary>
+        /// Consumes the saved-identifier signal staged by ApplyQueryAttributes. Returns
+        /// the loaded/added card so the View can scroll/highlight, or null to mean
+        /// "do not scroll" (no save pending, parse failure, DB miss, or matched-existing
+        /// card — already in the rendered list, no scroll needed).
+        /// </summary>
+        public async Task<PrayerCardViewModel?> ConsumePendingSavedAsync()
         {
+            var id = PendingSavedIdentifier;
+            if (string.IsNullOrEmpty(id)) return null;
+            // Clear before any await so a stale signal can't re-fire on the next OnAppearing.
+            PendingSavedIdentifier = null;
+
+            var matched = AllPrayerCards.FirstOrDefault(c => c.Identifier == id);
+            if (matched != null)
+            {
+                matched.Reload();
+                RebuildSections();
+                return null;
+            }
+
+            // New-card path: load from DB, subscribe, add, expand + highlight, rebuild.
+            if (!int.TryParse(id, out var cardId)) return null;
             try
             {
-                var card = await PrayerCard.LoadAsync(int.Parse(cardIdString ?? "0"));
-                if (card is null) return;
+                var card = await PrayerCard.LoadAsync(cardId);
+                if (card is null) return null;
                 var newCard = CreateCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
-
-                // Expand + highlight the new card (accordion handler auto-collapses others)
                 newCard.IsExpanded = true;
                 newCard.IsHighlighted = true;
-
                 RebuildSections();
-
-                HighlightCardRequested?.Invoke(this, newCard);
+                return newCard;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                await _navigationService.DisplayAlertAsync("Error", $"Failed to add new card: {e.Message}", "OK");
+                Diagnostics.ResolveLog()?.Log("PrayerCardsViewModel.ConsumePendingSavedAsync", ex);
+                return null;
             }
         }
 

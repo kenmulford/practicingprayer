@@ -1,5 +1,7 @@
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Extensions;
+using PrayerApp.Helpers;
+using PrayerApp.Services;
 using PrayerApp.ViewModels;
 #if ANDROID
 using Android.Views;
@@ -15,7 +17,6 @@ public partial class PrayerCardsPage : ContentPage
     {
         InitializeComponent();
         BindingContext = vm;
-        vm.HighlightCardRequested += OnHighlightCardRequested;
         vm.PropertyChanged += OnViewModelPropertyChanged;
     }
 
@@ -63,17 +64,32 @@ public partial class PrayerCardsPage : ContentPage
         }
     }
 
-    private async void OnHighlightCardRequested(object? sender, PrayerCardViewModel card)
+    /// <summary>
+    /// Scroll to and briefly highlight a freshly-saved card. Must yield two dispatcher
+    /// ticks first so the platform CollectionView adapter has committed the BoxSections
+    /// rebuild — calling ScrollTo while the adapter snapshot is stale throws
+    /// IllegalArgumentException "Invalid target position" on Android.
+    /// </summary>
+    private async Task HighlightCardAfterLayoutAsync(PrayerCardsViewModel vm, PrayerCardViewModel card)
     {
-        // ScrollTo with grouped CollectionView uses the group + item overload
-        var vm = BindingContext as PrayerCardsViewModel;
-        var section = vm?.BoxSections.FirstOrDefault(s => s.Contains(card));
-        if (section != null)
-            cardCollection.ScrollTo(card, section, ScrollToPosition.Center, animate: true);
-        else
-            cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
+        await Dispatcher.DrainLayoutPassAsync();
 
-        SemanticScreenReader.Announce($"New card: {card.Title}");
+        try
+        {
+            var section = vm.BoxSections.FirstOrDefault(s => s.Contains(card));
+            if (section != null)
+                cardCollection.ScrollTo(card, section, ScrollToPosition.Center, animate: true);
+            else
+                cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
+
+            SemanticScreenReader.Announce($"New card: {card.Title}");
+        }
+        catch (Exception ex)
+        {
+            // Safety net — dispatcher gate is the actual fix; this catches any future
+            // platform regression in the same race family.
+            Diagnostics.ResolveLog()?.Log("PrayerCardsPage.HighlightCardAfterLayoutAsync", ex);
+        }
 
         await Task.Delay(2500);
         card.IsHighlighted = false;
@@ -312,19 +328,25 @@ public partial class PrayerCardsPage : ContentPage
     {
         base.OnAppearing();
         await App.InitTask; // ensure DB seeding is complete before loading data
-        if (BindingContext is PrayerCardsViewModel vm)
+        if (BindingContext is not PrayerCardsViewModel vm) return;
+
+        if (!_loaded)
         {
-            if (!_loaded)
-            {
-                _loaded = true;
-                await vm.LoadAsync();
-            }
-            else
-            {
-                // Subsequent visits — refresh data that may have changed on other tabs
-                // (e.g. prayers added via QuickAdd on home page)
-                await vm.RefreshAsync();
-            }
+            _loaded = true;
+            await vm.LoadAsync();
         }
+        else
+        {
+            // Subsequent visits — refresh data that may have changed on other tabs
+            // (e.g. prayers added via QuickAdd on home page)
+            await vm.RefreshAsync();
+        }
+
+        // Consume the post-save signal staged by ApplyQueryAttributes("saved").
+        // Returns the new card VM only on the new-card path; matched-existing path
+        // returns null so we don't ScrollTo (and don't risk the adapter race).
+        var savedCard = await vm.ConsumePendingSavedAsync();
+        if (savedCard != null)
+            await HighlightCardAfterLayoutAsync(vm, savedCard);
     }
 }

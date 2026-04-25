@@ -719,6 +719,132 @@ public class PrayerCardsViewModelTests
         _settings.Received().ExpandedSectionIds = "";
     }
 
+    // ── PendingSavedIdentifier (replaces HighlightCardRequested event) ──
+    // Background: a tester crashed reproducibly on a Galaxy Ultra when saving a new card.
+    // Root cause: ApplyQueryAttributes("saved") fired a C# event whose handler called
+    // CollectionView.ScrollTo on a MauiRecyclerView whose adapter snapshot hadn't
+    // committed the BoxSections swap from RebuildSections. Fix: stage the identifier
+    // here, consume it in OnAppearing on the lifecycle channel.
+
+    [Fact]
+    public void ApplyQueryAttributes_Saved_NewIdentifier_SetsPendingSavedIdentifier()
+    {
+        var sut = CreateSut();
+        var query = new Dictionary<string, object> { { "saved", "42" } };
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(query);
+
+        Assert.Equal("42", sut.PendingSavedIdentifier);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_WhenIdentifierNull_NoOps_ReturnsNull()
+    {
+        var sut = CreateSut();
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.Null(result);
+        Assert.Empty(sut.AllPrayerCards);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_NewCard_LoadsFromDbAddsToAllPrayerCards()
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        var pcDb = SetupCardLoadMock(42, new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 });
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result.Id);
+        Assert.Contains(sut.AllPrayerCards, c => c.Id == 42);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_NewCard_MarksHighlightedAndExpanded()
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        SetupCardLoadMock(42, new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 });
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.True(result.IsHighlighted);
+        Assert.True(result.IsExpanded);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_ClearsPendingSavedIdentifier()
+    {
+        var sut = CreateSut();
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+        Assert.Equal("42", sut.PendingSavedIdentifier);
+
+        // Even if no card is mocked (PrayerCard.LoadAsync returns null), the identifier
+        // must clear so a stale signal doesn't fire on the next OnAppearing.
+        SetupCardLoadMock(42, null);
+        await sut.ConsumePendingSavedAsync();
+
+        Assert.Null(sut.PendingSavedIdentifier);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_MatchedExisting_PreservesStateReturnsNull()
+    {
+        // Per the crash-fix amendment: existing-card path does NOT highlight or expand
+        // and returns null so the View won't ScrollTo (no scroll = no race window).
+        SetupSystemBoxes();
+        var existingCard = new PrayerCard { Id = 7, Title = "Existing", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existingCard }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var matched = sut.AllPrayerCards.Single(c => c.Id == 7);
+        var wasExpanded = matched.IsExpanded;
+        var wasHighlighted = matched.IsHighlighted;
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "7" } });
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.Null(result);
+        Assert.Equal(wasExpanded, matched.IsExpanded);
+        Assert.Equal(wasHighlighted, matched.IsHighlighted);
+        Assert.Single(sut.AllPrayerCards, c => c.Id == 7);
+    }
+
+    [Fact]
+    public void HighlightCardRequested_EventIsRemoved()
+    {
+        // Reflection guard: this VM→View C# event was the crash path. If a future
+        // change re-introduces it, this test fails as a tripwire.
+        var evt = typeof(PrayerCardsViewModel).GetEvent("HighlightCardRequested");
+        Assert.Null(evt);
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)
@@ -726,5 +852,14 @@ public class PrayerCardsViewModelTests
         var db = Substitute.For<IDBService>();
         PrayerCardTag.SetDBService(db);
         db.GetAllAsync<PrayerCardTag>().Returns(junctions);
+    }
+
+    /// <summary>Configure PrayerCard.LoadAsync(id) to return the supplied card (or null).</summary>
+    private static IDBService SetupCardLoadMock(int cardId, PrayerCard? card)
+    {
+        var db = Substitute.For<IDBService>();
+        PrayerCard.SetDBService(db);
+        db.GetByIdAsync<PrayerCard>(cardId).Returns(card!);
+        return db;
     }
 }
