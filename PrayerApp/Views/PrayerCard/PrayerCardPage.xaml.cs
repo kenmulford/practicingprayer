@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 
 namespace PrayerApp.Views.PrayerCard;
@@ -23,11 +24,15 @@ public partial class PrayerCardPage : ContentPage
                 await vm.LoadBoxPickerAsync();
             if (vm.IsNew)
             {
-                // Delay past the Shell push animation (~220ms) so the platform Entry view
-                // is stable when Focus() is called. Dispatcher.DispatchAsync alone resolves
-                // immediately on the UI thread and fires Focus() mid-animation (BUG-70).
-                await Task.Delay(300);
-                TitleEntry.Focus();
+                // Drain the Shell push layout pass before Focus(); a single dispatcher
+                // tick resolves before the platform Entry view is stable and Focus()
+                // silently no-ops mid-animation (BUG-70).
+                await Dispatcher.DrainLayoutPassAsync();
+                try { TitleEntry.Focus(); }
+                catch (Exception ex)
+                {
+                    Diagnostics.ResolveLog()?.Log("PrayerCardPage.OnAppearing focus", ex);
+                }
             }
         }
     }
