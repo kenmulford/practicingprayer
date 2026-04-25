@@ -5,19 +5,6 @@ namespace PrayerApp.Helpers;
 public static class TaskExtensions
 {
     /// <summary>
-    /// Resolves <see cref="IDiagnosticLog"/> from the MAUI service provider.
-    /// Null in non-MAUI contexts (unit tests). Override via the <c>log</c> parameter.
-    /// </summary>
-    private static IDiagnosticLog? ResolveDiagnosticLog()
-    {
-#if ANDROID || IOS
-        return IPlatformApplication.Current?.Services?.GetService<IDiagnosticLog>();
-#else
-        return null;
-#endif
-    }
-
-    /// <summary>
     /// Fire-and-forget with error logging. Exceptions are caught and written to
     /// <see cref="IDiagnosticLog"/> instead of being silently swallowed.
     /// </summary>
@@ -29,7 +16,7 @@ public static class TaskExtensions
         }
         catch (Exception ex)
         {
-            var diagnosticLog = log ?? ResolveDiagnosticLog();
+            var diagnosticLog = log ?? Diagnostics.ResolveLog();
             diagnosticLog?.Log("SafeFireAndForget", ex);
         }
     }
