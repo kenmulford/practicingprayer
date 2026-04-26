@@ -18,6 +18,16 @@ public partial class PrayerCardsPage : ContentPage
         InitializeComponent();
         BindingContext = vm;
         vm.PropertyChanged += OnViewModelPropertyChanged;
+
+        // PERF-9 probes — confirm whether Shell pop re-handlers the page or the CollectionView.
+        // Page-level firings without CV-level firings → page handler torn down + recreated.
+        // CV-level firings without page-level → only the CollectionView is re-handlered.
+        // Both → full view-tree teardown. Neither during Save→Cards → re-inflation has a different cause.
+        // Strip with Slice 5 PerfLog cleanup.
+        HandlerChanging += (_, e) => PerfLog.Log($"PrayerCardsPage.HandlerChanging old={(e.OldHandler != null ? "set" : "null")} new={(e.NewHandler != null ? "set" : "null")}");
+        HandlerChanged  += (_, _) => PerfLog.Log($"PrayerCardsPage.HandlerChanged handler={(Handler != null ? "set" : "null")}");
+        cardCollection.HandlerChanging += (_, e) => PerfLog.Log($"cardCollection.HandlerChanging old={(e.OldHandler != null ? "set" : "null")} new={(e.NewHandler != null ? "set" : "null")}");
+        cardCollection.HandlerChanged  += (_, _) => PerfLog.Log($"cardCollection.HandlerChanged handler={(cardCollection.Handler != null ? "set" : "null")}");
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
