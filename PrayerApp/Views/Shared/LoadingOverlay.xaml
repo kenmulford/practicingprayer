@@ -13,7 +13,8 @@
          Cards_Save_OverlayShowsDuringPostSaveFlow UITest. -->
     <Grid AutomationId="LoadingOverlay_Scrim"
           BackgroundColor="{AppThemeBinding Light={StaticResource LoadingScrimLight}, Dark={StaticResource LoadingScrimDark}}">
-        <ActivityIndicator Style="{StaticResource SaveActivityIndicator}"
+        <ActivityIndicator AutomationId="LoadingOverlay_Spinner"
+                           Style="{StaticResource SaveActivityIndicator}"
                            IsRunning="{Binding IsLoading, Source={x:Reference overlayRoot}, x:DataType=local:LoadingOverlay}" />
     </Grid>
 </ContentView>

@@ -99,8 +99,22 @@ public partial class PrayerCardsPage : ContentPage
     private async Task ScrollToSavedCardAsync(PrayerCardsViewModel vm, PrayerCardViewModel card)
     {
         PerfLog.Log("ScrollToSavedCardAsync.entry");
+
+        // Slice 6g hardening (#2): set up the cell-realize waiter BEFORE the
+        // layout drain, so a fast cell-load path doesn't fire its signal before
+        // we're listening. Fallback timeout guards against the new card never
+        // getting realized (e.g. parent section was collapsed by the user).
+        _expectedSavedCardId = card.Id;
+        _savedCardRealizedTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var realizeTask = _savedCardRealizedTcs.Task;
+
         await Dispatcher.DrainLayoutPassAsync();
         PerfLog.Log("ScrollToSavedCardAsync.after DrainLayoutPassAsync");
+
+        var winner = await Task.WhenAny(realizeTask, Task.Delay(2000));
+        PerfLog.Log($"ScrollToSavedCardAsync.cell-realize winner={(winner == realizeTask ? "realized" : "timeout")}");
+        _expectedSavedCardId = -1;
+        _savedCardRealizedTcs = null;
 
         try
         {
@@ -260,7 +274,23 @@ public partial class PrayerCardsPage : ContentPage
         content.BindingContext = vm;
         host.Content = content;
         PerfLog.Log($"ExpandedSubtree.realized id={vm.Id}");
+
+        // Slice 6g hardening (#2): if a saved-card waiter is set up and this is
+        // the cell it's waiting for, signal it. ScrollTo can then proceed against
+        // a fully-inflated cell instead of an estimated layout position.
+        if (_expectedSavedCardId == vm.Id)
+            _savedCardRealizedTcs?.TrySetResult(vm.Id);
     }
+
+    // Slice 6g hardening (#2) — cell-realization signal for the freshly-saved card.
+    // ScrollToSavedCardAsync sets _expectedSavedCardId + a TCS, awaits it (with
+    // a fallback timeout) so the scroll fires after the new card's chips/list
+    // are realized rather than against an estimated layout position. Replaces
+    // the implicit "DrainLayoutPassAsync is enough" assumption that proved
+    // false in the original PERF log (ScrollTo at t=26633, cell-realize at
+    // t=27257 — 624 ms gap).
+    private int _expectedSavedCardId = -1;
+    private TaskCompletionSource<int>? _savedCardRealizedTcs;
 
     private static Thickness CardMarginFor(bool expanded)
         => expanded ? new Thickness(0, 8) : new Thickness(14, 0, 0, 0);
@@ -429,6 +459,7 @@ public partial class PrayerCardsPage : ContentPage
         // was pending). The 2.5s highlight fade runs in the background and does
         // NOT block the overlay-off transition.
         var hadPendingSave = !string.IsNullOrEmpty(vm.PendingSavedIdentifier);
+        var overlayShownAt = DateTime.UtcNow;
         if (hadPendingSave) vm.IsAwaitingSavedCard = true;
 
         try
@@ -448,7 +479,25 @@ public partial class PrayerCardsPage : ContentPage
         }
         finally
         {
-            if (hadPendingSave) vm.IsAwaitingSavedCard = false;
+            if (hadPendingSave)
+            {
+                // Slice 6g hardening (#1): minimum visible duration. On a fast
+                // path (warm cache, fast device) the entire flow above can run
+                // in <50 ms — short enough that MAUI's binding propagation +
+                // layout pass for the visible overlay never schedules between
+                // IsAwaitingSavedCard true and false, and the overlay never
+                // visually renders. Hold the flag true for at least 250 ms so
+                // the user perceives a deliberate cue, not a flicker — and so
+                // the contract holds across device speeds.
+                const int MinOverlayMs = 250;
+                var elapsedMs = (int)(DateTime.UtcNow - overlayShownAt).TotalMilliseconds;
+                if (elapsedMs < MinOverlayMs)
+                {
+                    PerfLog.Log($"OnAppearing.minOverlay holding +{MinOverlayMs - elapsedMs}ms (elapsed={elapsedMs}ms)");
+                    await Task.Delay(MinOverlayMs - elapsedMs);
+                }
+                vm.IsAwaitingSavedCard = false;
+            }
             PerfLog.Log("OnAppearing.exit");
         }
     }
