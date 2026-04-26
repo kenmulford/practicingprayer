@@ -72,7 +72,9 @@ public partial class PrayerCardsPage : ContentPage
     /// </summary>
     private async Task HighlightCardAfterLayoutAsync(PrayerCardsViewModel vm, PrayerCardViewModel card)
     {
+        PerfLog.Log("HighlightCardAfterLayoutAsync.entry");
         await Dispatcher.DrainLayoutPassAsync();
+        PerfLog.Log("HighlightCardAfterLayoutAsync.after DrainLayoutPassAsync");
 
         try
         {
@@ -81,18 +83,20 @@ public partial class PrayerCardsPage : ContentPage
                 cardCollection.ScrollTo(card, section, ScrollToPosition.Center, animate: true);
             else
                 cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
+            PerfLog.Log("HighlightCardAfterLayoutAsync.after ScrollTo");
 
             SemanticScreenReader.Announce($"New card: {card.Title}");
         }
         catch (Exception ex)
         {
-            // Safety net — dispatcher gate is the actual fix; this catches any future
-            // platform regression in the same race family.
             Diagnostics.ResolveLog()?.Log("PrayerCardsPage.HighlightCardAfterLayoutAsync", ex);
         }
 
+        PerfLog.Log("HighlightCardAfterLayoutAsync.before 2.5s delay");
         await Task.Delay(2500);
+        PerfLog.Log("HighlightCardAfterLayoutAsync.after 2.5s delay");
         card.IsHighlighted = false;
+        PerfLog.Log("HighlightCardAfterLayoutAsync.exit");
     }
 
     private void OnSectionHeaderTapped(object? sender, TappedEventArgs e)
@@ -114,6 +118,8 @@ public partial class PrayerCardsPage : ContentPage
     private void OnCardBorderLoaded(object? sender, EventArgs e)
     {
         if (sender is not Border border) return;
+        var initialId = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
+        PerfLog.Log($"OnCardBorderLoaded.entry id={initialId}");
 
         // Margin is a Thickness (not animatable by FadeTo/TranslateTo) — tween via the low-level
         // Animation class. CollectionView recycles Borders by swapping BindingContext *without*
@@ -129,6 +135,8 @@ public partial class PrayerCardsPage : ContentPage
 
         void Rebind()
         {
+            var newId = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
+            PerfLog.Log($"Rebind.fire prev={subscribed?.Id ?? -1} new={newId}");
             if (subscribed is not null) subscribed.PropertyChanged -= handler;
             subscribed = border.BindingContext as PrayerCardViewModel;
             if (subscribed is not null)
@@ -139,6 +147,7 @@ public partial class PrayerCardsPage : ContentPage
                 border.AbortAnimation("CardMarginTween");
                 border.Margin = CardMarginFor(subscribed.IsExpanded);
             }
+            PerfLog.Log($"Rebind.exit id={newId}");
         }
 
         Rebind();
@@ -179,6 +188,8 @@ public partial class PrayerCardsPage : ContentPage
 
     private static void AnimateCardMargin(Border border, Thickness target)
     {
+        var id = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
+        PerfLog.Log($"AnimateCardMargin.entry id={id}");
         // Android respects system animation settings automatically; no reduced-motion guard needed.
         var from = border.Margin;
         var tween = new Animation(v => border.Margin = new Thickness(
@@ -187,6 +198,8 @@ public partial class PrayerCardsPage : ContentPage
             from.Right  + (target.Right  - from.Right)  * v,
             from.Bottom + (target.Bottom - from.Bottom) * v), 0, 1);
         tween.Commit(border, "CardMarginTween", rate: 16, length: 200, easing: Easing.CubicInOut);
+        // Commit returns immediately — measures scheduling cost only, not the 200ms runtime.
+        PerfLog.Log($"AnimateCardMargin.exit id={id} (Commit returned)");
     }
 
     // BUG-60: On Android, MAUI TapGestureRecognizer and native GestureDetector conflict.
@@ -326,27 +339,32 @@ public partial class PrayerCardsPage : ContentPage
 
     protected override async void OnAppearing()
     {
+        PerfLog.Log("PrayerCardsPage.OnAppearing.entry");
         base.OnAppearing();
+        PerfLog.Log("OnAppearing.before App.InitTask");
         await App.InitTask; // ensure DB seeding is complete before loading data
+        PerfLog.Log("OnAppearing.after App.InitTask");
         if (BindingContext is not PrayerCardsViewModel vm) return;
 
         if (!_loaded)
         {
             _loaded = true;
+            PerfLog.Log("OnAppearing.before LoadAsync");
             await vm.LoadAsync();
+            PerfLog.Log("OnAppearing.after LoadAsync");
         }
         else
         {
-            // Subsequent visits — refresh data that may have changed on other tabs
-            // (e.g. prayers added via QuickAdd on home page)
+            PerfLog.Log("OnAppearing.before RefreshAsync");
             await vm.RefreshAsync();
+            PerfLog.Log("OnAppearing.after RefreshAsync");
         }
 
-        // Consume the post-save signal staged by ApplyQueryAttributes("saved").
-        // Returns the new card VM only on the new-card path; matched-existing path
-        // returns null so we don't ScrollTo (and don't risk the adapter race).
+        PerfLog.Log("OnAppearing.before ConsumePendingSavedAsync");
         var savedCard = await vm.ConsumePendingSavedAsync();
+        PerfLog.Log($"OnAppearing.after ConsumePendingSavedAsync (savedCard null? {savedCard == null})");
         if (savedCard != null)
             await HighlightCardAfterLayoutAsync(vm, savedCard);
+        PerfLog.Log("OnAppearing.exit");
     }
 }

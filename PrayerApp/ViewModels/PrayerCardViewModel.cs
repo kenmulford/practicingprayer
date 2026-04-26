@@ -35,6 +35,7 @@ namespace PrayerApp.ViewModels
             get => _isBusy;
             private set
             {
+                PerfLog.Log($"PrayerCardViewModel.IsBusy.set({value}) prev={_isBusy}");
                 if (SetProperty(ref _isBusy, value))
                     (SaveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
             }
@@ -299,20 +300,30 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
-            if (IsBusy) return;
+            PerfLog.Log("PrayerCardViewModel.SaveAsync.entry");
+            if (IsBusy) { PerfLog.Log("SaveAsync.early-return (already busy)"); return; }
             try
             {
                 IsBusy = true;
                 bool isNew = _prayerCard.Id == 0;
                 _prayerCard.BoxId = _selectedBox?.BoxId ?? 0;
+                PerfLog.Log("SaveAsync.before SaveCardAsync");
                 await _cardService.SaveCardAsync(_prayerCard);
+                PerfLog.Log("SaveAsync.after SaveCardAsync");
                 _originalTitle = Title; // Reset dirty state before navigation
                 if (isNew)
                     _onboardingService.Advance(); // NameCard → AddRequest
                 _accessibilityService.Announce("Card saved");
+                PerfLog.Log("SaveAsync.before GoToAsync");
                 await _navigationService.GoToAsync($"..?saved={Identifier}");
+                PerfLog.Log("SaveAsync.after GoToAsync");
             }
-            finally { IsBusy = false; }
+            finally
+            {
+                PerfLog.Log("SaveAsync.finally entering");
+                IsBusy = false;
+                PerfLog.Log("SaveAsync.finally exited");
+            }
         }
 
         private async Task DeleteAsync()

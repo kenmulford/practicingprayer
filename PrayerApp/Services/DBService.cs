@@ -216,9 +216,19 @@ namespace PrayerApp.Services
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()
         {
+            PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
-            return await _db.Table<T>().ToListAsync();
+            PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.before ToListAsync");
+            // PERF probe: Stopwatch + ConfigureAwait(false) so the continuation runs on
+            // the threadpool. taskMs = pure DB time. Caller's next log line shows when
+            // their UI-thread resume fired — the delta is UI-thread queuing cost. Read
+            // taskMs directly; cross-thread Logcat line ordering isn't deterministic.
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var result = await _db.Table<T>().ToListAsync().ConfigureAwait(false);
+            sw.Stop();
+            PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.after ToListAsync (count={result.Count}, taskMs={sw.ElapsedMilliseconds})");
+            return result;
         }
 
         public async Task<T> GetByIdAsync<T>(int id) where T : new()
@@ -230,16 +240,26 @@ namespace PrayerApp.Services
 
         public async Task<int> InsertAsync<T>(T item)
         {
+            PrayerApp.Helpers.PerfLog.Log($"DBService.InsertAsync<{typeof(T).Name}>.entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
-            return await _db.InsertAsync(item);
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var result = await _db.InsertAsync(item).ConfigureAwait(false);
+            sw.Stop();
+            PrayerApp.Helpers.PerfLog.Log($"DBService.InsertAsync<{typeof(T).Name}>.exit (taskMs={sw.ElapsedMilliseconds})");
+            return result;
         }
 
         public async Task<int> UpdateAsync<T>(T item)
         {
+            PrayerApp.Helpers.PerfLog.Log($"DBService.UpdateAsync<{typeof(T).Name}>.entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
-            return await _db.UpdateAsync(item);
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var result = await _db.UpdateAsync(item).ConfigureAwait(false);
+            sw.Stop();
+            PrayerApp.Helpers.PerfLog.Log($"DBService.UpdateAsync<{typeof(T).Name}>.exit (taskMs={sw.ElapsedMilliseconds})");
+            return result;
         }
 
         public async Task<int> DeleteAsync<T>(T item)
@@ -409,11 +429,17 @@ namespace PrayerApp.Services
 
         public async Task<List<Prayer>> GetPrayersByCardIdAsync(int prayerCardId)
         {
+            PrayerApp.Helpers.PerfLog.Log($"DBService.GetPrayersByCardIdAsync({prayerCardId}).entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
-            return await _db.Table<Prayer>()
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var result = await _db.Table<Prayer>()
                 .Where(prayer => prayer.PrayerCardId == prayerCardId)
-                .ToListAsync();
+                .ToListAsync()
+                .ConfigureAwait(false);
+            sw.Stop();
+            PrayerApp.Helpers.PerfLog.Log($"DBService.GetPrayersByCardIdAsync({prayerCardId}).exit (count={result.Count}, taskMs={sw.ElapsedMilliseconds})");
+            return result;
         }
 
         public async Task<List<PrayerInteraction>> GetInteractionsByPrayerIdAsync(int prayerId)
