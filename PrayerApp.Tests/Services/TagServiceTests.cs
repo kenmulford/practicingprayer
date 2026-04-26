@@ -9,15 +9,19 @@ namespace PrayerApp.Tests.Services;
 public class TagServiceTests
 {
     private readonly IDBService _db;
-    private readonly IMessenger _messenger;
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
+    private readonly object _recipient = new();
+    private readonly List<TagChangedMessage> _tagMessages = new();
+    private readonly List<BulkChangedMessage> _bulkMessages = new();
     private readonly TagService _service;
 
     public TagServiceTests()
     {
         _db = Substitute.For<IDBService>();
-        _messenger = Substitute.For<IMessenger>();
         PrayerTag.SetDBService(_db);
         PrayerCardTag.SetDBService(_db);
+        _messenger.Register<object, TagChangedMessage>(_recipient, (_, m) => _tagMessages.Add(m));
+        _messenger.Register<object, BulkChangedMessage>(_recipient, (_, m) => _bulkMessages.Add(m));
         _service = new TagService(_db, _messenger);
     }
 
@@ -376,7 +380,8 @@ public class TagServiceTests
 
         await _service.SaveTagAsync(tag);
 
-        _messenger.Received(1).Send(Arg.Is<TagChangedMessage>(m => m.Kind == ChangeKind.Created));
+        Assert.Single(_tagMessages);
+        Assert.Equal(ChangeKind.Created, _tagMessages[0].Kind);
     }
 
     [Fact]
@@ -386,31 +391,33 @@ public class TagServiceTests
 
         await _service.SaveTagAsync(tag);
 
-        _messenger.Received(1).Send(Arg.Is<TagChangedMessage>(
-            m => m.TagId == 5 && m.Kind == ChangeKind.Updated));
+        Assert.Single(_tagMessages);
+        Assert.Equal(5, _tagMessages[0].TagId);
+        Assert.Equal(ChangeKind.Updated, _tagMessages[0].Kind);
     }
 
     [Fact]
     public async Task DeleteTagAsync_PublishesDeleted()
     {
         var tag = new PrayerTag { Id = 5, Name = "Work" };
-        _db.GetAsync<PrayerTag>(5).Returns(Task.FromResult<PrayerTag?>(tag));
+        _db.GetByIdAsync<PrayerTag>(5).Returns(Task.FromResult<PrayerTag?>(tag));
 
         await _service.DeleteTagAsync(5);
 
-        _messenger.Received(1).Send(Arg.Is<TagChangedMessage>(
-            m => m.TagId == 5 && m.Kind == ChangeKind.Deleted));
+        Assert.Single(_tagMessages);
+        Assert.Equal(5, _tagMessages[0].TagId);
+        Assert.Equal(ChangeKind.Deleted, _tagMessages[0].Kind);
     }
 
     [Fact]
     public async Task DeleteTagAsync_SystemTag_PublishesNothing()
     {
         var systemTag = new PrayerTag { Id = 5, Name = "Recently Notified", IsSystem = true };
-        _db.GetAsync<PrayerTag>(5).Returns(Task.FromResult<PrayerTag?>(systemTag));
+        _db.GetByIdAsync<PrayerTag>(5).Returns(Task.FromResult<PrayerTag?>(systemTag));
 
         await _service.DeleteTagAsync(5);
 
-        _messenger.DidNotReceive().Send(Arg.Any<TagChangedMessage>());
+        Assert.Empty(_tagMessages);
     }
 
     [Fact]
@@ -422,11 +429,11 @@ public class TagServiceTests
             new() { Id = 2, Name = "B", Color = "#BBBBBB" }
         };
         _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(tags));
-        _db.GetAsync<PrayerTag>(1).Returns(Task.FromResult<PrayerTag?>(tags[0]));
+        _db.GetByIdAsync<PrayerTag>(1).Returns(Task.FromResult<PrayerTag?>(tags[0]));
 
         await _service.ReassignColorAsync("#AAAAAA", "#CCCCCC");
 
-        _messenger.Received(1).Send(Arg.Any<BulkChangedMessage>());
+        Assert.Single(_bulkMessages);
     }
 
     [Fact]
@@ -440,6 +447,6 @@ public class TagServiceTests
 
         await _service.ReassignColorAsync("#ZZZZZZ", "#CCCCCC");
 
-        _messenger.DidNotReceive().Send(Arg.Any<BulkChangedMessage>());
+        Assert.Empty(_bulkMessages);
     }
 }

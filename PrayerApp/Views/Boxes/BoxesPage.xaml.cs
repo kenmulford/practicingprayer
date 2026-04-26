@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 
 namespace PrayerApp.Views.Boxes;
@@ -5,7 +6,6 @@ namespace PrayerApp.Views.Boxes;
 public partial class BoxesPage : ContentPage
 {
     private readonly BoxesViewModel _vm;
-    private bool _loaded;
 
     public BoxesPage(BoxesViewModel vm)
     {
@@ -20,16 +20,6 @@ public partial class BoxesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await App.InitTask;
-
-        if (!_loaded)
-        {
-            _loaded = true;
-            await _vm.LoadAsync();
-        }
-        else
-        {
-            await _vm.RefreshAsync();
-        }
+        await PageSync.OnAppearingAsync(_vm);
     }
 }

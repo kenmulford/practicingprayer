@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
@@ -14,9 +16,10 @@ public class PrayerListViewModelTests
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
 
     private PrayerListViewModel CreateSut() =>
-        new(_prayerService, _cardService, _tagService, _navigationService, _accessibilityService, _settings);
+        new(_prayerService, _cardService, _tagService, _navigationService, _accessibilityService, _settings, _messenger);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -104,10 +107,11 @@ public class PrayerListViewModelTests
         Assert.Equal("test", sut.SearchText);
     }
 
-    // ── RefreshAsync invalidates caches ───────────────────────────────
+    // ── SyncAsync no longer invalidates service cache ─────────────────
+    // Slice 3: services auto-invalidate on mutation (Slice 2). VMs trust the cache.
 
     [Fact]
-    public async Task RefreshAsync_InvalidatesPrayerCache()
+    public async Task SyncAsync_DoesNotInvalidateServiceCache()
     {
         _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
@@ -117,9 +121,9 @@ public class PrayerListViewModelTests
         _db_Setup();
 
         var sut = CreateSut();
-        await sut.RefreshAsync();
+        await sut.SyncAsync();
 
-        _prayerService.Received(1).InvalidateCache();
+        _prayerService.DidNotReceive().InvalidateCache();
     }
 
     // ── HasTags ───────────────────────────────────────────────────────
@@ -131,7 +135,7 @@ public class PrayerListViewModelTests
         Assert.False(sut.HasTags);
     }
 
-    // Helper to set up DB mocks needed for RefreshAsync
+    // Helper to set up DB mocks needed for SyncAsync (PrayerCardTag.LoadAllAsync)
     private void _db_Setup()
     {
         var db = Substitute.For<IDBService>();

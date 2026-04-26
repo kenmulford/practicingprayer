@@ -9,14 +9,16 @@ namespace PrayerApp.Tests.Services;
 public class PrayerServiceTests
 {
     private readonly IDBService _db;
-    private readonly IMessenger _messenger;
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
+    private readonly object _recipient = new();
+    private readonly List<PrayerChangedMessage> _prayerMessages = new();
     private readonly PrayerService _service;
 
     public PrayerServiceTests()
     {
         _db = Substitute.For<IDBService>();
-        _messenger = Substitute.For<IMessenger>();
         Prayer.SetDBService(_db);
+        _messenger.Register<object, PrayerChangedMessage>(_recipient, (_, m) => _prayerMessages.Add(m));
         _service = new PrayerService(_db, _messenger);
     }
 
@@ -413,8 +415,9 @@ public class PrayerServiceTests
 
         await _service.SavePrayerAsync(prayer);
 
-        _messenger.Received(1).Send(Arg.Is<PrayerChangedMessage>(
-            m => m.CardId == 3 && m.Kind == ChangeKind.Created));
+        Assert.Single(_prayerMessages);
+        Assert.Equal(3, _prayerMessages[0].CardId);
+        Assert.Equal(ChangeKind.Created, _prayerMessages[0].Kind);
     }
 
     [Fact]
@@ -424,8 +427,10 @@ public class PrayerServiceTests
 
         await _service.SavePrayerAsync(prayer);
 
-        _messenger.Received(1).Send(Arg.Is<PrayerChangedMessage>(
-            m => m.PrayerId == 9 && m.CardId == 3 && m.Kind == ChangeKind.Updated));
+        Assert.Single(_prayerMessages);
+        Assert.Equal(9, _prayerMessages[0].PrayerId);
+        Assert.Equal(3, _prayerMessages[0].CardId);
+        Assert.Equal(ChangeKind.Updated, _prayerMessages[0].Kind);
     }
 
     [Fact]
@@ -435,7 +440,9 @@ public class PrayerServiceTests
 
         await _service.DeletePrayerAsync(prayer);
 
-        _messenger.Received(1).Send(Arg.Is<PrayerChangedMessage>(
-            m => m.PrayerId == 9 && m.CardId == 3 && m.Kind == ChangeKind.Deleted));
+        Assert.Single(_prayerMessages);
+        Assert.Equal(9, _prayerMessages[0].PrayerId);
+        Assert.Equal(3, _prayerMessages[0].CardId);
+        Assert.Equal(ChangeKind.Deleted, _prayerMessages[0].Kind);
     }
 }

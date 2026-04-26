@@ -11,7 +11,10 @@ public class BoxServiceTests
     private readonly IDBService _db;
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
-    private readonly IMessenger _messenger;
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
+    private readonly object _recipient = new();
+    private readonly List<CardBoxChangedMessage> _boxMessages = new();
+    private readonly List<BulkChangedMessage> _bulkMessages = new();
     private readonly BoxService _service;
 
     public BoxServiceTests()
@@ -19,9 +22,10 @@ public class BoxServiceTests
         _db = Substitute.For<IDBService>();
         _prayerService = Substitute.For<IPrayerService>();
         _cardService = Substitute.For<ICardService>();
-        _messenger = Substitute.For<IMessenger>();
         CardBox.SetDBService(_db);
         PrayerCard.SetDBService(_db);
+        _messenger.Register<object, CardBoxChangedMessage>(_recipient, (_, m) => _boxMessages.Add(m));
+        _messenger.Register<object, BulkChangedMessage>(_recipient, (_, m) => _bulkMessages.Add(m));
         _service = new BoxService(_db, _prayerService, _cardService, _messenger);
     }
 
@@ -265,7 +269,8 @@ public class BoxServiceTests
 
         await _service.SaveBoxAsync(box);
 
-        _messenger.Received(1).Send(Arg.Is<CardBoxChangedMessage>(m => m.Kind == ChangeKind.Created));
+        Assert.Single(_boxMessages);
+        Assert.Equal(ChangeKind.Created, _boxMessages[0].Kind);
     }
 
     [Fact]
@@ -275,8 +280,9 @@ public class BoxServiceTests
 
         await _service.SaveBoxAsync(box);
 
-        _messenger.Received(1).Send(Arg.Is<CardBoxChangedMessage>(
-            m => m.BoxId == 4 && m.Kind == ChangeKind.Updated));
+        Assert.Single(_boxMessages);
+        Assert.Equal(4, _boxMessages[0].BoxId);
+        Assert.Equal(ChangeKind.Updated, _boxMessages[0].Kind);
     }
 
     [Fact]
@@ -286,7 +292,7 @@ public class BoxServiceTests
 
         await _service.SaveBoxAsync(box);
 
-        _messenger.DidNotReceive().Send(Arg.Any<CardBoxChangedMessage>());
+        Assert.Empty(_boxMessages);
     }
 
     [Fact]
@@ -295,12 +301,12 @@ public class BoxServiceTests
         // Box delete is a bulk operation (cards and prayers may also change). Per the
         // BulkChangedMessage contract, granular CardBoxChangedMessage is NOT also sent.
         var box = new CardBox { Id = 4, Name = "Friends" };
-        _db.GetAsync<CardBox>(4).Returns(Task.FromResult<CardBox?>(box));
+        _db.GetByIdAsync<CardBox>(4).Returns(Task.FromResult<CardBox?>(box));
         _db.GetCardsByBoxIdAsync(4).Returns(new List<PrayerCard>());
 
         await _service.DeleteBoxAsync(4, deleteCards: false);
 
-        _messenger.Received(1).Send(Arg.Any<BulkChangedMessage>());
-        _messenger.DidNotReceive().Send(Arg.Any<CardBoxChangedMessage>());
+        Assert.Single(_bulkMessages);
+        Assert.Empty(_boxMessages);
     }
 }

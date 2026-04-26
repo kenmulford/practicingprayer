@@ -1,3 +1,4 @@
+using PrayerApp.Helpers;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
 
@@ -6,7 +7,6 @@ namespace PrayerApp.Views.Tags
     public partial class TagsPage : ContentPage
     {
         private readonly TagsViewModel _vm;
-        private bool _loaded;
 
         public TagsPage(TagsViewModel vm)
         {
@@ -21,18 +21,7 @@ namespace PrayerApp.Views.Tags
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-            await App.InitTask; // ensure DB seeding is complete before loading data
-
-            if (!_loaded)
-            {
-                _loaded = true;
-                await _vm.LoadAsync();
-            }
-            else
-            {
-                // Subsequent visits — refresh without flicker
-                await _vm.RefreshAsync();
-            }
+            await PageSync.OnAppearingAsync(_vm);
         }
     }
 }

@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
@@ -12,6 +14,7 @@ public class BoxesViewModelTests
     private readonly ICardService _cardService = Substitute.For<ICardService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
 
     public BoxesViewModelTests()
     {
@@ -19,7 +22,7 @@ public class BoxesViewModelTests
     }
 
     private BoxesViewModel CreateSut() =>
-        new(_boxService, _cardService, _navigationService, _accessibilityService);
+        new(_boxService, _cardService, _navigationService, _accessibilityService, _messenger);
 
     private void SetupBoxes(params CardBox[] boxes)
     {
@@ -27,17 +30,17 @@ public class BoxesViewModelTests
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
     }
 
-    // ── LoadAsync ──────────────────────────────────────────────────────
+    // ── SyncAsync ──────────────────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_PopulatesBoxesFromService()
+    public async Task SyncAsync_PopulatesBoxesFromService()
     {
         SetupBoxes(
             new CardBox { Id = 1, Name = "Family" },
             new CardBox { Id = 2, Name = "Ministry" });
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.Boxes.Count);
         Assert.Contains(sut.Boxes, b => b.Name == "Family");
@@ -45,29 +48,29 @@ public class BoxesViewModelTests
     }
 
     [Fact]
-    public async Task LoadAsync_EmptyService_ProducesEmptyCollection()
+    public async Task SyncAsync_EmptyService_ProducesEmptyCollection()
     {
         SetupBoxes();
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Empty(sut.Boxes);
     }
 
     [Fact]
-    public async Task LoadAsync_SetsIsLoadingFalse_AfterCompletion()
+    public async Task SyncAsync_SetsIsLoadingFalse_AfterCompletion()
     {
         SetupBoxes();
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.IsLoading);
     }
 
     [Fact]
-    public async Task LoadAsync_CalculatesCardCounts()
+    public async Task SyncAsync_CalculatesCardCounts()
     {
         _boxService.GetBoxesAsync().Returns(new List<CardBox>
         {
@@ -81,19 +84,19 @@ public class BoxesViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.Boxes[0].CardCount);
     }
 
-    // ── RefreshAsync ──────────────────────────────────────────────────
+    // ── SyncAsync ──────────────────────────────────────────────────
 
     [Fact]
-    public async Task RefreshAsync_AddsNewBoxes()
+    public async Task SyncAsync_AddsNewBoxes()
     {
         SetupBoxes(new CardBox { Id = 1, Name = "Existing" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         _boxService.GetBoxesAsync().Returns(new List<CardBox>
         {
@@ -101,45 +104,45 @@ public class BoxesViewModelTests
             new() { Id = 2, Name = "New Box" }
         }.AsReadOnly());
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
-        await sut.RefreshAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.Boxes.Count);
         Assert.Contains(sut.Boxes, b => b.Name == "New Box");
     }
 
     [Fact]
-    public async Task RefreshAsync_RemovesDeletedBoxes()
+    public async Task SyncAsync_RemovesDeletedBoxes()
     {
         SetupBoxes(
             new CardBox { Id = 1, Name = "Keep" },
             new CardBox { Id = 2, Name = "Delete Me" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         _boxService.GetBoxesAsync().Returns(new List<CardBox>
         {
             new() { Id = 1, Name = "Keep" }
         }.AsReadOnly());
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
-        await sut.RefreshAsync();
+        await sut.SyncAsync();
 
         Assert.Single(sut.Boxes);
         Assert.Equal("Keep", sut.Boxes[0].Name);
     }
 
     [Fact]
-    public async Task RefreshAsync_UpdatesExistingBoxName()
+    public async Task SyncAsync_UpdatesExistingBoxName()
     {
         SetupBoxes(new CardBox { Id = 1, Name = "Old Name" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         _boxService.GetBoxesAsync().Returns(new List<CardBox>
         {
             new() { Id = 1, Name = "New Name" }
         }.AsReadOnly());
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
-        await sut.RefreshAsync();
+        await sut.SyncAsync();
 
         Assert.Equal("New Name", sut.Boxes[0].Name);
     }
@@ -151,7 +154,7 @@ public class BoxesViewModelTests
     {
         SetupBoxes(new CardBox { Id = 1, Name = "Test" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         var item = sut.Boxes[0];
 
         Assert.False(item.IsSelected);
@@ -168,7 +171,7 @@ public class BoxesViewModelTests
             new CardBox { Id = 1, Name = "A" },
             new CardBox { Id = 2, Name = "B" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         sut.Boxes[0].SelectCommand.Execute(null);
         Assert.True(sut.Boxes[0].IsSelected);
@@ -183,7 +186,7 @@ public class BoxesViewModelTests
     {
         SetupBoxes(new CardBox { Id = 1, Name = "A" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         sut.Boxes[0].SelectCommand.Execute(null);
         sut.DeselectAll();
@@ -198,7 +201,7 @@ public class BoxesViewModelTests
     {
         SetupBoxes(new CardBox { Id = 5, Name = "Family" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         _navigationService.DisplayActionSheetAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
@@ -214,7 +217,7 @@ public class BoxesViewModelTests
     {
         SetupBoxes(new CardBox { Id = 5, Name = "Family" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         _navigationService.DisplayActionSheetAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
@@ -230,7 +233,7 @@ public class BoxesViewModelTests
     {
         SetupBoxes(new CardBox { Id = 5, Name = "Family" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         _navigationService.DisplayActionSheetAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
@@ -246,7 +249,7 @@ public class BoxesViewModelTests
     {
         SetupBoxes(new CardBox { Id = 5, Name = "Family" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // Backdrop tap returns null on both Android and iOS
         _navigationService.DisplayActionSheetAsync(
@@ -265,11 +268,27 @@ public class BoxesViewModelTests
     {
         SetupBoxes(new CardBox { Id = 1, Name = "Remove Me" });
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         var item = sut.Boxes[0];
 
         sut.RemoveBox(item);
 
         Assert.Empty(sut.Boxes);
+    }
+
+    // ── Messenger-driven sync ─────────────────────────────────────────
+
+    [Fact]
+    public async Task BulkChangedMessage_TriggersSyncAsync()
+    {
+        var sut = CreateSut();
+        SetupBoxes(new CardBox { Id = 1, Name = "FromBulk" });
+
+        _messenger.Send(new BulkChangedMessage());
+
+        await Task.Yield();
+        await Task.Yield();
+
+        Assert.Contains(sut.Boxes, b => b.Name == "FromBulk");
     }
 }

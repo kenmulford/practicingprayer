@@ -1,5 +1,6 @@
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Extensions;
+using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
@@ -92,8 +93,7 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
         _orientationService?.LockPortrait();
-        await App.InitTask; // ensure DB seeding is complete before loading data
-        await _homeViewModel.LoadAsync();
+        await PageSync.OnAppearingAsync(_homeViewModel);
 
         // Show welcome popup on first visit — skip if user entered via share link
         if (_onboardingService.CurrentStep == OnboardingStep.Welcome

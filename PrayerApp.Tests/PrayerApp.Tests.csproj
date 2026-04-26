@@ -59,6 +59,7 @@
 
     <!-- ViewModel interfaces -->
     <Compile Include="../PrayerApp/ViewModels/IEditGuard.cs" />
+    <Compile Include="../PrayerApp/ViewModels/ISyncableViewModel.cs" />
 
     <!-- Route constants -->
     <Compile Include="../PrayerApp/Routes.cs" />

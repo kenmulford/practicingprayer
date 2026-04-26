@@ -1,12 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Helpers;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Windows.Input;
 
 namespace PrayerApp.ViewModels;
 
-public class HomeViewModel : ObservableObject
+public class HomeViewModel : ObservableObject, ISyncableViewModel
 {
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
@@ -15,6 +18,7 @@ public class HomeViewModel : ObservableObject
     private readonly INavigationService _navigationService;
     private readonly IAccessibilityService _accessibilityService;
     private readonly ISettings _settings;
+    private readonly IMessenger _messenger;
 
     // ── Overdue metric ────────────────────────────────────────────────
 
@@ -201,7 +205,7 @@ public class HomeViewModel : ObservableObject
 
     public HomeViewModel(IPrayerService prayerService, ICardService cardService,
         ITagService tagService, IBoxService boxService, INavigationService navigationService,
-        IAccessibilityService accessibilityService, ISettings settings)
+        IAccessibilityService accessibilityService, ISettings settings, IMessenger messenger)
     {
         _prayerService = prayerService;
         _cardService = cardService;
@@ -210,10 +214,19 @@ public class HomeViewModel : ObservableObject
         _navigationService = navigationService;
         _accessibilityService = accessibilityService;
         _settings = settings;
+        _messenger = messenger;
 
         GoToOverdueCommand = new AsyncRelayCommand(GoToOverdueAsync);
         GoToCardsCommand = new AsyncRelayCommand(() => _navigationService.GoToAsync(Routes.PrayerCardsTab));
         GoToPrayersCommand = new AsyncRelayCommand(() => _navigationService.GoToAsync(Routes.PrayersTab));
+
+        // Cross-page CRUD signals — Home displays metric counts that derive from every
+        // entity type, so subscribe to all of them. Weak refs auto-clean on GC.
+        _messenger.Register<HomeViewModel, PrayerCardChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+        _messenger.Register<HomeViewModel, PrayerChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+        _messenger.Register<HomeViewModel, TagChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+        _messenger.Register<HomeViewModel, CardBoxChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+        _messenger.Register<HomeViewModel, BulkChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
     }
 
     public HomeViewModel() : this(
@@ -223,7 +236,8 @@ public class HomeViewModel : ObservableObject
         IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
-        IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
+        IPlatformApplication.Current!.Services.GetRequiredService<ISettings>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IMessenger>())
     { }
 
     // ── Loading state ─────────────────────────────────────────────────
@@ -237,15 +251,14 @@ public class HomeViewModel : ObservableObject
 
     // ── Data Loading ──────────────────────────────────────────────────
 
-    public async Task LoadAsync()
+    public async Task SyncAsync()
     {
         IsLoading = true;
         try
         {
-            _prayerService.InvalidateCache();
-            _cardService.InvalidateCache();
-            _tagService.InvalidateCache();
-            _boxService.InvalidateCache();
+            // Service caches are auto-invalidated by their own mutation methods (Slice 2);
+            // no defensive InvalidateCache call needed here. Messenger signals trigger
+            // re-sync on cross-page CRUD.
 
             // Overdue
             var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);

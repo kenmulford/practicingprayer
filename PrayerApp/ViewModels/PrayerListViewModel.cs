@@ -1,8 +1,10 @@
 using PrayerApp.Helpers;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,7 +15,7 @@ namespace PrayerApp.ViewModels
 {
     public enum FilterStatus { Active, Answered, All, Overdue }
 
-    public class PrayerListViewModel : ObservableObject, IQueryAttributable
+    public class PrayerListViewModel : ObservableObject, IQueryAttributable, ISyncableViewModel
     {
         private List<Prayer> _prayerList = new();
         private readonly IPrayerService _prayerService;
@@ -22,6 +24,7 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly ISettings _settings;
+        private readonly IMessenger _messenger;
         private Dictionary<int, string> _cardTitleLookup = new();
         private CancellationTokenSource? _filterAnnounceCts;
 
@@ -102,7 +105,8 @@ namespace PrayerApp.ViewModels
         public ICommand SetStatusCommand { get; }
 
         public PrayerListViewModel(IPrayerService prayerService, ICardService cardService, ITagService tagService,
-            INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings)
+            INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings,
+            IMessenger messenger)
         {
             _prayerService = prayerService;
             _cardService   = cardService;
@@ -110,6 +114,7 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _settings = settings;
+            _messenger = messenger;
 
             // Any change to the backing store re-runs the filter (suppressed during bulk loads)
             AllPrayers.CollectionChanged += (_, _) => { if (!_suppressFilter) ApplyFilter(); };
@@ -126,6 +131,13 @@ namespace PrayerApp.ViewModels
                     _          => FilterStatus.Active
                 };
             });
+
+            // Prayers list reflects prayer + card title + tag chip state. Any of those
+            // changing elsewhere should trigger a sync.
+            _messenger.Register<PrayerListViewModel, PrayerChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerListViewModel, PrayerCardChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerListViewModel, TagChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerListViewModel, BulkChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
         }
 
         public PrayerListViewModel() : this(
@@ -134,52 +146,64 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IMessenger>())
         { }
 
-        public async Task LoadAsync()
+        public async Task SyncAsync()
         {
             IsLoading = true;
             _suppressAnnounce = true;
+            _suppressFilter = true;
             try
             {
-                _suppressFilter = true;
-
-                // Build card title lookup
                 var cards = await _cardService.GetCardsAsync();
                 _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
 
-                // Load all prayers
                 _prayerList = (await _prayerService.GetAllPrayersAsync()).ToList();
-
-                // Build tag→request lookup for chip filter
                 _requestTagIds = await BuildRequestTagLookupAsync();
 
-                // Build overdue set for Overdue filter
                 var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
                 _overdueIds = overdue.Select(p => p.Id).ToHashSet();
 
-                // Build prayer ViewModels
-                foreach (var old in AllPrayers)
-                    UnsubscribeFromPropertyChanges(old);
-                AllPrayers.Clear();
-                foreach (var p in _prayerList)
+                // Diff AllPrayers — works for first call (empty → "add everything") and Nth call.
+                var freshIds = _prayerList.Select(p => p.Id).ToHashSet();
+                var toRemove = AllPrayers.Where(p => !freshIds.Contains(p.Id)).ToList();
+                foreach (var vm in toRemove)
                 {
-                    var vm = BuildViewModel(p);
-                    AllPrayers.Add(vm);
+                    UnsubscribeFromPropertyChanges(vm);
+                    AllPrayers.Remove(vm);
                 }
 
-                // Load tag chips
+                var prayerLookup = _prayerList.ToDictionary(p => p.Id);
+                foreach (var vm in AllPrayers)
+                {
+                    if (prayerLookup.TryGetValue(vm.Id, out var fresh))
+                    {
+                        vm.Title = fresh.Title;
+                        vm.IsAnswered = fresh.IsAnswered;
+                        vm.CardTitle = _cardTitleLookup.TryGetValue(fresh.PrayerCardId, out var t) ? t : string.Empty;
+                    }
+                }
+
+                var currentIds = AllPrayers.Select(p => p.Id).ToHashSet();
+                foreach (var p in _prayerList.Where(p => !currentIds.Contains(p.Id)))
+                    AllPrayers.Add(BuildViewModel(p));
+
+                // Diff AvailableTags (chip filter)
                 var allTags = (await _tagService.GetTagsAsync()).ToList();
-                AvailableTags.Clear();
-                foreach (var tag in allTags)
+                var freshTagIds = allTags.Select(t => t.Id).ToHashSet();
+                var existingTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
+
+                var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
+                foreach (var chip in chipsToRemove)
+                    AvailableTags.Remove(chip);
+
+                foreach (var tag in allTags.Where(t => !existingTagIds.Contains(t.Id)))
                     AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
                 OnPropertyChanged(nameof(HasTags));
 
-                // Apply pre-selected tag if navigated from tag detail
                 ApplyPreselectedTag();
-
-                // Initial filtered view
                 ApplyFilter();
             }
             finally
@@ -411,43 +435,6 @@ namespace PrayerApp.ViewModels
             await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?new=true");
         }
 
-        private async Task LoadPrayersAsync()
-        {
-            _suppressAnnounce = true;
-            _suppressFilter = true;
-            try
-            {
-                _prayerService.InvalidateCache();
-                var prayers = await _prayerService.GetAllPrayersAsync();
-                _prayerList = prayers.ToList();
-
-                var cards = await _cardService.GetCardsAsync();
-                _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
-
-                // Rebuild tag lookup
-                _requestTagIds = await BuildRequestTagLookupAsync();
-
-                var viewModels = _prayerList.Select(BuildViewModel).ToList();
-
-                foreach (var old in AllPrayers)
-                    UnsubscribeFromPropertyChanges(old);
-                AllPrayers.Clear();
-                foreach (var vm in viewModels)
-                    AllPrayers.Add(vm);
-
-                ApplyFilter();
-            }
-            catch (Exception e)
-            {
-                await _navigationService.DisplayAlertAsync("Error", $"Failed to load prayers: {e.Message}", "OK");
-            }
-            finally
-            {
-                _suppressFilter = false;
-                _suppressAnnounce = false;
-            }
-        }
-
         private void SubscribeToPropertyChanges(PrayerRequestDetailViewModel prayer)
         {
             void Handler(object? _, System.ComponentModel.PropertyChangedEventArgs e)
@@ -465,77 +452,6 @@ namespace PrayerApp.ViewModels
         {
             if (_prayerHandlers.Remove(prayer, out var handler))
                 prayer.PropertyChanged -= handler;
-        }
-
-        public void Reload() => LoadPrayersAsync().SafeFireAndForget();
-
-        /// <summary>
-        /// Lightweight refresh for cross-tab consistency. Rebuilds the tag lookup
-        /// and prayer list without tearing down the entire ViewModel state. Called
-        /// from OnAppearing on subsequent tab visits.
-        /// </summary>
-        public async Task RefreshAsync()
-        {
-            _prayerService.InvalidateCache();
-
-            // Rebuild prayer list
-            var prayers = await _prayerService.GetAllPrayersAsync();
-            var currentIds = AllPrayers.Select(p => p.Id).ToHashSet();
-            var freshIds = prayers.Select(p => p.Id).ToHashSet();
-
-            // Remove deleted prayers
-            var toRemove = AllPrayers.Where(p => !freshIds.Contains(p.Id)).ToList();
-            foreach (var vm in toRemove)
-            {
-                UnsubscribeFromPropertyChanges(vm);
-                AllPrayers.Remove(vm);
-            }
-
-            // Refresh card lookup
-            var cards = await _cardService.GetCardsAsync();
-            _cardTitleLookup = cards.ToDictionary(c => c.Id, c => c.Title ?? string.Empty);
-
-            // Update existing prayers with fresh data from DB
-            var prayerLookup = prayers.ToDictionary(p => p.Id);
-            foreach (var vm in AllPrayers)
-            {
-                if (prayerLookup.TryGetValue(vm.Id, out var fresh))
-                {
-                    vm.Title = fresh.Title;
-                    vm.IsAnswered = fresh.IsAnswered;
-                    vm.CardTitle = _cardTitleLookup.TryGetValue(fresh.PrayerCardId, out var t) ? t : string.Empty;
-                }
-            }
-
-            // Add new prayers (e.g. from QuickAdd)
-            foreach (var p in prayers.Where(p => !currentIds.Contains(p.Id)))
-            {
-                _prayerList.Add(p);
-                AllPrayers.Add(BuildViewModel(p));
-            }
-
-            // Rebuild tag lookup for chip filter
-            _requestTagIds = await BuildRequestTagLookupAsync();
-
-            // Refresh tag chips — add new, remove deleted
-            var allTags = (await _tagService.GetTagsAsync()).ToList();
-            var freshTagIds = allTags.Select(t => t.Id).ToHashSet();
-            var existingTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
-
-            var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
-            foreach (var chip in chipsToRemove)
-                AvailableTags.Remove(chip);
-
-            foreach (var tag in allTags.Where(t => !existingTagIds.Contains(t.Id)))
-                AvailableTags.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
-
-            // Rebuild overdue set so the Overdue filter reflects current state
-            var overdue = await _prayerService.GetOverduePrayersAsync(_settings.OverdueDayThreshold);
-            _overdueIds = overdue.Select(p => p.Id).ToHashSet();
-
-            OnPropertyChanged(nameof(HasTags));
-            ApplyPreselectedTag();
-            ApplyFilter();
         }
 
         #endregion

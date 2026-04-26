@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using PrayerApp.Helpers;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Collections.ObjectModel;
@@ -8,12 +10,13 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    public class BoxesViewModel : ObservableObject
+    public class BoxesViewModel : ObservableObject, ISyncableViewModel
     {
         private readonly IBoxService _boxService;
         private readonly ICardService _cardService;
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
+        private readonly IMessenger _messenger;
 
         private bool _isLoading;
         public bool IsLoading
@@ -26,30 +29,35 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        private ObservableCollection<BoxItemViewModel> _boxes = new();
-        public ObservableCollection<BoxItemViewModel> Boxes
-        {
-            get => _boxes;
-            private set => SetProperty(ref _boxes, value);
-        }
+        /// <summary>Mutated in-place across syncs so item-level state survives refresh.</summary>
+        public ObservableCollection<BoxItemViewModel> Boxes { get; } = new();
 
         public ICommand AddCommand { get; }
 
         public BoxesViewModel(IBoxService boxService, ICardService cardService,
-            INavigationService navigationService, IAccessibilityService accessibilityService)
+            INavigationService navigationService, IAccessibilityService accessibilityService,
+            IMessenger messenger)
         {
             _boxService = boxService ?? throw new ArgumentNullException(nameof(boxService));
             _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
+            _messenger = messenger;
             AddCommand = new AsyncRelayCommand(AddAsync);
+
+            // Box card-counts derive from cards-per-box, so card mutations can change
+            // displayed counts even if no box itself changed.
+            _messenger.Register<BoxesViewModel, CardBoxChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<BoxesViewModel, PrayerCardChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<BoxesViewModel, BulkChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
         }
 
         public BoxesViewModel(IBoxService boxService) : this(
             boxService,
             IPlatformApplication.Current!.Services.GetRequiredService<ICardService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IMessenger>())
         { }
 
         private async Task<(IReadOnlyList<CardBox> boxes, Dictionary<int, int> counts)> FetchBoxDataAsync()
@@ -61,49 +69,36 @@ namespace PrayerApp.ViewModels
             return (boxes, counts);
         }
 
-        public async Task LoadAsync()
+        public async Task SyncAsync()
         {
             IsLoading = true;
             try
             {
                 var (boxes, counts) = await FetchBoxDataAsync();
+                var freshIds = boxes.Select(b => b.Id).ToHashSet();
 
-                Boxes = new ObservableCollection<BoxItemViewModel>(
-                    boxes.Select(box => new BoxItemViewModel(
+                // Remove deleted
+                var toRemove = Boxes.Where(b => !freshIds.Contains(b.Id)).ToList();
+                foreach (var vm in toRemove)
+                    Boxes.Remove(vm);
+
+                // Add new
+                var currentIds = Boxes.Select(b => b.Id).ToHashSet();
+                foreach (var box in boxes.Where(b => !currentIds.Contains(b.Id)))
+                    Boxes.Add(new BoxItemViewModel(
                         box, _boxService, this, _navigationService, _accessibilityService,
-                        counts.GetValueOrDefault(box.Id, 0))));
+                        counts.GetValueOrDefault(box.Id, 0)));
+
+                // Update existing
+                foreach (var box in boxes)
+                {
+                    var existing = Boxes.FirstOrDefault(b => b.Id == box.Id);
+                    existing?.Update(box, counts.GetValueOrDefault(box.Id, 0));
+                }
             }
             finally
             {
                 IsLoading = false;
-            }
-        }
-
-        public async Task RefreshAsync()
-        {
-            _boxService.InvalidateCache();
-            _cardService.InvalidateCache();
-            var (boxes, counts) = await FetchBoxDataAsync();
-
-            var freshIds = boxes.Select(b => b.Id).ToHashSet();
-            var currentIds = Boxes.Select(b => b.Id).ToHashSet();
-
-            // Remove deleted
-            var toRemove = Boxes.Where(b => !freshIds.Contains(b.Id)).ToList();
-            foreach (var vm in toRemove)
-                Boxes.Remove(vm);
-
-            // Add new
-            foreach (var box in boxes.Where(b => !currentIds.Contains(b.Id)))
-                Boxes.Add(new BoxItemViewModel(
-                    box, _boxService, this, _navigationService, _accessibilityService,
-                    counts.GetValueOrDefault(box.Id, 0)));
-
-            // Update existing
-            foreach (var box in boxes)
-            {
-                var existing = Boxes.FirstOrDefault(b => b.Id == box.Id);
-                existing?.Update(box, counts.GetValueOrDefault(box.Id, 0));
             }
         }
 

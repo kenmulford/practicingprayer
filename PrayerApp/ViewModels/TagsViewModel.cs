@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using PrayerApp.Helpers;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System.Collections.ObjectModel;
@@ -8,11 +10,12 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    public class TagsViewModel : ObservableObject
+    public class TagsViewModel : ObservableObject, ISyncableViewModel
     {
         private readonly ITagService _tagService;
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
+        private readonly IMessenger _messenger;
 
         private bool _isLoading;
         public bool IsLoading
@@ -25,73 +28,62 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        private ObservableCollection<TagItemViewModel> _tags = new();
         /// <summary>
-        /// Tag list bound to the CollectionView. Replaced on full load to avoid iOS
-        /// UICollectionView layout desync; mutated in-place for delta refreshes.
+        /// Tag list bound to the CollectionView. Mutated in-place across syncs so
+        /// item-level state (selection, etc.) survives refresh.
         /// </summary>
-        public ObservableCollection<TagItemViewModel> Tags
-        {
-            get => _tags;
-            private set => SetProperty(ref _tags, value);
-        }
+        public ObservableCollection<TagItemViewModel> Tags { get; } = new();
+
         public ICommand AddCommand { get; }
 
         public TagsViewModel(ITagService tagService, INavigationService navigationService,
-            IAccessibilityService accessibilityService)
+            IAccessibilityService accessibilityService, IMessenger messenger)
         {
             _tagService = tagService ?? throw new ArgumentNullException(nameof(tagService));
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
+            _messenger = messenger;
             AddCommand = new AsyncRelayCommand(AddAsync);
+
+            _messenger.Register<TagsViewModel, TagChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<TagsViewModel, BulkChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
         }
 
         public TagsViewModel(ITagService tagService) : this(
             tagService,
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IMessenger>())
         { }
 
-        public async Task LoadAsync()
+        public async Task SyncAsync()
         {
             IsLoading = true;
             try
             {
                 var tags = await _tagService.GetTagsAsync();
-                Tags = new ObservableCollection<TagItemViewModel>(
-                    tags.Select(tag => new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService)));
+                var freshIds = tags.Select(t => t.Id).ToHashSet();
+
+                // Remove deleted tags
+                var toRemove = Tags.Where(t => !freshIds.Contains(t.Id)).ToList();
+                foreach (var vm in toRemove)
+                    Tags.Remove(vm);
+
+                // Add new tags
+                var currentIds = Tags.Select(t => t.Id).ToHashSet();
+                foreach (var tag in tags.Where(t => !currentIds.Contains(t.Id)))
+                    Tags.Add(new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService));
+
+                // Update existing tags with fresh data (name/color changes)
+                foreach (var tag in tags)
+                {
+                    var existing = Tags.FirstOrDefault(t => t.Id == tag.Id);
+                    existing?.Update(tag);
+                }
             }
             finally
             {
                 IsLoading = false;
-            }
-        }
-
-        /// <summary>
-        /// Lightweight refresh for cross-tab consistency. Detects new/deleted tags
-        /// without clearing the entire collection (avoids flicker).
-        /// </summary>
-        public async Task RefreshAsync()
-        {
-            _tagService.InvalidateCache();
-            var tags = await _tagService.GetTagsAsync();
-            var freshIds = tags.Select(t => t.Id).ToHashSet();
-            var currentIds = Tags.Select(t => t.Id).ToHashSet();
-
-            // Remove deleted tags
-            var toRemove = Tags.Where(t => !freshIds.Contains(t.Id)).ToList();
-            foreach (var vm in toRemove)
-                Tags.Remove(vm);
-
-            // Add new tags
-            foreach (var tag in tags.Where(t => !currentIds.Contains(t.Id)))
-                Tags.Add(new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService));
-
-            // Update existing tags with fresh data (name/color changes)
-            foreach (var tag in tags)
-            {
-                var existing = Tags.FirstOrDefault(t => t.Id == tag.Id);
-                existing?.Update(tag);
             }
         }
 

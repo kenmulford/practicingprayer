@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
@@ -15,13 +17,16 @@ public class HomeViewModelTests
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
+    // Fresh WeakReferenceMessenger per fixture so messenger-driven tests can fire
+    // real Send/Register without leaking across tests via the .Default singleton.
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
 
-    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _tagService, _boxService, _navigationService, _accessibilityService, _settings);
+    private HomeViewModel CreateSut() => new(_prayerService, _cardService, _tagService, _boxService, _navigationService, _accessibilityService, _settings, _messenger);
 
-    // ── LoadAsync ──────────────────────────────────────────────────────
+    // ── SyncAsync ──────────────────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_WithOverduePrayers_SetsOverdueCount()
+    public async Task SyncAsync_WithOverduePrayers_SetsOverdueCount()
     {
         _settings.OverdueDayThreshold.Returns(30);
         var prayers = new List<Prayer>
@@ -37,7 +42,7 @@ public class HomeViewModelTests
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)DateTime.Now);
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.OverdueCount);
         Assert.True(sut.HasOverdue);
@@ -45,7 +50,7 @@ public class HomeViewModelTests
     }
 
     [Fact]
-    public async Task LoadAsync_NoOverdue_ShowsCaughtUp()
+    public async Task SyncAsync_NoOverdue_ShowsCaughtUp()
     {
         _settings.OverdueDayThreshold.Returns(30);
         _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>().AsReadOnly());
@@ -53,7 +58,7 @@ public class HomeViewModelTests
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(0, sut.OverdueCount);
         Assert.False(sut.HasOverdue);
@@ -63,7 +68,7 @@ public class HomeViewModelTests
     // ── Active Card Count ────────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_SetsActiveCardCount_ExcludesEmptyCards()
+    public async Task SyncAsync_SetsActiveCardCount_ExcludesEmptyCards()
     {
         SetupDefaultMocks();
         // 3 cards total, but only cards 1 and 2 have active prayers
@@ -81,7 +86,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.ActiveCardCount);
         Assert.True(sut.HasActiveCards);
@@ -90,7 +95,7 @@ public class HomeViewModelTests
     // ── Unanswered Count ──────────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_SetsUnansweredCount()
+    public async Task SyncAsync_SetsUnansweredCount()
     {
         SetupDefaultMocks();
         _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
@@ -103,7 +108,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(5, sut.UnansweredCount);
         Assert.True(sut.HasUnanswered);
@@ -112,13 +117,13 @@ public class HomeViewModelTests
     // ── Last Prayed Date Components ───────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_SetsLastPrayedDateComponents()
+    public async Task SyncAsync_SetsLastPrayedDateComponents()
     {
         SetupDefaultMocks();
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)new DateTime(2026, 3, 27));
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal("MAR", sut.LastPrayedMonth);
         Assert.Equal("27", sut.LastPrayedDay);
@@ -126,30 +131,32 @@ public class HomeViewModelTests
     }
 
     [Fact]
-    public async Task LoadAsync_NullLastPrayed_HasLastPrayedFalse()
+    public async Task SyncAsync_NullLastPrayed_HasLastPrayedFalse()
     {
         SetupDefaultMocks();
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasLastPrayed);
     }
 
     [Fact]
-    public async Task LoadAsync_InvalidatesCachesBeforeQuery()
+    public async Task SyncAsync_DoesNotInvalidateServiceCaches()
     {
+        // Slice 3: services auto-invalidate on mutation (Slice 2). VMs no longer
+        // defensively invalidate before reading.
         _settings.OverdueDayThreshold.Returns(30);
         _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>().AsReadOnly());
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
-        _prayerService.Received(1).InvalidateCache();
-        _cardService.Received(1).InvalidateCache();
+        _prayerService.DidNotReceive().InvalidateCache();
+        _cardService.DidNotReceive().InvalidateCache();
     }
 
     // ── Singular/Plural Labels ────────────────────────────────────────
@@ -164,7 +171,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(1, sut.ActiveCardCount);
         Assert.Equal("Active Card", sut.ActiveCardLabel);
@@ -181,7 +188,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.ActiveCardCount);
         Assert.Equal("Active Cards", sut.ActiveCardLabel);
@@ -197,7 +204,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(1, sut.UnansweredCount);
         Assert.Equal("Unanswered Prayer", sut.UnansweredLabel);
@@ -214,7 +221,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.UnansweredCount);
         Assert.Equal("Unanswered Prayers", sut.UnansweredLabel);
@@ -255,7 +262,7 @@ public class HomeViewModelTests
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)null);
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         await ((IAsyncRelayCommand)sut.GoToOverdueCommand).ExecuteAsync(null);
 
@@ -275,19 +282,19 @@ public class HomeViewModelTests
     // ── HasActivePrayers ──────────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_NoPrayers_HasActivePrayersFalse()
+    public async Task SyncAsync_NoPrayers_HasActivePrayersFalse()
     {
         SetupDefaultMocks();
         _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>().AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasActivePrayers);
     }
 
     [Fact]
-    public async Task LoadAsync_WithPrayers_HasActivePrayersTrue()
+    public async Task SyncAsync_WithPrayers_HasActivePrayersTrue()
     {
         SetupDefaultMocks();
         _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
@@ -296,7 +303,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.True(sut.HasActivePrayers);
     }
@@ -304,19 +311,19 @@ public class HomeViewModelTests
     // ── HasTags ───────────────────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_NoTags_HasTagsFalse()
+    public async Task SyncAsync_NoTags_HasTagsFalse()
     {
         SetupDefaultMocks();
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasTags);
     }
 
     [Fact]
-    public async Task LoadAsync_WithTags_HasTagsTrue()
+    public async Task SyncAsync_WithTags_HasTagsTrue()
     {
         SetupDefaultMocks();
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>
@@ -325,7 +332,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.True(sut.HasTags);
     }
@@ -333,7 +340,7 @@ public class HomeViewModelTests
     // ── HasUserBoxesWithCards ────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_UserBoxesWithActivePrayers_HasUserBoxesWithCardsTrue()
+    public async Task SyncAsync_UserBoxesWithActivePrayers_HasUserBoxesWithCardsTrue()
     {
         SetupDefaultMocks();
         _boxService.GetBoxesAsync().Returns(new List<CardBox>
@@ -350,13 +357,13 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.True(sut.HasUserBoxesWithCards);
     }
 
     [Fact]
-    public async Task LoadAsync_OnlySystemBoxes_HasUserBoxesWithCardsFalse()
+    public async Task SyncAsync_OnlySystemBoxes_HasUserBoxesWithCardsFalse()
     {
         SetupDefaultMocks();
         _boxService.GetBoxesAsync().Returns(new List<CardBox>
@@ -366,13 +373,13 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasUserBoxesWithCards);
     }
 
     [Fact]
-    public async Task LoadAsync_UserBoxesButNoActivePrayers_HasUserBoxesWithCardsFalse()
+    public async Task SyncAsync_UserBoxesButNoActivePrayers_HasUserBoxesWithCardsFalse()
     {
         SetupDefaultMocks();
         _boxService.GetBoxesAsync().Returns(new List<CardBox>
@@ -387,19 +394,19 @@ public class HomeViewModelTests
         _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>().AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasUserBoxesWithCards);
     }
 
     [Fact]
-    public async Task LoadAsync_NoBoxes_HasUserBoxesWithCardsFalse()
+    public async Task SyncAsync_NoBoxes_HasUserBoxesWithCardsFalse()
     {
         SetupDefaultMocks();
         _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasUserBoxesWithCards);
     }
@@ -411,7 +418,7 @@ public class HomeViewModelTests
     {
         SetupDefaultMocks();
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         Assert.Equal("No active cards. Tap to create your first card.", sut.ActiveCardsAccessible);
 
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>
@@ -424,7 +431,7 @@ public class HomeViewModelTests
             new() { Id = 1, Title = "P1", PrayerCardId = 1 },
             new() { Id = 2, Title = "P2", PrayerCardId = 2 }
         }.AsReadOnly());
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         Assert.Equal("Active cards, 2. Tap to view prayer cards.", sut.ActiveCardsAccessible);
     }
 
@@ -433,7 +440,7 @@ public class HomeViewModelTests
     {
         SetupDefaultMocks();
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         Assert.Equal("No prayers yet. Tap to add your first prayer.", sut.UnansweredAccessible);
 
         _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
@@ -446,7 +453,7 @@ public class HomeViewModelTests
         {
             new() { Id = 1, Title = "General" }
         }.AsReadOnly());
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         Assert.Equal("Unanswered prayers, 3. Tap to view prayers.", sut.UnansweredAccessible);
     }
 
@@ -455,12 +462,12 @@ public class HomeViewModelTests
     {
         SetupDefaultMocks();
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         Assert.Equal("Not yet prayed.", sut.LastPrayedAccessible);
 
         var date = new DateTime(2026, 3, 15);
         _prayerService.GetLastInteractionDateAsync().Returns((DateTime?)date);
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         var expectedMonth = date.ToString("MMM").ToUpper();
         Assert.Equal($"Last prayed, {expectedMonth} 15.", sut.LastPrayedAccessible);
     }
@@ -470,7 +477,7 @@ public class HomeViewModelTests
     {
         SetupDefaultMocks();
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         Assert.Equal("All requests have been recently prayed for.", sut.OverdueAccessible);
 
         _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>
@@ -478,14 +485,14 @@ public class HomeViewModelTests
             new() { Id = 1, Title = "Overdue 1", PrayerCardId = 1 },
             new() { Id = 2, Title = "Overdue 2", PrayerCardId = 1 }
         }.AsReadOnly());
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         Assert.Equal("Overdue prayers, 2. Tap to view overdue prayers.", sut.OverdueAccessible);
     }
 
     // ── Answered on this date ─────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_AnsweredOnThisDate_PopulatesWhenMatches()
+    public async Task SyncAsync_AnsweredOnThisDate_PopulatesWhenMatches()
     {
         SetupDefaultMocks();
         var matches = new List<Prayer>
@@ -496,20 +503,20 @@ public class HomeViewModelTests
         _prayerService.GetAnsweredOnThisDateAsync().Returns(matches.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.True(sut.HasAnsweredOnThisDate);
         Assert.Equal(2, sut.AnsweredOnThisDate.Count);
     }
 
     [Fact]
-    public async Task LoadAsync_AnsweredOnThisDate_EmptyWhenNoMatches()
+    public async Task SyncAsync_AnsweredOnThisDate_EmptyWhenNoMatches()
     {
         SetupDefaultMocks();
         _prayerService.GetAnsweredOnThisDateAsync().Returns(new List<Prayer>().AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasAnsweredOnThisDate);
         Assert.Empty(sut.AnsweredOnThisDate);
@@ -526,7 +533,7 @@ public class HomeViewModelTests
         }.AsReadOnly());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Contains("First answer", sut.AnsweredOnThisDateAccessible);
         Assert.Contains("Second answer", sut.AnsweredOnThisDateAccessible);
@@ -537,7 +544,7 @@ public class HomeViewModelTests
     // Mirrors the save-flow `IsBusy` lifecycle pattern from commit 99f70d0.
 
     [Fact]
-    public async Task LoadAsync_SetsIsLoadingDuringExecution_AndResetsAfter()
+    public async Task SyncAsync_SetsIsLoadingDuringExecution_AndResetsAfter()
     {
         SetupDefaultMocks();
         var sut = CreateSut();
@@ -548,28 +555,28 @@ public class HomeViewModelTests
             return Task.FromResult<IReadOnlyList<Prayer>>(new List<Prayer>().AsReadOnly());
         });
 
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.True(capturedIsLoading);
         Assert.False(sut.IsLoading);
     }
 
     [Fact]
-    public async Task LoadAsync_ResetsIsLoadingAfterException()
+    public async Task SyncAsync_ResetsIsLoadingAfterException()
     {
         SetupDefaultMocks();
         _prayerService.GetOverduePrayersAsync(Arg.Any<int>())
             .Returns(_ => Task.FromException<IReadOnlyList<Prayer>>(new InvalidOperationException("boom")));
         var sut = CreateSut();
 
-        await sut.LoadAsync(); // catch block swallows the exception per existing behavior
+        await sut.SyncAsync(); // catch block swallows the exception per existing behavior
 
         Assert.False(sut.IsLoading);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────
 
-    /// <summary>Set up minimal mocks so LoadAsync doesn't throw.</summary>
+    /// <summary>Set up minimal mocks so SyncAsync doesn't throw.</summary>
     private void SetupDefaultMocks()
     {
         _settings.OverdueDayThreshold.Returns(30);

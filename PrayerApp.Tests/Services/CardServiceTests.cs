@@ -9,17 +9,21 @@ namespace PrayerApp.Tests.Services;
 public class CardServiceTests
 {
     private readonly IDBService _db;
-    private readonly IMessenger _messenger;
+    // Real messenger — NSubstitute can't proxy CT.Mvvm's Send extension method
+    // (the extension's null-check trips on Arg.Any<X>() before reaching the mock).
+    // Capture sent messages via a registered handler instead.
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
+    private readonly object _recipient = new();
+    private readonly List<PrayerCardChangedMessage> _cardMessages = new();
     private readonly CardService _service;
 
     public CardServiceTests()
     {
         _db = Substitute.For<IDBService>();
-        _messenger = Substitute.For<IMessenger>();
         PrayerCard.SetDBService(_db);
         CardBox.SetDBService(_db);
-        // Default: no boxes exist (tests that need specific boxes override this)
         _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>()));
+        _messenger.Register<object, PrayerCardChangedMessage>(_recipient, (_, m) => _cardMessages.Add(m));
         _service = new CardService(_messenger);
     }
 
@@ -351,8 +355,8 @@ public class CardServiceTests
 
         await _service.SaveCardAsync(card);
 
-        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
-            m => m.Kind == ChangeKind.Created));
+        Assert.Single(_cardMessages);
+        Assert.Equal(ChangeKind.Created, _cardMessages[0].Kind);
     }
 
     [Fact]
@@ -362,8 +366,9 @@ public class CardServiceTests
 
         await _service.SaveCardAsync(card);
 
-        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
-            m => m.CardId == 7 && m.Kind == ChangeKind.Updated));
+        Assert.Single(_cardMessages);
+        Assert.Equal(7, _cardMessages[0].CardId);
+        Assert.Equal(ChangeKind.Updated, _cardMessages[0].Kind);
     }
 
     [Fact]
@@ -373,8 +378,9 @@ public class CardServiceTests
 
         await _service.AssignBoxAsync(card, boxId: 3);
 
-        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
-            m => m.CardId == 9 && m.Kind == ChangeKind.Updated));
+        Assert.Single(_cardMessages);
+        Assert.Equal(9, _cardMessages[0].CardId);
+        Assert.Equal(ChangeKind.Updated, _cardMessages[0].Kind);
     }
 
     [Fact]
@@ -384,7 +390,8 @@ public class CardServiceTests
 
         await _service.DeleteCardAsync(card);
 
-        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
-            m => m.CardId == 11 && m.Kind == ChangeKind.Deleted));
+        Assert.Single(_cardMessages);
+        Assert.Equal(11, _cardMessages[0].CardId);
+        Assert.Equal(ChangeKind.Deleted, _cardMessages[0].Kind);
     }
 }
