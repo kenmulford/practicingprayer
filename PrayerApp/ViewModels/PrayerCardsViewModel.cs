@@ -668,69 +668,77 @@ namespace PrayerApp.ViewModels
         {
             PerfLog.Log("PrayerCardsViewModel.RefreshAsync.entry");
             if (IsMultiSelectMode) ExitMultiSelectMode();
-            _cardService.InvalidateCache();
-            _prayerService.InvalidateCache();
-            _boxService.InvalidateCache();
-            PerfLog.Log("RefreshAsync.before GetCardsAsync");
-            var cards = await _cardService.GetCardsAsync();
-            PerfLog.Log($"RefreshAsync.after GetCardsAsync (count={cards.Count})");
-            _boxes = await _boxService.GetBoxesAsync();
-            PerfLog.Log($"RefreshAsync.after GetBoxesAsync (count={_boxes.Count})");
-            var freshIds = cards.Select(c => c.Id).ToHashSet();
-            var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
-
-            // Remove deleted cards
-            var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
-            foreach (var vm in toRemove)
+            IsLoading = true;
+            try
             {
-                UnsubscribeFromPropertyChanges(vm);
-                AllPrayerCards.Remove(vm);
-            }
+                _cardService.InvalidateCache();
+                _prayerService.InvalidateCache();
+                _boxService.InvalidateCache();
+                PerfLog.Log("RefreshAsync.before GetCardsAsync");
+                var cards = await _cardService.GetCardsAsync();
+                PerfLog.Log($"RefreshAsync.after GetCardsAsync (count={cards.Count})");
+                _boxes = await _boxService.GetBoxesAsync();
+                PerfLog.Log($"RefreshAsync.after GetBoxesAsync (count={_boxes.Count})");
+                var freshIds = cards.Select(c => c.Id).ToHashSet();
+                var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
 
-            // Add new cards
-            foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
+                // Remove deleted cards
+                var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
+                foreach (var vm in toRemove)
+                {
+                    UnsubscribeFromPropertyChanges(vm);
+                    AllPrayerCards.Remove(vm);
+                }
+
+                // Add new cards
+                foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
+                {
+                    var vm = CreateCardViewModel(card);
+                    SubscribeToPropertyChanges(vm);
+                    AllPrayerCards.Add(vm);
+                }
+
+                // Refresh prayer counts + reload prayers on expanded cards
+                // (e.g. QuickAdd added a prayer, or "Save +" added multiple)
+                foreach (var vm in AllPrayerCards)
+                {
+                    vm.RefreshActivePrayerCount();
+                    if (vm.IsExpanded)
+                        vm.ReloadPrayers();
+                }
+
+                PerfLog.Log("RefreshAsync.after RefreshActivePrayerCount loop");
+
+                // Rebuild tag filter data
+                _tagService.InvalidateCache();
+                await BuildCardTagLookupAsync();
+                PerfLog.Log("RefreshAsync.after BuildCardTagLookupAsync");
+
+                var tags = await _tagService.GetTagsAsync();
+                var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
+                var freshTagIds = tags.Select(t => t.Id).ToHashSet();
+
+                // Remove deleted tags
+                var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
+                foreach (var chip in chipsToRemove)
+                    AvailableTags.Remove(chip);
+
+                // Add new tags
+                foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
+                {
+                    var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
+                    AvailableTags.Add(chip);
+                }
+                OnPropertyChanged(nameof(HasTags));
+
+                PerfLog.Log("RefreshAsync.before RebuildSections");
+                RebuildSections();
+                PerfLog.Log("PrayerCardsViewModel.RefreshAsync.exit");
+            }
+            finally
             {
-                var vm = CreateCardViewModel(card);
-                SubscribeToPropertyChanges(vm);
-                AllPrayerCards.Add(vm);
+                IsLoading = false;
             }
-
-            // Refresh prayer counts + reload prayers on expanded cards
-            // (e.g. QuickAdd added a prayer, or "Save +" added multiple)
-            foreach (var vm in AllPrayerCards)
-            {
-                vm.RefreshActivePrayerCount();
-                if (vm.IsExpanded)
-                    vm.ReloadPrayers();
-            }
-
-            PerfLog.Log("RefreshAsync.after RefreshActivePrayerCount loop");
-
-            // Rebuild tag filter data
-            _tagService.InvalidateCache();
-            await BuildCardTagLookupAsync();
-            PerfLog.Log("RefreshAsync.after BuildCardTagLookupAsync");
-
-            var tags = await _tagService.GetTagsAsync();
-            var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
-            var freshTagIds = tags.Select(t => t.Id).ToHashSet();
-
-            // Remove deleted tags
-            var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
-            foreach (var chip in chipsToRemove)
-                AvailableTags.Remove(chip);
-
-            // Add new tags
-            foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
-            {
-                var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
-                AvailableTags.Add(chip);
-            }
-            OnPropertyChanged(nameof(HasTags));
-
-            PerfLog.Log("RefreshAsync.before RebuildSections");
-            RebuildSections();
-            PerfLog.Log("PrayerCardsViewModel.RefreshAsync.exit");
         }
 
         #endregion

@@ -119,13 +119,11 @@
             </Grid>
         </Border>
 
-        <!-- Loading indicator -->
+        <!-- Loading indicator (overlay during LoadAsync / RefreshAsync) -->
         <ActivityIndicator Grid.Row="3"
+                           Style="{StaticResource SaveActivityIndicator}"
                            IsRunning="{Binding IsLoading}"
-                           IsVisible="{Binding IsLoading}"
-                           Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
+                           IsVisible="{Binding IsLoading}" />
 
         <CollectionView
             Grid.Row="3"
