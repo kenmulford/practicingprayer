@@ -163,9 +163,16 @@ public partial class PrayerCardsPage : ContentPage
             {
                 subscribed.PropertyChanged += handler;
                 // Snap (no tween) to the new card's state so recycled borders don't animate from
-                // the previous card's margin.
+                // the previous card's margin. Skip the assignment if the value already matches —
+                // every Margin write invalidates parent layout, and on Android that schedules
+                // the next measure pass, which loads the next cell, which calls Rebind again
+                // (cascade). The XAML default is the collapsed Margin so first-Loaded on a
+                // collapsed card here is a no-op; only an expanded card or a recycled cell with
+                // a state flip writes the property.
                 border.AbortAnimation("CardMarginTween");
-                border.Margin = CardMarginFor(subscribed.IsExpanded);
+                var target = CardMarginFor(subscribed.IsExpanded);
+                if (border.Margin != target)
+                    border.Margin = target;
             }
             PerfLog.Log($"Rebind.exit id={newId}");
         }

@@ -254,10 +254,15 @@
                     <Border Grid.Column="1"
                             Style="{StaticResource PrayerCardBorder}"
                             Padding="0"
+                            Margin="14,0,0,0"
                             Loaded="OnCardBorderLoaded">
-                        <!-- Margin is animated in code-behind via OnCardBorderLoaded:
-                             collapsed: 14,0,0,0 (14px indent under collections)
-                             expanded:  0,8      (full-width, 8px vertical breathing room) -->
+                        <!-- Margin default matches the collapsed state so first-Loaded in
+                             OnCardBorderLoaded doesn't write the property — every Margin
+                             write invalidates parent layout, which on Android schedules
+                             the next measure pass, which loads the next cell, etc. (The
+                             cascade source confirmed by PERF-10 probes 2026-04-26.)
+                             Expanded state (0,8) is set by code-behind only when needed,
+                             then animated by AnimateCardMargin on user-driven toggles. -->
                         <Border.Triggers>
                             <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
                                 <Setter Property="Stroke" Value="{AppThemeBinding
