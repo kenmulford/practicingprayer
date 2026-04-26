@@ -127,7 +127,7 @@
             AutomationProperties.IsInAccessibleTree="false"
             IsGrouped="True"
             ItemsSource="{Binding BoxSections}"
-            ItemSizingStrategy="MeasureAllItems"
+            ItemSizingStrategy="MeasureFirstItem"
             Margin="12,8"
             SelectionMode="None">
         <!-- BUG-55 fix: Empty hint lives OUTSIDE the CollectionView so it never
