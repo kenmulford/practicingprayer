@@ -606,8 +606,18 @@ namespace PrayerApp.ViewModels
                     sections.Add(archivedSection);
                 }
 
-                BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
-                OnPropertyChanged(nameof(HasNoSections));
+                // Slice 6b: skip the BoxSections replacement when GetOrCreate reused every
+                // section (no box added or removed — the typical save-flow case). Replacement
+                // raises PropertyChanged on the grouped ItemsSource and forces a RecyclerView
+                // re-inflate cascade on Android. Per-section card mutations surface via SetCards.
+                // Hole: a CardBox.Name rename keeps the same section instance, so the section
+                // header won't update unless BoxSectionViewModel observes box-property changes.
+                // No rename UI today; revisit if one is added.
+                if (!SectionListsReferenceEqual(sections, BoxSections))
+                {
+                    BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
+                    OnPropertyChanged(nameof(HasNoSections));
+                }
             }
             finally
             {
@@ -617,6 +627,16 @@ namespace PrayerApp.ViewModels
             PerfLog.Log("RebuildSections.before ApplyFilter");
             ApplyFilter();
             PerfLog.Log("RebuildSections.exit");
+        }
+
+        private static bool SectionListsReferenceEqual(
+            IList<BoxSectionViewModel> proposed,
+            IList<BoxSectionViewModel> current)
+        {
+            if (proposed.Count != current.Count) return false;
+            for (int i = 0; i < proposed.Count; i++)
+                if (!ReferenceEquals(proposed[i], current[i])) return false;
+            return true;
         }
 
         private void ApplyFilter()

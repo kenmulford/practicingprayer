@@ -387,6 +387,31 @@ public class PrayerCardsViewModelTests
         await _cardService.Received(2).GetCardsAsync();
     }
 
+    // ── Slice 6b — structural-equality guard on RebuildSections ──────
+
+    [Fact]
+    public async Task SyncAsync_TwiceWithIdenticalData_PreservesBoxSectionsReference()
+    {
+        // 6b: when SyncAsync runs twice with identical data (typical coalesced
+        // follow-up after a Save), the second RebuildSections must not replace
+        // BoxSections — replacement raises PropertyChanged and triggers an Android
+        // RecyclerView re-inflate cascade. Reference identity is the contract.
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        var sectionsAfterFirst = sut.BoxSections;
+
+        await sut.SyncAsync();
+
+        Assert.Same(sectionsAfterFirst, sut.BoxSections);
+    }
+
     private void SetupDefaultSyncMocks()
     {
         SetupSystemBoxes();
