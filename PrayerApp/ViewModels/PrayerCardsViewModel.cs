@@ -521,23 +521,8 @@ namespace PrayerApp.ViewModels
                     sections.Add(archivedSection);
                 }
 
-                // Skip the BoxSections reassignment when the section structure is unchanged
-                // (same BoxIds in same order). Existing BoxSectionViewModel instances were
-                // already reused via GetOrCreate above; their inner card collections updated
-                // via SetCards fire CollectionChanged so Android RecyclerView can do
-                // incremental updates. Reassigning the outer ObservableCollection forces
-                // a full CollectionView rebind — every visible Border tears down and
-                // re-inflates from scratch (~600ms × visible cards on Android), which is
-                // PERF-1's post-Save 5–6s stall. iOS replace-not-mutate is preserved when
-                // structure DOES change (add/remove box) — that hits the reassign path.
-                var structureUnchanged = sections.Select(s => s.BoxId)
-                    .SequenceEqual(BoxSections.Select(s => s.BoxId));
-
-                if (!structureUnchanged)
-                {
-                    BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
-                    OnPropertyChanged(nameof(HasNoSections));
-                }
+                BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
+                OnPropertyChanged(nameof(HasNoSections));
             }
             finally
             {
