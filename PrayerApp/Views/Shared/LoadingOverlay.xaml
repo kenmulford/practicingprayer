@@ -7,8 +7,12 @@
              IsVisible="{Binding IsLoading, Source={x:Reference overlayRoot}, x:DataType=local:LoadingOverlay}">
     <!-- Grid fills the parent cell; with a non-null background it absorbs touches
          during loading. Host pages should set Grid.RowSpan/ColumnSpan so the
-         overlay covers the full visual area, not just one cell. -->
-    <Grid BackgroundColor="{AppThemeBinding Light={StaticResource LoadingScrimLight}, Dark={StaticResource LoadingScrimDark}}">
+         overlay covers the full visual area, not just one cell.
+         AutomationId on the Grid (not the ContentView) surfaces a content-desc node
+         for Appium discovery only while IsLoading=true. Used by the Slice 6g
+         Cards_Save_OverlayShowsDuringPostSaveFlow UITest. -->
+    <Grid AutomationId="LoadingOverlay_Scrim"
+          BackgroundColor="{AppThemeBinding Light={StaticResource LoadingScrimLight}, Dark={StaticResource LoadingScrimDark}}">
         <ActivityIndicator Style="{StaticResource SaveActivityIndicator}"
                            IsRunning="{Binding IsLoading, Source={x:Reference overlayRoot}, x:DataType=local:LoadingOverlay}" />
     </Grid>

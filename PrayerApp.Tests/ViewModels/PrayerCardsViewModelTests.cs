@@ -90,6 +90,74 @@ public class PrayerCardsViewModelTests
         _accessibilityService.Received(1).Announce("Content loaded");
     }
 
+    // ── Slice 6g — IsAwaitingSavedCard + IsBusyOverall ─────────────────
+    // The LoadingOverlay binds to IsBusyOverall (= IsLoading || IsAwaitingSavedCard)
+    // so the post-save flow can keep the overlay visible across the SyncAsync→
+    // ConsumePendingSavedAsync→ScrollTo window — even though SyncAsync's own
+    // finally block flips IsLoading off mid-way. View code-behind sets
+    // IsAwaitingSavedCard at OnAppearing entry (when a save is pending) and
+    // clears it after ScrollTo completes.
+
+    [Fact]
+    public void IsAwaitingSavedCard_DefaultState_False()
+    {
+        var sut = CreateSut();
+
+        Assert.False(sut.IsAwaitingSavedCard);
+    }
+
+    [Fact]
+    public void IsBusyOverall_DefaultState_False()
+    {
+        var sut = CreateSut();
+
+        Assert.False(sut.IsBusyOverall);
+    }
+
+    [Fact]
+    public void IsBusyOverall_OnlyIsLoadingTrue_ReturnsTrue()
+    {
+        var sut = CreateSut();
+
+        sut.IsLoading = true;
+
+        Assert.True(sut.IsBusyOverall);
+    }
+
+    [Fact]
+    public void IsBusyOverall_OnlyIsAwaitingSavedCardTrue_ReturnsTrue()
+    {
+        var sut = CreateSut();
+
+        sut.IsAwaitingSavedCard = true;
+
+        Assert.True(sut.IsBusyOverall);
+    }
+
+    [Fact]
+    public void IsAwaitingSavedCard_Toggle_RaisesIsBusyOverallPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.IsAwaitingSavedCard = true;
+
+        Assert.Contains(nameof(PrayerCardsViewModel.IsBusyOverall), raised);
+    }
+
+    [Fact]
+    public void IsLoading_Toggle_RaisesIsBusyOverallPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.IsLoading = true;
+
+        Assert.Contains(nameof(PrayerCardsViewModel.IsBusyOverall), raised);
+    }
+
     // ── NewCommand ────────────────────────────────────────────────────
 
     [Fact]

@@ -76,9 +76,35 @@ namespace PrayerApp.ViewModels
             set
             {
                 if (SetProperty(ref _isLoading, value))
+                {
                     _accessibilityService.Announce(value ? "Loading" : "Content loaded");
+                    OnPropertyChanged(nameof(IsBusyOverall));
+                }
             }
         }
+
+        // Slice 6g — Cross-page save indicator continuity.
+        // The post-save flow spans: edit-page Save → GoToAsync → Cards.OnAppearing
+        // → SyncAsync (toggles IsLoading internally) → ConsumePendingSavedAsync →
+        // ScrollTo. Without this flag, IsLoading flips off the moment SyncAsync's
+        // finally runs (mid-flow), the LoadingOverlay disappears, and the user sees
+        // half-rendered cells + the new card popping in late. View code-behind sets
+        // IsAwaitingSavedCard=true at OnAppearing entry when PendingSavedIdentifier
+        // is non-empty, and clears it after ScrollTo completes. The LoadingOverlay
+        // binds to IsBusyOverall (= IsLoading || IsAwaitingSavedCard) so either
+        // flag keeps it visible.
+        private bool _isAwaitingSavedCard;
+        public bool IsAwaitingSavedCard
+        {
+            get => _isAwaitingSavedCard;
+            set
+            {
+                if (SetProperty(ref _isAwaitingSavedCard, value))
+                    OnPropertyChanged(nameof(IsBusyOverall));
+            }
+        }
+
+        public bool IsBusyOverall => _isLoading || _isAwaitingSavedCard;
 
         /// <summary>True when no sections exist (no data loaded). Used to control EmptyView visibility.</summary>
         public bool HasNoSections => BoxSections.Count == 0;

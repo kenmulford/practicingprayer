@@ -22,7 +22,7 @@
 | Package                  | Version | Notes                                                            |
 | ------------------------ | ------- | ---------------------------------------------------------------- |
 | .NET MAUI                | 10      | `net10.0-android`, `net10.0-ios`                                 |
-| CommunityToolkit.Mvvm    | 8.4.0   | `[ObservableProperty]`, `[RelayCommand]`, `ObservableObject`     |
+| CommunityToolkit.Mvvm    | 8.4.0   | `ObservableObject` only — explicit `SetProperty` + `new (Async)RelayCommand`; no source generators |
 | CommunityToolkit.Maui    | 14.0.1  | Requires `Microsoft.Maui.Controls >= 10.0.41` — do not downgrade |
 | sqlite-net-pcl           | 1.9.172 | Active Record model pattern                                      |
 | Plugin.LocalNotification | 13.0.0  | Local push notifications                                         |

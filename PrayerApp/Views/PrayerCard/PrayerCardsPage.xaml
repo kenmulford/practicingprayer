@@ -22,6 +22,223 @@
                      Order="Primary" Priority="0" />
     </ContentPage.ToolbarItems>
 
+    <ContentPage.Resources>
+        <!-- Slice 6c real (PERF-10): Lazy-construct the expanded card subtree.
+             Deferring the chips + prayer list + add-prayer button out of the cell
+             DataTemplate cuts platform inflation cost for collapsed cells (cold load
+             and tab-switch return), where ~80% of the cell's visual tree is hidden
+             but otherwise still measured/arranged. Code-behind realizes this template
+             into the cell's <ContentView x:Name="ExpandedSubtreeHost"> on first
+             IsExpanded=True (see OnCardBorderLoaded). Content is preserved across
+             cell recycling — bindings re-resolve against the new BindingContext. -->
+        <DataTemplate x:Key="CardExpandedSubtreeTemplate" x:DataType="viewModels:PrayerCardViewModel">
+            <VerticalStackLayout Spacing="0">
+
+                <HorizontalStackLayout
+                    AutomationId="Cards_ActionChips"
+                    IsVisible="{Binding ShowActionChips}"
+                    Spacing="8"
+                    Padding="12,4,12,8">
+
+                    <!-- ★ Favorite — gold background when active, default when not -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Favorite"
+                            SemanticProperties.Description="Toggle favorite">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding IsFavorite}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor"
+                                        Value="{AppThemeBinding Light={StaticResource ChipFavoritedBgLight}, Dark={StaticResource ChipFavoritedBgDark}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleFavoriteCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="star_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource WarmGold},
+                                        Dark={StaticResource WarmGoldDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="{Binding FavoriteLabel}"
+                                   FontSize="12"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!-- Share (disabled when card has 0 active prayers) -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Share"
+                            SemanticProperties.Description="Share card">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding CanShare}"
+                                         Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                                <Setter Property="InputTransparent" Value="True" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ShareCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="share_from_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="Share" FontSize="12"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!-- Edit -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Edit"
+                            SemanticProperties.Description="Edit card">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectCardCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="Edit" FontSize="12"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!-- Delete (danger styling) -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Delete"
+                            SemanticProperties.Description="Delete card"
+                            BackgroundColor="{AppThemeBinding
+                                Light={StaticResource ChipDangerBgLight},
+                                Dark={StaticResource ChipDangerBgDark}}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding DeleteCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource DangerRed},
+                                        Dark={StaticResource DangerRedDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="Delete" FontSize="12"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource DangerRed},
+                                       Dark={StaticResource DangerRedDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </HorizontalStackLayout>
+
+                <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
+                <VerticalStackLayout
+                    IsVisible="{Binding IsExpanded}"
+                    Spacing="0"
+                    BindableLayout.ItemsSource="{Binding Prayers}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
+                            <VerticalStackLayout Spacing="0">
+                                <Grid
+                                    Padding="16,10,12,10"
+                                    ColumnDefinitions="*,Auto,Auto"
+                                    SemanticProperties.Description="{Binding AccessibleSummary}">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
+                                    </Grid.GestureRecognizers>
+                                    <Label
+                                        Text="{Binding Title}"
+                                        FontSize="16"
+                                        AutomationProperties.IsInAccessibleTree="False"
+                                        TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                                        TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                                        VerticalOptions="Center" />
+                                    <Image
+                                        Grid.Column="1"
+                                        Source="imported.png"
+                                        HeightRequest="16"
+                                        WidthRequest="16"
+                                        IsVisible="{Binding IsImported}"
+                                        VerticalOptions="Center"
+                                        Margin="4,0"
+                                        AutomationProperties.IsInAccessibleTree="False">
+                                        <Image.Behaviors>
+                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                        </Image.Behaviors>
+                                    </Image>
+                                    <Label
+                                        Grid.Column="2"
+                                        Text="{Binding AnsweredAtDisplay}"
+                                        Style="{StaticResource SuccessBadge}"
+                                        IsVisible="{Binding IsAnswered}"
+                                        VerticalOptions="Start"
+                                        Margin="6,0,0,0"
+                                        AutomationProperties.IsInAccessibleTree="False" />
+                                </Grid>
+                                <!-- Inline color binding — style-only AppThemeBinding
+                                     doesn't reliably propagate to all BindableLayout children -->
+                                <BoxView Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}"
+                                         Opacity="0.4"
+                                         HeightRequest="1"
+                                         HorizontalOptions="Fill"
+                                         AutomationProperties.IsInAccessibleTree="False" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Button
+                    Text="+ Add prayer ›"
+                    Command="{Binding AddPrayerCommand}"
+                    IsVisible="{Binding IsExpanded}"
+                    AutomationId="Cards_Btn_AddPrayer"
+                    SemanticProperties.Hint="Add a new prayer request to this card"
+                    FontSize="14"
+                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                    BackgroundColor="Transparent"
+                    FontAttributes="Bold"
+                    Padding="16,8,12,10"
+                    BorderWidth="0"
+                    HorizontalOptions="Start" />
+
+            </VerticalStackLayout>
+        </DataTemplate>
+    </ContentPage.Resources>
+
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
@@ -377,208 +594,15 @@
 
                         <BoxView Style="{StaticResource DividerLine}" />
 
-                        <!-- Card action chips — visible when expanded, hidden for system cards -->
-                        <HorizontalStackLayout
-                            AutomationId="Cards_ActionChips"
-                            IsVisible="{Binding ShowActionChips}"
-                            Spacing="8"
-                            Padding="12,4,12,8">
-
-                            <!-- ★ Favorite — gold background when active, default when not -->
-                            <Border Style="{StaticResource ActionChip}"
-                                    AutomationId="Cards_Btn_Favorite"
-                                    SemanticProperties.Description="Toggle favorite">
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border"
-                                                 Binding="{Binding IsFavorite}"
-                                                 Value="True">
-                                        <Setter Property="BackgroundColor"
-                                                Value="{AppThemeBinding Light={StaticResource ChipFavoritedBgLight}, Dark={StaticResource ChipFavoritedBgDark}}" />
-                                    </DataTrigger>
-                                </Border.Triggers>
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding ToggleFavoriteCommand}" />
-                                </Border.GestureRecognizers>
-                                <HorizontalStackLayout Spacing="4">
-                                    <Image Source="star_solid_full.png" HeightRequest="14" WidthRequest="14"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           VerticalOptions="Center">
-                                        <Image.Behaviors>
-                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
-                                                Light={StaticResource WarmGold},
-                                                Dark={StaticResource WarmGoldDark}}" />
-                                        </Image.Behaviors>
-                                    </Image>
-                                    <Label Text="{Binding FavoriteLabel}"
-                                           FontSize="12"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           TextColor="{AppThemeBinding
-                                               Light={StaticResource Tertiary},
-                                               Dark={StaticResource TextPrimaryDark}}"
-                                           VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                            </Border>
-
-                            <!-- Share (disabled when card has 0 active prayers) -->
-                            <Border Style="{StaticResource ActionChip}"
-                                    AutomationId="Cards_Btn_Share"
-                                    SemanticProperties.Description="Share card">
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border"
-                                                 Binding="{Binding CanShare}"
-                                                 Value="False">
-                                        <Setter Property="Opacity" Value="0.4" />
-                                        <Setter Property="InputTransparent" Value="True" />
-                                    </DataTrigger>
-                                </Border.Triggers>
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding ShareCommand}" />
-                                </Border.GestureRecognizers>
-                                <HorizontalStackLayout Spacing="4">
-                                    <Image Source="share_from_square_solid_full.png" HeightRequest="14" WidthRequest="14"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           VerticalOptions="Center">
-                                        <Image.Behaviors>
-                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
-                                                Light={StaticResource Primary},
-                                                Dark={StaticResource PrimaryDark}}" />
-                                        </Image.Behaviors>
-                                    </Image>
-                                    <Label Text="Share" FontSize="12"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           TextColor="{AppThemeBinding
-                                               Light={StaticResource Tertiary},
-                                               Dark={StaticResource TextPrimaryDark}}"
-                                           VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                            </Border>
-
-                            <!-- Edit -->
-                            <Border Style="{StaticResource ActionChip}"
-                                    AutomationId="Cards_Btn_Edit"
-                                    SemanticProperties.Description="Edit card">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding SelectCardCommand}" />
-                                </Border.GestureRecognizers>
-                                <HorizontalStackLayout Spacing="4">
-                                    <Image Source="pen_to_square_solid_full.png" HeightRequest="14" WidthRequest="14"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           VerticalOptions="Center">
-                                        <Image.Behaviors>
-                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
-                                                Light={StaticResource Primary},
-                                                Dark={StaticResource PrimaryDark}}" />
-                                        </Image.Behaviors>
-                                    </Image>
-                                    <Label Text="Edit" FontSize="12"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           TextColor="{AppThemeBinding
-                                               Light={StaticResource Tertiary},
-                                               Dark={StaticResource TextPrimaryDark}}"
-                                           VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                            </Border>
-
-                            <!-- Delete (danger styling) -->
-                            <Border Style="{StaticResource ActionChip}"
-                                    AutomationId="Cards_Btn_Delete"
-                                    SemanticProperties.Description="Delete card"
-                                    BackgroundColor="{AppThemeBinding
-                                        Light={StaticResource ChipDangerBgLight},
-                                        Dark={StaticResource ChipDangerBgDark}}">
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding DeleteCommand}" />
-                                </Border.GestureRecognizers>
-                                <HorizontalStackLayout Spacing="4">
-                                    <Image Source="trash_can_solid_full.png" HeightRequest="14" WidthRequest="14"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           VerticalOptions="Center">
-                                        <Image.Behaviors>
-                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
-                                                Light={StaticResource DangerRed},
-                                                Dark={StaticResource DangerRedDark}}" />
-                                        </Image.Behaviors>
-                                    </Image>
-                                    <Label Text="Delete" FontSize="12"
-                                           AutomationProperties.IsInAccessibleTree="False"
-                                           TextColor="{AppThemeBinding
-                                               Light={StaticResource DangerRed},
-                                               Dark={StaticResource DangerRedDark}}"
-                                           VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                            </Border>
-                        </HorizontalStackLayout>
-
-                        <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
-                        <VerticalStackLayout
-                            IsVisible="{Binding IsExpanded}"
-                            Spacing="0"
-                            BindableLayout.ItemsSource="{Binding Prayers}">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
-                                    <VerticalStackLayout Spacing="0">
-                                        <Grid
-                                            Padding="16,10,12,10"
-                                            ColumnDefinitions="*,Auto,Auto"
-                                            SemanticProperties.Description="{Binding AccessibleSummary}">
-                                            <Grid.GestureRecognizers>
-                                                <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
-                                            </Grid.GestureRecognizers>
-                                            <Label
-                                                Text="{Binding Title}"
-                                                FontSize="16"
-                                                AutomationProperties.IsInAccessibleTree="False"
-                                                TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
-                                                TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
-                                                VerticalOptions="Center" />
-                                            <Image
-                                                Grid.Column="1"
-                                                Source="imported.png"
-                                                HeightRequest="16"
-                                                WidthRequest="16"
-                                                IsVisible="{Binding IsImported}"
-                                                VerticalOptions="Center"
-                                                Margin="4,0"
-                                                AutomationProperties.IsInAccessibleTree="False">
-                                                <Image.Behaviors>
-                                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                                </Image.Behaviors>
-                                            </Image>
-                                            <Label
-                                                Grid.Column="2"
-                                                Text="{Binding AnsweredAtDisplay}"
-                                                Style="{StaticResource SuccessBadge}"
-                                                IsVisible="{Binding IsAnswered}"
-                                                VerticalOptions="Start"
-                                                Margin="6,0,0,0"
-                                                AutomationProperties.IsInAccessibleTree="False" />
-                                        </Grid>
-                                        <!-- Inline color binding — style-only AppThemeBinding
-                                             doesn't reliably propagate to all BindableLayout children -->
-                                        <BoxView Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}"
-                                                 Opacity="0.4"
-                                                 HeightRequest="1"
-                                                 HorizontalOptions="Fill"
-                                                 AutomationProperties.IsInAccessibleTree="False" />
-                                    </VerticalStackLayout>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
-
-                        <!-- + Add prayer row (only shown when expanded) -->
-                        <Button
-                            Text="+ Add prayer ›"
-                            Command="{Binding AddPrayerCommand}"
-                            IsVisible="{Binding IsExpanded}"
-                            AutomationId="Cards_Btn_AddPrayer"
-                            SemanticProperties.Hint="Add a new prayer request to this card"
-                            FontSize="14"
-                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                            BackgroundColor="Transparent"
-                            FontAttributes="Bold"
-                            Padding="16,8,12,10"
-                            BorderWidth="0"
-                            HorizontalOptions="Start" />
+                        <!-- Slice 6c real (PERF-10): Lazy-realized expanded subtree.
+                             Content (chips + prayer list + Add Prayer button) is set
+                             programmatically by OnCardBorderLoaded.Rebind on first
+                             IsExpanded=True. Until then this ContentView holds null
+                             Content and contributes ~zero cost to the cell's measure
+                             pass. Lifetime is the cell's recycle window — Content is
+                             retained across BindingContext swaps so the cost amortizes
+                             on rapid scroll. See ContentPage.Resources/CardExpandedSubtreeTemplate. -->
+                        <ContentView x:Name="ExpandedSubtreeHost" />
 
                         </VerticalStackLayout>
                     </Border>
@@ -653,7 +677,10 @@
             </Grid>
         </Border>
 
-        <shared:LoadingOverlay Grid.Row="0" Grid.RowSpan="7" IsLoading="{Binding IsLoading}" />
+        <!-- Slice 6g: bind to IsBusyOverall (= IsLoading || IsAwaitingSavedCard)
+             so the overlay persists across the post-save SyncAsync→ConsumePendingSavedAsync
+             →ScrollTo window even after SyncAsync's finally has flipped IsLoading off. -->
+        <shared:LoadingOverlay Grid.Row="0" Grid.RowSpan="7" IsLoading="{Binding IsBusyOverall}" />
 
     </Grid>
 </ContentPage>

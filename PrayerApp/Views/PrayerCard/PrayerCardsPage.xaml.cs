@@ -85,16 +85,22 @@ public partial class PrayerCardsPage : ContentPage
     }
 
     /// <summary>
-    /// Scroll to and briefly highlight a freshly-saved card. Must yield two dispatcher
-    /// ticks first so the platform CollectionView adapter has committed the BoxSections
-    /// rebuild — calling ScrollTo while the adapter snapshot is stale throws
+    /// Scroll to a freshly-saved card. Must yield two dispatcher ticks first so the
+    /// platform CollectionView adapter has committed the BoxSections rebuild —
+    /// calling ScrollTo while the adapter snapshot is stale throws
     /// IllegalArgumentException "Invalid target position" on Android.
     /// </summary>
-    private async Task HighlightCardAfterLayoutAsync(PrayerCardsViewModel vm, PrayerCardViewModel card)
+    /// <remarks>
+    /// Slice 6g split: this method does the awaited part (layout drain + scroll +
+    /// announce) so OnAppearing can lower IsAwaitingSavedCard immediately after.
+    /// The 2.5 s highlight fade runs in the background via FadeHighlightAfterDelayAsync
+    /// and must NOT block the overlay-off transition.
+    /// </remarks>
+    private async Task ScrollToSavedCardAsync(PrayerCardsViewModel vm, PrayerCardViewModel card)
     {
-        PerfLog.Log("HighlightCardAfterLayoutAsync.entry");
+        PerfLog.Log("ScrollToSavedCardAsync.entry");
         await Dispatcher.DrainLayoutPassAsync();
-        PerfLog.Log("HighlightCardAfterLayoutAsync.after DrainLayoutPassAsync");
+        PerfLog.Log("ScrollToSavedCardAsync.after DrainLayoutPassAsync");
 
         try
         {
@@ -103,20 +109,21 @@ public partial class PrayerCardsPage : ContentPage
                 cardCollection.ScrollTo(card, section, ScrollToPosition.Center, animate: true);
             else
                 cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
-            PerfLog.Log("HighlightCardAfterLayoutAsync.after ScrollTo");
+            PerfLog.Log("ScrollToSavedCardAsync.after ScrollTo");
 
             SemanticScreenReader.Announce($"New card: {card.Title}");
         }
         catch (Exception ex)
         {
-            Diagnostics.ResolveLog()?.Log("PrayerCardsPage.HighlightCardAfterLayoutAsync", ex);
+            Diagnostics.ResolveLog()?.Log("PrayerCardsPage.ScrollToSavedCardAsync", ex);
         }
+    }
 
-        PerfLog.Log("HighlightCardAfterLayoutAsync.before 2.5s delay");
+    private static async Task FadeHighlightAfterDelayAsync(PrayerCardViewModel card)
+    {
         await Task.Delay(2500);
-        PerfLog.Log("HighlightCardAfterLayoutAsync.after 2.5s delay");
         card.IsHighlighted = false;
-        PerfLog.Log("HighlightCardAfterLayoutAsync.exit");
+        PerfLog.Log("FadeHighlightAfterDelayAsync.exit");
     }
 
     private void OnSectionHeaderTapped(object? sender, TappedEventArgs e)
@@ -141,6 +148,12 @@ public partial class PrayerCardsPage : ContentPage
         var initialId = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
         PerfLog.Log($"OnCardBorderLoaded.entry id={initialId}");
 
+        // Slice 6c real (PERF-10): The ExpandedSubtreeHost ContentView is realized
+        // on demand from the page-level CardExpandedSubtreeTemplate. Reference is
+        // captured once here — the same Border (and therefore the same host)
+        // persists across CollectionView cell recycling.
+        var expandedHost = border.FindByName<ContentView>("ExpandedSubtreeHost");
+
         // Margin is a Thickness (not animatable by FadeTo/TranslateTo) — tween via the low-level
         // Animation class. CollectionView recycles Borders by swapping BindingContext *without*
         // firing Loaded/Unloaded, so we must re-subscribe on BindingContextChanged — otherwise a
@@ -149,8 +162,11 @@ public partial class PrayerCardsPage : ContentPage
         PrayerCardViewModel? subscribed = null;
         System.ComponentModel.PropertyChangedEventHandler handler = (_, ev) =>
         {
-            if (ev.PropertyName == nameof(PrayerCardViewModel.IsExpanded) && subscribed is not null)
-                AnimateCardMargin(border, CardMarginFor(subscribed.IsExpanded));
+            if (ev.PropertyName != nameof(PrayerCardViewModel.IsExpanded) || subscribed is null) return;
+            // Realize before the margin tween so chips/list have a layout pass concurrent
+            // with the animation, not after — avoids "blank then content" flash on expand.
+            if (subscribed.IsExpanded) RealizeExpandedSubtree(expandedHost, subscribed);
+            AnimateCardMargin(border, CardMarginFor(subscribed.IsExpanded));
         };
 
         void Rebind()
@@ -173,6 +189,16 @@ public partial class PrayerCardsPage : ContentPage
                 var target = CardMarginFor(subscribed.IsExpanded);
                 if (border.Margin != target)
                     border.Margin = target;
+                // Rebind() is called both from OnCardBorderLoaded (fresh cell) and from
+                // BindingContextChanged (recycled cell). For a fresh expanded cell —
+                // the load path that matters most for save→Cards — host.Content is null
+                // here and this realizes the chips/list/button before first paint.
+                // For a recycled cell whose host already has Content, Realize is an
+                // idempotent no-op and the inner bindings re-evaluate against the new
+                // BindingContext. M1 fallback if BindableLayout misbehaves on
+                // ItemsSource swap: prepend `expandedHost.Content = null;` to force
+                // a rebuild rather than rely on inner-binding re-evaluation.
+                if (subscribed.IsExpanded) RealizeExpandedSubtree(expandedHost, subscribed);
             }
             PerfLog.Log($"Rebind.exit id={newId}");
         }
@@ -208,6 +234,32 @@ public partial class PrayerCardsPage : ContentPage
         behavior.SetBinding(CommunityToolkit.Maui.Behaviors.TouchBehavior.LongPressCommandParameterProperty,
             new Binding("BindingContext", source: border));
 #endif
+    }
+
+    // Const'd so a XAML rename surfaces at build-time instead of as a silent runtime no-op.
+    private const string ExpandedSubtreeTemplateKey = "CardExpandedSubtreeTemplate";
+    private DataTemplate? _expandedSubtreeTemplate;
+
+    /// <summary>
+    /// Lazily inflates the chips + prayer-list + add-prayer subtree from the
+    /// page-level CardExpandedSubtreeTemplate resource. Idempotent — no-op if
+    /// Content is already set. The explicit BindingContext write defends against
+    /// propagation timing edge cases where the host's context might lead the
+    /// inheritance chain by a frame on first realization.
+    /// </summary>
+    /// <remarks>
+    /// `View` is fully qualified because the code-behind imports `Android.Views`
+    /// (for native gesture handling on Android), which clashes on the bare name.
+    /// </remarks>
+    private void RealizeExpandedSubtree(ContentView? host, PrayerCardViewModel vm)
+    {
+        if (host is null || host.Content is not null) return;
+        _expandedSubtreeTemplate ??= Resources[ExpandedSubtreeTemplateKey] as DataTemplate;
+        if (_expandedSubtreeTemplate is null) return;
+        var content = (Microsoft.Maui.Controls.View)_expandedSubtreeTemplate.CreateContent();
+        content.BindingContext = vm;
+        host.Content = content;
+        PerfLog.Log($"ExpandedSubtree.realized id={vm.Id}");
     }
 
     private static Thickness CardMarginFor(bool expanded)
@@ -370,15 +422,34 @@ public partial class PrayerCardsPage : ContentPage
         base.OnAppearing();
         if (BindingContext is not PrayerCardsViewModel vm) return;
 
-        PerfLog.Log("OnAppearing.before PageSync");
-        await PageSync.OnAppearingAsync(vm);
-        PerfLog.Log("OnAppearing.after PageSync");
+        // Slice 6g — assert the cross-page busy flag immediately so the overlay
+        // is up the moment the Cards page becomes the foreground page, masking
+        // the SyncAsync→ScrollTo gap and the new-expanded-card lazy-realization
+        // pop-in. Cleared in finally after ScrollTo (or immediately if no save
+        // was pending). The 2.5s highlight fade runs in the background and does
+        // NOT block the overlay-off transition.
+        var hadPendingSave = !string.IsNullOrEmpty(vm.PendingSavedIdentifier);
+        if (hadPendingSave) vm.IsAwaitingSavedCard = true;
 
-        PerfLog.Log("OnAppearing.before ConsumePendingSavedAsync");
-        var savedCard = await vm.ConsumePendingSavedAsync();
-        PerfLog.Log($"OnAppearing.after ConsumePendingSavedAsync (savedCard null? {savedCard == null})");
-        if (savedCard != null)
-            await HighlightCardAfterLayoutAsync(vm, savedCard);
-        PerfLog.Log("OnAppearing.exit");
+        try
+        {
+            PerfLog.Log("OnAppearing.before PageSync");
+            await PageSync.OnAppearingAsync(vm);
+            PerfLog.Log("OnAppearing.after PageSync");
+
+            PerfLog.Log("OnAppearing.before ConsumePendingSavedAsync");
+            var savedCard = await vm.ConsumePendingSavedAsync();
+            PerfLog.Log($"OnAppearing.after ConsumePendingSavedAsync (savedCard null? {savedCard == null})");
+            if (savedCard != null)
+            {
+                await ScrollToSavedCardAsync(vm, savedCard);
+                FadeHighlightAfterDelayAsync(savedCard).SafeFireAndForget();
+            }
+        }
+        finally
+        {
+            if (hadPendingSave) vm.IsAwaitingSavedCard = false;
+            PerfLog.Log("OnAppearing.exit");
+        }
     }
 }
