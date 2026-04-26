@@ -338,4 +338,65 @@ public class PrayerServiceTests
         await _db.Received(1).DeleteJunctionRowsByRequestIdAsync(42);
         await _db.Received(1).DeleteAsync(Arg.Is<Prayer>(p => p.Id == 42));
     }
+
+    // ── GetActivePrayerCountByCardAsync — batching contract ───────────────────
+    //
+    // The Cards page calls this once per card on every refresh. Bulk-counting was
+    // causing an N+1 query storm + UI freeze on Galaxy Ultra. The fix routes through
+    // the all-prayers cache so a batch of N calls collapses to 1 DB read.
+
+    [Fact]
+    public async Task GetActivePrayerCountByCardAsync_BatchedCalls_HitDatabaseOnce()
+    {
+        var prayers = new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 1, IsAnswered = false },
+            new() { Id = 2, PrayerCardId = 1, IsAnswered = true  },
+            new() { Id = 3, PrayerCardId = 2, IsAnswered = false },
+            new() { Id = 4, PrayerCardId = 3, IsAnswered = false },
+            new() { Id = 5, PrayerCardId = 3, IsAnswered = false },
+        };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(prayers));
+
+        var c1 = await _service.GetActivePrayerCountByCardAsync(1);
+        var c2 = await _service.GetActivePrayerCountByCardAsync(2);
+        var c3 = await _service.GetActivePrayerCountByCardAsync(3);
+        var c1Again = await _service.GetActivePrayerCountByCardAsync(1);
+
+        Assert.Equal(1, c1);
+        Assert.Equal(1, c2);
+        Assert.Equal(2, c3);
+        Assert.Equal(1, c1Again);
+        await _db.Received(1).GetAllAsync<Prayer>();
+        // Critically: never the per-card path on the count-only flow.
+        await _db.DidNotReceive().GetPrayersByCardIdAsync(Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task GetActivePrayerCountByCardAsync_AfterPrayerSave_ReReadsDatabase()
+    {
+        // Staleness guard: SavePrayerAsync invalidates _allCache. The next count call
+        // must re-read from DB, not return a stale count.
+        var initial = new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 1, IsAnswered = false },
+        };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(initial));
+        Assert.Equal(1, await _service.GetActivePrayerCountByCardAsync(1));
+
+        // Save a new prayer on card 1 → cache invalidated.
+        var newPrayer = new Prayer { Id = 2, PrayerCardId = 1, IsAnswered = false };
+        await _service.SavePrayerAsync(newPrayer);
+
+        // Next read must hit the DB again, this time returning both rows.
+        var afterSave = new List<Prayer>
+        {
+            new() { Id = 1, PrayerCardId = 1, IsAnswered = false },
+            new() { Id = 2, PrayerCardId = 1, IsAnswered = false },
+        };
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(afterSave));
+        Assert.Equal(2, await _service.GetActivePrayerCountByCardAsync(1));
+
+        await _db.Received(2).GetAllAsync<Prayer>();
+    }
 }

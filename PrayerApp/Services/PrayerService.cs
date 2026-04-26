@@ -12,6 +12,13 @@ public class PrayerService : IPrayerService
     private Dictionary<int, List<Prayer>>? _cardCache;
     private List<Prayer>? _allCache;
 
+    /// <summary>
+    /// In-flight load task. When N concurrent callers arrive while the cache is empty,
+    /// they all await the same task instead of each kicking off their own DB query.
+    /// Cleared once the task completes.
+    /// </summary>
+    private Task<List<Prayer>>? _allLoadTask;
+
     public PrayerService(IDBService dbService)
     {
         _dbService = dbService;
@@ -34,9 +41,21 @@ public class PrayerService : IPrayerService
         if (_allCache is not null)
             return _allCache;
 
-        var list = await Prayer.LoadAllAsync();
-        _allCache = list;
-        return _allCache;
+        // Coalesce concurrent callers onto a single in-flight task. ?? = is non-atomic
+        // but on MAUI's single SynchronizationContext (UI thread for VM fire-and-forget
+        // continuations), the read+assign happens before any caller's await yields,
+        // so concurrent callers see the same task.
+        var task = _allLoadTask ??= Prayer.LoadAllAsync();
+        try
+        {
+            var list = await task;
+            _allCache = list;
+            return list;
+        }
+        finally
+        {
+            if (_allLoadTask == task) _allLoadTask = null;
+        }
     }
 
     public async Task<IReadOnlyList<Prayer>> GetAllActivePrayersAsync()
@@ -48,8 +67,7 @@ public class PrayerService : IPrayerService
     public async Task<Prayer> SavePrayerAsync(Prayer prayer)
     {
         await prayer.SaveAsync();
-        _cardCache = null;
-        _allCache = null;
+        InvalidateCache();
         return prayer;
     }
 
@@ -58,8 +76,7 @@ public class PrayerService : IPrayerService
         await _dbService.DeleteInteractionsByPrayerIdAsync(prayer.Id);
         await _dbService.DeleteJunctionRowsByRequestIdAsync(prayer.Id);
         await prayer.DeleteAsync();
-        _cardCache = null;
-        _allCache = null;
+        InvalidateCache();
     }
 
     public async Task<IReadOnlyList<Prayer>> GetOverduePrayersAsync(int dayThreshold = 30)
@@ -79,8 +96,12 @@ public class PrayerService : IPrayerService
 
     public async Task<int> GetActivePrayerCountByCardAsync(int cardId)
     {
-        var prayers = await GetPrayersByCardAsync(cardId);
-        return prayers.Count(p => !p.IsAnswered);
+        // Route through the all-prayers cache so a batch of N per-card calls collapses
+        // to one DB read (or zero, on cache hit). _allCache and _cardCache are invalidated
+        // together by InvalidateCache / SavePrayerAsync / DeletePrayerAsync, so this read
+        // sees the same freshness as the per-card slice would.
+        var all = await GetAllPrayersAsync();
+        return all.Count(p => p.PrayerCardId == cardId && !p.IsAnswered);
     }
 
     public async Task<DateTime?> GetLastInteractionDateAsync()
@@ -106,5 +127,8 @@ public class PrayerService : IPrayerService
     {
         _cardCache = null;
         _allCache = null;
+        // Don't cancel an in-flight load — its callers expect a result. The next
+        // GetAllPrayersAsync call will start a fresh task because _allCache is null.
+        _allLoadTask = null;
     }
 }
