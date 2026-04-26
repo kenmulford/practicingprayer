@@ -879,6 +879,48 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
+    public async Task ConsumePendingSavedAsync_NewViaRefresh_ExpandsMatchedAndCollapsesSiblings()
+    {
+        // PERF-1: the new card gets IsExpanded + IsHighlighted, and the cascade loop
+        // still collapses other expanded cards (UX requirement: only one expanded at
+        // a time). The suppression flag inside ConsumePendingSavedAsync only short-
+        // circuits the *per-collapse* RebuildSections call; one explicit RebuildSections
+        // at the end of the orchestrated mutation covers all section work in one pass.
+        SetupSystemBoxes();
+        var existing1 = new PrayerCard { Id = 1, Title = "A", BoxId = 0 };
+        var existing2 = new PrayerCard { Id = 2, Title = "B", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existing1, existing2 }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+
+        // User has card 1 expanded before the save begins.
+        var card1Vm = sut.AllPrayerCards.First(c => c.Id == 1);
+        card1Vm.IsExpanded = true;
+
+        // Save flow: a new card 3 has been inserted. Diff loop adds it to AllPrayerCards.
+        var newCard = new PrayerCard { Id = 3, Title = "C", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existing1, existing2, newCard }.AsReadOnly());
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "3" } });
+        await sut.RefreshAsync();
+        var result = await sut.ConsumePendingSavedAsync();
+
+        // The new card got highlighted + expanded.
+        Assert.NotNull(result);
+        Assert.True(result.IsExpanded);
+        Assert.True(result.IsHighlighted);
+        // Card 1 was collapsed by the cascade loop — UX requirement preserved.
+        // The fix only suppresses the per-collapse RebuildSections call, not the
+        // collapse itself. One explicit RebuildSections at the end of
+        // ConsumePendingSavedAsync covers all the section-level work in one pass.
+        Assert.False(card1Vm.IsExpanded);
+    }
+
+    [Fact]
     public void HighlightCardRequested_EventIsRemoved()
     {
         // Reflection guard: this VM→View C# event was the crash path. If a future

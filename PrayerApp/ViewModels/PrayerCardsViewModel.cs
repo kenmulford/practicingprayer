@@ -40,6 +40,13 @@ namespace PrayerApp.ViewModels
 
         private bool _isSorting;
         private bool _suppressFilterAnnounce;
+
+        // PERF-1: setting matched.IsExpanded = true in ConsumePendingSavedAsync cascades
+        // into the IsExpanded handler, which collapses other expanded cards; each cascading
+        // collapse calls RebuildSections, which replaces BoxSections and forces MAUI's
+        // CollectionViewHandler on Android to reset its RecyclerView adapter (~600ms per
+        // visible Border). 3+ cascading rebuilds = ~5s UI-thread blockage.
+        private bool _suppressIsExpandedRebuild;
         private readonly Dictionary<PrayerCardViewModel, System.ComponentModel.PropertyChangedEventHandler> _cardHandlers = new();
         private CancellationTokenSource? _filterAnnounceCts;
 
@@ -335,8 +342,13 @@ namespace PrayerApp.ViewModels
             if (matched != null && !wasAlreadyInList)
             {
                 PerfLog.Log("ConsumePendingSavedAsync new-via-refresh (matched, NOT was-in-list)");
-                matched.IsExpanded = true;
-                matched.IsHighlighted = true;
+                _suppressIsExpandedRebuild = true;
+                try
+                {
+                    matched.IsExpanded = true;
+                    matched.IsHighlighted = true;
+                }
+                finally { _suppressIsExpandedRebuild = false; }
                 RebuildSections();
                 return matched;
             }
@@ -352,8 +364,13 @@ namespace PrayerApp.ViewModels
                 var newCard = CreateCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
-                newCard.IsExpanded = true;
-                newCard.IsHighlighted = true;
+                _suppressIsExpandedRebuild = true;
+                try
+                {
+                    newCard.IsExpanded = true;
+                    newCard.IsHighlighted = true;
+                }
+                finally { _suppressIsExpandedRebuild = false; }
                 RebuildSections();
                 return newCard;
             }
@@ -613,7 +630,7 @@ namespace PrayerApp.ViewModels
                             if (other != card && other.IsExpanded)
                                 other.IsExpanded = false;
                     }
-                    else
+                    else if (!_suppressIsExpandedRebuild)
                     {
                         // Re-sort on collapse so favorite changes take effect
                         // at a natural transition point (not while user is interacting)
