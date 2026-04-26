@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="PrayerApp.Views.Boxes.BoxesPage"
              x:DataType="viewModels:BoxesViewModel"
@@ -16,13 +17,6 @@
         <Grid.GestureRecognizers>
             <TapGestureRecognizer Tapped="OnBackgroundTapped" />
         </Grid.GestureRecognizers>
-
-    <!-- Loading indicator -->
-    <ActivityIndicator IsRunning="{Binding IsLoading}"
-                       IsVisible="{Binding IsLoading}"
-                       Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
 
     <CollectionView
         AutomationId="Boxes_List_Boxes"
@@ -184,6 +178,8 @@
             </ContentView>
         </CollectionView.EmptyView>
     </CollectionView>
+
+    <shared:LoadingOverlay IsLoading="{Binding IsLoading}" />
 
     </Grid>
 </ContentPage>

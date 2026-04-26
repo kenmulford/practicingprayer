@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
              x:Class="PrayerApp.Views.Prayer.PrayerListPage"
              x:DataType="viewModels:PrayerListViewModel"
              Title="Prayers"
@@ -151,12 +152,8 @@
 
             <CollectionView.EmptyView>
                 <VerticalStackLayout HorizontalOptions="Center" Margin="0,32">
-                    <!-- Spinner while loading -->
-                    <ActivityIndicator IsRunning="{Binding IsLoading}"
-                                       IsVisible="{Binding IsLoading}"
-                                       Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}"
-                                       HorizontalOptions="Center" />
-                    <!-- Empty message after load -->
+                    <!-- Empty message — IsLoading guard prevents flash during refresh
+                         (the LoadingOverlay below covers the spinner role). -->
                     <Label Text="No prayers match your filters."
                            Style="{StaticResource MutedText}"
                            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBool}}"
@@ -220,6 +217,8 @@
             </CollectionView.ItemTemplate>
 
         </CollectionView>
+
+        <shared:LoadingOverlay Grid.Row="1" IsLoading="{Binding IsLoading}" />
 
     </Grid>
 

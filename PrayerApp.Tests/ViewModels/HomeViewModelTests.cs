@@ -533,6 +533,40 @@ public class HomeViewModelTests
         Assert.Contains(sut.AnsweredOnThisDateHeader, sut.AnsweredOnThisDateAccessible);
     }
 
+    // ── IsLoading lifecycle ───────────────────────────────────────────
+    // Mirrors the save-flow `IsBusy` lifecycle pattern from commit 99f70d0.
+
+    [Fact]
+    public async Task LoadAsync_SetsIsLoadingDuringExecution_AndResetsAfter()
+    {
+        SetupDefaultMocks();
+        var sut = CreateSut();
+        bool capturedIsLoading = false;
+        _prayerService.GetAllActivePrayersAsync().Returns(_ =>
+        {
+            capturedIsLoading = sut.IsLoading;
+            return Task.FromResult<IReadOnlyList<Prayer>>(new List<Prayer>().AsReadOnly());
+        });
+
+        await sut.LoadAsync();
+
+        Assert.True(capturedIsLoading);
+        Assert.False(sut.IsLoading);
+    }
+
+    [Fact]
+    public async Task LoadAsync_ResetsIsLoadingAfterException()
+    {
+        SetupDefaultMocks();
+        _prayerService.GetOverduePrayersAsync(Arg.Any<int>())
+            .Returns(_ => Task.FromException<IReadOnlyList<Prayer>>(new InvalidOperationException("boom")));
+        var sut = CreateSut();
+
+        await sut.LoadAsync(); // catch block swallows the exception per existing behavior
+
+        Assert.False(sut.IsLoading);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────
 
     /// <summary>Set up minimal mocks so LoadAsync doesn't throw.</summary>

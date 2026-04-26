@@ -4,6 +4,7 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:models="clr-namespace:PrayerApp.Models"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
+             xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
              x:DataType="viewModels:HomeViewModel"
              x:Class="PrayerApp.Views.MainPage"
              SafeAreaEdges="Container">
@@ -206,6 +207,8 @@
             ExpectedStep="PrayerTimeHighlight"
             HeadlineText="One last thing — Prayer Time lets you pray through your requests one by one"
             SubText="Tap the Prayer Time button above when you're ready. No rush!" />
+
+        <shared:LoadingOverlay IsLoading="{Binding IsLoading}" />
 
     </Grid>
 </ContentPage>

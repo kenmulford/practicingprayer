@@ -226,10 +226,20 @@ public class HomeViewModel : ObservableObject
         IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
     { }
 
+    // ── Loading state ─────────────────────────────────────────────────
+
+    private bool _isLoading;
+    public bool IsLoading
+    {
+        get => _isLoading;
+        private set => SetProperty(ref _isLoading, value);
+    }
+
     // ── Data Loading ──────────────────────────────────────────────────
 
     public async Task LoadAsync()
     {
+        IsLoading = true;
         try
         {
             _prayerService.InvalidateCache();
@@ -290,6 +300,10 @@ public class HomeViewModel : ObservableObject
             AnsweredOnThisDate = Array.Empty<Prayer>();
             System.Diagnostics.Debug.WriteLine($"Failed to load home dashboard: {ex.Message}");
             _accessibilityService.Announce("Failed to load dashboard");
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
