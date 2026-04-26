@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using PrayerApp.Helpers;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using System;
@@ -11,7 +13,7 @@ using System.Windows.Input;
 
 namespace PrayerApp.ViewModels
 {
-    public class PrayerCardsViewModel : ObservableObject, IQueryAttributable
+    public class PrayerCardsViewModel : ObservableObject, IQueryAttributable, ISyncableViewModel
     {
         private readonly ICardService _cardService;
         private readonly IPrayerService _prayerService;
@@ -21,6 +23,7 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly ISettings _settings;
+        private readonly IMessenger _messenger;
         private Dictionary<int, HashSet<int>> _cardTagIds = new();
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
         public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
@@ -40,6 +43,12 @@ namespace PrayerApp.ViewModels
 
         private bool _isSorting;
         private bool _suppressFilterAnnounce;
+        // True after the first SyncAsync completes. The first sync suppresses the
+        // filter-count announce so screen reader users don't get "Loading" + "Content
+        // loaded" + "Showing N cards" all at once on cold load. Subsequent syncs
+        // (messenger-driven) do announce — the count is the user-visible signal that
+        // a CRUD elsewhere refreshed this page.
+        private bool _hasSyncedOnce;
 
         // PERF-1: setting matched.IsExpanded = true in ConsumePendingSavedAsync cascades
         // into the IsExpanded handler, which collapses other expanded cards; each cascading
@@ -50,7 +59,7 @@ namespace PrayerApp.ViewModels
         private readonly Dictionary<PrayerCardViewModel, System.ComponentModel.PropertyChangedEventHandler> _cardHandlers = new();
         private CancellationTokenSource? _filterAnnounceCts;
 
-        /// <summary>Cached box list for section building. Refreshed on LoadAsync/RefreshAsync.</summary>
+        /// <summary>Cached box list for section building. Refreshed on SyncAsync.</summary>
         private IReadOnlyList<CardBox> _boxes = Array.Empty<CardBox>();
 
         private bool _isLoading;
@@ -136,9 +145,9 @@ namespace PrayerApp.ViewModels
         }
 
         /// <summary>
-        /// Captured at ApplyQueryAttributes time (before OnAppearing's RefreshAsync runs):
+        /// Captured at ApplyQueryAttributes time (before OnAppearing's SyncAsync runs):
         /// was the saved-id already present in AllPrayerCards? True = edit (don't highlight),
-        /// false = newly created (highlight + scroll, even if RefreshAsync's diff loop
+        /// false = newly created (highlight + scroll, even if SyncAsync's diff loop
         /// happens to add the row before ConsumePendingSavedAsync runs).
         /// </summary>
         private bool _pendingSavedWasAlreadyInList;
@@ -148,7 +157,7 @@ namespace PrayerApp.ViewModels
         public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
             IAccessibilityService accessibilityService, ITagService tagService, ISettings settings,
-            IBoxService boxService)
+            IBoxService boxService, IMessenger messenger)
         {
             _cardService = cardService;
             _prayerService = prayerService;
@@ -158,6 +167,7 @@ namespace PrayerApp.ViewModels
             _tagService = tagService;
             _settings = settings;
             _boxService = boxService;
+            _messenger = messenger;
 
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
             _showCollectionsBanner = !settings.CollectionsBannerDismissed;
@@ -177,6 +187,15 @@ namespace PrayerApp.ViewModels
                 _settings.CollectionsBannerDismissed = true;
                 ShowCollectionsBanner = false;
             });
+
+            // Cross-page CRUD signals — Cards displays counts and tag chips that derive
+            // from every entity type, so subscribe to all of them. Weak refs auto-clean
+            // on GC. BulkChangedMessage covers backup restore / deep-link import.
+            _messenger.Register<PrayerCardsViewModel, PrayerCardChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerCardsViewModel, PrayerChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerCardsViewModel, TagChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerCardsViewModel, CardBoxChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerCardsViewModel, BulkChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
         }
 
         public PrayerCardsViewModel() : this(
@@ -187,7 +206,8 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<ITagService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<ISettings>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IMessenger>())
         { }
 
         #endregion
@@ -259,7 +279,7 @@ namespace PrayerApp.ViewModels
                 // snapshot on Galaxy Ultra.
                 var id = query["saved"].ToString();
                 PendingSavedIdentifier = id;
-                // Snapshot now: RefreshAsync runs after this and may add the new card to
+                // Snapshot now: SyncAsync runs after this and may add the new card to
                 // AllPrayerCards via its diff loop. We need to know whether the card was
                 // *already* in the list before that, so the highlight decision in
                 // ConsumePendingSavedAsync isn't fooled into the matched-edit branch.
@@ -299,9 +319,11 @@ namespace PrayerApp.ViewModels
             }
             else if (query.ContainsKey("imported"))
             {
-                // Deep link import — caches already invalidated by DeepLinkService.
-                // Full refresh needed because a new card/prayer was created externally.
-                RefreshAsync().SafeFireAndForget();
+                // Deep link import — full sync needed because a new card/prayer was
+                // created externally. Belt-and-suspenders with DeepLinkService's
+                // BulkChangedMessage; explicit call here makes the import → refresh
+                // contract obvious at the call site.
+                SyncAsync().SafeFireAndForget();
             }
         }
 
@@ -337,11 +359,17 @@ namespace PrayerApp.ViewModels
                 return null;
             }
 
-            // New-card case where RefreshAsync's diff loop already added the row before
+            // New-card case where SyncAsync's diff loop already added the row before
             // we got here. The matched VM is the one we want to highlight + scroll to.
+            // SyncAsync's tail RebuildSections already placed the new card into the
+            // correct BoxSection — no second rebuild needed here. The cascade-collapse
+            // of any previously-expanded card still happens via the IsExpanded handler;
+            // _suppressIsExpandedRebuild only suppresses *that* handler's own rebuild,
+            // and BoxSections doesn't need to be replaced just because IsExpanded
+            // toggled on cards already in their final sections.
             if (matched != null && !wasAlreadyInList)
             {
-                PerfLog.Log("ConsumePendingSavedAsync new-via-refresh (matched, NOT was-in-list)");
+                PerfLog.Log("ConsumePendingSavedAsync new-via-sync (matched, NOT was-in-list)");
                 _suppressIsExpandedRebuild = true;
                 try
                 {
@@ -349,7 +377,6 @@ namespace PrayerApp.ViewModels
                     matched.IsHighlighted = true;
                 }
                 finally { _suppressIsExpandedRebuild = false; }
-                RebuildSections();
                 return matched;
             }
 
@@ -381,54 +408,81 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public async Task LoadAsync()
+        /// <summary>
+        /// Single primitive that brings the VM in line with the data store. Diff-based —
+        /// idempotent across first-call and Nth-call. Replaces the prior LoadAsync /
+        /// RefreshAsync split. Triggered by <see cref="Helpers.PageSync.OnAppearingAsync"/>
+        /// AND by entity-change messenger broadcasts.
+        /// </summary>
+        public async Task SyncAsync()
         {
-            if (IsMultiSelectMode) ExitMultiSelectMode();
+            // Multi-select / search / tag-filter chip selection are user-driven UI state;
+            // SyncAsync must not reset them. The old LoadAsync/RefreshAsync called
+            // ExitMultiSelectMode at entry — wrong for the messenger-driven entry path.
             IsLoading = true;
-            _suppressFilterAnnounce = true;
+            _suppressFilterAnnounce = !_hasSyncedOnce;
             try
             {
-                _cardService.InvalidateCache();
-                _boxService.InvalidateCache();
+                // Service caches are auto-invalidated by their own mutation methods (Slice 2);
+                // no defensive InvalidateCache call needed here.
                 var cards = await _cardService.GetCardsAsync();
                 _boxes = await _boxService.GetBoxesAsync();
+                var freshIds = cards.Select(c => c.Id).ToHashSet();
+                var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
 
-                var viewModels = cards.Select(pc => CreateCardViewModel(pc)).ToList();
-                foreach (var vm in viewModels)
+                // Remove deleted cards
+                var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
+                foreach (var vm in toRemove)
                 {
-                    SubscribeToPropertyChanges(vm);
+                    UnsubscribeFromPropertyChanges(vm);
+                    AllPrayerCards.Remove(vm);
                 }
 
-                foreach (var old in AllPrayerCards)
-                    UnsubscribeFromPropertyChanges(old);
-                AllPrayerCards.Clear();
-                foreach (var vm in viewModels)
+                // Add new cards
+                foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
                 {
+                    var vm = CreateCardViewModel(card);
+                    SubscribeToPropertyChanges(vm);
                     AllPrayerCards.Add(vm);
                 }
 
-                // Build tag filter data
-                _tagService.InvalidateCache();
+                // Refresh prayer counts + reload prayers on expanded cards
+                foreach (var vm in AllPrayerCards)
+                {
+                    vm.RefreshActivePrayerCount();
+                    if (vm.IsExpanded)
+                        vm.ReloadPrayers();
+                }
+
+                // Rebuild tag filter data
                 await BuildCardTagLookupAsync();
 
                 var tags = await _tagService.GetTagsAsync();
-                AvailableTags.Clear();
-                foreach (var tag in tags)
+                var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
+                var freshTagIds = tags.Select(t => t.Id).ToHashSet();
+
+                var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
+                foreach (var chip in chipsToRemove)
+                    AvailableTags.Remove(chip);
+
+                var tagsAdded = false;
+                foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
                 {
                     var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
                     AvailableTags.Add(chip);
+                    tagsAdded = true;
                 }
-                OnPropertyChanged(nameof(HasTags));
+                // Skip the PropertyChanged when nothing changed — under messenger-driven
+                // sync this would otherwise fire on every CRUD anywhere, churning bindings.
+                if (chipsToRemove.Count > 0 || tagsAdded)
+                    OnPropertyChanged(nameof(HasTags));
 
                 RebuildSections();
-            }
-            catch (Exception e)
-            {
-                await _navigationService.DisplayAlertAsync("Error", $"Failed to load card: {e.Message}", "OK");
             }
             finally
             {
                 _suppressFilterAnnounce = false;
+                _hasSyncedOnce = true;
                 IsLoading = false;
             }
         }
@@ -651,94 +705,6 @@ namespace PrayerApp.ViewModels
         {
             if (_cardHandlers.Remove(card, out var handler))
                 card.PropertyChanged -= handler;
-        }
-
-        public void Reload()
-        {
-            LoadAsync().SafeFireAndForget();
-        }
-
-        /// <summary>
-        /// Lightweight refresh for cross-tab consistency. Detects new/deleted cards
-        /// without tearing down the entire ViewModel state (preserving expanded
-        /// accordions, loaded prayers, etc.). Called from OnAppearing on subsequent
-        /// tab visits.
-        /// </summary>
-        public async Task RefreshAsync()
-        {
-            PerfLog.Log("PrayerCardsViewModel.RefreshAsync.entry");
-            if (IsMultiSelectMode) ExitMultiSelectMode();
-            IsLoading = true;
-            try
-            {
-                _cardService.InvalidateCache();
-                _prayerService.InvalidateCache();
-                _boxService.InvalidateCache();
-                PerfLog.Log("RefreshAsync.before GetCardsAsync");
-                var cards = await _cardService.GetCardsAsync();
-                PerfLog.Log($"RefreshAsync.after GetCardsAsync (count={cards.Count})");
-                _boxes = await _boxService.GetBoxesAsync();
-                PerfLog.Log($"RefreshAsync.after GetBoxesAsync (count={_boxes.Count})");
-                var freshIds = cards.Select(c => c.Id).ToHashSet();
-                var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
-
-                // Remove deleted cards
-                var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
-                foreach (var vm in toRemove)
-                {
-                    UnsubscribeFromPropertyChanges(vm);
-                    AllPrayerCards.Remove(vm);
-                }
-
-                // Add new cards
-                foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
-                {
-                    var vm = CreateCardViewModel(card);
-                    SubscribeToPropertyChanges(vm);
-                    AllPrayerCards.Add(vm);
-                }
-
-                // Refresh prayer counts + reload prayers on expanded cards
-                // (e.g. QuickAdd added a prayer, or "Save +" added multiple)
-                foreach (var vm in AllPrayerCards)
-                {
-                    vm.RefreshActivePrayerCount();
-                    if (vm.IsExpanded)
-                        vm.ReloadPrayers();
-                }
-
-                PerfLog.Log("RefreshAsync.after RefreshActivePrayerCount loop");
-
-                // Rebuild tag filter data
-                _tagService.InvalidateCache();
-                await BuildCardTagLookupAsync();
-                PerfLog.Log("RefreshAsync.after BuildCardTagLookupAsync");
-
-                var tags = await _tagService.GetTagsAsync();
-                var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
-                var freshTagIds = tags.Select(t => t.Id).ToHashSet();
-
-                // Remove deleted tags
-                var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
-                foreach (var chip in chipsToRemove)
-                    AvailableTags.Remove(chip);
-
-                // Add new tags
-                foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
-                {
-                    var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
-                    AvailableTags.Add(chip);
-                }
-                OnPropertyChanged(nameof(HasTags));
-
-                PerfLog.Log("RefreshAsync.before RebuildSections");
-                RebuildSections();
-                PerfLog.Log("PrayerCardsViewModel.RefreshAsync.exit");
-            }
-            finally
-            {
-                IsLoading = false;
-            }
         }
 
         #endregion

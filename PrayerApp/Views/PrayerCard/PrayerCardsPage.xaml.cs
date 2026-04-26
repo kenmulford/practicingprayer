@@ -11,8 +11,6 @@ namespace PrayerApp.Views.PrayerCard;
 
 public partial class PrayerCardsPage : ContentPage
 {
-    private bool _loaded;
-
     public PrayerCardsPage(PrayerCardsViewModel vm)
     {
         InitializeComponent();
@@ -351,24 +349,11 @@ public partial class PrayerCardsPage : ContentPage
     {
         PerfLog.Log("PrayerCardsPage.OnAppearing.entry");
         base.OnAppearing();
-        PerfLog.Log("OnAppearing.before App.InitTask");
-        await App.InitTask; // ensure DB seeding is complete before loading data
-        PerfLog.Log("OnAppearing.after App.InitTask");
         if (BindingContext is not PrayerCardsViewModel vm) return;
 
-        if (!_loaded)
-        {
-            _loaded = true;
-            PerfLog.Log("OnAppearing.before LoadAsync");
-            await vm.LoadAsync();
-            PerfLog.Log("OnAppearing.after LoadAsync");
-        }
-        else
-        {
-            PerfLog.Log("OnAppearing.before RefreshAsync");
-            await vm.RefreshAsync();
-            PerfLog.Log("OnAppearing.after RefreshAsync");
-        }
+        PerfLog.Log("OnAppearing.before PageSync");
+        await PageSync.OnAppearingAsync(vm);
+        PerfLog.Log("OnAppearing.after PageSync");
 
         PerfLog.Log("OnAppearing.before ConsumePendingSavedAsync");
         var savedCard = await vm.ConsumePendingSavedAsync();

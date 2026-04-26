@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
 using PrayerApp.Helpers;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
@@ -17,6 +19,9 @@ public class PrayerCardsViewModelTests
     private readonly ITagService _tagService = Substitute.For<ITagService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
     private readonly IBoxService _boxService = Substitute.For<IBoxService>();
+    // Fresh WeakReferenceMessenger per fixture so messenger-driven tests can fire
+    // real Send/Register without leaking across tests via the .Default singleton.
+    private readonly IMessenger _messenger = new WeakReferenceMessenger();
 
     public PrayerCardsViewModelTests()
     {
@@ -30,7 +35,7 @@ public class PrayerCardsViewModelTests
 
     private PrayerCardsViewModel CreateSut() =>
         new(_cardService, _prayerService, _onboardingService, _navigationService,
-            _accessibilityService, _tagService, _settings, _boxService);
+            _accessibilityService, _tagService, _settings, _boxService, _messenger);
 
     /// <summary>Sets up standard system boxes so sections can be built.</summary>
     private void SetupSystemBoxes()
@@ -98,45 +103,270 @@ public class PrayerCardsViewModelTests
         await _navigationService.Received(1).GoToAsync(Routes.PrayerCardPage);
     }
 
-    // ── LoadAsync cache invalidation ──────────────────────────────────
+    // ── SyncAsync (Slice 3 part 2) ────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_InvalidatesCardAndBoxCaches()
+    public async Task SyncAsync_FetchesAndPopulatesAllPrayerCards()
     {
-        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
         _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
-        _cardService.Received(1).InvalidateCache();
-        _boxService.Received(1).InvalidateCache();
+        Assert.Equal(2, sut.AllPrayerCards.Count);
+        Assert.Contains(sut.AllPrayerCards, c => c.Id == 1);
+        Assert.Contains(sut.AllPrayerCards, c => c.Id == 2);
     }
 
-    // ── RefreshAsync invalidates caches ───────────────────────────────
-
     [Fact]
-    public async Task RefreshAsync_InvalidatesAllCaches()
+    public async Task SyncAsync_DoesNotInvalidateServiceCaches()
     {
+        // Slice 2 contract: services auto-invalidate on mutation. VMs no longer
+        // defensively invalidate before reading. (This inverts the old
+        // LoadAsync_InvalidatesCardAndBoxCaches and RefreshAsync_InvalidatesAllCaches
+        // tests below — those will be removed in step 13.)
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
         _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.RefreshAsync();
+        await sut.SyncAsync();
 
-        _cardService.Received(1).InvalidateCache();
-        _prayerService.Received(1).InvalidateCache();
-        _boxService.Received(1).InvalidateCache();
+        _cardService.DidNotReceive().InvalidateCache();
+        _prayerService.DidNotReceive().InvalidateCache();
+        _boxService.DidNotReceive().InvalidateCache();
+        _tagService.DidNotReceive().InvalidateCache();
+    }
+
+    [Fact]
+    public async Task SyncAsync_PreservesMultiSelectMode()
+    {
+        // Messenger-driven sync (e.g. a tag rename elsewhere) must NOT drop the
+        // user's current selection. The old LoadAsync/RefreshAsync called
+        // ExitMultiSelectMode at entry — that's wrong for the new entry path.
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "A", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "B", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+        Assert.True(sut.IsMultiSelectMode);
+        Assert.Equal(1, sut.SelectedCardCount);
+
+        await sut.SyncAsync();
+
+        Assert.True(sut.IsMultiSelectMode);
+        Assert.Equal(1, sut.SelectedCardCount);
+    }
+
+    [Fact]
+    public async Task SyncAsync_PreservesTagFilterChipSelection()
+    {
+        // Selecting a tag chip then triggering SyncAsync (via messenger or OnAppearing)
+        // must keep the chip selected — the diff path reuses existing TagFilterChipViewModel
+        // instances, preserving IsSelected.
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Card", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+
+        var tag = new PrayerTag { Id = 100, Name = "Healing" };
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag> { tag }.AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        Assert.Single(sut.AvailableTags);
+        sut.AvailableTags[0].ToggleCommand.Execute(null);
+        Assert.True(sut.AvailableTags[0].IsSelected);
+
+        await sut.SyncAsync();
+
+        Assert.Single(sut.AvailableTags);
+        Assert.True(sut.AvailableTags[0].IsSelected);
+    }
+
+    [Fact]
+    public async Task SyncAsync_PreservesSearchText()
+    {
+        // SearchText is user-typed UI state; SyncAsync must not touch it.
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.SearchText = "needle";
+
+        await sut.SyncAsync();
+
+        Assert.Equal("needle", sut.SearchText);
+    }
+
+    // ── Messenger-driven sync (Slice 3 part 2) ────────────────────────
+
+    [Fact]
+    public async Task PrayerCardChangedMessage_TriggersSyncAsync()
+    {
+        SetupDefaultSyncMocks();
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        _cardService.ClearReceivedCalls();
+
+        _messenger.Send(new PrayerCardChangedMessage(1, ChangeKind.Created));
+        await Task.Yield();
+        await Task.Yield();
+
+        await _cardService.Received().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task PrayerChangedMessage_TriggersSyncAsync()
+    {
+        SetupDefaultSyncMocks();
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        _cardService.ClearReceivedCalls();
+
+        _messenger.Send(new PrayerChangedMessage(10, 1, ChangeKind.Updated));
+        await Task.Yield();
+        await Task.Yield();
+
+        await _cardService.Received().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task TagChangedMessage_TriggersSyncAsync()
+    {
+        SetupDefaultSyncMocks();
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        _cardService.ClearReceivedCalls();
+
+        _messenger.Send(new TagChangedMessage(5, ChangeKind.Updated));
+        await Task.Yield();
+        await Task.Yield();
+
+        await _cardService.Received().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task CardBoxChangedMessage_TriggersSyncAsync()
+    {
+        SetupDefaultSyncMocks();
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        _cardService.ClearReceivedCalls();
+
+        _messenger.Send(new CardBoxChangedMessage(3, ChangeKind.Created));
+        await Task.Yield();
+        await Task.Yield();
+
+        await _cardService.Received().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task BulkChangedMessage_TriggersSyncAsync()
+    {
+        // Bulk consolidation contract from Slice 2: backup restore / deep-link import
+        // fire a single BulkChangedMessage rather than N granular per-entity messages.
+        SetupDefaultSyncMocks();
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        _cardService.ClearReceivedCalls();
+
+        _messenger.Send(new BulkChangedMessage());
+        await Task.Yield();
+        await Task.Yield();
+
+        await _cardService.Received().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task ApplyQueryAttributes_Imported_TriggersSyncAsync()
+    {
+        // Deep-link import path uses the new sync primitive — the underlying
+        // BulkChangedMessage already published by DeepLinkService also fires sync,
+        // but the explicit query branch keeps cold-launch deep links covered.
+        SetupDefaultSyncMocks();
+        var sut = CreateSut();
+        // Drain initial sync trigger from constructor-time messenger registration: none —
+        // ApplyQueryAttributes is the only entry point exercised here. Clear mock before act.
+        _cardService.ClearReceivedCalls();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "imported", true } });
+        await Task.Yield();
+        await Task.Yield();
+
+        await _cardService.Received().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_AfterSyncAddedCard_DoesNotRebuildSectionsAgain()
+    {
+        // After SyncAsync adds the saved card via its diff loop, ConsumePendingSavedAsync
+        // should NOT rebuild sections again — SyncAsync's tail RebuildSections already
+        // covered the new card. Folding the redundant rebuild eliminates the second
+        // CollectionView adapter reset that contributed to the post-Save lag.
+        // RebuildSections replaces the BoxSections instance, so an unchanged reference
+        // proves it wasn't called inside Consume.
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        // ApplyQueryAttributes runs while AllPrayerCards is empty (snapshots wasAlreadyInList=false)
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+
+        // Simulate SyncAsync's diff loop having added the new card
+        var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
+        var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService);
+        sut.AllPrayerCards.Add(newVm);
+
+        var sectionsBeforeConsume = sut.BoxSections;
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.True(result.IsExpanded);
+        Assert.True(result.IsHighlighted);
+        Assert.Same(sectionsBeforeConsume, sut.BoxSections);
+    }
+
+    private void SetupDefaultSyncMocks()
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
     }
 
     // ── Section building ──────────────────────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_BuildsSections_UnboxedAndSystemAndArchived()
+    public async Task SyncAsync_BuildsSections_UnboxedAndSystemAndArchived()
     {
         SetupSystemBoxes();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 }; // Unboxed
@@ -147,7 +377,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // Should have: Unboxed (1 card), System (1 card), Archived (0 cards but always shown)
         Assert.Equal(3, sut.BoxSections.Count);
@@ -160,7 +390,7 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
-    public async Task LoadAsync_UserBoxesSortedByName()
+    public async Task SyncAsync_UserBoxesSortedByName()
     {
         SetupSystemBoxes();
         var boxes = new List<CardBox>
@@ -180,7 +410,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // User boxes sorted A→Z: Alpha before Zulu
         Assert.Equal("Alpha", sut.BoxSections[0].Name);
@@ -188,7 +418,7 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
-    public async Task LoadAsync_CardsWithinSectionSorted_FavoritesFirst()
+    public async Task SyncAsync_CardsWithinSectionSorted_FavoritesFirst()
     {
         SetupSystemBoxes();
         _settings.ExpandedSectionIds.Returns("0"); // Expand unboxed so items are visible
@@ -200,7 +430,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         var unboxed = sut.BoxSections.First(s => s.BoxId == 0);
         Assert.Equal("Alpha", unboxed[0].Title); // Favorited → first
@@ -226,7 +456,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag> { junction });
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // Act: select the tag chip
         Assert.Single(sut.AvailableTags);
@@ -255,7 +485,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag> { junction });
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // Act: select the tag chip
         sut.AvailableTags[0].ToggleCommand.Execute(null);
@@ -286,7 +516,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag> { junc1, junc2 });
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // Act: select both tag chips
         sut.AvailableTags[0].ToggleCommand.Execute(null);
@@ -317,7 +547,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag> { junction });
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // Act: select then deselect tag
         sut.AvailableTags[0].ToggleCommand.Execute(null);
@@ -332,7 +562,7 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
-    public async Task LoadAsync_PopulatesAvailableTags()
+    public async Task SyncAsync_PopulatesAvailableTags()
     {
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
@@ -343,7 +573,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.Equal(2, sut.AvailableTags.Count);
         Assert.Equal("Healing", sut.AvailableTags[0].Tag.Name);
@@ -361,7 +591,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.True(sut.HasTags);
     }
@@ -369,7 +599,7 @@ public class PrayerCardsViewModelTests
     // ── Archived section always visible ───────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_ArchivedSectionAlwaysPresent_EvenWhenEmpty()
+    public async Task SyncAsync_ArchivedSectionAlwaysPresent_EvenWhenEmpty()
     {
         SetupSystemBoxes();
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
@@ -378,7 +608,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // Only Archived should be visible (no cards in any section, but Archived is always shown)
         Assert.Single(sut.BoxSections);
@@ -399,7 +629,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
 
@@ -419,7 +649,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
 
         // Wait past the 300ms long-press suppression window
@@ -442,7 +672,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
         sut.ToggleCardSelection(sut.AllPrayerCards[1]); // select second too
 
@@ -473,7 +703,7 @@ public class PrayerCardsViewModelTests
             .Returns("Cancel");
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
 
         await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
@@ -502,7 +732,7 @@ public class PrayerCardsViewModelTests
             .Returns("Family");
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
 
         await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
@@ -526,7 +756,7 @@ public class PrayerCardsViewModelTests
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         var sut = CreateSut();
 
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.True(sut.HasNoSections);
     }
@@ -541,7 +771,7 @@ public class PrayerCardsViewModelTests
         }.AsReadOnly());
         var sut = CreateSut();
 
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.False(sut.HasNoSections);
     }
@@ -549,7 +779,7 @@ public class PrayerCardsViewModelTests
     // ── BUG-56: Empty user boxes always shown ────────────────────────
 
     [Fact]
-    public async Task LoadAsync_EmptyUserBox_AppearsAsSection()
+    public async Task SyncAsync_EmptyUserBox_AppearsAsSection()
     {
         var boxes = new List<CardBox>
         {
@@ -562,7 +792,7 @@ public class PrayerCardsViewModelTests
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
         var sut = CreateSut();
 
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         var emptySection = sut.BoxSections.FirstOrDefault(s => s.BoxId == 5);
         Assert.NotNull(emptySection);
@@ -581,7 +811,7 @@ public class PrayerCardsViewModelTests
             new() { Id = 1, Title = "Card", BoxId = 0 }
         }.AsReadOnly());
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         sut.IsMultiSelectMode = true;
 
@@ -597,7 +827,7 @@ public class PrayerCardsViewModelTests
             new() { Id = 1, Title = "Card", BoxId = 0 }
         }.AsReadOnly());
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         sut.IsMultiSelectMode = true;
 
         sut.IsMultiSelectMode = false;
@@ -644,7 +874,7 @@ public class PrayerCardsViewModelTests
     // ── UX-31: Section expansion persistence ─────────────────────────────
 
     [Fact]
-    public async Task LoadAsync_NoSavedState_AllSectionsCollapsed()
+    public async Task SyncAsync_NoSavedState_AllSectionsCollapsed()
     {
         SetupSystemBoxes();
         // ExpandedSectionIds defaults to null/empty → all collapsed
@@ -655,13 +885,13 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         Assert.All(sut.BoxSections, s => Assert.False(s.IsExpanded));
     }
 
     [Fact]
-    public async Task LoadAsync_SavedExpandedIds_RestoresExpansionState()
+    public async Task SyncAsync_SavedExpandedIds_RestoresExpansionState()
     {
         SetupSystemBoxes();
         _settings.ExpandedSectionIds.Returns("0,20"); // Unboxed and Archived expanded
@@ -672,7 +902,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         var unboxed = sut.BoxSections.First(s => s.BoxId == 0);
         var archived = sut.BoxSections.First(s => s.BoxId == 20);
@@ -692,7 +922,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         sut.SaveSectionExpansionState();
 
@@ -712,7 +942,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         sut.SaveSectionExpansionState();
 
@@ -759,7 +989,7 @@ public class PrayerCardsViewModelTests
         var pcDb = SetupCardLoadMock(42, new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 });
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object> { { "saved", "42" } });
 
@@ -781,7 +1011,7 @@ public class PrayerCardsViewModelTests
         SetupCardLoadMock(42, new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 });
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object> { { "saved", "42" } });
 
@@ -821,7 +1051,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
         var matched = sut.AllPrayerCards.Single(c => c.Id == 7);
         var wasExpanded = matched.IsExpanded;
         var wasHighlighted = matched.IsHighlighted;
@@ -844,7 +1074,7 @@ public class PrayerCardsViewModelTests
         // Real-world Galaxy Ultra flow: PrayerCardPage.SaveAsync calls GoToAsync("..?saved=42").
         // Shell fires ApplyQueryAttributes BEFORE OnAppearing. At that moment, card 42 is NOT
         // in AllPrayerCards (it was just inserted into the DB). Snapshot captures
-        // wasAlreadyInList=false. THEN OnAppearing's RefreshAsync runs, GetCardsAsync now
+        // wasAlreadyInList=false. THEN OnAppearing's SyncAsync runs, GetCardsAsync now
         // returns card 42, and the diff loop adds it to AllPrayerCards. THEN
         // ConsumePendingSavedAsync runs: matched != null but wasAlreadyInList=false →
         // highlight + return for scroll.
@@ -855,14 +1085,14 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync(); // 0 cards loaded — card 42 not yet present
+        await sut.SyncAsync(); // 0 cards loaded — card 42 not yet present
 
         // Stage the saved-id while AllPrayerCards is empty (snapshots wasAlreadyInList=false).
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object> { { "saved", "42" } });
 
-        // Simulate RefreshAsync's diff loop adding card 42 between ApplyQueryAttributes
-        // and ConsumePendingSavedAsync (the order Shell + Branch 1's OnAppearing produce).
+        // Simulate SyncAsync's diff loop adding card 42 between ApplyQueryAttributes
+        // and ConsumePendingSavedAsync (the order Shell + OnAppearing produce).
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
             _onboardingService, _navigationService, _accessibilityService, _boxService);
@@ -895,7 +1125,7 @@ public class PrayerCardsViewModelTests
         SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
-        await sut.LoadAsync();
+        await sut.SyncAsync();
 
         // User has card 1 expanded before the save begins.
         var card1Vm = sut.AllPrayerCards.First(c => c.Id == 1);
@@ -906,7 +1136,7 @@ public class PrayerCardsViewModelTests
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existing1, existing2, newCard }.AsReadOnly());
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object> { { "saved", "3" } });
-        await sut.RefreshAsync();
+        await sut.SyncAsync();
         var result = await sut.ConsumePendingSavedAsync();
 
         // The new card got highlighted + expanded.
