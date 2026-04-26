@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using NSubstitute;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
@@ -70,6 +71,34 @@ public class BoxSectionViewModelTests
 
         Assert.Empty(section); // Observable collection is empty (collapsed)
         Assert.Equal(2, section.CardCount); // Derived from backing list
+    }
+
+    // ── Slice 6b.2 — SetCards no-op when cards unchanged ──────────────
+
+    [Fact]
+    public void SetCards_IdenticalSequence_DoesNotFireResetNotification()
+    {
+        // 6b.2: when SetCards is called with the same card sequence as the current
+        // _backingCards, ApplyExpansionState's Clear+Add cycle would fire a Reset
+        // CollectionChanged event. On Android the Reset propagates to the grouped
+        // CollectionView and re-inflates that section's cells — the per-section
+        // cascade that survives 6b's BoxSections-replacement guard. SetCards must
+        // short-circuit on identical input to eliminate this.
+        var section = new BoxSectionViewModel(defaultExpanded: true);
+        var card1 = MakeCard(1, "A");
+        var card2 = MakeCard(2, "B");
+        section.SetCards(new[] { card1, card2 });
+
+        var resetCount = 0;
+        section.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+                resetCount++;
+        };
+
+        section.SetCards(new[] { card1, card2 });
+
+        Assert.Equal(0, resetCount);
     }
 
     // ── Expand / Collapse ─────────────────────────────────────────────

@@ -120,10 +120,25 @@ public class BoxSectionViewModel : ObservableCollection<PrayerCardViewModel>
     /// </summary>
     public void SetCards(IEnumerable<PrayerCardViewModel> cards)
     {
-        _backingCards = cards.ToList();
+        // 6b.2: skip Clear+Add+Reset when the sequence is unchanged — that's the
+        // per-section cell cascade surviving 6b's BoxSections-replacement guard.
+        // Per-card property changes still surface through each VM's PropertyChanged.
+        var newList = cards.ToList();
+        if (CardIdSequencesEqual(newList, _backingCards)) return;
+
+        _backingCards = newList;
         NotifyChanged(nameof(CardCount));
         NotifyChanged(nameof(HeaderText));
         ApplyExpansionState();
+    }
+
+    private static bool CardIdSequencesEqual(
+        IList<PrayerCardViewModel> a, IList<PrayerCardViewModel> b)
+    {
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+            if (a[i].Id != b[i].Id) return false;
+        return true;
     }
 
     /// <summary>
