@@ -588,4 +588,26 @@ public class HomeViewModelTests
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
         _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
     }
+
+    // ── Slice 6a — single-flight + coalesce-pending SyncAsync ─────────
+
+    [Fact]
+    public async Task SyncAsync_BurstOfThreeConcurrent_CoalescesToTwoFetches()
+    {
+        // See PrayerCardsViewModelTests for full context. Same coalesce contract.
+        SetupDefaultMocks();
+        var gate = new TaskCompletionSource<IReadOnlyList<Prayer>>();
+        _prayerService.GetOverduePrayersAsync(30).Returns(gate.Task);
+
+        var sut = CreateSut();
+
+        var t1 = sut.SyncAsync();
+        var t2 = sut.SyncAsync();
+        var t3 = sut.SyncAsync();
+
+        gate.SetResult(new List<Prayer>().AsReadOnly());
+        await Task.WhenAll(t1, t2, t3);
+
+        await _prayerService.Received(2).GetOverduePrayersAsync(30);
+    }
 }

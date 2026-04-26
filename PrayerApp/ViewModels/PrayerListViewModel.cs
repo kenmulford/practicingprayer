@@ -50,6 +50,8 @@ namespace PrayerApp.ViewModels
         private bool _suppressFilter;
         private readonly Dictionary<PrayerRequestDetailViewModel, System.ComponentModel.PropertyChangedEventHandler> _prayerHandlers = new();
 
+        private readonly Helpers.SingleFlightGate _syncGate = new();
+
         // Pre-selected tag from tag detail navigation (F6)
         private int _preselectedTagId;
 
@@ -153,6 +155,12 @@ namespace PrayerApp.ViewModels
         public async Task SyncAsync()
         {
             IsLoading = true;
+            try { await _syncGate.RunAsync(SyncCoreAsync); }
+            finally { IsLoading = false; }
+        }
+
+        private async Task SyncCoreAsync()
+        {
             _suppressAnnounce = true;
             _suppressFilter = true;
             try
@@ -210,7 +218,6 @@ namespace PrayerApp.ViewModels
             {
                 _suppressFilter = false;
                 _suppressAnnounce = false;
-                IsLoading = false;
             }
         }
 

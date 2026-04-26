@@ -648,7 +648,7 @@
             </Grid>
         </Border>
 
-        <shared:LoadingOverlay Grid.Row="3" IsLoading="{Binding IsLoading}" />
+        <shared:LoadingOverlay Grid.Row="0" Grid.RowSpan="7" IsLoading="{Binding IsLoading}" />
 
     </Grid>
 </ContentPage>

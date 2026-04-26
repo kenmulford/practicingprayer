@@ -279,4 +279,25 @@ public class TagsViewModelTests
 
         Assert.Empty(sut.Tags);
     }
+
+    // ── Slice 6a — single-flight + coalesce-pending SyncAsync ─────────
+
+    [Fact]
+    public async Task SyncAsync_BurstOfThreeConcurrent_CoalescesToTwoFetches()
+    {
+        // See PrayerCardsViewModelTests for full context. Same coalesce contract.
+        var gate = new TaskCompletionSource<IReadOnlyList<PrayerTag>>();
+        _tagService.GetTagsAsync().Returns(gate.Task);
+
+        var sut = CreateSut();
+
+        var t1 = sut.SyncAsync();
+        var t2 = sut.SyncAsync();
+        var t3 = sut.SyncAsync();
+
+        gate.SetResult(new List<PrayerTag>().AsReadOnly());
+        await Task.WhenAll(t1, t2, t3);
+
+        await _tagService.Received(2).GetTagsAsync();
+    }
 }

@@ -142,4 +142,30 @@ public class PrayerListViewModelTests
         PrayerCardTag.SetDBService(db);
         db.GetAllAsync<PrayerCardTag>().Returns(new List<PrayerCardTag>());
     }
+
+    // ── Slice 6a — single-flight + coalesce-pending SyncAsync ─────────
+
+    [Fact]
+    public async Task SyncAsync_BurstOfThreeConcurrent_CoalescesToTwoFetches()
+    {
+        // See PrayerCardsViewModelTests for full context. Same coalesce contract.
+        var gate = new TaskCompletionSource<IReadOnlyList<PrayerCard>>();
+        _cardService.GetCardsAsync().Returns(gate.Task);
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _settings.OverdueDayThreshold.Returns(30);
+        _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>().AsReadOnly());
+        _db_Setup();
+
+        var sut = CreateSut();
+
+        var t1 = sut.SyncAsync();
+        var t2 = sut.SyncAsync();
+        var t3 = sut.SyncAsync();
+
+        gate.SetResult(new List<PrayerCard>().AsReadOnly());
+        await Task.WhenAll(t1, t2, t3);
+
+        await _cardService.Received(2).GetCardsAsync();
+    }
 }

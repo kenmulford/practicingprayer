@@ -28,6 +28,8 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private readonly Helpers.SingleFlightGate _syncGate = new();
+
         /// <summary>
         /// Tag list bound to the CollectionView. Mutated in-place across syncs so
         /// item-level state (selection, etc.) survives refresh.
@@ -59,31 +61,30 @@ namespace PrayerApp.ViewModels
         public async Task SyncAsync()
         {
             IsLoading = true;
-            try
+            try { await _syncGate.RunAsync(SyncCoreAsync); }
+            finally { IsLoading = false; }
+        }
+
+        private async Task SyncCoreAsync()
+        {
+            var tags = await _tagService.GetTagsAsync();
+            var freshIds = tags.Select(t => t.Id).ToHashSet();
+
+            // Remove deleted tags
+            var toRemove = Tags.Where(t => !freshIds.Contains(t.Id)).ToList();
+            foreach (var vm in toRemove)
+                Tags.Remove(vm);
+
+            // Add new tags
+            var currentIds = Tags.Select(t => t.Id).ToHashSet();
+            foreach (var tag in tags.Where(t => !currentIds.Contains(t.Id)))
+                Tags.Add(new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService));
+
+            // Update existing tags with fresh data (name/color changes)
+            foreach (var tag in tags)
             {
-                var tags = await _tagService.GetTagsAsync();
-                var freshIds = tags.Select(t => t.Id).ToHashSet();
-
-                // Remove deleted tags
-                var toRemove = Tags.Where(t => !freshIds.Contains(t.Id)).ToList();
-                foreach (var vm in toRemove)
-                    Tags.Remove(vm);
-
-                // Add new tags
-                var currentIds = Tags.Select(t => t.Id).ToHashSet();
-                foreach (var tag in tags.Where(t => !currentIds.Contains(t.Id)))
-                    Tags.Add(new TagItemViewModel(tag, _tagService, this, _navigationService, _accessibilityService));
-
-                // Update existing tags with fresh data (name/color changes)
-                foreach (var tag in tags)
-                {
-                    var existing = Tags.FirstOrDefault(t => t.Id == tag.Id);
-                    existing?.Update(tag);
-                }
-            }
-            finally
-            {
-                IsLoading = false;
+                var existing = Tags.FirstOrDefault(t => t.Id == tag.Id);
+                existing?.Update(tag);
             }
         }
 

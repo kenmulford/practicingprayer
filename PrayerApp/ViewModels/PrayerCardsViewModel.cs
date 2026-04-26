@@ -56,6 +56,13 @@ namespace PrayerApp.ViewModels
         // CollectionViewHandler on Android to reset its RecyclerView adapter (~600ms per
         // visible Border). 3+ cascading rebuilds = ~5s UI-thread blockage.
         private bool _suppressIsExpandedRebuild;
+
+        // Slice 6a / PERF-10: collapses bursts of concurrent SyncAsync triggers (messenger
+        // broadcast + PageSync.OnAppearingAsync + sibling rebroadcasts) into one in-flight
+        // sync plus one coalesced follow-up. Each SyncAsync tail replaces BoxSections,
+        // which on Android triggers a full RecyclerView re-inflate cascade (~330 ms per
+        // visible cell). Pre-Slice-6a a single Save fired 3 cascades back-to-back.
+        private readonly Helpers.SingleFlightGate _syncGate = new();
         private readonly Dictionary<PrayerCardViewModel, System.ComponentModel.PropertyChangedEventHandler> _cardHandlers = new();
         private CancellationTokenSource? _filterAnnounceCts;
 
@@ -412,79 +419,86 @@ namespace PrayerApp.ViewModels
         /// Single primitive that brings the VM in line with the data store. Diff-based —
         /// idempotent across first-call and Nth-call. Replaces the prior LoadAsync /
         /// RefreshAsync split. Triggered by <see cref="Helpers.PageSync.OnAppearingAsync"/>
-        /// AND by entity-change messenger broadcasts.
+        /// and by entity-change messenger broadcasts. Bursts coalesce via
+        /// <see cref="_syncGate"/>; user-driven UI state (multi-select, search, tag chips)
+        /// is preserved across syncs.
         /// </summary>
         public async Task SyncAsync()
         {
-            // Multi-select / search / tag-filter chip selection are user-driven UI state;
-            // SyncAsync must not reset them. The old LoadAsync/RefreshAsync called
-            // ExitMultiSelectMode at entry — wrong for the messenger-driven entry path.
+            // Burst-scoped state: capture once before the gate runs. Per-iteration reset
+            // would let a coalesced follow-up announce filter counts on the very first
+            // cold load, defeating the suppress-on-first-sync contract.
             IsLoading = true;
             _suppressFilterAnnounce = !_hasSyncedOnce;
             try
             {
-                // Service caches are auto-invalidated by their own mutation methods (Slice 2);
-                // no defensive InvalidateCache call needed here.
-                var cards = await _cardService.GetCardsAsync();
-                _boxes = await _boxService.GetBoxesAsync();
-                var freshIds = cards.Select(c => c.Id).ToHashSet();
-                var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
-
-                // Remove deleted cards
-                var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
-                foreach (var vm in toRemove)
-                {
-                    UnsubscribeFromPropertyChanges(vm);
-                    AllPrayerCards.Remove(vm);
-                }
-
-                // Add new cards
-                foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
-                {
-                    var vm = CreateCardViewModel(card);
-                    SubscribeToPropertyChanges(vm);
-                    AllPrayerCards.Add(vm);
-                }
-
-                // Refresh prayer counts + reload prayers on expanded cards
-                foreach (var vm in AllPrayerCards)
-                {
-                    vm.RefreshActivePrayerCount();
-                    if (vm.IsExpanded)
-                        vm.ReloadPrayers();
-                }
-
-                // Rebuild tag filter data
-                await BuildCardTagLookupAsync();
-
-                var tags = await _tagService.GetTagsAsync();
-                var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
-                var freshTagIds = tags.Select(t => t.Id).ToHashSet();
-
-                var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
-                foreach (var chip in chipsToRemove)
-                    AvailableTags.Remove(chip);
-
-                var tagsAdded = false;
-                foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
-                {
-                    var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
-                    AvailableTags.Add(chip);
-                    tagsAdded = true;
-                }
-                // Skip the PropertyChanged when nothing changed — under messenger-driven
-                // sync this would otherwise fire on every CRUD anywhere, churning bindings.
-                if (chipsToRemove.Count > 0 || tagsAdded)
-                    OnPropertyChanged(nameof(HasTags));
-
-                RebuildSections();
+                await _syncGate.RunAsync(SyncCoreAsync);
+                _hasSyncedOnce = true;
             }
             finally
             {
                 _suppressFilterAnnounce = false;
-                _hasSyncedOnce = true;
                 IsLoading = false;
             }
+        }
+
+        private async Task SyncCoreAsync()
+        {
+            // Service caches are auto-invalidated by their own mutation methods (Slice 2);
+            // no defensive InvalidateCache call needed here.
+            var cards = await _cardService.GetCardsAsync();
+            _boxes = await _boxService.GetBoxesAsync();
+            var freshIds = cards.Select(c => c.Id).ToHashSet();
+            var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
+
+            // Remove deleted cards
+            var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
+            foreach (var vm in toRemove)
+            {
+                UnsubscribeFromPropertyChanges(vm);
+                AllPrayerCards.Remove(vm);
+            }
+
+            // Add new cards
+            foreach (var card in cards.Where(c => !currentIds.Contains(c.Id)))
+            {
+                var vm = CreateCardViewModel(card);
+                SubscribeToPropertyChanges(vm);
+                AllPrayerCards.Add(vm);
+            }
+
+            // Refresh prayer counts + reload prayers on expanded cards
+            foreach (var vm in AllPrayerCards)
+            {
+                vm.RefreshActivePrayerCount();
+                if (vm.IsExpanded)
+                    vm.ReloadPrayers();
+            }
+
+            // Rebuild tag filter data
+            await BuildCardTagLookupAsync();
+
+            var tags = await _tagService.GetTagsAsync();
+            var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
+            var freshTagIds = tags.Select(t => t.Id).ToHashSet();
+
+            var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
+            foreach (var chip in chipsToRemove)
+                AvailableTags.Remove(chip);
+
+            var tagsAdded = false;
+            foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
+            {
+                var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
+                AvailableTags.Add(chip);
+                tagsAdded = true;
+            }
+            // Skip the PropertyChanged when nothing changed — under messenger-driven
+            // sync this would otherwise fire on every CRUD anywhere, churning bindings.
+            if (chipsToRemove.Count > 0 || tagsAdded)
+                OnPropertyChanged(nameof(HasTags));
+
+            RebuildSections();
         }
 
         private static IOrderedEnumerable<PrayerCardViewModel> SortCards(IEnumerable<PrayerCardViewModel> cards) =>

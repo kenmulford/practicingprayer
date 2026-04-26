@@ -29,6 +29,8 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private readonly Helpers.SingleFlightGate _syncGate = new();
+
         /// <summary>Mutated in-place across syncs so item-level state survives refresh.</summary>
         public ObservableCollection<BoxItemViewModel> Boxes { get; } = new();
 
@@ -72,33 +74,32 @@ namespace PrayerApp.ViewModels
         public async Task SyncAsync()
         {
             IsLoading = true;
-            try
+            try { await _syncGate.RunAsync(SyncCoreAsync); }
+            finally { IsLoading = false; }
+        }
+
+        private async Task SyncCoreAsync()
+        {
+            var (boxes, counts) = await FetchBoxDataAsync();
+            var freshIds = boxes.Select(b => b.Id).ToHashSet();
+
+            // Remove deleted
+            var toRemove = Boxes.Where(b => !freshIds.Contains(b.Id)).ToList();
+            foreach (var vm in toRemove)
+                Boxes.Remove(vm);
+
+            // Add new
+            var currentIds = Boxes.Select(b => b.Id).ToHashSet();
+            foreach (var box in boxes.Where(b => !currentIds.Contains(b.Id)))
+                Boxes.Add(new BoxItemViewModel(
+                    box, _boxService, this, _navigationService, _accessibilityService,
+                    counts.GetValueOrDefault(box.Id, 0)));
+
+            // Update existing
+            foreach (var box in boxes)
             {
-                var (boxes, counts) = await FetchBoxDataAsync();
-                var freshIds = boxes.Select(b => b.Id).ToHashSet();
-
-                // Remove deleted
-                var toRemove = Boxes.Where(b => !freshIds.Contains(b.Id)).ToList();
-                foreach (var vm in toRemove)
-                    Boxes.Remove(vm);
-
-                // Add new
-                var currentIds = Boxes.Select(b => b.Id).ToHashSet();
-                foreach (var box in boxes.Where(b => !currentIds.Contains(b.Id)))
-                    Boxes.Add(new BoxItemViewModel(
-                        box, _boxService, this, _navigationService, _accessibilityService,
-                        counts.GetValueOrDefault(box.Id, 0)));
-
-                // Update existing
-                foreach (var box in boxes)
-                {
-                    var existing = Boxes.FirstOrDefault(b => b.Id == box.Id);
-                    existing?.Update(box, counts.GetValueOrDefault(box.Id, 0));
-                }
-            }
-            finally
-            {
-                IsLoading = false;
+                var existing = Boxes.FirstOrDefault(b => b.Id == box.Id);
+                existing?.Update(box, counts.GetValueOrDefault(box.Id, 0));
             }
         }
 

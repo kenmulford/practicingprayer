@@ -354,6 +354,39 @@ public class PrayerCardsViewModelTests
         Assert.Same(sectionsBeforeConsume, sut.BoxSections);
     }
 
+    // ── Slice 6a — single-flight + coalesce-pending SyncAsync ─────────
+
+    [Fact]
+    public async Task SyncAsync_BurstOfThreeConcurrent_CoalescesToTwoFetches()
+    {
+        // Save→Cards burst: PrayerCardChangedMessage fires SyncAsync on the messenger
+        // path, PageSync.OnAppearingAsync awaits its own SyncAsync, and additional
+        // sibling broadcasts pile on. Without coalescing, every trigger calls
+        // RebuildSections at the tail — each one replaces BoxSections and forces
+        // Android RecyclerView to re-inflate every visible cell (~330 ms each).
+        // The 2026-04-26 PERF log captured TWO cascades back-to-back per Save.
+        // Single-flight + coalesce-pending collapses any burst of N triggers into
+        // exactly 2 fetches: one in-flight + one coalesced follow-up that guarantees
+        // freshness for triggers that arrived AFTER the in-flight read.
+        SetupSystemBoxes();
+        var gate = new TaskCompletionSource<IReadOnlyList<PrayerCard>>();
+        _cardService.GetCardsAsync().Returns(gate.Task);
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+
+        var t1 = sut.SyncAsync();
+        var t2 = sut.SyncAsync();
+        var t3 = sut.SyncAsync();
+
+        gate.SetResult(new List<PrayerCard>().AsReadOnly());
+        await Task.WhenAll(t1, t2, t3);
+
+        await _cardService.Received(2).GetCardsAsync();
+    }
+
     private void SetupDefaultSyncMocks()
     {
         SetupSystemBoxes();

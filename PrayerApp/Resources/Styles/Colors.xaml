@@ -55,6 +55,10 @@
     <Color x:Key="ChipDangerBgLight">#FDE8E8</Color>
     <Color x:Key="ChipDangerBgDark">#3A1B1B</Color>
 
+    <!-- Loading-overlay scrim — translucent backdrop behind ActivityIndicator. -->
+    <Color x:Key="LoadingScrimLight">#66000000</Color>
+    <Color x:Key="LoadingScrimDark">#A6000000</Color>
+
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>
     <Color x:Key="Gray300">#ACACAC</Color>

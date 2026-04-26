@@ -249,11 +249,19 @@ public class HomeViewModel : ObservableObject, ISyncableViewModel
         private set => SetProperty(ref _isLoading, value);
     }
 
+    private readonly Helpers.SingleFlightGate _syncGate = new();
+
     // ── Data Loading ──────────────────────────────────────────────────
 
     public async Task SyncAsync()
     {
         IsLoading = true;
+        try { await _syncGate.RunAsync(SyncCoreAsync); }
+        finally { IsLoading = false; }
+    }
+
+    private async Task SyncCoreAsync()
+    {
         try
         {
             // Service caches are auto-invalidated by their own mutation methods (Slice 2);
@@ -313,10 +321,6 @@ public class HomeViewModel : ObservableObject, ISyncableViewModel
             AnsweredOnThisDate = Array.Empty<Prayer>();
             System.Diagnostics.Debug.WriteLine($"Failed to load home dashboard: {ex.Message}");
             _accessibilityService.Announce("Failed to load dashboard");
-        }
-        finally
-        {
-            IsLoading = false;
         }
     }
 

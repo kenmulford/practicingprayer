@@ -218,7 +218,7 @@
 
         </CollectionView>
 
-        <shared:LoadingOverlay Grid.Row="1" IsLoading="{Binding IsLoading}" />
+        <shared:LoadingOverlay Grid.Row="0" Grid.RowSpan="2" IsLoading="{Binding IsLoading}" />
 
     </Grid>
 

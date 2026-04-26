@@ -291,4 +291,28 @@ public class BoxesViewModelTests
 
         Assert.Contains(sut.Boxes, b => b.Name == "FromBulk");
     }
+
+    // ── Slice 6a — single-flight + coalesce-pending SyncAsync ─────────
+
+    [Fact]
+    public async Task SyncAsync_BurstOfThreeConcurrent_CoalescesToTwoFetches()
+    {
+        // See PrayerCardsViewModelTests for full context. Same coalesce contract
+        // applied per-VM: a burst of N concurrent triggers collapses to exactly
+        // 2 fetches (one in-flight + one coalesced follow-up).
+        var gate = new TaskCompletionSource<IReadOnlyList<CardBox>>();
+        _boxService.GetBoxesAsync().Returns(gate.Task);
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+
+        var sut = CreateSut();
+
+        var t1 = sut.SyncAsync();
+        var t2 = sut.SyncAsync();
+        var t3 = sut.SyncAsync();
+
+        gate.SetResult(new List<CardBox>().AsReadOnly());
+        await Task.WhenAll(t1, t2, t3);
+
+        await _boxService.Received(2).GetBoxesAsync();
+    }
 }
