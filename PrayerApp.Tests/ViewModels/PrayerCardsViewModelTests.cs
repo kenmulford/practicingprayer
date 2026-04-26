@@ -811,8 +811,8 @@ public class PrayerCardsViewModelTests
     [Fact]
     public async Task ConsumePendingSavedAsync_MatchedExisting_PreservesStateReturnsNull()
     {
-        // Per the crash-fix amendment: existing-card path does NOT highlight or expand
-        // and returns null so the View won't ScrollTo (no scroll = no race window).
+        // Edit case: card was already in AllPrayerCards when ApplyQueryAttributes
+        // ran. Don't highlight/expand. Don't scroll (no race window).
         SetupSystemBoxes();
         var existingCard = new PrayerCard { Id = 7, Title = "Existing", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existingCard }.AsReadOnly());
@@ -826,6 +826,8 @@ public class PrayerCardsViewModelTests
         var wasExpanded = matched.IsExpanded;
         var wasHighlighted = matched.IsHighlighted;
 
+        // ApplyQueryAttributes runs *while* card 7 is in the list — snapshots
+        // wasAlreadyInList = true, so this is treated as an edit.
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object> { { "saved", "7" } });
         var result = await sut.ConsumePendingSavedAsync();
@@ -837,12 +839,145 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
+    public async Task ConsumePendingSavedAsync_MatchedButAddedByRefresh_HighlightsAndExpands()
+    {
+        // Real-world Galaxy Ultra flow: PrayerCardPage.SaveAsync calls GoToAsync("..?saved=42").
+        // Shell fires ApplyQueryAttributes BEFORE OnAppearing. At that moment, card 42 is NOT
+        // in AllPrayerCards (it was just inserted into the DB). Snapshot captures
+        // wasAlreadyInList=false. THEN OnAppearing's RefreshAsync runs, GetCardsAsync now
+        // returns card 42, and the diff loop adds it to AllPrayerCards. THEN
+        // ConsumePendingSavedAsync runs: matched != null but wasAlreadyInList=false →
+        // highlight + return for scroll.
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync(); // 0 cards loaded — card 42 not yet present
+
+        // Stage the saved-id while AllPrayerCards is empty (snapshots wasAlreadyInList=false).
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+
+        // Simulate RefreshAsync's diff loop adding card 42 between ApplyQueryAttributes
+        // and ConsumePendingSavedAsync (the order Shell + Branch 1's OnAppearing produce).
+        var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
+        var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService);
+        sut.AllPrayerCards.Add(newVm);
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result.Id);
+        Assert.True(result.IsHighlighted);
+        Assert.True(result.IsExpanded);
+        Assert.Same(newVm, result); // returned the existing VM, not a duplicate
+        Assert.Single(sut.AllPrayerCards, c => c.Id == 42);
+    }
+
+    [Fact]
     public void HighlightCardRequested_EventIsRemoved()
     {
         // Reflection guard: this VM→View C# event was the crash path. If a future
         // change re-introduces it, this test fails as a tripwire.
         var evt = typeof(PrayerCardsViewModel).GetEvent("HighlightCardRequested");
         Assert.Null(evt);
+    }
+
+    // ── PERF-1: BoxSections reassignment guard ──────────────────────────────
+    //
+    // RebuildSections must NOT reassign the outer ObservableCollection<BoxSectionViewModel>
+    // when section structure (BoxIds in order) is unchanged. Reassigning forces Android
+    // RecyclerView to tear down all visible Borders and re-inflate from scratch
+    // (~600ms × visible cards), the root cause of PERF-1's post-Save 5–6s stall.
+    // When structure DOES change, the reassignment must still happen (iOS replace-not-mutate).
+
+    [Fact]
+    public async Task RebuildSections_WhenStructureUnchanged_PreservesBoxSectionsReference()
+    {
+        // First load + refresh produce identical section structure (same BoxIds in same order).
+        // Outer BoxSections reference must be stable across the refresh.
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "A", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var firstReference = sut.BoxSections;
+
+        await sut.RefreshAsync();
+
+        Assert.Same(firstReference, sut.BoxSections);
+    }
+
+    [Fact]
+    public async Task RebuildSections_WhenCardAddedToExistingSection_PreservesBoxSectionsReference()
+    {
+        // Adding a card to an existing section does NOT change section structure
+        // (same BoxIds in same order — only one section's inner card count changed).
+        // The new card materialization happens via the per-section CollectionChanged event,
+        // not via outer rebind. Reference stability is the wire that makes this work.
+        SetupSystemBoxes();
+        var card1 = new PrayerCard { Id = 1, Title = "A", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1 }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var firstReference = sut.BoxSections;
+
+        // Simulate a save by extending the cards list under the same boxes.
+        var card2 = new PrayerCard { Id = 2, Title = "B", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+        await sut.RefreshAsync();
+
+        Assert.Same(firstReference, sut.BoxSections);
+        // Both cards landed in AllPrayerCards via the diff loop.
+        Assert.Equal(2, sut.AllPrayerCards.Count);
+        // The Unboxed section's backing card count includes the new card (visible count
+        // is 0 if the section is collapsed by default — that's a separate concern).
+        var unboxed = sut.BoxSections.First(s => s.BoxId == 0);
+        Assert.Equal(2, unboxed.CardCount);
+    }
+
+    [Fact]
+    public async Task RebuildSections_WhenUserBoxAdded_ReplacesBoxSectionsReference()
+    {
+        // Adding a new user box DOES change section structure (new BoxId appears between
+        // Unboxed and System). The outer ObservableCollection MUST be replaced so iOS
+        // UICollectionView gets the structure-change signal via the bound-property setter.
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "A", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+
+        var sut = CreateSut();
+        await sut.LoadAsync();
+        var firstReference = sut.BoxSections;
+        var firstSectionCount = sut.BoxSections.Count;
+
+        // Now a user box exists.
+        var systemBoxes = new List<CardBox>
+        {
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 },
+            new() { Id = 5, Name = "Family", SortOrder = 0 }
+        };
+        _boxService.GetBoxesAsync().Returns(systemBoxes.AsReadOnly());
+        await sut.RefreshAsync();
+
+        Assert.NotSame(firstReference, sut.BoxSections);
+        Assert.Equal(firstSectionCount + 1, sut.BoxSections.Count);
     }
 
     // ── Helper ──────────────────────────────────────────────────────────

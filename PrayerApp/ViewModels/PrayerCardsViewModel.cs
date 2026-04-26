@@ -128,6 +128,14 @@ namespace PrayerApp.ViewModels
             private set => SetProperty(ref _pendingSavedIdentifier, value);
         }
 
+        /// <summary>
+        /// Captured at ApplyQueryAttributes time (before OnAppearing's RefreshAsync runs):
+        /// was the saved-id already present in AllPrayerCards? True = edit (don't highlight),
+        /// false = newly created (highlight + scroll, even if RefreshAsync's diff loop
+        /// happens to add the row before ConsumePendingSavedAsync runs).
+        /// </summary>
+        private bool _pendingSavedWasAlreadyInList;
+
         #region Constructors
 
         public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
@@ -242,7 +250,13 @@ namespace PrayerApp.ViewModels
                 // does the actual work on the lifecycle channel — keeps the View free of
                 // the VM→View C# event whose handler raced the MauiRecyclerView adapter
                 // snapshot on Galaxy Ultra.
-                PendingSavedIdentifier = query["saved"].ToString();
+                var id = query["saved"].ToString();
+                PendingSavedIdentifier = id;
+                // Snapshot now: RefreshAsync runs after this and may add the new card to
+                // AllPrayerCards via its diff loop. We need to know whether the card was
+                // *already* in the list before that, so the highlight decision in
+                // ConsumePendingSavedAsync isn't fooled into the matched-edit branch.
+                _pendingSavedWasAlreadyInList = AllPrayerCards.Any(c => c.Identifier == id);
             }
             else if (query.ContainsKey("prayerSaved") && query.ContainsKey("parentCardId"))
             {
@@ -296,23 +310,43 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public async Task<PrayerCardViewModel?> ConsumePendingSavedAsync()
         {
+            PerfLog.Log($"ConsumePendingSavedAsync.entry id={PendingSavedIdentifier} wasInList={_pendingSavedWasAlreadyInList}");
             var id = PendingSavedIdentifier;
             if (string.IsNullOrEmpty(id)) return null;
-            // Clear before any await so a stale signal can't re-fire on the next OnAppearing.
+            var wasAlreadyInList = _pendingSavedWasAlreadyInList;
             PendingSavedIdentifier = null;
+            _pendingSavedWasAlreadyInList = false;
 
             var matched = AllPrayerCards.FirstOrDefault(c => c.Identifier == id);
-            if (matched != null)
+
+            // Edit case: card was already in the list when ApplyQueryAttributes ran.
+            // Just reload + rebuild; don't expand/highlight; return null so the View
+            // doesn't ScrollTo (and doesn't risk the adapter race that crashed Galaxy Ultra).
+            if (matched != null && wasAlreadyInList)
             {
+                PerfLog.Log("ConsumePendingSavedAsync edit-path (matched, was-in-list)");
                 matched.Reload();
                 RebuildSections();
                 return null;
             }
 
-            // New-card path: load from DB, subscribe, add, expand + highlight, rebuild.
+            // New-card case where RefreshAsync's diff loop already added the row before
+            // we got here. The matched VM is the one we want to highlight + scroll to.
+            if (matched != null && !wasAlreadyInList)
+            {
+                PerfLog.Log("ConsumePendingSavedAsync new-via-refresh (matched, NOT was-in-list)");
+                matched.IsExpanded = true;
+                matched.IsHighlighted = true;
+                RebuildSections();
+                return matched;
+            }
+
+            // New-card case where AllPrayerCards still doesn't have the row (e.g., cold-load
+            // path with a saved=Id in the query string). Load the card from DB and add it.
             if (!int.TryParse(id, out var cardId)) return null;
             try
             {
+                PerfLog.Log("ConsumePendingSavedAsync new-via-db before LoadAsync");
                 var card = await PrayerCard.LoadAsync(cardId);
                 if (card is null) return null;
                 var newCard = CreateCardViewModel(card);
@@ -423,6 +457,7 @@ namespace PrayerApp.ViewModels
         {
             if (_isSorting) return;
             _isSorting = true;
+            PerfLog.Log($"RebuildSections.entry cards={AllPrayerCards.Count}");
             try
             {
                 var cardsByBox = AllPrayerCards
@@ -486,15 +521,32 @@ namespace PrayerApp.ViewModels
                     sections.Add(archivedSection);
                 }
 
-                BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
-                OnPropertyChanged(nameof(HasNoSections));
+                // Skip the BoxSections reassignment when the section structure is unchanged
+                // (same BoxIds in same order). Existing BoxSectionViewModel instances were
+                // already reused via GetOrCreate above; their inner card collections updated
+                // via SetCards fire CollectionChanged so Android RecyclerView can do
+                // incremental updates. Reassigning the outer ObservableCollection forces
+                // a full CollectionView rebind — every visible Border tears down and
+                // re-inflates from scratch (~600ms × visible cards on Android), which is
+                // PERF-1's post-Save 5–6s stall. iOS replace-not-mutate is preserved when
+                // structure DOES change (add/remove box) — that hits the reassign path.
+                var structureUnchanged = sections.Select(s => s.BoxId)
+                    .SequenceEqual(BoxSections.Select(s => s.BoxId));
+
+                if (!structureUnchanged)
+                {
+                    BoxSections = new ObservableCollection<BoxSectionViewModel>(sections);
+                    OnPropertyChanged(nameof(HasNoSections));
+                }
             }
             finally
             {
                 _isSorting = false;
             }
 
+            PerfLog.Log("RebuildSections.before ApplyFilter");
             ApplyFilter();
+            PerfLog.Log("RebuildSections.exit");
         }
 
         private void ApplyFilter()
@@ -612,12 +664,16 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public async Task RefreshAsync()
         {
+            PerfLog.Log("PrayerCardsViewModel.RefreshAsync.entry");
             if (IsMultiSelectMode) ExitMultiSelectMode();
             _cardService.InvalidateCache();
             _prayerService.InvalidateCache();
             _boxService.InvalidateCache();
+            PerfLog.Log("RefreshAsync.before GetCardsAsync");
             var cards = await _cardService.GetCardsAsync();
+            PerfLog.Log($"RefreshAsync.after GetCardsAsync (count={cards.Count})");
             _boxes = await _boxService.GetBoxesAsync();
+            PerfLog.Log($"RefreshAsync.after GetBoxesAsync (count={_boxes.Count})");
             var freshIds = cards.Select(c => c.Id).ToHashSet();
             var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
 
@@ -646,9 +702,12 @@ namespace PrayerApp.ViewModels
                     vm.ReloadPrayers();
             }
 
+            PerfLog.Log("RefreshAsync.after RefreshActivePrayerCount loop");
+
             // Rebuild tag filter data
             _tagService.InvalidateCache();
             await BuildCardTagLookupAsync();
+            PerfLog.Log("RefreshAsync.after BuildCardTagLookupAsync");
 
             var tags = await _tagService.GetTagsAsync();
             var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
@@ -667,7 +726,9 @@ namespace PrayerApp.ViewModels
             }
             OnPropertyChanged(nameof(HasTags));
 
+            PerfLog.Log("RefreshAsync.before RebuildSections");
             RebuildSections();
+            PerfLog.Log("PrayerCardsViewModel.RefreshAsync.exit");
         }
 
         #endregion
