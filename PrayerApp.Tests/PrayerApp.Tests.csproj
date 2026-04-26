@@ -54,6 +54,9 @@
     <Compile Include="../PrayerApp/Helpers/TagColorPalette.cs" />
     <Compile Include="../PrayerApp/Helpers/BoxStrings.cs" />
 
+    <!-- Messages -->
+    <Compile Include="../PrayerApp/Messages/EntityChangedMessage.cs" />
+
     <!-- ViewModel interfaces -->
     <Compile Include="../PrayerApp/ViewModels/IEditGuard.cs" />
 

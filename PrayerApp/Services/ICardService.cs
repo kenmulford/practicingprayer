@@ -11,7 +11,13 @@ public interface ICardService
     Task<PrayerCard> GetOrCreateQuickAddCardAsync();
     Task<PrayerCard> GetOrCreateSharedCardAsync();
     Task<PrayerCard> SaveCardAsync(PrayerCard card);
-    Task DeleteCardAsync(PrayerCard card);
+
+    /// <summary>
+    /// Deletes a card. Set <paramref name="publishMessage"/> = false from cascade callers
+    /// (e.g. <see cref="IBoxService.DeleteBoxAsync"/>) so per-entity messages don't fan out
+    /// alongside the cascade's <c>BulkChangedMessage</c>.
+    /// </summary>
+    Task DeleteCardAsync(PrayerCard card, bool publishMessage = true);
 
     /// <summary>
     /// Assigns a card to a box. Use boxId = 0 for Unboxed.

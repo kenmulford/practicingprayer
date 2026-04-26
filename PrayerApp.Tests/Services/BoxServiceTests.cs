@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 
@@ -9,6 +11,7 @@ public class BoxServiceTests
     private readonly IDBService _db;
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
+    private readonly IMessenger _messenger;
     private readonly BoxService _service;
 
     public BoxServiceTests()
@@ -16,9 +19,10 @@ public class BoxServiceTests
         _db = Substitute.For<IDBService>();
         _prayerService = Substitute.For<IPrayerService>();
         _cardService = Substitute.For<ICardService>();
+        _messenger = Substitute.For<IMessenger>();
         CardBox.SetDBService(_db);
         PrayerCard.SetDBService(_db);
-        _service = new BoxService(_db, _prayerService, _cardService);
+        _service = new BoxService(_db, _prayerService, _cardService, _messenger);
     }
 
     // ── GetBoxesAsync ─────────────────────────────────────────────────────────
@@ -169,10 +173,12 @@ public class BoxServiceTests
 
         await _service.DeleteBoxAsync(5, deleteCards: true);
 
-        await _prayerService.Received(1).DeletePrayerAsync(prayer1);
-        await _prayerService.Received(1).DeletePrayerAsync(prayer2);
-        await _cardService.Received(1).DeleteCardAsync(card1);
-        await _cardService.Received(1).DeleteCardAsync(card2);
+        // Cascade path passes publishMessage:false so per-entity messages don't fan out
+        // alongside the trailing BulkChangedMessage.
+        await _prayerService.Received(1).DeletePrayerAsync(prayer1, publishMessage: false);
+        await _prayerService.Received(1).DeletePrayerAsync(prayer2, publishMessage: false);
+        await _cardService.Received(1).DeleteCardAsync(card1, publishMessage: false);
+        await _cardService.Received(1).DeleteCardAsync(card2, publishMessage: false);
         await _db.Received(1).DeleteAsync(Arg.Is<CardBox>(b => b.Id == 5));
     }
 
@@ -248,5 +254,53 @@ public class BoxServiceTests
 
         await _service.GetBoxesAsync(); // should re-query
         await _db.Received(2).GetAllAsync<CardBox>();
+    }
+
+    // ── Messenger publishes ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveBoxAsync_New_PublishesCreated()
+    {
+        var box = new CardBox { Name = "Friends" };
+
+        await _service.SaveBoxAsync(box);
+
+        _messenger.Received(1).Send(Arg.Is<CardBoxChangedMessage>(m => m.Kind == ChangeKind.Created));
+    }
+
+    [Fact]
+    public async Task SaveBoxAsync_Existing_PublishesUpdated()
+    {
+        var box = new CardBox { Id = 4, Name = "Friends" };
+
+        await _service.SaveBoxAsync(box);
+
+        _messenger.Received(1).Send(Arg.Is<CardBoxChangedMessage>(
+            m => m.BoxId == 4 && m.Kind == ChangeKind.Updated));
+    }
+
+    [Fact]
+    public async Task SaveBoxAsync_SystemBox_PublishesNothing()
+    {
+        var box = new CardBox { Id = 1, Name = "System", IsSystem = true };
+
+        await _service.SaveBoxAsync(box);
+
+        _messenger.DidNotReceive().Send(Arg.Any<CardBoxChangedMessage>());
+    }
+
+    [Fact]
+    public async Task DeleteBoxAsync_PublishesBulkOnly()
+    {
+        // Box delete is a bulk operation (cards and prayers may also change). Per the
+        // BulkChangedMessage contract, granular CardBoxChangedMessage is NOT also sent.
+        var box = new CardBox { Id = 4, Name = "Friends" };
+        _db.GetAsync<CardBox>(4).Returns(Task.FromResult<CardBox?>(box));
+        _db.GetCardsByBoxIdAsync(4).Returns(new List<PrayerCard>());
+
+        await _service.DeleteBoxAsync(4, deleteCards: false);
+
+        _messenger.Received(1).Send(Arg.Any<BulkChangedMessage>());
+        _messenger.DidNotReceive().Send(Arg.Any<CardBoxChangedMessage>());
     }
 }

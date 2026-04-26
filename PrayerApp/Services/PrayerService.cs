@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -9,6 +11,7 @@ namespace PrayerApp.Services;
 public class PrayerService : IPrayerService
 {
     private readonly IDBService _dbService;
+    private readonly IMessenger _messenger;
     private Dictionary<int, List<Prayer>>? _cardCache;
     private List<Prayer>? _allCache;
 
@@ -19,9 +22,10 @@ public class PrayerService : IPrayerService
     /// </summary>
     private Task<List<Prayer>>? _allLoadTask;
 
-    public PrayerService(IDBService dbService)
+    public PrayerService(IDBService dbService, IMessenger messenger)
     {
         _dbService = dbService;
+        _messenger = messenger;
     }
 
     public async Task<IReadOnlyList<Prayer>> GetPrayersByCardAsync(int prayerCardId)
@@ -66,17 +70,23 @@ public class PrayerService : IPrayerService
 
     public async Task<Prayer> SavePrayerAsync(Prayer prayer)
     {
+        var isNew = prayer.Id == 0;
         await prayer.SaveAsync();
         InvalidateCache();
+        _messenger.Send(new PrayerChangedMessage(prayer.Id, prayer.PrayerCardId, isNew ? ChangeKind.Created : ChangeKind.Updated));
         return prayer;
     }
 
-    public async Task DeletePrayerAsync(Prayer prayer)
+    public async Task DeletePrayerAsync(Prayer prayer, bool publishMessage = true)
     {
+        var deletedId = prayer.Id;
+        var cardId = prayer.PrayerCardId;
         await _dbService.DeleteInteractionsByPrayerIdAsync(prayer.Id);
         await _dbService.DeleteJunctionRowsByRequestIdAsync(prayer.Id);
         await prayer.DeleteAsync();
         InvalidateCache();
+        if (publishMessage)
+            _messenger.Send(new PrayerChangedMessage(deletedId, cardId, ChangeKind.Deleted));
     }
 
     public async Task<IReadOnlyList<Prayer>> GetOverduePrayersAsync(int dayThreshold = 30)

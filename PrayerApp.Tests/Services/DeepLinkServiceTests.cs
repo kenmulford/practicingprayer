@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
 using PrayerApp.Models;
 using PrayerApp.Services;
@@ -12,6 +13,7 @@ public class DeepLinkServiceTests : IDisposable
     private readonly IPrayerService _prayerService;
     private readonly INavigationService _nav;
     private readonly IShareService _shareService;
+    private readonly IMessenger _messenger;
     private readonly DeepLinkService _service;
     private readonly string _tempDir;
 
@@ -25,12 +27,13 @@ public class DeepLinkServiceTests : IDisposable
         _prayerService = Substitute.For<IPrayerService>();
         _nav = Substitute.For<INavigationService>();
         _shareService = Substitute.For<IShareService>();
+        _messenger = Substitute.For<IMessenger>();
         // Default: user accepts import confirmation
         _nav.DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(true);
         _tempDir = Path.Combine(Path.GetTempPath(), $"deeplink-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
-        _service = new DeepLinkService(_cardService, _prayerService, _nav, _shareService, () => _tempDir);
+        _service = new DeepLinkService(_cardService, _prayerService, _nav, _shareService, _messenger, () => _tempDir);
     }
 
     public void Dispose()

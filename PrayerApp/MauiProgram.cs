@@ -1,5 +1,6 @@
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
 using PrayerApp.Models;
@@ -141,6 +142,10 @@ namespace PrayerApp
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
+
+            // Cross-cutting messenger for entity-change signals (CommunityToolkit.Mvvm).
+            // Services publish *ChangedMessage / BulkChangedMessage; ViewModels subscribe.
+            builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
             // Add DB to scope as singleton; only need one connection for the life of the app.
             builder.Services.AddSingleton<IDBService>(s => new DBService(dbPath));

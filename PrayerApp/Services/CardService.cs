@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -12,6 +14,12 @@ public class CardService : ICardService
     public const string SharedWithMeTitle = PrayerCard.TitleSharedWithMe;
 
     private IReadOnlyList<PrayerCard>? _cache;
+    private readonly IMessenger _messenger;
+
+    public CardService(IMessenger messenger)
+    {
+        _messenger = messenger;
+    }
 
     public async Task<IReadOnlyList<PrayerCard>> GetCardsAsync()
     {
@@ -51,13 +59,16 @@ public class CardService : ICardService
         };
         await card.SaveAsync();
         _cache = null;
+        // Seed-only path: no broadcast.
         return card;
     }
 
     public async Task<PrayerCard> SaveCardAsync(PrayerCard card)
     {
+        var isNew = card.Id == 0;
         await card.SaveAsync();
         _cache = null;
+        _messenger.Send(new PrayerCardChangedMessage(card.Id, isNew ? ChangeKind.Created : ChangeKind.Updated));
         return card;
     }
 
@@ -66,12 +77,16 @@ public class CardService : ICardService
         card.BoxId = boxId;
         await card.SaveAsync();
         _cache = null;
+        _messenger.Send(new PrayerCardChangedMessage(card.Id, ChangeKind.Updated));
     }
 
-    public async Task DeleteCardAsync(PrayerCard card)
+    public async Task DeleteCardAsync(PrayerCard card, bool publishMessage = true)
     {
+        var deletedId = card.Id;
         await card.DeleteAsync();
         _cache = null;
+        if (publishMessage)
+            _messenger.Send(new PrayerCardChangedMessage(deletedId, ChangeKind.Deleted));
     }
 
     public void InvalidateCache()

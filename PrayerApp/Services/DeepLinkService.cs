@@ -2,6 +2,8 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -16,22 +18,24 @@ public class DeepLinkService : IDeepLinkService
     private readonly IPrayerService _prayerService;
     private readonly INavigationService _nav;
     private readonly IShareService _shareService;
+    private readonly IMessenger _messenger;
     private readonly Func<string> _getCacheDir;
 
     public DeepLinkService(ICardService cardService, IPrayerService prayerService,
-        INavigationService nav, IShareService shareService)
-        : this(cardService, prayerService, nav, shareService, () => FileSystem.CacheDirectory)
+        INavigationService nav, IShareService shareService, IMessenger messenger)
+        : this(cardService, prayerService, nav, shareService, messenger, () => FileSystem.CacheDirectory)
     {
     }
 
     // Test-only constructor: avoids MAUI FileSystem dependency
     internal DeepLinkService(ICardService cardService, IPrayerService prayerService,
-        INavigationService nav, IShareService shareService, Func<string> getCacheDir)
+        INavigationService nav, IShareService shareService, IMessenger messenger, Func<string> getCacheDir)
     {
         _cardService = cardService;
         _prayerService = prayerService;
         _nav = nav;
         _shareService = shareService;
+        _messenger = messenger;
         _getCacheDir = getCacheDir;
     }
 
@@ -284,6 +288,7 @@ public class DeepLinkService : IDeepLinkService
 
         _cardService.InvalidateCache();
         _prayerService.InvalidateCache();
+        _messenger.Send(new BulkChangedMessage());
         await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
 
@@ -330,6 +335,7 @@ public class DeepLinkService : IDeepLinkService
 
         _cardService.InvalidateCache();
         _prayerService.InvalidateCache();
+        _messenger.Send(new BulkChangedMessage());
         await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
     }
 

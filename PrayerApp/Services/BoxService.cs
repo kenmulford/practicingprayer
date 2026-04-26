@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -12,12 +14,14 @@ public class BoxService : IBoxService
     private readonly IDBService _dbService;
     private readonly IPrayerService _prayerService;
     private readonly ICardService _cardService;
+    private readonly IMessenger _messenger;
 
-    public BoxService(IDBService dbService, IPrayerService prayerService, ICardService cardService)
+    public BoxService(IDBService dbService, IPrayerService prayerService, ICardService cardService, IMessenger messenger)
     {
         _dbService = dbService ?? throw new ArgumentNullException(nameof(dbService));
         _prayerService = prayerService ?? throw new ArgumentNullException(nameof(prayerService));
         _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
+        _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
     }
 
     public async Task<IReadOnlyList<CardBox>> GetBoxesAsync()
@@ -46,8 +50,10 @@ public class BoxService : IBoxService
         // System boxes cannot be renamed — guard against accidental mutation
         if (box.Id > 0 && box.IsSystem) return box;
 
+        var isNew = box.Id == 0;
         await box.SaveAsync();
         _cache = null;
+        _messenger.Send(new CardBoxChangedMessage(box.Id, isNew ? ChangeKind.Created : ChangeKind.Updated));
         return box;
     }
 
@@ -94,17 +100,15 @@ public class BoxService : IBoxService
 
         if (deleteCards)
         {
-            // Cascade delete: remove all cards in this box and their prayers
             var cards = await _dbService.GetCardsByBoxIdAsync(boxId);
             foreach (var card in cards)
             {
-                // PrayerService.DeletePrayerAsync handles interaction + tag junction cleanup per prayer
                 var prayers = await _prayerService.GetPrayersByCardAsync(card.Id);
                 foreach (var prayer in prayers)
                 {
-                    await _prayerService.DeletePrayerAsync(prayer);
+                    await _prayerService.DeletePrayerAsync(prayer, publishMessage: false);
                 }
-                await _cardService.DeleteCardAsync(card);
+                await _cardService.DeleteCardAsync(card, publishMessage: false);
             }
         }
         else
@@ -116,6 +120,8 @@ public class BoxService : IBoxService
 
         await box.DeleteAsync();
         _cache = null;
+        // Single summary signal — see BulkChangedMessage doc for why no granular send pairs with this.
+        _messenger.Send(new BulkChangedMessage());
     }
 
     public void InvalidateCache()

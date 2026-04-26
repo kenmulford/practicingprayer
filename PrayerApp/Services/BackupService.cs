@@ -1,5 +1,7 @@
 using System.IO.Compression;
 using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Messages;
 
 namespace PrayerApp.Services;
 
@@ -10,16 +12,19 @@ public class BackupService : IBackupService
     private readonly IPrayerService _prayerService;
     private readonly ITagService _tagService;
     private readonly INotificationService _notificationService;
+    private readonly IMessenger _messenger;
     private readonly string _dbPath;
 
     public BackupService(IDBService dbService, ICardService cardService,
-        IPrayerService prayerService, ITagService tagService, INotificationService notificationService)
+        IPrayerService prayerService, ITagService tagService,
+        INotificationService notificationService, IMessenger messenger)
     {
         _dbService = dbService;
         _cardService = cardService;
         _prayerService = prayerService;
         _tagService = tagService;
         _notificationService = notificationService;
+        _messenger = messenger;
         _dbPath = Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db");
     }
 
@@ -135,6 +140,9 @@ public class BackupService : IBackupService
             _prayerService.InvalidateCache();
             _tagService.InvalidateCache();
             File.Delete(backupTmpPath);
+
+            // Single summary signal — restore touched every entity table.
+            _messenger.Send(new BulkChangedMessage());
 
             // Phase 4 — Reschedule notifications for restored prayers
             try

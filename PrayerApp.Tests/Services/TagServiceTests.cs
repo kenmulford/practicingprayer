@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 
@@ -7,14 +9,16 @@ namespace PrayerApp.Tests.Services;
 public class TagServiceTests
 {
     private readonly IDBService _db;
+    private readonly IMessenger _messenger;
     private readonly TagService _service;
 
     public TagServiceTests()
     {
         _db = Substitute.For<IDBService>();
+        _messenger = Substitute.For<IMessenger>();
         PrayerTag.SetDBService(_db);
         PrayerCardTag.SetDBService(_db);
-        _service = new TagService(_db);
+        _service = new TagService(_db, _messenger);
     }
 
     // ── GetTagsAsync ──────────────────────────────────────────────────────────
@@ -361,5 +365,81 @@ public class TagServiceTests
 
         Assert.Equal("#00FF00", tag.Color);
         await _db.DidNotReceive().UpdateAsync(Arg.Any<PrayerTag>());
+    }
+
+    // ── Messenger publishes ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveTagAsync_New_PublishesCreated()
+    {
+        var tag = new PrayerTag { Name = "Work" };
+
+        await _service.SaveTagAsync(tag);
+
+        _messenger.Received(1).Send(Arg.Is<TagChangedMessage>(m => m.Kind == ChangeKind.Created));
+    }
+
+    [Fact]
+    public async Task SaveTagAsync_Existing_PublishesUpdated()
+    {
+        var tag = new PrayerTag { Id = 5, Name = "Work" };
+
+        await _service.SaveTagAsync(tag);
+
+        _messenger.Received(1).Send(Arg.Is<TagChangedMessage>(
+            m => m.TagId == 5 && m.Kind == ChangeKind.Updated));
+    }
+
+    [Fact]
+    public async Task DeleteTagAsync_PublishesDeleted()
+    {
+        var tag = new PrayerTag { Id = 5, Name = "Work" };
+        _db.GetAsync<PrayerTag>(5).Returns(Task.FromResult<PrayerTag?>(tag));
+
+        await _service.DeleteTagAsync(5);
+
+        _messenger.Received(1).Send(Arg.Is<TagChangedMessage>(
+            m => m.TagId == 5 && m.Kind == ChangeKind.Deleted));
+    }
+
+    [Fact]
+    public async Task DeleteTagAsync_SystemTag_PublishesNothing()
+    {
+        var systemTag = new PrayerTag { Id = 5, Name = "Recently Notified", IsSystem = true };
+        _db.GetAsync<PrayerTag>(5).Returns(Task.FromResult<PrayerTag?>(systemTag));
+
+        await _service.DeleteTagAsync(5);
+
+        _messenger.DidNotReceive().Send(Arg.Any<TagChangedMessage>());
+    }
+
+    [Fact]
+    public async Task ReassignColorAsync_WithMatchingTags_PublishesBulk()
+    {
+        var tags = new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "A", Color = "#AAAAAA" },
+            new() { Id = 2, Name = "B", Color = "#BBBBBB" }
+        };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(tags));
+        _db.GetAsync<PrayerTag>(1).Returns(Task.FromResult<PrayerTag?>(tags[0]));
+
+        await _service.ReassignColorAsync("#AAAAAA", "#CCCCCC");
+
+        _messenger.Received(1).Send(Arg.Any<BulkChangedMessage>());
+    }
+
+    [Fact]
+    public async Task ReassignColorAsync_NoMatchingTags_PublishesNothing()
+    {
+        var tags = new List<PrayerTag>
+        {
+            new() { Id = 1, Name = "A", Color = "#AAAAAA" }
+        };
+        _db.GetAllAsync<PrayerTag>().Returns(Task.FromResult(tags));
+
+        await _service.ReassignColorAsync("#ZZZZZZ", "#CCCCCC");
+
+        _messenger.DidNotReceive().Send(Arg.Any<BulkChangedMessage>());
     }
 }

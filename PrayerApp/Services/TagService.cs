@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 
 namespace PrayerApp.Services;
@@ -13,10 +15,12 @@ public class TagService : ITagService
 
     private IReadOnlyList<PrayerTag>? _cache;
     private readonly IDBService _dbService;
+    private readonly IMessenger _messenger;
 
-    public TagService(IDBService dbService)
+    public TagService(IDBService dbService, IMessenger messenger)
     {
         _dbService = dbService ?? throw new ArgumentNullException(nameof(dbService));
+        _messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
     }
 
     public async Task<IReadOnlyList<PrayerTag>> GetTagsAsync()
@@ -87,8 +91,10 @@ public class TagService : ITagService
 
     public async Task<PrayerTag> SaveTagAsync(PrayerTag tag)
     {
+        var isNew = tag.Id == 0;
         await tag.SaveAsync();
         InvalidateCache();
+        _messenger.Send(new TagChangedMessage(tag.Id, isNew ? ChangeKind.Created : ChangeKind.Updated));
         return tag;
     }
 
@@ -101,6 +107,7 @@ public class TagService : ITagService
         await ClearAllAssignmentsForTagAsync(tagId);
         await tag.DeleteAsync();
         InvalidateCache();
+        _messenger.Send(new TagChangedMessage(tagId, ChangeKind.Deleted));
     }
 
     public async Task ReassignColorAsync(string oldColorHex, string newColorHex)
@@ -112,6 +119,8 @@ public class TagService : ITagService
             .Select(t => t.Id)
             .ToList();
 
+        if (idsToUpdate.Count == 0) return;
+
         InvalidateCache(); // Invalidate first so concurrent readers get fresh data
 
         foreach (var id in idsToUpdate)
@@ -121,6 +130,9 @@ public class TagService : ITagService
             tag.Color = newColorHex;
             await tag.SaveAsync();
         }
+
+        // Many tags changed at once → single summary signal so subscribers do one resync.
+        _messenger.Send(new BulkChangedMessage());
     }
 
     public async Task ClearAllAssignmentsForTagAsync(int tagId)

@@ -184,9 +184,10 @@ public class UserColorServiceTests
         // This test verifies at the TagService level that deleting a tag
         // does not interact with UserColor at all.
         var tagDb = Substitute.For<IDBService>();
+        var tagMessenger = Substitute.For<CommunityToolkit.Mvvm.Messaging.IMessenger>();
         PrayerTag.SetDBService(tagDb);
         PrayerCardTag.SetDBService(tagDb);
-        var tagService = new TagService(tagDb);
+        var tagService = new TagService(tagDb, tagMessenger);
 
         var tag = new PrayerTag { Id = 1, Name = "Work", Color = "#FF5500" };
         tagDb.GetByIdAsync<PrayerTag>(1).Returns(Task.FromResult(tag));

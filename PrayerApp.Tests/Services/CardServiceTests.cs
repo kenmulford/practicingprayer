@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 
@@ -7,16 +9,18 @@ namespace PrayerApp.Tests.Services;
 public class CardServiceTests
 {
     private readonly IDBService _db;
+    private readonly IMessenger _messenger;
     private readonly CardService _service;
 
     public CardServiceTests()
     {
         _db = Substitute.For<IDBService>();
+        _messenger = Substitute.For<IMessenger>();
         PrayerCard.SetDBService(_db);
         CardBox.SetDBService(_db);
         // Default: no boxes exist (tests that need specific boxes override this)
         _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>()));
-        _service = new CardService(); // CardService uses Active Record; no IDBService ctor arg
+        _service = new CardService(_messenger);
     }
 
     // ── GetCardsAsync ─────────────────────────────────────────────────────────
@@ -336,5 +340,51 @@ public class CardServiceTests
 
         Assert.Equal("Quick Add", result.Title);
         Assert.Equal(1, result.Id);
+    }
+
+    // ── Messenger publishes ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SaveCardAsync_New_PublishesCreated()
+    {
+        var card = new PrayerCard { Title = "Family" };
+
+        await _service.SaveCardAsync(card);
+
+        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
+            m => m.Kind == ChangeKind.Created));
+    }
+
+    [Fact]
+    public async Task SaveCardAsync_Existing_PublishesUpdated()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+
+        await _service.SaveCardAsync(card);
+
+        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
+            m => m.CardId == 7 && m.Kind == ChangeKind.Updated));
+    }
+
+    [Fact]
+    public async Task AssignBoxAsync_PublishesUpdated()
+    {
+        var card = new PrayerCard { Id = 9, Title = "Work", BoxId = 0 };
+
+        await _service.AssignBoxAsync(card, boxId: 3);
+
+        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
+            m => m.CardId == 9 && m.Kind == ChangeKind.Updated));
+    }
+
+    [Fact]
+    public async Task DeleteCardAsync_PublishesDeleted()
+    {
+        var card = new PrayerCard { Id = 11, Title = "Old" };
+
+        await _service.DeleteCardAsync(card);
+
+        _messenger.Received(1).Send(Arg.Is<PrayerCardChangedMessage>(
+            m => m.CardId == 11 && m.Kind == ChangeKind.Deleted));
     }
 }

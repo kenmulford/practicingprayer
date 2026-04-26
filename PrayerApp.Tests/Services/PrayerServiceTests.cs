@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
 
@@ -7,13 +9,15 @@ namespace PrayerApp.Tests.Services;
 public class PrayerServiceTests
 {
     private readonly IDBService _db;
+    private readonly IMessenger _messenger;
     private readonly PrayerService _service;
 
     public PrayerServiceTests()
     {
         _db = Substitute.For<IDBService>();
+        _messenger = Substitute.For<IMessenger>();
         Prayer.SetDBService(_db);
-        _service = new PrayerService(_db);
+        _service = new PrayerService(_db, _messenger);
     }
 
     // ── GetAllPrayersAsync ────────────────────────────────────────────────────
@@ -398,5 +402,40 @@ public class PrayerServiceTests
         Assert.Equal(2, await _service.GetActivePrayerCountByCardAsync(1));
 
         await _db.Received(2).GetAllAsync<Prayer>();
+    }
+
+    // ── Messenger publishes ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SavePrayerAsync_New_PublishesCreated()
+    {
+        var prayer = new Prayer { PrayerCardId = 3, Title = "Aunt" };
+
+        await _service.SavePrayerAsync(prayer);
+
+        _messenger.Received(1).Send(Arg.Is<PrayerChangedMessage>(
+            m => m.CardId == 3 && m.Kind == ChangeKind.Created));
+    }
+
+    [Fact]
+    public async Task SavePrayerAsync_Existing_PublishesUpdated()
+    {
+        var prayer = new Prayer { Id = 9, PrayerCardId = 3, Title = "Aunt" };
+
+        await _service.SavePrayerAsync(prayer);
+
+        _messenger.Received(1).Send(Arg.Is<PrayerChangedMessage>(
+            m => m.PrayerId == 9 && m.CardId == 3 && m.Kind == ChangeKind.Updated));
+    }
+
+    [Fact]
+    public async Task DeletePrayerAsync_PublishesDeleted()
+    {
+        var prayer = new Prayer { Id = 9, PrayerCardId = 3, Title = "Aunt" };
+
+        await _service.DeletePrayerAsync(prayer);
+
+        _messenger.Received(1).Send(Arg.Is<PrayerChangedMessage>(
+            m => m.PrayerId == 9 && m.CardId == 3 && m.Kind == ChangeKind.Deleted));
     }
 }

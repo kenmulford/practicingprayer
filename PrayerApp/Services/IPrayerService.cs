@@ -16,6 +16,12 @@ public interface IPrayerService
     /// <summary>Count of active (not answered) prayers on a specific card.</summary>
     Task<int> GetActivePrayerCountByCardAsync(int cardId);
     Task<Prayer> SavePrayerAsync(Prayer prayer);
-    Task DeletePrayerAsync(Prayer prayer);
+
+    /// <summary>
+    /// Deletes a prayer. Set <paramref name="publishMessage"/> = false from cascade
+    /// callers (e.g. <see cref="IBoxService.DeleteBoxAsync"/>) so per-entity messages
+    /// don't fan out alongside the cascade's <c>BulkChangedMessage</c>.
+    /// </summary>
+    Task DeletePrayerAsync(Prayer prayer, bool publishMessage = true);
     void InvalidateCache();
 }
