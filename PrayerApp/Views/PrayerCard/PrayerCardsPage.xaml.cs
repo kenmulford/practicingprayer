@@ -26,6 +26,18 @@ public partial class PrayerCardsPage : ContentPage
         HandlerChanged  += (_, _) => PerfLog.Log($"PrayerCardsPage.HandlerChanged handler={(Handler != null ? "set" : "null")}");
         cardCollection.HandlerChanging += (_, e) => PerfLog.Log($"cardCollection.HandlerChanging old={(e.OldHandler != null ? "set" : "null")} new={(e.NewHandler != null ? "set" : "null")}");
         cardCollection.HandlerChanged  += (_, _) => PerfLog.Log($"cardCollection.HandlerChanged handler={(cardCollection.Handler != null ? "set" : "null")}");
+
+        // PERF-10 probes — find the parent-layout-invalidation source that triggers the
+        // RecyclerView re-inflate cascade. PERF-9 ruled out handler recycling; the cascade
+        // must come from a layout-pass invalidation on a parent that survives. Candidates:
+        // Shell pop animation re-measuring the page root, BoxSections reassignment hitting
+        // a frame contended with animation, or a child SizeChanged propagating up. These
+        // probes timestamp every relevant signal so the device log can show what fires
+        // immediately before each OnCardBorderLoaded burst.
+        // Strip with Slice 5 PerfLog cleanup.
+        SizeChanged += (_, _) => PerfLog.Log($"PrayerCardsPage.SizeChanged w={Width:F0} h={Height:F0}");
+        cardCollection.SizeChanged += (_, _) => PerfLog.Log($"cardCollection.SizeChanged w={cardCollection.Width:F0} h={cardCollection.Height:F0}");
+        cardCollection.MeasureInvalidated += (_, _) => PerfLog.Log("cardCollection.MeasureInvalidated");
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
