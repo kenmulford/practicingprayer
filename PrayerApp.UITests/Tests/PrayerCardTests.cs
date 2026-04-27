@@ -1,5 +1,6 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
+using PrayerApp.Helpers;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -702,5 +703,88 @@ public class PrayerCardTests
 
         Assert.True(chipsAfterScroll,
             $"Post-scroll: chips should still be present (recycled cell re-bound BindableLayout cleanly). Dump: {evidence}");
+    }
+
+    /// <summary>
+    /// BUG-76: Newly-saved card hidden inside collapsed parent section.
+    /// 1.3.0 iOS UAT 2026-04-26 — after Add Card → Save, if the new card's
+    /// parent section is currently collapsed the card is invisible inside the
+    /// collapsed group even though <c>card.IsExpanded</c> is true. Fix:
+    /// <c>ConsumePendingSavedAsync</c> auto-expands the parent section by BoxId.
+    ///
+    /// Test sequence: bring sections to a known all-expanded state, collapse
+    /// "Loose Cards" specifically, save a new card (defaults to Loose Cards),
+    /// then assert the card is visible without using <c>EnsureCardVisible</c>'s
+    /// section-expansion / search fallback — direct DOM-presence check only.
+    /// </summary>
+    [Fact]
+    public void Cards_Save_AutoExpandsCollapsedParentSection_BUG76()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+
+        // Establish a known starting state — all sections expanded.
+        driver.EnsureAllSectionsExpanded();
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // Collapse the Unboxed section specifically — default destination for a
+        // new card with no Box selected. The section header's
+        // SemanticProperties.Description binds to the section Name and is always
+        // exactly BoxStrings.Unorganized regardless of card count, so TextLocator
+        // (iOS @name; Android @content-desc) finds the layout wrapper. Tapping
+        // it fires the inner Grid's TapGestureRecognizer (OnSectionHeaderTapped),
+        // which toggles IsExpanded.
+        driver.TapByText(BoxStrings.Unorganized);
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        var title = $"BUG76 {DateTime.Now:HHmmssfff}";
+
+        driver.TapToolbarItemById("Add Card");
+        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
+        driver.EnterText("Card_Entry_Title", title);
+        driver.DismissKeyboardIfPresent();
+
+        try
+        {
+            driver.TapToolbarItem("Save");
+            Thread.Sleep(TestConfig.DelayAfterSave);
+
+            // Direct DOM-presence check — no EnsureCardVisible because its
+            // EnsureAllSectionsExpanded fallback would mask the bug. The new
+            // card must be in the rendered tree because its parent Loose Cards
+            // section auto-expanded when ConsumePendingSavedAsync ran.
+            bool titleVisible = TestConfig.IsIOS
+                ? driver.IsTextContainsDisplayed(title, timeoutSeconds: 10)
+                : driver.IsTextDisplayed(title, timeoutSeconds: 10);
+
+            string? evidence = titleVisible ? null
+                : driver.DumpPageSource(nameof(Cards_Save_AutoExpandsCollapsedParentSection_BUG76));
+
+            Assert.True(titleVisible,
+                $"BUG-76: newly-saved card '{title}' should be visible — its parent " +
+                $"section must auto-expand on save. Dump: {evidence}");
+
+            // Cleanup
+            if (TestConfig.IsIOS) driver.TapByTextContains(title);
+            else driver.TapByText(title);
+            Thread.Sleep(TestConfig.DelayAfterTap);
+            if (driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 3))
+            {
+                driver.Tap("Cards_Btn_Delete");
+                driver.DismissAlertIfPresent();
+                Thread.Sleep(TestConfig.DelayAfterSave);
+            }
+        }
+        finally
+        {
+            // Edit-page bail out if Save failed before nav.
+            if (driver.IsDisplayed("Card_Entry_Title", timeoutSeconds: 1))
+            {
+                try { driver.GoBack(); } catch (WebDriverException) { }
+                Thread.Sleep(TestConfig.DelayAfterTap);
+                try { driver.DismissAlertIfPresent(); } catch (WebDriverException) { }
+            }
+        }
     }
 }

@@ -1285,6 +1285,73 @@ public class PrayerCardsViewModelTests
         Assert.Null(evt);
     }
 
+    // ── BUG-76 — Newly-saved card hidden inside collapsed parent section ─────
+    // 1.3.0 iOS UAT 2026-04-26: after Save, the new card itself is correctly
+    // expanded, but if its parent BoxSection is collapsed the card is invisible
+    // inside the collapsed group. ConsumePendingSavedAsync must auto-expand the
+    // parent section (matched by BoxId — Contains() returns false on a collapsed
+    // section because ApplyExpansionState clears the observable) and persist.
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_NewCardInCollapsedSection_ExpandsParentSectionAndPersists()
+    {
+        SetupDefaultSyncMocks();
+        // No saved expansion state → every section starts collapsed.
+        var existing = new PrayerCard { Id = 1, Title = "Existing", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existing }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        var unboxed = sut.BoxSections.First(s => s.BoxId == 0);
+        Assert.False(unboxed.IsExpanded);
+
+        // Save flow: new card 42 lands in the (still-collapsed) Unboxed section.
+        var newCard = new PrayerCard { Id = 42, Title = "Brand New", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existing, newCard }.AsReadOnly());
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+        await sut.SyncAsync();
+
+        _settings.ClearReceivedCalls();
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.True(unboxed.IsExpanded,
+            "Parent section must auto-expand so the newly-saved card is actually visible");
+        _settings.Received().ExpandedSectionIds = Arg.Is<string>(s => s.Contains("0"));
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_NewCardInExpandedSection_DoesNotRewriteSettings()
+    {
+        // No-op guarantee: if the parent section is already expanded, don't
+        // re-persist (no thrash on the settings store, no spurious telemetry).
+        SetupDefaultSyncMocks();
+        _settings.ExpandedSectionIds.Returns("0"); // Unboxed pre-expanded
+        var existing = new PrayerCard { Id = 1, Title = "Existing", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existing }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        var unboxed = sut.BoxSections.First(s => s.BoxId == 0);
+        Assert.True(unboxed.IsExpanded);
+
+        var newCard = new PrayerCard { Id = 42, Title = "Brand New", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { existing, newCard }.AsReadOnly());
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+        await sut.SyncAsync();
+
+        _settings.ClearReceivedCalls();
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.True(unboxed.IsExpanded);
+        _settings.DidNotReceiveWithAnyArgs().ExpandedSectionIds = Arg.Any<string>();
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)

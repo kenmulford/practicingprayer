@@ -410,6 +410,7 @@ namespace PrayerApp.ViewModels
                     matched.IsHighlighted = true;
                 }
                 finally { _suppressIsExpandedRebuild = false; }
+                EnsureSectionExpandedFor(matched);
                 return matched;
             }
 
@@ -432,6 +433,7 @@ namespace PrayerApp.ViewModels
                 }
                 finally { _suppressIsExpandedRebuild = false; }
                 RebuildSections();
+                EnsureSectionExpandedFor(newCard);
                 return newCard;
             }
             catch (Exception ex)
@@ -439,6 +441,22 @@ namespace PrayerApp.ViewModels
                 Diagnostics.ResolveLog()?.Log("PrayerCardsViewModel.ConsumePendingSavedAsync", ex);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// BUG-76: After a save, if the freshly-saved card belongs to a collapsed
+        /// parent section the card is hidden inside the collapsed group even
+        /// though `card.IsExpanded` is true. Auto-expand the parent and persist.
+        /// Section is matched by BoxId — `BoxSectionViewModel.Contains()` returns
+        /// false on a collapsed section because `ApplyExpansionState` clears the
+        /// observable when collapsed.
+        /// </summary>
+        private void EnsureSectionExpandedFor(PrayerCardViewModel card)
+        {
+            var section = BoxSections.FirstOrDefault(s => s.BoxId == card.BoxId);
+            if (section is null || section.IsExpanded) return;
+            section.IsExpanded = true;
+            SaveSectionExpansionState();
         }
 
         /// <summary>
