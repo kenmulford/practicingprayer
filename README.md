@@ -62,11 +62,11 @@ docs/                   Plans, research notes, screenshot runbooks
 screenshots/            App store screenshots (phone + tablet, light + dark)
 ```
 
-Architecture, conventions, and known gotchas are documented in [CLAUDE.md](CLAUDE.md).
+Architecture, conventions, and known gotchas are documented in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Contributing
 
-This started as (and primarily remains) a personal project. Issues and pull requests are welcome, but I make no commitments on response time or scope. If you fork it for your own use, that's exactly what the MIT license is for.
+This started as (and primarily remains) a personal project. Issues and pull requests are welcome, but I make no commitments on response time or scope. If you fork it for your own use, that's exactly what the GPL-3.0 license is for.
 
 ## License
 
