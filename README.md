@@ -1,6 +1,17 @@
 # Practicing Prayer
 
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE.txt)
+[![CI](https://github.com/kenmulford/PracticingPrayer/actions/workflows/ci.yml/badge.svg)](https://github.com/kenmulford/PracticingPrayer/actions/workflows/ci.yml)
+
 A privacy-first prayer journal for iOS and Android. Prayer cards, prayer requests, and a focused "Prayer Time" session — all stored locally on your device. No accounts, no cloud sync, no analytics, no backend.
+
+> **Status:** Active project. Available on Google Play and the App Store · [practicingprayerapp.com](https://practicingprayerapp.com)
+
+<p align="center">
+  <a href="https://apps.apple.com/us/app/practicing-prayer/id6760680234"><img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="60"></a>
+  &nbsp;
+  <a href="https://play.google.com/store/apps/details?id=com.multithreadedllc.prayercards"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="60"></a>
+</p>
 
 <p align="center">
   <img src="screenshots/android/phone/light/01-home-dashboard.png" alt="Home dashboard, light mode" width="300">
@@ -16,6 +27,18 @@ Practicing Prayer organizes prayer around three primitives:
 - **Prayer time** — a focused session that walks through your cards and requests
 
 Everything lives in a local SQLite database. There are no user accounts, no telemetry, and nothing leaves the device unless you explicitly export or share. Tags, colors, and collections exist for personal organization, but the three primitives above are the core loop.
+
+## Privacy
+
+Practicing Prayer is offline-first by design:
+
+- **All data is stored locally** in a SQLite database on the device. No cloud sync, no remote backup.
+- **No accounts.** No sign-up, no login, no identity. The app does not know who you are.
+- **No telemetry, no analytics.** The app makes no network requests for usage tracking, crash reporting, or any other purpose.
+- **No backend.** There is no server-side component to this project.
+- **No third-party integrations** with church management or social platforms.
+- **Sharing is opt-in.** When you tap "share", the OS share sheet is invoked with a payload you control. The app never shares without your explicit action.
+- **Notifications are local.** Prayer reminders are scheduled on-device via the OS notification system; they do not require network access.
 
 ## Tech stack
 
