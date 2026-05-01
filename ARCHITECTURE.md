@@ -1,6 +1,6 @@
-# Practicing Prayer — CLAUDE.md
+# Practicing Prayer — Architecture
 
-> Read this at the start of every session. See BACKLOG.md for the current work queue.
+> Architecture, conventions, and known gotchas for the Practicing Prayer codebase.
 
 ---
 
@@ -92,6 +92,7 @@ Views (XAML)
 - Parallelization disabled (`[assembly: CollectionBehavior(DisableTestParallelization = true)]`) — model static `_dbService` is shared state
 - When adding a new non-MAUI service/model, add a matching `<Compile Include>` in `PrayerApp.Tests.csproj`
 - CI: `.github/workflows/ci.yml` runs on push/PR to `master`/`dev`/`feature/**`
+- Running the Appium UI test suite is documented in [docs/RUNNING_UITESTS.md](docs/RUNNING_UITESTS.md)
 
 ---
 
@@ -111,80 +112,13 @@ Views (XAML)
 
 ---
 
-## Development Discipline
-
-Project-specific guidelines:
-
-- **Parallel agents allowed** — Use parallel sub-agents for independent tasks and for `/simplify` reviews.
-
----
-
-## Skills
-
-A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically detects MAUI-related keywords in each message and injects the relevant skill names as `additionalContext`. When skills are injected, invoke them via the `Skill` tool before implementing.
-
-**Always invoke for any MAUI/XAML implementation work:**
-- `maui-skills:maui-current-apis` — guardrail against deprecated/removed APIs
-
-**Triggered automatically by keyword detection:**
-
-| Topic | Skill |
-| ----- | ----- |
-| Animations, transitions | `maui-skills:maui-animations` |
-| Local notifications | `maui-skills:maui-local-notifications` |
-| Accessibility / screen readers | `maui-skills:maui-accessibility` |
-| CollectionView, lists, scrolling | `maui-skills:maui-collectionview` |
-| Shell, navigation, tabs, modals, routes | `maui-skills:maui-shell-navigation` |
-| SQLite, database, migrations | `maui-skills:maui-sqlite-database` |
-| Data binding, MVVM, ViewModels | `maui-skills:maui-data-binding` |
-| Runtime permissions | `maui-skills:maui-permissions` |
-| Theming, dark/light mode | `maui-skills:maui-theming` |
-| Gestures (swipe, drag, pinch) | `maui-skills:maui-gestures` |
-| Safe area, insets, edge-to-edge | `maui-skills:maui-safe-area` |
-| Secure storage | `maui-skills:maui-secure-storage` |
-| Unit testing, xUnit, NSubstitute | `maui-skills:maui-unit-testing` |
-| Performance, optimization | `maui-skills:maui-performance` |
-| Custom handlers, native views | `maui-skills:maui-custom-handlers` |
-| App lifecycle, background/foreground | `maui-skills:maui-app-lifecycle` |
-| App icons, splash screens | `maui-skills:maui-app-icons-splash` |
-| File picker, file system | `maui-skills:maui-file-handling` |
-| Dependency injection, service registration | `maui-skills:maui-dependency-injection` |
-
-**Not applicable to this project** (privacy-first, offline): `maui-authentication`, `maui-rest-api`, `maui-push-notifications`, `maui-maps`, `maui-geolocation`, `maui-aspire`, xamarin-* migration skills.
-
-### Project-Specific Skills (prayer-app-skills plugin)
-
-**Invoke during planning AND implementation — skills are the primary source of truth for this codebase's patterns, not raw file exploration.** When researching a bug or feature, invoke the relevant prayer-app skills FIRST to understand conventions, then read specific files only for details the skills don't cover. Don't send Explore agents to rediscover what the skills already document.
-
-| Area | Skill | When to invoke |
-| ---- | ----- | -------------- |
-| Models, schema, Active Record | `prayer-app-skills:prayer-app-models` | Creating/modifying models, adding columns, data relationships |
-| Database, migrations, DBService | `prayer-app-skills:prayer-app-database` | Schema changes, migrations, seed data, DB queries |
-| Service layer, caching, DI | `prayer-app-skills:prayer-app-services` | Creating/modifying services, understanding cache patterns |
-| ViewModels, MVVM, commands | `prayer-app-skills:prayer-app-viewmodels` | Creating/modifying ViewModels, data binding, commands |
-| Views, XAML, code-behind | `prayer-app-skills:prayer-app-views` | Creating/modifying pages, layout patterns, modals |
-| Colors, styles, dark mode | `prayer-app-skills:prayer-app-theming` | Styling, colors, theming, AppThemeBinding |
-| Unit tests, xUnit, mocking | `prayer-app-skills:prayer-app-unit-testing` | Writing tests, NSubstitute patterns, test project setup |
-| UI tests, Appium | `prayer-app-skills:prayer-app-ui-testing` | Writing Appium tests, platform-specific locators |
-| Android/iOS platform code | `prayer-app-skills:prayer-app-platform` | Handlers, deep linking, orientation, conditional compilation |
-| Shell navigation, routing | `prayer-app-skills:prayer-app-navigation` | Adding pages, routes, query params, modals, tabs |
-| Accessibility, screen readers | `prayer-app-skills:prayer-app-accessibility` | SemanticProperties, AutomationId, announcements |
-
----
-
 ## Key Files
 
-- `BACKLOG.md` — prioritized work queue (update every session)
 - `docs/plans/` — active screenshot runbooks (completed plans archived to `docs/archive/`)
 - `docs/plans/app-store-screenshots.md` — iOS screenshot runbook (devices, seed data, capture commands)
 - `docs/plans/UX-22-android-screenshots.md` — Android screenshot runbook (emulators, seed data, adb commands)
 - `screenshots/` — app store screenshots (phone + tablet, light + dark)
 - `screenshots/android/prayer_app_seed.db` — pre-built seed DB for screenshot sessions
 - `docs/research/` — investigation notes
+- `docs/RUNNING_UITESTS.md` — Appium UI test suite setup and running guide
 - `docs/archive/` — completed plan/spec docs (historical reference)
-
----
-
-## Learning Context
-
-Ken is growing his understanding of MVVM, service injection patterns, and .NET MAUI best practices. When explaining architectural decisions or suggesting patterns, include brief "why" context — not just "what." This codebase doubles as a learning vehicle.
