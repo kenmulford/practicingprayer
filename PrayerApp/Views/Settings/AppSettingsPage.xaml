@@ -71,6 +71,25 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Developer (visibility toggled in code-behind under #if DEBUG) -->
+            <Border x:Name="DeveloperSection"
+                    Style="{StaticResource PrayerCardBorder}"
+                    Padding="16"
+                    IsVisible="False">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Developer"
+                           SemanticProperties.HeadingLevel="Level2"
+                           Style="{StaticResource SectionHeading}" />
+                    <Label Text="Stages a sample import payload and opens the confirmation modal. Used to smoke the context-menu import flow without invoking the OS share sheet."
+                           Style="{StaticResource SectionDescription}" />
+                    <Button x:Name="BtnStageSamplePayload"
+                            Text="Stage sample payload"
+                            AutomationId="AppSettings_Btn_StageSamplePayload"
+                            Clicked="OnStageSamplePayloadClicked"
+                            HorizontalOptions="Fill" />
+                </VerticalStackLayout>
+            </Border>
+
         </VerticalStackLayout>
     </ScrollView>
 

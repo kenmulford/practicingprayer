@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.Messaging;
 using PrayerApp.Messages;
 using PrayerApp.Models;
+using static PrayerApp.Helpers.TextNormalization;
 
 namespace PrayerApp.Services;
 
@@ -289,7 +290,7 @@ public class DeepLinkService : IDeepLinkService
         _cardService.InvalidateCache();
         _prayerService.InvalidateCache();
         _messenger.Send(new BulkChangedMessage());
-        await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
+        await _nav.GoToAsync(Routes.PrayerCardsTabImported);
     }
 
     private async Task ImportCardAsync(SharedCard data)
@@ -336,7 +337,7 @@ public class DeepLinkService : IDeepLinkService
         _cardService.InvalidateCache();
         _prayerService.InvalidateCache();
         _messenger.Send(new BulkChangedMessage());
-        await _nav.GoToAsync(Routes.PrayerCardsTab + "?imported=true");
+        await _nav.GoToAsync(Routes.PrayerCardsTabImported);
     }
 
     // ── Duplicate detection ──────────────────────────────────────────────────
@@ -475,17 +476,6 @@ public class DeepLinkService : IDeepLinkService
             case 3: base64 += "="; break;
         }
         return Convert.FromBase64String(base64);
-    }
-
-    /// <summary>Replace smart/curly quotes with ASCII equivalents so URLs and text stay clean.</summary>
-    private static string? NormalizeQuotes(string? text)
-    {
-        if (text is null) return null;
-        return text
-            .Replace('\u2018', '\'')  // left single quote
-            .Replace('\u2019', '\'')  // right single quote
-            .Replace('\u201C', '"')   // left double quote
-            .Replace('\u201D', '"');   // right double quote
     }
 
     private static string SanitizeFileName(string name)

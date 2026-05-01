@@ -186,7 +186,7 @@ public class DeepLinkServiceTests : IDisposable
 
         await _service.HandleAsync(uri);
 
-        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
+        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTabImported);
     }
 
     [Fact]
@@ -285,7 +285,7 @@ public class DeepLinkServiceTests : IDisposable
 
         await _service.HandleAsync($"https://practicingprayerapp.com/share/c?title=Test&requests={base64}");
 
-        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTab + "?imported=true");
+        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTabImported);
     }
 
     [Fact]

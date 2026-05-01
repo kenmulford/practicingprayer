@@ -1,4 +1,5 @@
 using PrayerApp.Services;
+using PrayerApp.Views;
 
 namespace PrayerApp.Views.Settings;
 
@@ -7,6 +8,9 @@ public partial class AppSettingsPage : ContentPage
     public AppSettingsPage()
     {
         InitializeComponent();
+#if DEBUG
+        DeveloperSection.IsVisible = true;
+#endif
     }
 
     protected override void OnAppearing()
@@ -56,5 +60,25 @@ public partial class AppSettingsPage : ContentPage
     {
         if (entryOverdueThreshold.IsFocused)
             entryOverdueThreshold.Unfocus();
+    }
+
+    private void OnStageSamplePayloadClicked(object? sender, EventArgs e)
+    {
+#if DEBUG
+        // Mirror the Slice 2 (Android intent) and Slice 3 (iOS extension)
+        // platform-layer dispatch entry point so the smoke path is
+        // structurally identical to production, even though this click is
+        // already on the UI thread.
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            var services = IPlatformApplication.Current!.Services;
+            services.GetRequiredService<IImportPayloadService>().StagePayload(
+                "1. Pray for Mom\n" +
+                "2. Pray for Dad\n" +
+                "3. Pray for Sis");
+            await Shell.Current.Navigation.PushModalAsync(
+                services.GetRequiredService<ConfirmImportPage>());
+        });
+#endif
     }
 }

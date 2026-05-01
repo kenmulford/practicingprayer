@@ -11,6 +11,7 @@ using PrayerApp.Helpers;
 using PrayerApp.Models;
 using PrayerApp.Services;
 using PrayerApp.ViewModels;
+using PrayerApp.Views;
 using PrayerApp.Views.Onboarding;
 using PrayerApp.Views.Prayer;
 using PrayerApp.Views.PrayerCard;
@@ -58,6 +59,7 @@ namespace PrayerApp
             Routing.RegisterRoute(nameof(BackupPage), typeof(BackupPage));
             Routing.RegisterRoute(nameof(AboutPage), typeof(AboutPage));
             Routing.RegisterRoute(nameof(HelpPage), typeof(HelpPage));
+            Routing.RegisterRoute(nameof(ConfirmImportPage), typeof(ConfirmImportPage));
 
             // Unsaved-changes guard on back navigation
             this.Navigating += OnShellNavigating;

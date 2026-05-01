@@ -15,6 +15,7 @@ public static class Routes
     public const string BackupPage = "BackupPage";
     public const string AboutPage = "AboutPage";
     public const string HelpPage = "HelpPage";
+    public const string ConfirmImportPage = "ConfirmImportPage";
 
     // Box management routes
     public const string BoxesPage = "BoxesPage";
@@ -23,6 +24,7 @@ public static class Routes
     // Shell tab routes (absolute navigation)
     public const string PrayerCardsTab = "//CardsPage";
     public const string PrayersTab = "//PrayersPage";
+    public const string PrayerCardsTabImported = PrayerCardsTab + "?imported=true";
 
     // Prayer Time scope query parameter values
     public const string ScopeAll = "all";

@@ -11,6 +11,8 @@ namespace PrayerApp.Models
     [Table("PrayerRequest")]
     public class Prayer
     {
+        public const int TitleMaxLength = 100;
+
         private static IDBService? _dbService;
         private string _title = string.Empty;
 
@@ -21,7 +23,7 @@ namespace PrayerApp.Models
         [Column("PrayerCardId"), Indexed]
         public int PrayerCardId { get; set; }
 
-        [Column("Title"), MaxLength(100)]
+        [Column("Title"), MaxLength(TitleMaxLength)]
         public string Title {
             get => _title;
             set => _title = value ?? string.Empty;

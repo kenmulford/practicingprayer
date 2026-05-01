@@ -106,6 +106,14 @@
     <Compile Include="../PrayerApp/Services/IDeepLinkService.cs" />
     <Compile Include="../PrayerApp/Services/IShareService.cs" />
     <Compile Include="../PrayerApp/Services/DeepLinkService.cs" />
+    <Compile Include="../PrayerApp/Helpers/TextNormalization.cs" />
+    <Compile Include="../PrayerApp/Models/ParseResult.cs" />
+    <Compile Include="../PrayerApp/Services/ITextSelectionParser.cs" />
+    <Compile Include="../PrayerApp/Services/TextSelectionParser.cs" />
+    <Compile Include="../PrayerApp/Services/IImportPayloadService.cs" />
+    <Compile Include="../PrayerApp/Services/ImportPayloadService.cs" />
+    <Compile Include="../PrayerApp/ViewModels/EditablePrayer.cs" />
+    <Compile Include="../PrayerApp/ViewModels/ConfirmImportViewModel.cs" />
     <Compile Include="../PrayerApp/Services/IBoxService.cs" />
     <Compile Include="../PrayerApp/Services/BoxService.cs" />
 

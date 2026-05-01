@@ -184,6 +184,9 @@ namespace PrayerApp
             builder.Services.AddSingleton<IShareService, ShareService>();
             // Deep link sharing service
             builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
+            // Context-menu / share-extension import pipeline
+            builder.Services.AddSingleton<IImportPayloadService, ImportPayloadService>();
+            builder.Services.AddSingleton<ITextSelectionParser, TextSelectionParser>();
 
 #if ANDROID
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.Android.OrientationService>();
@@ -200,6 +203,7 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerListViewModel>();
             builder.Services.AddTransient<PrayerRequestDetailViewModel>();
             builder.Services.AddTransient<QuickAddViewModel>();
+            builder.Services.AddTransient<ConfirmImportViewModel>();
             builder.Services.AddTransient<PrayerTimeViewModel>();
             builder.Services.AddTransient<PrayerTimeScopeViewModel>();
             builder.Services.AddTransient<PrayerTimeBoxScopeViewModel>();
@@ -215,6 +219,7 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerListPage>();
             builder.Services.AddTransient<PrayerDetailPage>();
             builder.Services.AddTransient<QuickAddPage>();
+            builder.Services.AddTransient<ConfirmImportPage>();
             builder.Services.AddTransient<PrayerTimePage>();
             builder.Services.AddTransient<PrayerTimeScopePage>();
             builder.Services.AddTransient<PrayerTimeBoxScopePage>();
