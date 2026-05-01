@@ -97,14 +97,17 @@ public class TextSelectionParserTests
     // ── Fallback to single paragraph ──────────────────────────
 
     [Fact]
-    public void Parse_NoMarkers_FallsBackToSingleParagraph()
+    public void Parse_NoMarkers_LongLine_SynthesizesTitle()
     {
+        // Single-paragraph fallback meets rule 6: 9 words, no delimiter →
+        // first 5 words become the title, full line is the details.
         var input = "Please pray for my family during this difficult time.";
 
         var result = _sut.Parse(input);
 
         Assert.Single(result.Prayers);
-        Assert.Equal(input, result.Prayers[0].Title);
+        Assert.Equal("Please pray for my family", result.Prayers[0].Title);
+        Assert.Equal(input, result.Prayers[0].Details);
     }
 
     [Fact]
@@ -149,5 +152,73 @@ public class TextSelectionParserTests
         var result = _sut.Parse("1. Mom");
 
         Assert.Equal("Imported May 1", result.SuggestedCardTitle);
+    }
+
+    // ── Rule 6: long-line title synthesis (2026-05-01) ──────────────────────────
+    // Per architecture doc 02-architecture.md rule 6: lines with a clause delimiter
+    // (, ; : — -) OR more than 6 space-separated words push the full line into
+    // Details and synthesize a Title — first part before the delimiter, or first
+    // 5 words when no delimiter is present. Rule 7 (100-char title cap) still
+    // applies on top.
+
+    [Fact]
+    public void Parse_ShortLineNoDelimiter_KeepsFullLineAsTitle()
+    {
+        // 6 words is the boundary — rule 6 fires only on >6.
+        var result = _sut.Parse("1. Pray for Mom's surgery on Friday");
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Pray for Mom's surgery on Friday", result.Prayers[0].Title);
+        Assert.Null(result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_LongLineNoDelimiter_TakesFirstFiveWordsAsTitle()
+    {
+        var result = _sut.Parse("1. Pray for Mom's surgery on Friday this week");
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Pray for Mom's surgery on", result.Prayers[0].Title);
+        Assert.Equal("Pray for Mom's surgery on Friday this week", result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_LineWithComma_SplitsAtComma()
+    {
+        var result = _sut.Parse("1. Sis is graduating from college this weekend, please pray");
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Sis is graduating from college this weekend", result.Prayers[0].Title);
+        Assert.Equal("Sis is graduating from college this weekend, please pray", result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_LineWithColon_SplitsAtColon()
+    {
+        var result = _sut.Parse("1. Aunt Susan: hip replacement next month");
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Aunt Susan", result.Prayers[0].Title);
+        Assert.Equal("Aunt Susan: hip replacement next month", result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_LineWithEmDash_SplitsAtEmDash()
+    {
+        var result = _sut.Parse("1. Mom — surgery on Friday");
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Mom", result.Prayers[0].Title);
+        Assert.Equal("Mom — surgery on Friday", result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_VeryShortLine_KeepsAsTitle()
+    {
+        var result = _sut.Parse("1. Quick prayer");
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Quick prayer", result.Prayers[0].Title);
+        Assert.Null(result.Prayers[0].Details);
     }
 }
