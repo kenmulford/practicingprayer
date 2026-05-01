@@ -42,10 +42,26 @@ public class _ImportFlowDiagnostic
         driver.ScrollDownTo("AppSettings_Btn_StageSamplePayload", maxScrolls: 8);
         driver.WaitAndTap("AppSettings_Btn_StageSamplePayload");
 
-        // 3. ConfirmImport modal — wait for the title entry (proves modal is open),
-        // scroll Save into view, then tap.
-        driver.WaitForElement("ConfirmImport_Entry_CardTitle", timeoutSeconds: 10);
+        // 3. ConfirmImport modal — wait for the title entry (proves modal is open).
+        var titleEntry = driver.WaitForElement("ConfirmImport_Entry_CardTitle", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayModalAnimation);
+
+        // Verify auto-focus + select-all on Card Title (Android: `focused` attr,
+        // text-selection bounds via `selection-start`/`selection-end` if exposed).
+        // On iOS, the equivalent attribute is `value`/`hasKeyboardFocus`.
+        var focused = TestConfig.IsAndroid
+            ? titleEntry.GetAttribute("focused")
+            : titleEntry.GetAttribute("hasKeyboardFocus");
+        var textValue = titleEntry.Text;
+        _output.WriteLine($"DIAG: cardTitle focused={focused} text=\"{textValue}\"");
+
+        // Save a screenshot for visual selection verification (Android doesn't
+        // expose selection bounds via accessibility attributes reliably).
+        var screenshotPath = Path.Combine(
+            Path.GetTempPath(), $"confirm-import-modal-{DateTime.Now:HHmmss}.png");
+        driver.GetScreenshot().SaveAsFile(screenshotPath);
+        _output.WriteLine($"DIAG: modal screenshot saved to {screenshotPath}");
+
         driver.ScrollDownTo("ConfirmImport_Btn_Save", maxScrolls: 6);
         driver.WaitAndTap("ConfirmImport_Btn_Save");
 
