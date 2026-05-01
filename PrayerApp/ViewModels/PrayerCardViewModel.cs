@@ -35,7 +35,7 @@ namespace PrayerApp.ViewModels
             get => _isBusy;
             private set
             {
-                PerfLog.Log($"PrayerCardViewModel.IsBusy.set({value}) prev={_isBusy}");
+                // PerfLog.Log($"PrayerCardViewModel.IsBusy.set({value}) prev={_isBusy}");
                 if (SetProperty(ref _isBusy, value))
                     (SaveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
             }
@@ -300,29 +300,30 @@ namespace PrayerApp.ViewModels
 
         private async Task SaveAsync()
         {
-            PerfLog.Log("PrayerCardViewModel.SaveAsync.entry");
-            if (IsBusy) { PerfLog.Log("SaveAsync.early-return (already busy)"); return; }
+            // PerfLog.Log("PrayerCardViewModel.SaveAsync.entry");
+            // if (IsBusy) { PerfLog.Log("SaveAsync.early-return (already busy)"); return; }
+            if (IsBusy) return;
             try
             {
                 IsBusy = true;
                 bool isNew = _prayerCard.Id == 0;
                 _prayerCard.BoxId = _selectedBox?.BoxId ?? 0;
-                PerfLog.Log("SaveAsync.before SaveCardAsync");
+                // PerfLog.Log("SaveAsync.before SaveCardAsync");
                 await _cardService.SaveCardAsync(_prayerCard);
-                PerfLog.Log("SaveAsync.after SaveCardAsync");
+                // PerfLog.Log("SaveAsync.after SaveCardAsync");
                 _originalTitle = Title; // Reset dirty state before navigation
                 if (isNew)
                     _onboardingService.Advance(); // NameCard → AddRequest
                 _accessibilityService.Announce("Card saved");
-                PerfLog.Log("SaveAsync.before GoToAsync");
-                await _navigationService.GoToAsync($"..?saved={Identifier}");
-                PerfLog.Log("SaveAsync.after GoToAsync");
+                // PerfLog.Log("SaveAsync.before GoToAsync");
+                await _navigationService.GoToAsync($"..?{Routes.QueryKeys.Saved}={Identifier}");
+                // PerfLog.Log("SaveAsync.after GoToAsync");
             }
             finally
             {
-                PerfLog.Log("SaveAsync.finally entering");
+                // PerfLog.Log("SaveAsync.finally entering");
                 IsBusy = false;
-                PerfLog.Log("SaveAsync.finally exited");
+                // PerfLog.Log("SaveAsync.finally exited");
             }
         }
 
@@ -345,7 +346,7 @@ namespace PrayerApp.ViewModels
                 await _prayerService.DeletePrayerAsync(prayer);
             await _cardService.DeleteCardAsync(_prayerCard);
             _accessibilityService.Announce("Card deleted");
-            await _navigationService.GoToAsync($"..?deleted={Identifier}");
+            await _navigationService.GoToAsync($"..?{Routes.QueryKeys.Deleted}={Identifier}");
         }
 
         private async Task SelectPrayerCardAsync()
@@ -356,7 +357,7 @@ namespace PrayerApp.ViewModels
 
         private async Task ToggleExpandedAsync()
         {
-            PerfLog.Log($"ToggleExpanded.entry id={_prayerCard.Id} IsExpanded={IsExpanded} _prayersLoaded={_prayersLoaded} Prayers.Count={Prayers.Count}");
+            // PerfLog.Log($"ToggleExpanded.entry id={_prayerCard.Id} IsExpanded={IsExpanded} _prayersLoaded={_prayersLoaded} Prayers.Count={Prayers.Count}");
             if (!IsExpanded && !_prayersLoaded)
             {
                 // Load first, then reveal — avoids empty flash
@@ -487,7 +488,7 @@ namespace PrayerApp.ViewModels
 
         private async Task LoadPrayersAsync()
         {
-            PerfLog.Log($"LoadPrayers.entry id={_prayerCard.Id}");
+            // PerfLog.Log($"LoadPrayers.entry id={_prayerCard.Id}");
             try
             {
                 var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
@@ -507,7 +508,7 @@ namespace PrayerApp.ViewModels
 
                 _prayersLoaded = true;
                 OnPropertyChanged(nameof(HasPrayers));
-                PerfLog.Log($"LoadPrayers.exit id={_prayerCard.Id} Prayers.Count={Prayers.Count} dbReturned={prayers.Count}");
+                // PerfLog.Log($"LoadPrayers.exit id={_prayerCard.Id} Prayers.Count={Prayers.Count} dbReturned={prayers.Count}");
             }
             catch (Exception e)
             {

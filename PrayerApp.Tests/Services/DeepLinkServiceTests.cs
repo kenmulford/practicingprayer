@@ -175,7 +175,7 @@ public class DeepLinkServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task HandleAsync_Request_NavigatesToCardsTabWithImportedFlag()
+    public async Task HandleAsync_Request_NavigatesToCardsTabWithSavedCardIdInUrl()
     {
         var sharedCard = new PrayerCard { Id = 10, Title = "Shared with me", IsSystem = true };
         _cardService.GetOrCreateSharedCardAsync().Returns(Task.FromResult(sharedCard));
@@ -186,7 +186,7 @@ public class DeepLinkServiceTests : IDisposable
 
         await _service.HandleAsync(uri);
 
-        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTabImported);
+        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTabImported(sharedCard.Id));
     }
 
     [Fact]
@@ -271,9 +271,13 @@ public class DeepLinkServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task HandleAsync_Card_NavigatesToCardsTab()
+    public async Task HandleAsync_Card_NavigatesToCardsTabWithSavedCardIdInUrl()
     {
-        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(callInfo =>
+        {
+            ((PrayerCard)callInfo[0]).Id = 99;
+            return Task.FromResult(1);
+        });
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
 
         var requestsJson = System.Text.Json.JsonSerializer.Serialize(new[]
@@ -285,7 +289,7 @@ public class DeepLinkServiceTests : IDisposable
 
         await _service.HandleAsync($"https://practicingprayerapp.com/share/c?title=Test&requests={base64}");
 
-        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTabImported);
+        await _nav.Received(1).GoToAsync(Routes.PrayerCardsTabImported(99));
     }
 
     [Fact]

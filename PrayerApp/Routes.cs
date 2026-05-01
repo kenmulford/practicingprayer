@@ -24,10 +24,30 @@ public static class Routes
     // Shell tab routes (absolute navigation)
     public const string PrayerCardsTab = "//CardsPage";
     public const string PrayersTab = "//PrayersPage";
-    public const string PrayerCardsTabImported = PrayerCardsTab + "?imported=true";
+    // Imported route carries the new card's id so PrayerCardsViewModel.ApplyQueryAttributes
+    // stages PendingSavedIdentifier — that triggers the existing reveal machinery
+    // (IsExpanded, IsHighlighted, EnsureSectionExpandedFor, ScrollToSavedCardAsync).
+    public static string PrayerCardsTabImported(int savedCardId)
+        => $"{PrayerCardsTab}?{QueryKeys.Saved}={savedCardId}";
 
     // Prayer Time scope query parameter values
     public const string ScopeAll = "all";
     public const string ScopeTags = "tags";
     public const string ScopeBox = "box";
+
+    /// <summary>
+    /// Query-string keys used in Shell navigation URLs and read by ApplyQueryAttributes
+    /// receivers. Centralized so producers and consumers share a single source of truth —
+    /// a rename here surfaces at every callsite at compile time instead of as a silent
+    /// runtime no-op.
+    /// </summary>
+    public static class QueryKeys
+    {
+        public const string Saved = "saved";
+        public const string Deleted = "deleted";
+        public const string PrayerSaved = "prayerSaved";
+        public const string PrayerDeleted = "prayerDeleted";
+        public const string ParentCardId = "parentCardId";
+        public const string OldCardId = "oldCardId";
+    }
 }

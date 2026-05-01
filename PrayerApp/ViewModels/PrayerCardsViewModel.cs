@@ -292,9 +292,9 @@ namespace PrayerApp.ViewModels
 
         void IQueryAttributable.ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            if (query.ContainsKey("deleted"))
+            if (query.ContainsKey(Routes.QueryKeys.Deleted))
             {
-                string? PrayerCardString = query["deleted"].ToString();
+                string? PrayerCardString = query[Routes.QueryKeys.Deleted].ToString();
                 PrayerCardViewModel? matched = AllPrayerCards.FirstOrDefault<PrayerCardViewModel>(pc => pc.Identifier == PrayerCardString);
 
                 if (matched != null)
@@ -304,13 +304,13 @@ namespace PrayerApp.ViewModels
                     RebuildSections();
                 }
             }
-            else if (query.ContainsKey("saved"))
+            else if (query.ContainsKey(Routes.QueryKeys.Saved))
             {
                 // Stage the identifier; ConsumePendingSavedAsync (called from OnAppearing)
                 // does the actual work on the lifecycle channel — keeps the View free of
                 // the VM→View C# event whose handler raced the MauiRecyclerView adapter
                 // snapshot on Galaxy Ultra.
-                var id = query["saved"].ToString();
+                var id = query[Routes.QueryKeys.Saved].ToString();
                 PendingSavedIdentifier = id;
                 // Snapshot now: SyncAsync runs after this and may add the new card to
                 // AllPrayerCards via its diff loop. We need to know whether the card was
@@ -318,13 +318,13 @@ namespace PrayerApp.ViewModels
                 // ConsumePendingSavedAsync isn't fooled into the matched-edit branch.
                 _pendingSavedWasAlreadyInList = AllPrayerCards.Any(c => c.Identifier == id);
             }
-            else if (query.ContainsKey("prayerSaved") && query.ContainsKey("parentCardId"))
+            else if (query.ContainsKey(Routes.QueryKeys.PrayerSaved) && query.ContainsKey(Routes.QueryKeys.ParentCardId))
             {
-                if (int.TryParse(query["prayerSaved"].ToString(), out int prayerId)
-                    && int.TryParse(query["parentCardId"].ToString(), out int parentCardId))
+                if (int.TryParse(query[Routes.QueryKeys.PrayerSaved].ToString(), out int prayerId)
+                    && int.TryParse(query[Routes.QueryKeys.ParentCardId].ToString(), out int parentCardId))
                 {
                     // If the prayer moved to a different card, remove it from the old card
-                    if (query.TryGetValue("oldCardId", out var oldVal)
+                    if (query.TryGetValue(Routes.QueryKeys.OldCardId, out var oldVal)
                         && int.TryParse(oldVal?.ToString(), out int oldCardId))
                     {
                         var oldCard = AllPrayerCards.FirstOrDefault(card => card.Id == oldCardId);
@@ -341,23 +341,14 @@ namespace PrayerApp.ViewModels
                     }
                 }
             }
-            else if (query.ContainsKey("prayerDeleted") && query.ContainsKey("parentCardId"))
+            else if (query.ContainsKey(Routes.QueryKeys.PrayerDeleted) && query.ContainsKey(Routes.QueryKeys.ParentCardId))
             {
-                if (int.TryParse(query["prayerDeleted"].ToString(), out int prayerId)
-                    && int.TryParse(query["parentCardId"].ToString(), out int parentCardId))
+                if (int.TryParse(query[Routes.QueryKeys.PrayerDeleted].ToString(), out int prayerId)
+                    && int.TryParse(query[Routes.QueryKeys.ParentCardId].ToString(), out int parentCardId))
                 {
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     matched?.RemovePrayer(prayerId);
                 }
-            }
-            else if (query.ContainsKey("imported"))
-            {
-                // Deep link import — full sync needed because a new card/prayer was
-                // created externally. Belt-and-suspenders with DeepLinkService's
-                // BulkChangedMessage; explicit call here makes the import → refresh
-                // contract obvious at the call site.
-                PerfLog.Log("ApplyQueryAttributes.imported.entry");
-                SyncAsync().SafeFireAndForget();
             }
         }
 
@@ -373,7 +364,7 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public async Task<PrayerCardViewModel?> ConsumePendingSavedAsync()
         {
-            PerfLog.Log($"ConsumePendingSavedAsync.entry id={PendingSavedIdentifier} wasInList={_pendingSavedWasAlreadyInList}");
+            // PerfLog.Log($"ConsumePendingSavedAsync.entry id={PendingSavedIdentifier} wasInList={_pendingSavedWasAlreadyInList}");
             var id = PendingSavedIdentifier;
             if (string.IsNullOrEmpty(id)) return null;
             var wasAlreadyInList = _pendingSavedWasAlreadyInList;
@@ -387,7 +378,7 @@ namespace PrayerApp.ViewModels
             // doesn't ScrollTo (and doesn't risk the adapter race that crashed Galaxy Ultra).
             if (matched != null && wasAlreadyInList)
             {
-                PerfLog.Log("ConsumePendingSavedAsync edit-path (matched, was-in-list)");
+                // PerfLog.Log("ConsumePendingSavedAsync edit-path (matched, was-in-list)");
                 matched.Reload();
                 RebuildSections();
                 return null;
@@ -403,7 +394,7 @@ namespace PrayerApp.ViewModels
             // toggled on cards already in their final sections.
             if (matched != null && !wasAlreadyInList)
             {
-                PerfLog.Log("ConsumePendingSavedAsync new-via-sync (matched, NOT was-in-list)");
+                // PerfLog.Log("ConsumePendingSavedAsync new-via-sync (matched, NOT was-in-list)");
                 _suppressIsExpandedRebuild = true;
                 try
                 {
@@ -420,7 +411,7 @@ namespace PrayerApp.ViewModels
             if (!int.TryParse(id, out var cardId)) return null;
             try
             {
-                PerfLog.Log("ConsumePendingSavedAsync new-via-db before LoadAsync");
+                // PerfLog.Log("ConsumePendingSavedAsync new-via-db before LoadAsync");
                 var card = await PrayerCard.LoadAsync(cardId);
                 if (card is null) return null;
                 var newCard = CreateCardViewModel(card);
@@ -510,7 +501,7 @@ namespace PrayerApp.ViewModels
                 var vm = CreateCardViewModel(card);
                 SubscribeToPropertyChanges(vm);
                 AllPrayerCards.Add(vm);
-                PerfLog.Log($"SyncCore.addNewCard id={vm.Id} title=\"{vm.Title}\" IsExpanded={vm.IsExpanded}");
+                // PerfLog.Log($"SyncCore.addNewCard id={vm.Id} title=\"{vm.Title}\" IsExpanded={vm.IsExpanded}");
             }
 
             // Refresh prayer counts + reload prayers on expanded cards
@@ -588,7 +579,7 @@ namespace PrayerApp.ViewModels
         {
             if (_isSorting) return;
             _isSorting = true;
-            PerfLog.Log($"RebuildSections.entry cards={AllPrayerCards.Count}");
+            // PerfLog.Log($"RebuildSections.entry cards={AllPrayerCards.Count}");
             try
             {
                 var cardsByBox = AllPrayerCards
@@ -670,9 +661,9 @@ namespace PrayerApp.ViewModels
                 _isSorting = false;
             }
 
-            PerfLog.Log("RebuildSections.before ApplyFilter");
+            // PerfLog.Log("RebuildSections.before ApplyFilter");
             ApplyFilter();
-            PerfLog.Log("RebuildSections.exit");
+            // PerfLog.Log("RebuildSections.exit");
         }
 
         private static bool SectionListsReferenceEqual(

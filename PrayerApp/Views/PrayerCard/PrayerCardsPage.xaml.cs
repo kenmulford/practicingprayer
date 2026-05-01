@@ -22,10 +22,10 @@ public partial class PrayerCardsPage : ContentPage
         // CV-level firings without page-level → only the CollectionView is re-handlered.
         // Both → full view-tree teardown. Neither during Save→Cards → re-inflation has a different cause.
         // Strip with Slice 5 PerfLog cleanup.
-        HandlerChanging += (_, e) => PerfLog.Log($"PrayerCardsPage.HandlerChanging old={(e.OldHandler != null ? "set" : "null")} new={(e.NewHandler != null ? "set" : "null")}");
-        HandlerChanged  += (_, _) => PerfLog.Log($"PrayerCardsPage.HandlerChanged handler={(Handler != null ? "set" : "null")}");
-        cardCollection.HandlerChanging += (_, e) => PerfLog.Log($"cardCollection.HandlerChanging old={(e.OldHandler != null ? "set" : "null")} new={(e.NewHandler != null ? "set" : "null")}");
-        cardCollection.HandlerChanged  += (_, _) => PerfLog.Log($"cardCollection.HandlerChanged handler={(cardCollection.Handler != null ? "set" : "null")}");
+        // HandlerChanging += (_, e) => PerfLog.Log($"PrayerCardsPage.HandlerChanging old={(e.OldHandler != null ? "set" : "null")} new={(e.NewHandler != null ? "set" : "null")}");
+        // HandlerChanged  += (_, _) => PerfLog.Log($"PrayerCardsPage.HandlerChanged handler={(Handler != null ? "set" : "null")}");
+        // cardCollection.HandlerChanging += (_, e) => PerfLog.Log($"cardCollection.HandlerChanging old={(e.OldHandler != null ? "set" : "null")} new={(e.NewHandler != null ? "set" : "null")}");
+        // cardCollection.HandlerChanged  += (_, _) => PerfLog.Log($"cardCollection.HandlerChanged handler={(cardCollection.Handler != null ? "set" : "null")}");
 
         // PERF-10 probes — find the parent-layout-invalidation source that triggers the
         // RecyclerView re-inflate cascade. PERF-9 ruled out handler recycling; the cascade
@@ -35,9 +35,9 @@ public partial class PrayerCardsPage : ContentPage
         // probes timestamp every relevant signal so the device log can show what fires
         // immediately before each OnCardBorderLoaded burst.
         // Strip with Slice 5 PerfLog cleanup.
-        SizeChanged += (_, _) => PerfLog.Log($"PrayerCardsPage.SizeChanged w={Width:F0} h={Height:F0}");
-        cardCollection.SizeChanged += (_, _) => PerfLog.Log($"cardCollection.SizeChanged w={cardCollection.Width:F0} h={cardCollection.Height:F0}");
-        cardCollection.MeasureInvalidated += (_, _) => PerfLog.Log("cardCollection.MeasureInvalidated");
+        // SizeChanged += (_, _) => PerfLog.Log($"PrayerCardsPage.SizeChanged w={Width:F0} h={Height:F0}");
+        // cardCollection.SizeChanged += (_, _) => PerfLog.Log($"cardCollection.SizeChanged w={cardCollection.Width:F0} h={cardCollection.Height:F0}");
+        // cardCollection.MeasureInvalidated += (_, _) => PerfLog.Log("cardCollection.MeasureInvalidated");
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -98,7 +98,7 @@ public partial class PrayerCardsPage : ContentPage
     /// </remarks>
     private async Task ScrollToSavedCardAsync(PrayerCardsViewModel vm, PrayerCardViewModel card)
     {
-        PerfLog.Log("ScrollToSavedCardAsync.entry");
+        // PerfLog.Log("ScrollToSavedCardAsync.entry");
 
         // Slice 6g hardening (#2): set up the cell-realize waiter BEFORE the
         // layout drain, so a fast cell-load path doesn't fire its signal before
@@ -109,10 +109,10 @@ public partial class PrayerCardsPage : ContentPage
         var realizeTask = _savedCardRealizedTcs.Task;
 
         await Dispatcher.DrainLayoutPassAsync();
-        PerfLog.Log("ScrollToSavedCardAsync.after DrainLayoutPassAsync");
+        // PerfLog.Log("ScrollToSavedCardAsync.after DrainLayoutPassAsync");
 
         var winner = await Task.WhenAny(realizeTask, Task.Delay(2000));
-        PerfLog.Log($"ScrollToSavedCardAsync.cell-realize winner={(winner == realizeTask ? "realized" : "timeout")}");
+        // PerfLog.Log($"ScrollToSavedCardAsync.cell-realize winner={(winner == realizeTask ? "realized" : "timeout")}");
         _expectedSavedCardId = -1;
         _savedCardRealizedTcs = null;
 
@@ -123,7 +123,7 @@ public partial class PrayerCardsPage : ContentPage
                 cardCollection.ScrollTo(card, section, ScrollToPosition.Center, animate: true);
             else
                 cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
-            PerfLog.Log("ScrollToSavedCardAsync.after ScrollTo");
+            // PerfLog.Log("ScrollToSavedCardAsync.after ScrollTo");
 
             SemanticScreenReader.Announce($"New card: {card.Title}");
         }
@@ -137,7 +137,7 @@ public partial class PrayerCardsPage : ContentPage
     {
         await Task.Delay(2500);
         card.IsHighlighted = false;
-        PerfLog.Log("FadeHighlightAfterDelayAsync.exit");
+        // PerfLog.Log("FadeHighlightAfterDelayAsync.exit");
     }
 
     private void OnSectionHeaderTapped(object? sender, TappedEventArgs e)
@@ -160,7 +160,7 @@ public partial class PrayerCardsPage : ContentPage
     {
         if (sender is not Border border) return;
         var initialId = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
-        PerfLog.Log($"OnCardBorderLoaded.entry id={initialId}");
+        // PerfLog.Log($"OnCardBorderLoaded.entry id={initialId}");
 
         // Slice 6c real (PERF-10): The ExpandedSubtreeHost ContentView is realized
         // on demand from the page-level CardExpandedSubtreeTemplate. Reference is
@@ -186,7 +186,7 @@ public partial class PrayerCardsPage : ContentPage
         void Rebind()
         {
             var newId = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
-            PerfLog.Log($"Rebind.fire prev={subscribed?.Id ?? -1} new={newId}");
+            // PerfLog.Log($"Rebind.fire prev={subscribed?.Id ?? -1} new={newId}");
             if (subscribed is not null) subscribed.PropertyChanged -= handler;
             subscribed = border.BindingContext as PrayerCardViewModel;
             if (subscribed is not null)
@@ -214,7 +214,7 @@ public partial class PrayerCardsPage : ContentPage
                 // a rebuild rather than rely on inner-binding re-evaluation.
                 if (subscribed.IsExpanded) RealizeExpandedSubtree(expandedHost, subscribed);
             }
-            PerfLog.Log($"Rebind.exit id={newId}");
+            // PerfLog.Log($"Rebind.exit id={newId}");
         }
 
         Rebind();
@@ -273,7 +273,7 @@ public partial class PrayerCardsPage : ContentPage
         var content = (Microsoft.Maui.Controls.View)_expandedSubtreeTemplate.CreateContent();
         content.BindingContext = vm;
         host.Content = content;
-        PerfLog.Log($"ExpandedSubtree.realized id={vm.Id} Prayers.Count={vm.Prayers.Count}");
+        // PerfLog.Log($"ExpandedSubtree.realized id={vm.Id} Prayers.Count={vm.Prayers.Count}");
 
         // Slice 6g hardening (#2): if a saved-card waiter is set up and this is
         // the cell it's waiting for, signal it. ScrollTo can then proceed against
@@ -298,7 +298,7 @@ public partial class PrayerCardsPage : ContentPage
     private static void AnimateCardMargin(Border border, Thickness target)
     {
         var id = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
-        PerfLog.Log($"AnimateCardMargin.entry id={id}");
+        // PerfLog.Log($"AnimateCardMargin.entry id={id}");
         // Android respects system animation settings automatically; no reduced-motion guard needed.
         var from = border.Margin;
         var tween = new Animation(v => border.Margin = new Thickness(
@@ -308,7 +308,7 @@ public partial class PrayerCardsPage : ContentPage
             from.Bottom + (target.Bottom - from.Bottom) * v), 0, 1);
         tween.Commit(border, "CardMarginTween", rate: 16, length: 200, easing: Easing.CubicInOut);
         // Commit returns immediately — measures scheduling cost only, not the 200ms runtime.
-        PerfLog.Log($"AnimateCardMargin.exit id={id} (Commit returned)");
+        // PerfLog.Log($"AnimateCardMargin.exit id={id} (Commit returned)");
     }
 
     // BUG-60: On Android, MAUI TapGestureRecognizer and native GestureDetector conflict.
@@ -448,7 +448,7 @@ public partial class PrayerCardsPage : ContentPage
 
     protected override async void OnAppearing()
     {
-        PerfLog.Log("PrayerCardsPage.OnAppearing.entry");
+        // PerfLog.Log("PrayerCardsPage.OnAppearing.entry");
         base.OnAppearing();
         if (BindingContext is not PrayerCardsViewModel vm) return;
 
@@ -464,13 +464,13 @@ public partial class PrayerCardsPage : ContentPage
 
         try
         {
-            PerfLog.Log("OnAppearing.before PageSync");
+            // PerfLog.Log("OnAppearing.before PageSync");
             await PageSync.OnAppearingAsync(vm);
-            PerfLog.Log("OnAppearing.after PageSync");
+            // PerfLog.Log("OnAppearing.after PageSync");
 
-            PerfLog.Log("OnAppearing.before ConsumePendingSavedAsync");
+            // PerfLog.Log("OnAppearing.before ConsumePendingSavedAsync");
             var savedCard = await vm.ConsumePendingSavedAsync();
-            PerfLog.Log($"OnAppearing.after ConsumePendingSavedAsync (savedCard null? {savedCard == null})");
+            // PerfLog.Log($"OnAppearing.after ConsumePendingSavedAsync (savedCard null? {savedCard == null})");
             if (savedCard != null)
             {
                 await ScrollToSavedCardAsync(vm, savedCard);
@@ -493,12 +493,12 @@ public partial class PrayerCardsPage : ContentPage
                 var elapsedMs = (int)(DateTime.UtcNow - overlayShownAt).TotalMilliseconds;
                 if (elapsedMs < MinOverlayMs)
                 {
-                    PerfLog.Log($"OnAppearing.minOverlay holding +{MinOverlayMs - elapsedMs}ms (elapsed={elapsedMs}ms)");
+                    // PerfLog.Log($"OnAppearing.minOverlay holding +{MinOverlayMs - elapsedMs}ms (elapsed={elapsedMs}ms)");
                     await Task.Delay(MinOverlayMs - elapsedMs);
                 }
                 vm.IsAwaitingSavedCard = false;
             }
-            PerfLog.Log("OnAppearing.exit");
+            // PerfLog.Log("OnAppearing.exit");
         }
     }
 }

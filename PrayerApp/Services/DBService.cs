@@ -216,10 +216,10 @@ namespace PrayerApp.Services
 
         public async Task<List<T>> GetAllAsync<T>() where T : new()
         {
-            PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.entry");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
-            PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.before ToListAsync");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.before ToListAsync");
             // PERF probe: Stopwatch + ConfigureAwait(false) so the continuation runs on
             // the threadpool. taskMs = pure DB time. Caller's next log line shows when
             // their UI-thread resume fired — the delta is UI-thread queuing cost. Read
@@ -227,7 +227,7 @@ namespace PrayerApp.Services
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var result = await _db.Table<T>().ToListAsync().ConfigureAwait(false);
             sw.Stop();
-            PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.after ToListAsync (count={result.Count}, taskMs={sw.ElapsedMilliseconds})");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.GetAllAsync<{typeof(T).Name}>.after ToListAsync (count={result.Count}, taskMs={sw.ElapsedMilliseconds})");
             return result;
         }
 
@@ -240,25 +240,25 @@ namespace PrayerApp.Services
 
         public async Task<int> InsertAsync<T>(T item)
         {
-            PrayerApp.Helpers.PerfLog.Log($"DBService.InsertAsync<{typeof(T).Name}>.entry");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.InsertAsync<{typeof(T).Name}>.entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var result = await _db.InsertAsync(item).ConfigureAwait(false);
             sw.Stop();
-            PrayerApp.Helpers.PerfLog.Log($"DBService.InsertAsync<{typeof(T).Name}>.exit (taskMs={sw.ElapsedMilliseconds})");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.InsertAsync<{typeof(T).Name}>.exit (taskMs={sw.ElapsedMilliseconds})");
             return result;
         }
 
         public async Task<int> UpdateAsync<T>(T item)
         {
-            PrayerApp.Helpers.PerfLog.Log($"DBService.UpdateAsync<{typeof(T).Name}>.entry");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.UpdateAsync<{typeof(T).Name}>.entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var result = await _db.UpdateAsync(item).ConfigureAwait(false);
             sw.Stop();
-            PrayerApp.Helpers.PerfLog.Log($"DBService.UpdateAsync<{typeof(T).Name}>.exit (taskMs={sw.ElapsedMilliseconds})");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.UpdateAsync<{typeof(T).Name}>.exit (taskMs={sw.ElapsedMilliseconds})");
             return result;
         }
 
@@ -429,7 +429,7 @@ namespace PrayerApp.Services
 
         public async Task<List<Prayer>> GetPrayersByCardIdAsync(int prayerCardId)
         {
-            PrayerApp.Helpers.PerfLog.Log($"DBService.GetPrayersByCardIdAsync({prayerCardId}).entry");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.GetPrayersByCardIdAsync({prayerCardId}).entry");
             await EnsureInitializedAsync();
             if (_db == null) throw new InvalidOperationException("Database is not available.");
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -438,7 +438,7 @@ namespace PrayerApp.Services
                 .ToListAsync()
                 .ConfigureAwait(false);
             sw.Stop();
-            PrayerApp.Helpers.PerfLog.Log($"DBService.GetPrayersByCardIdAsync({prayerCardId}).exit (count={result.Count}, taskMs={sw.ElapsedMilliseconds})");
+            // PrayerApp.Helpers.PerfLog.Log($"DBService.GetPrayersByCardIdAsync({prayerCardId}).exit (count={result.Count}, taskMs={sw.ElapsedMilliseconds})");
             return result;
         }
 

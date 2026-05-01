@@ -290,7 +290,7 @@ public class DeepLinkService : IDeepLinkService
         _cardService.InvalidateCache();
         _prayerService.InvalidateCache();
         _messenger.Send(new BulkChangedMessage());
-        await _nav.GoToAsync(Routes.PrayerCardsTabImported);
+        await _nav.GoToAsync(Routes.PrayerCardsTabImported(sharedCard.Id));
     }
 
     private async Task ImportCardAsync(SharedCard data)
@@ -337,7 +337,7 @@ public class DeepLinkService : IDeepLinkService
         _cardService.InvalidateCache();
         _prayerService.InvalidateCache();
         _messenger.Send(new BulkChangedMessage());
-        await _nav.GoToAsync(Routes.PrayerCardsTabImported);
+        await _nav.GoToAsync(Routes.PrayerCardsTabImported(card.Id));
     }
 
     // ── Duplicate detection ──────────────────────────────────────────────────

@@ -226,13 +226,21 @@ public class ConfirmImportViewModelTests
     }
 
     [Fact]
-    public async Task Save_NavigatesToCardsTabWithImportedFlag()
+    public async Task Save_NavigatesToCardsTabWithSavedCardIdInUrl()
     {
+        // Card id must flow through the route so PrayerCardsViewModel.ApplyQueryAttributes
+        // stages PendingSavedIdentifier — without it the imported card and its containing
+        // section never get auto-expanded and the user can't see the import landed.
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(callInfo =>
+        {
+            ((PrayerCard)callInfo[0]).Id = 42;
+            return Task.FromResult(1);
+        });
         var sut = SetupSutWithRows(("Mom", null));
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _navigationService.Received(1).GoToAsync(Routes.PrayerCardsTabImported);
+        await _navigationService.Received(1).GoToAsync(Routes.PrayerCardsTabImported(42));
     }
 
     // ── CancelCommand ──────────────────────────

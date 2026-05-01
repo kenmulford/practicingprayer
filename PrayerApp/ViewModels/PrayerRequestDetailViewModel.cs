@@ -58,8 +58,8 @@ namespace PrayerApp.ViewModels
 
         public bool HasTags => SelectedTags.Count > 0;
 
-        private string _savedQueryKey = "saved";
-        private string _deletedQueryKey = "deleted";
+        private string _savedQueryKey = Routes.QueryKeys.Saved;
+        private string _deletedQueryKey = Routes.QueryKeys.Deleted;
 
         // Dirty-tracking originals (set after load/save)
         private string _originalTitle = string.Empty;
@@ -461,9 +461,9 @@ namespace PrayerApp.ViewModels
                 {
                     string route = isNew ? ".." : "../..";
                     bool cardChanged = !isNew && origCardId != 0 && origCardId != PrayerCardId;
-                    var queryParts = $"prayerSaved={Identifier}&parentCardId={PrayerCardId}";
+                    var queryParts = $"{Routes.QueryKeys.PrayerSaved}={Identifier}&{Routes.QueryKeys.ParentCardId}={PrayerCardId}";
                     if (cardChanged)
-                        queryParts += $"&oldCardId={origCardId}";
+                        queryParts += $"&{Routes.QueryKeys.OldCardId}={origCardId}";
                     await _navigationService.GoToAsync($"{route}?{queryParts}");
                 }
                 else
@@ -527,7 +527,7 @@ namespace PrayerApp.ViewModels
             _accessibilityService.Announce("Prayer deleted");
             if (ReturnToCards)
             {
-                await _navigationService.GoToAsync($"..?prayerDeleted={Identifier}&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"..?{Routes.QueryKeys.PrayerDeleted}={Identifier}&{Routes.QueryKeys.ParentCardId}={PrayerCardId}");
             }
             else
             {
@@ -567,7 +567,7 @@ namespace PrayerApp.ViewModels
             // Navigate back so parent page (list or card accordion) picks up the change
             if (ReturnToCards)
             {
-                await _navigationService.GoToAsync($"..?prayerSaved={Identifier}&parentCardId={PrayerCardId}");
+                await _navigationService.GoToAsync($"..?{Routes.QueryKeys.PrayerSaved}={Identifier}&{Routes.QueryKeys.ParentCardId}={PrayerCardId}");
             }
             else
             {
@@ -595,8 +595,8 @@ namespace PrayerApp.ViewModels
                 {
                     _prayer = CreateDefaultPrayer(cardId);
                     ReturnToCards = true;
-                    _savedQueryKey = "prayerSaved";
-                    _deletedQueryKey = "prayerDeleted";
+                    _savedQueryKey = Routes.QueryKeys.PrayerSaved;
+                    _deletedQueryKey = Routes.QueryKeys.PrayerDeleted;
                     IsReadOnly = false;
                     RefreshProperties();
                     InitNewPrayerAsync().SafeFireAndForget();
@@ -615,8 +615,8 @@ namespace PrayerApp.ViewModels
                 if (query.ContainsKey("returnToCards"))
                 {
                     ReturnToCards = true;
-                    _savedQueryKey = "prayerSaved";
-                    _deletedQueryKey = "prayerDeleted";
+                    _savedQueryKey = Routes.QueryKeys.PrayerSaved;
+                    _deletedQueryKey = Routes.QueryKeys.PrayerDeleted;
                 }
 
                 if (query.ContainsKey("viewOnly"))

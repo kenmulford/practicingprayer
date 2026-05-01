@@ -140,7 +140,7 @@ public class ConfirmImportViewModel : ObservableObject
             _prayerService.InvalidateCache();
             _messenger.Send(new BulkChangedMessage());
             _accessibilityService.Announce($"Imported {savedCount} prayers to {card.Title}");
-            await _navigationService.GoToAsync(Routes.PrayerCardsTabImported);
+            await _navigationService.GoToAsync(Routes.PrayerCardsTabImported(card.Id));
         }
         finally
         {

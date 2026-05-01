@@ -365,26 +365,6 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
-    public async Task ApplyQueryAttributes_Imported_TriggersSyncAsync()
-    {
-        // Deep-link import path uses the new sync primitive — the underlying
-        // BulkChangedMessage already published by DeepLinkService also fires sync,
-        // but the explicit query branch keeps cold-launch deep links covered.
-        SetupDefaultSyncMocks();
-        var sut = CreateSut();
-        // Drain initial sync trigger from constructor-time messenger registration: none —
-        // ApplyQueryAttributes is the only entry point exercised here. Clear mock before act.
-        _cardService.ClearReceivedCalls();
-
-        ((IQueryAttributable)sut).ApplyQueryAttributes(
-            new Dictionary<string, object> { { "imported", true } });
-        await Task.Yield();
-        await Task.Yield();
-
-        await _cardService.Received().GetCardsAsync();
-    }
-
-    [Fact]
     public async Task ConsumePendingSavedAsync_AfterSyncAddedCard_DoesNotRebuildSectionsAgain()
     {
         // After SyncAsync adds the saved card via its diff loop, ConsumePendingSavedAsync
