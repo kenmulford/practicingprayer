@@ -371,3 +371,14 @@ PrayerApp/Resources/AppIcon/app icon rvsd.pen
 .mcp.json
 /screenshots/verify
 BACKLOG.md
+
+# Private working files (not part of the public repo)
+CLAUDE.md
+docs/tester-feedback/
+_inspector-capture/
+diagnostics/
+last_seed.db
+window_dump.xml
+/current_state.png
+/dark_mode_check.png
+/expanded_light.png
