@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question or share a prayer story
+    url: mailto:practicingprayerapp@gmail.com
+    about: Personal questions and prayer stories are best handled by email, not in a public issue tracker.

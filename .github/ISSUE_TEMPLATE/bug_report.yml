@@ -1,0 +1,93 @@
+name: Bug report
+description: Something isn't working right
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the fields below so we can reproduce and fix it. Personal prayer content is never required — please don't paste prayer requests or notes into this issue.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the bug.
+      placeholder: e.g. App crashes when tapping "Mark answered" on a card with no requests
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered list of what you did, leading up to the bug.
+      placeholder: |
+        1. Open the app
+        2. Tap ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you thought would happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened. Include any error messages.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platform is affected?
+      options:
+        - iOS
+        - Android
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device & OS version
+      description: Make/model and OS version.
+      placeholder: e.g. iPhone 15 Pro / iOS 18.2, or Pixel 8 / Android 15
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: Find this in Settings → About inside the app.
+      placeholder: e.g. 1.3.0 (66)
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: Diagnostic log (optional)
+      description: |
+        If you can, attach or paste a diagnostic log. In the app, go to Settings → Backup → "Send Diagnostic Info" to export the log file. Review it before posting and remove anything you don't want public.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context (optional)
+      description: Screenshots, related issues, frequency, anything else helpful.
+    validations:
+      required: false
