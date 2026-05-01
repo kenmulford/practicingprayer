@@ -113,9 +113,9 @@ Views (XAML)
 
 ## Development Discipline
 
-Baseline discipline (plan mode, verification, ask-first, `/simplify` before commit, feature-completeness) lives in user-global `~/.claude/CLAUDE.md`. Project-specific overrides:
+Project-specific guidelines:
 
-- **Parallel agents allowed** — this project overrides the global single-agent rule. Use parallel sub-agents for independent tasks and for `/simplify` reviews.
+- **Parallel agents allowed** — Use parallel sub-agents for independent tasks and for `/simplify` reviews.
 
 ---
 
@@ -172,26 +172,15 @@ A `UserPromptSubmit` hook (`.claude/hooks/maui-skill-hint.py`) automatically det
 
 ---
 
-## Changelog
-
-- **File:** `C:/Obsidian/Personal/Projects/practicing-prayer-changelog.md` — app store release notes, kept in the Personal Obsidian vault (outside the repo), updated continuously
-- After every commit that adds user-facing changes (features, improvements, bug fixes), update the changelog with a concise, user-friendly summary
-- Write for end users, not developers — no code references, backlog IDs, or technical jargon
-- When Ken tags a new version/build, reset the changelog: update the baseline tag, clear the entries, and start fresh
-
----
-
 ## Key Files
 
 - `BACKLOG.md` — prioritized work queue (update every session)
-- `C:/Obsidian/Personal/Projects/practicing-prayer-changelog.md` — app store release notes, in Personal Obsidian vault (update every session with user-facing changes)
 - `docs/plans/` — active screenshot runbooks (completed plans archived to `docs/archive/`)
 - `docs/plans/app-store-screenshots.md` — iOS screenshot runbook (devices, seed data, capture commands)
 - `docs/plans/UX-22-android-screenshots.md` — Android screenshot runbook (emulators, seed data, adb commands)
 - `screenshots/` — app store screenshots (phone + tablet, light + dark)
 - `screenshots/android/prayer_app_seed.db` — pre-built seed DB for screenshot sessions
 - `docs/research/` — investigation notes
-- `docs/tester-feedback/feedback-log.md` — verbatim tester feedback
 - `docs/archive/` — completed plan/spec docs (historical reference)
 
 ---

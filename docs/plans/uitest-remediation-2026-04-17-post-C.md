@@ -110,7 +110,6 @@ Land the `NavigateToTab` "already on target" short-circuit (~45–60s/run back).
 
 ## Artifacts
 
-- Raw log: `C:\repos\PrayerApp\uitest-postC.log` (UTF-16)
-- UTF-8 copy: `C:\repos\PrayerApp\uitest-postC.utf8.log`
+- Raw log: `uitest-postC.log` (UTF-16)
+- UTF-8 copy: `uitest-postC.utf8.log`
 - Prior triage doc: `docs/research/uitest-triage-2026-04-16.md`
-- Handoff memory: `C:\Obsidian\Personal\Claude Memory\handoff_2026-04-17_uitest_remediation.md`

@@ -6,7 +6,7 @@ Supersedes `uitest-remediation-2026-04-17-post-C.md`. That plan's hypotheses wer
 
 Phase 1 added `CaptureDiagnostics` + loud `XunitException` on missing seed fixture + page-ready `WaitForElement`. The first failing test captured:
 
-- **Screenshot:** `C:\Users\signu\AppData\Local\Temp\prayerapp-uitest-diag\20260417-073218-772-EnsureUITestPrayerExists.png`
+- **Screenshot:** `prayerapp-uitest-diag/20260417-073218-772-EnsureUITestPrayerExists.png`
 - **Page source:** same basename, `.xml`
 
 The screenshot shows the Prayers tab **rendering correctly**, status filter on "Active", list populated with (in order) "Delete Me Card / Throwaway prayer", "Delete Me Card A/B / Throwaway prayer A/B", "General / Sample Prayer Entry 1–4". **"UITest Card / UI Test Prayer" is not in the visible tree.** The page source XML confirms it — the RecyclerView for `List_List_Prayers` exposes only on-screen items (CollectionView virtualization).

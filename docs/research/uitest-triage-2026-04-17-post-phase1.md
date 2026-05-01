@@ -132,7 +132,7 @@ Both were "passing" in the prior run purely because the old silent-fallback crea
 4. **File real product bugs** (Cluster V) — four separate backlog items, fixed at the product level, tests stay as canary.
 5. **Revisit Cluster IV + VI** — once clusters I–III are resolved, re-run and see what residue remains.
 
-## Prior-art cross-references (from `C:/Obsidian/Personal/Lessons/`)
+## Prior-art cross-references
 
 Lessons directly relevant to the current clusters — ALL should be consulted before Step 5.
 
