@@ -273,7 +273,7 @@ public partial class PrayerCardsPage : ContentPage
         var content = (Microsoft.Maui.Controls.View)_expandedSubtreeTemplate.CreateContent();
         content.BindingContext = vm;
         host.Content = content;
-        PerfLog.Log($"ExpandedSubtree.realized id={vm.Id}");
+        PerfLog.Log($"ExpandedSubtree.realized id={vm.Id} Prayers.Count={vm.Prayers.Count}");
 
         // Slice 6g hardening (#2): if a saved-card waiter is set up and this is
         // the cell it's waiting for, signal it. ScrollTo can then proceed against

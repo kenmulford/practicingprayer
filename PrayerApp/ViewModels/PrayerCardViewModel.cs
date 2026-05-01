@@ -356,6 +356,7 @@ namespace PrayerApp.ViewModels
 
         private async Task ToggleExpandedAsync()
         {
+            PerfLog.Log($"ToggleExpanded.entry id={_prayerCard.Id} IsExpanded={IsExpanded} _prayersLoaded={_prayersLoaded} Prayers.Count={Prayers.Count}");
             if (!IsExpanded && !_prayersLoaded)
             {
                 // Load first, then reveal — avoids empty flash
@@ -486,6 +487,7 @@ namespace PrayerApp.ViewModels
 
         private async Task LoadPrayersAsync()
         {
+            PerfLog.Log($"LoadPrayers.entry id={_prayerCard.Id}");
             try
             {
                 var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
@@ -505,6 +507,7 @@ namespace PrayerApp.ViewModels
 
                 _prayersLoaded = true;
                 OnPropertyChanged(nameof(HasPrayers));
+                PerfLog.Log($"LoadPrayers.exit id={_prayerCard.Id} Prayers.Count={Prayers.Count} dbReturned={prayers.Count}");
             }
             catch (Exception e)
             {

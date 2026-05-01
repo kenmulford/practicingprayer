@@ -356,6 +356,7 @@ namespace PrayerApp.ViewModels
                 // created externally. Belt-and-suspenders with DeepLinkService's
                 // BulkChangedMessage; explicit call here makes the import → refresh
                 // contract obvious at the call site.
+                PerfLog.Log("ApplyQueryAttributes.imported.entry");
                 SyncAsync().SafeFireAndForget();
             }
         }
@@ -509,6 +510,7 @@ namespace PrayerApp.ViewModels
                 var vm = CreateCardViewModel(card);
                 SubscribeToPropertyChanges(vm);
                 AllPrayerCards.Add(vm);
+                PerfLog.Log($"SyncCore.addNewCard id={vm.Id} title=\"{vm.Title}\" IsExpanded={vm.IsExpanded}");
             }
 
             // Refresh prayer counts + reload prayers on expanded cards
