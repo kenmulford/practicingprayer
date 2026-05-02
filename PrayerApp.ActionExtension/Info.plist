@@ -21,9 +21,9 @@
 			</dict>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.ui-services</string>
+		<string>com.apple.share-services</string>
 		<key>NSExtensionPrincipalClass</key>
-		<string>ActionViewController</string>
+		<string>ShareViewController</string>
 	</dict>
 </dict>
 </plist>
