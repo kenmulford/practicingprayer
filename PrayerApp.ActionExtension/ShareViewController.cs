@@ -84,10 +84,10 @@ public class ShareViewController : UIViewController
 
     private static void WriteToAppGroup(string text)
     {
-        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroup, out var containerError);
+        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroup);
         if (container is null)
         {
-            Debug.WriteLine($"[ShareExt] GetContainerUrl returned null. Entitlement misconfig? error={containerError?.LocalizedDescription}");
+            Debug.WriteLine("[ShareExt] GetContainerUrl returned null. Entitlement misconfig?");
             return;
         }
 
