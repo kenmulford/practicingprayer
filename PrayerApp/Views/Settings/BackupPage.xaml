@@ -45,27 +45,6 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Diagnostics — hidden when no log file exists -->
-            <Border x:Name="diagnosticsSection"
-                    Style="{StaticResource PrayerCardBorder}"
-                    Padding="16"
-                    IsVisible="False">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Diagnostics"
-                           SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
-                    <Label Text="If you're experiencing issues, send this log to help us diagnose the problem."
-                           Style="{StaticResource SectionDescription}" />
-                    <Button x:Name="btnSendDiagnostics"
-                            Text="Send Diagnostic Info"
-                            AutomationId="Backup_Btn_Diagnostics"
-                            SemanticProperties.Hint="Send diagnostic log via email to help troubleshoot"
-                            Clicked="OnSendDiagnosticsClicked"
-                            HorizontalOptions="Fill"
-                            Margin="0,4,0,0" />
-                </VerticalStackLayout>
-            </Border>
-
         </VerticalStackLayout>
     </ScrollView>
 

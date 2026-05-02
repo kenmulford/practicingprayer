@@ -76,9 +76,9 @@ public class SettingsTests
         Assert.True(driver.IsDisplayed("Settings_Row_Backup", timeoutSeconds: 10));
     }
 
-    /// <summary>9.5: Backup page — diagnostics button visibility check.</summary>
+    /// <summary>9.5: Backup page — Backup and Restore buttons load correctly.</summary>
     [Fact]
-    public void Settings_Backup_DiagnosticsCheck()
+    public void Settings_Backup_LoadsBackupAndRestore()
     {
         _setup.Driver.ResetAppUIState(_setup);
         EnsureOnSettingsHub();
@@ -86,8 +86,6 @@ public class SettingsTests
 
         driver.WaitAndTap("Settings_Row_Backup");
 
-        // Diagnostics button may or may not be visible depending on log state
-        // At minimum, the backup page should load correctly
         Assert.True(driver.IsDisplayed("Backup_Btn_Backup", timeoutSeconds: 10)
                  && driver.IsDisplayed("Backup_Btn_Restore", timeoutSeconds: 3),
             "Backup page should show both Backup and Restore buttons");

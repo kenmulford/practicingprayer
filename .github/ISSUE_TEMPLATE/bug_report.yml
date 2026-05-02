@@ -80,7 +80,7 @@ body:
     attributes:
       label: Diagnostic log (optional)
       description: |
-        If you can, attach or paste a diagnostic log. In the app, go to Settings → Backup → "Send Diagnostic Info" to export the log file. Review it before posting and remove anything you don't want public.
+        If you can, attach or paste a diagnostic log. In the app, go to Settings → About → "Send Diagnostic Info" to export the log file. Review it before posting and remove anything you don't want public.
     validations:
       required: false
 
