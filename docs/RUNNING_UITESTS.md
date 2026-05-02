@@ -308,7 +308,7 @@ The `.trx` file can be opened in Visual Studio or VS Code (with the TRX Viewer e
 
 ### In-app diagnostic log
 
-The app itself maintains an append-only diagnostic log (`IDiagnosticLog` / `DiagnosticLog`) that captures fire-and-forget async errors and crash context. Access it via **Settings > Send Diagnostic Info** which opens the OS share sheet with the log file. Useful when a test triggers a crash or unexpected behavior that isn't visible in the Appium session.
+The app itself maintains an append-only diagnostic log (`IDiagnosticLog` / `DiagnosticLog`) that captures fire-and-forget async errors and crash context. Access it via **Settings > About > Send Diagnostic Info** which opens the OS share sheet with the log file (the button is hidden when no log file exists yet). Useful when a test triggers a crash or unexpected behavior that isn't visible in the Appium session.
 
 ---
 
