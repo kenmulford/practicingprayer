@@ -195,6 +195,13 @@
 	  <Folder Include="Interfaces\" />
 	</ItemGroup>
 
+	<!-- Embed the iOS Action Extension as an .appex inside the main app bundle. iOS-only. -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+	  <ProjectReference Include="..\PrayerApp.ActionExtension\PrayerApp.ActionExtension.csproj">
+	    <IsAppExtension>true</IsAppExtension>
+	  </ProjectReference>
+	</ItemGroup>
+
 	<ItemGroup>
 	  <Compile Update="Views\PrayerCard\PrayerCardsPage.xaml.cs">
 	    <DependentUpon>PrayerCardsPage.xaml</DependentUpon>

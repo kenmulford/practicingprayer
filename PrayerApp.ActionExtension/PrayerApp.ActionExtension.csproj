@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0-ios</TargetFramework>
+		<RootNamespace>PrayerApp.ActionExtension</RootNamespace>
+		<AssemblyName>PrayerApp.ActionExtension</AssemblyName>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<!-- This is an iOS App Extension target -->
+		<IsAppExtension>true</IsAppExtension>
+
+		<SupportedOSPlatformVersion>16.0</SupportedOSPlatformVersion>
+
+		<ApplicationId>com.multithreadedllc.prayercards.actionextension</ApplicationId>
+		<!-- Versions must match main app or iOS refuses to load the extension. -->
+		<ApplicationDisplayVersion>1.3.0</ApplicationDisplayVersion>
+		<ApplicationVersion>66</ApplicationVersion>
+
+		<!-- Xcode 26.2 and 26.3+ have identical SDKs; skip the validation check (matches main app csproj). -->
+		<ValidateXcodeVersion>false</ValidateXcodeVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-ios|AnyCPU'">
+		<CodesignKey>Apple Development: Created via API (MXJG78A3AF)</CodesignKey>
+		<CodesignProvision>Practicing Prayer Action Extension Development</CodesignProvision>
+		<CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-ios|AnyCPU'">
+		<CodesignKey>Apple Distribution: Kenneth Mulford (6GV6UL86RM)</CodesignKey>
+		<CodesignProvision>Practicing Prayer Action Extension Distribution</CodesignProvision>
+		<CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
+	</PropertyGroup>
+
+</Project>
