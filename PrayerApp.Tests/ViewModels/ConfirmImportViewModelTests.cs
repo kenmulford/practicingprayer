@@ -281,6 +281,36 @@ public class ConfirmImportViewModelTests
         Assert.DoesNotContain(middle, sut.Prayers);
     }
 
+    // ── PrayersHeader ──────────────────────────
+
+    [Fact]
+    public void PrayersHeader_ReflectsCurrentCount()
+    {
+        var sut = CreateSut();
+        Assert.Equal("Prayers (0)", sut.PrayersHeader);
+
+        sut.Prayers.Add(new EditablePrayer());
+        sut.Prayers.Add(new EditablePrayer());
+        Assert.Equal("Prayers (2)", sut.PrayersHeader);
+
+        sut.Prayers.RemoveAt(0);
+        Assert.Equal("Prayers (1)", sut.PrayersHeader);
+    }
+
+    [Fact]
+    public void PrayersHeader_RaisesPropertyChanged_OnCollectionChange()
+    {
+        // Without INPC notification on collection change, the bound Label
+        // would stay at "Prayers (0)" after parse populates the list.
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.Prayers.Add(new EditablePrayer());
+
+        Assert.Contains(nameof(sut.PrayersHeader), raised);
+    }
+
     // ── Helpers ──────────────────────────
 
     private ConfirmImportViewModel SetupSutWithRows(params (string Title, string? Details)[] rows)

@@ -24,6 +24,8 @@ public class ConfirmImportViewModel : ObservableObject
 
     public ObservableCollection<EditablePrayer> Prayers { get; } = new();
 
+    public string PrayersHeader => $"Prayers ({Prayers.Count})";
+
     private string _cardTitle = string.Empty;
     public string CardTitle
     {
@@ -77,7 +79,11 @@ public class ConfirmImportViewModel : ObservableObject
             Prayers.Remove(row);
         });
 
-        Prayers.CollectionChanged += (_, _) => NotifySaveCanExecute();
+        Prayers.CollectionChanged += (_, _) =>
+        {
+            NotifySaveCanExecute();
+            OnPropertyChanged(nameof(PrayersHeader));
+        };
     }
 
     public ConfirmImportViewModel() : this(

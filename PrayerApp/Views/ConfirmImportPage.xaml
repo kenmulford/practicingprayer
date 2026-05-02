@@ -7,11 +7,11 @@
              Title="Confirm Import"
              SafeAreaEdges="All">
     <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="16">
+        <VerticalStackLayout Padding="16" Spacing="10">
 
             <Border Style="{StaticResource PrayerCardBorder}"
-                    Padding="16">
-                <VerticalStackLayout Spacing="12">
+                    Padding="12">
+                <VerticalStackLayout Spacing="8">
 
                     <Label Text="Card Title"
                            Style="{StaticResource FormLabel}" />
@@ -25,7 +25,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Label Text="Prayers"
+            <Label Text="{Binding PrayersHeader}"
                    Style="{StaticResource SectionHeading}"
                    Margin="0,4,0,0" />
 
@@ -35,13 +35,14 @@
                 <BindableLayout.ItemTemplate>
                     <DataTemplate x:DataType="viewModels:EditablePrayer">
                         <Border Style="{StaticResource PrayerCardBorder}"
-                                Padding="12"
-                                Margin="0,0,0,8">
-                            <VerticalStackLayout Spacing="8">
+                                Padding="8"
+                                Margin="0,0,0,6">
+                            <VerticalStackLayout Spacing="4">
 
-                                <Grid ColumnDefinitions="*, Auto">
-                                    <Label Text="Title"
-                                           Style="{StaticResource FormLabel}"
+                                <Grid ColumnDefinitions="*, Auto" ColumnSpacing="4">
+                                    <Entry Text="{Binding Title}"
+                                           Placeholder="Prayer title"
+                                           SemanticProperties.Description="Prayer title"
                                            VerticalOptions="Center" />
                                     <Button Grid.Column="1"
                                             Text="✕"
@@ -55,15 +56,12 @@
                                             WidthRequest="32"
                                             HeightRequest="32" />
                                 </Grid>
-                                <Entry Text="{Binding Title}"
-                                       Placeholder="Prayer title"
-                                       HorizontalOptions="Fill" />
 
-                                <Label Text="Details (optional)"
-                                       Style="{StaticResource FormLabel}" />
                                 <Editor Text="{Binding Details}"
                                         Placeholder="Add details..."
-                                        HeightRequest="80"
+                                        SemanticProperties.Description="Prayer details"
+                                        AutoSize="TextChanges"
+                                        MinimumHeightRequest="48"
                                         HorizontalOptions="Fill" />
 
                             </VerticalStackLayout>
