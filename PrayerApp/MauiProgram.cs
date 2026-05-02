@@ -316,7 +316,19 @@ namespace PrayerApp
 #if ANDROID
         private static void HandleAndroidIntent(Android.Content.Intent? intent)
         {
-            if (intent?.Action != Android.Content.Intent.ActionView || intent.Data is null)
+            if (intent == null) return;
+
+            // PROCESS_TEXT is API 23+; project MinSdk is 21 so the analyzer needs the runtime guard.
+            if (intent.Action == Android.Content.Intent.ActionProcessText
+                && OperatingSystem.IsAndroidVersionAtLeast(23))
+            {
+                var text = intent.GetStringExtra(Android.Content.Intent.ExtraProcessText);
+                if (!string.IsNullOrWhiteSpace(text))
+                    HandleSelectionImport(text);
+                return;
+            }
+
+            if (intent.Action != Android.Content.Intent.ActionView || intent.Data is null)
                 return;
 
             var uri = intent.Data.ToString();
@@ -375,6 +387,26 @@ namespace PrayerApp
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"[DeepLink] File import failed: {ex.Message}");
+                }
+            });
+        }
+
+        private static void HandleSelectionImport(string text)
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                try
+                {
+                    await App.InitTask;
+                    var services = IPlatformApplication.Current!.Services;
+                    services.GetRequiredService<IImportPayloadService>().StagePayload(text);
+                    await Shell.Current.Navigation.PushModalAsync(
+                        services.GetRequiredService<ConfirmImportPage>());
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[ContextMenu] Selection import failed: {ex.Message}");
                 }
             });
         }

@@ -43,6 +43,9 @@ public static class TestConfig
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
 
+    /// <summary>The Android MainActivity class name (MAUI emits a CRC-prefixed Java class).</summary>
+    public const string AndroidMainActivity = "crc6425c6d21f3599989c.MainActivity";
+
     /// <summary>App-data-relative path to the SQLite DB on Android. Used by TestDataSeed.</summary>
     public const string AndroidAppDbRelativePath = "files/prayer_app.db";
 
@@ -86,7 +89,7 @@ public static class TestConfig
         else
         {
             options.AddAdditionalAppiumOption("appPackage", AndroidPackage);
-            options.AddAdditionalAppiumOption("appActivity", "crc6425c6d21f3599989c.MainActivity");
+            options.AddAdditionalAppiumOption("appActivity", AndroidMainActivity);
             options.AddAdditionalAppiumOption("noReset", true);
         }
 

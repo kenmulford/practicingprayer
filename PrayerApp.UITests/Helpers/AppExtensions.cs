@@ -3,6 +3,7 @@ using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Support.UI;
 using PrayerApp.UITests.Infrastructure;
 using System.IO;
+using Xunit;
 
 namespace PrayerApp.UITests.Helpers;
 
@@ -1524,5 +1525,30 @@ public static class AppExtensions
         var filePath = Path.Combine(dir, $"{testName}_{timestamp}.xml");
         File.WriteAllText(filePath, driver.PageSource);
         return filePath;
+    }
+
+    // ── Platform Intent Helpers ──────────────────────────────────
+
+    /// <summary>
+    /// Android-only: dispatch <c>ACTION_PROCESS_TEXT</c> at MainActivity so the
+    /// Slice 2 selection-toolbar handoff can be exercised without driving Gmail's UI.
+    /// Multi-line payloads are not supported here because <c>am start --es</c> tokenises
+    /// values through adb's shell — newlines are stripped. Production multi-line parsing
+    /// is covered by <c>TextSelectionParser</c> unit tests; manual emulator smoke covers
+    /// the real Gmail → toolbar → modal end-to-end path.
+    /// </summary>
+    public static void LaunchProcessTextIntent(this AppiumDriver driver, string text)
+    {
+        if (TestConfig.IsIOS)
+            throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
+
+        driver.ExecuteScript("mobile: startActivity", new Dictionary<string, object>
+        {
+            { "appPackage", TestConfig.AndroidPackage },
+            { "appActivity", TestConfig.AndroidMainActivity },
+            { "intentAction", "android.intent.action.PROCESS_TEXT" },
+            { "mimeType", "text/plain" },
+            { "optionalIntentArguments", $"--es android.intent.extra.PROCESS_TEXT \"{text}\"" }
+        });
     }
 }

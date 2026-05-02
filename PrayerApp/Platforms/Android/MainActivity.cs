@@ -29,6 +29,11 @@ namespace PrayerApp
         },
         DataScheme = "content",
         DataMimeType = "application/x-prayercard")]
+    // Selection-toolbar handler: text selected in any app -> "Practicing Prayer" action
+    [IntentFilter(
+        new[] { Android.Content.Intent.ActionProcessText },
+        Categories = new[] { Android.Content.Intent.CategoryDefault },
+        DataMimeType = "text/plain")]
     public class MainActivity : MauiAppCompatActivity
     {
     }
