@@ -1,3 +1,7 @@
+using System;
+using System.Diagnostics;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Foundation;
 using ObjCRuntime;
 using UIKit;
@@ -5,20 +9,21 @@ using UIKit;
 namespace PrayerApp.ActionExtension;
 
 /// <summary>
-/// Slice 3a: Share Extension stub. Appears in the iOS Share sheet's top apps row when
-/// text is selected (Mail, Notes, Safari, etc.). Shows a brief "Importing…" indicator,
-/// then dismisses without doing anything yet. Real payload extraction + App Group write
-/// lands in 3b; main-app handoff via custom URL scheme lands in 3c.
+/// iOS Share Extension: captures the user's text selection from the Share sheet
+/// and writes it as a JSON payload to the App Group container for the main app
+/// to pick up.
 ///
-/// The bundle ID and project name still say "ActionExtension" — historical artifact
-/// from before the pivot from Action Extension (com.apple.ui-services) to Share Extension
-/// (com.apple.share-services). Reusing the bundle ID keeps the existing provisioning
+/// Class and bundle ID retain the "ActionExtension" name post-pivot from Action
+/// to Share Extension — reusing the bundle ID keeps the existing provisioning
 /// profiles valid.
 /// </summary>
 [Register("ShareViewController")]
 public class ShareViewController : UIViewController
 {
-    private const double DismissDelaySeconds = 0.8;
+    private const string AppGroup = "group.com.multithreadedllc.prayercards";
+    private const string PayloadFile = "pending-import.json";
+    private const string PlainTextUti = "public.plain-text";
+    private const int MaxPayloadBytes = 256 * 1024;
 
     public ShareViewController() : base()
     {
@@ -28,19 +33,87 @@ public class ShareViewController : UIViewController
     {
     }
 
-    public override void ViewDidLoad()
+    public override async void ViewDidLoad()
     {
         base.ViewDidLoad();
-
         BuildIndicatorUI();
 
-        // Auto-dismiss after a brief pause. Slice 3b/3c will replace the timer with a
-        // real payload-handoff sequence (extract NSItemProvider text → write to App Group
-        // → openURL into main app → CompleteRequest).
-        NSTimer.CreateScheduledTimer(DismissDelaySeconds, _ =>
+        try
         {
-            ExtensionContext?.CompleteRequest(System.Array.Empty<NSExtensionItem>(), null);
+            var text = await ExtractPlainTextAsync();
+
+            if (!string.IsNullOrWhiteSpace(text)
+                && System.Text.Encoding.UTF8.GetByteCount(text) <= MaxPayloadBytes)
+            {
+                WriteToAppGroup(text);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[ShareExt] payload pipeline failed: {ex}");
+        }
+        finally
+        {
+            // CompleteRequest must run on the main thread; LoadItemAsync's continuation
+            // can resume on a non-main queue. UIViewController inherits BeginInvokeOnMainThread
+            // from NSObject.
+            BeginInvokeOnMainThread(() =>
+            {
+                ExtensionContext?.CompleteRequest(Array.Empty<NSExtensionItem>(), null);
+            });
+        }
+    }
+
+    private async Task<string?> ExtractPlainTextAsync()
+    {
+        var inputItems = ExtensionContext?.InputItems ?? Array.Empty<NSExtensionItem>();
+        foreach (var item in inputItems)
+        {
+            var attachments = item.Attachments ?? Array.Empty<NSItemProvider>();
+            foreach (var attachment in attachments)
+            {
+                if (!attachment.HasItemConformingTo(PlainTextUti))
+                    continue;
+
+                var loaded = await attachment.LoadItemAsync(PlainTextUti, null);
+                return (loaded as NSString)?.ToString();
+            }
+        }
+        return null;
+    }
+
+    private static void WriteToAppGroup(string text)
+    {
+        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroup, out var containerError);
+        if (container is null)
+        {
+            Debug.WriteLine($"[ShareExt] GetContainerUrl returned null. Entitlement misconfig? error={containerError?.LocalizedDescription}");
+            return;
+        }
+
+        var url = container.Append(PayloadFile, false);
+
+        // System.Text.Json keeps parity with the 3c read side (HandleAppGroupImport
+        // will use JsonDocument.Parse).
+        var payload = JsonSerializer.Serialize(new
+        {
+            raw = text,
+            ts = DateTime.UtcNow.ToString("o"),
         });
+
+        var data = NSData.FromString(payload, NSStringEncoding.UTF8);
+        if (data is null)
+        {
+            Debug.WriteLine("[ShareExt] NSData.FromString returned null");
+            return;
+        }
+
+        // atomically:true → sibling temp file, fsync, rename. Crash mid-write leaves
+        // the prior file intact.
+        if (!data.Save(url, atomically: true))
+        {
+            Debug.WriteLine($"[ShareExt] NSData.Save returned false for {url.AbsoluteString}");
+        }
     }
 
     private void BuildIndicatorUI()
