@@ -194,6 +194,10 @@ namespace PrayerApp
 #elif IOS
             builder.Services.AddSingleton<IOrientationService, PrayerApp.Platforms.iOS.OrientationService>();
             builder.Services.AddSingleton<IColorPickerService, PrayerApp.Platforms.iOS.ColorPickerService>();
+            // App Group import dispatcher — reads pending-import.json staged by
+            // the iOS Share Extension on every Window.Activated.
+            builder.Services.AddSingleton<IAppGroupContainerProvider, PrayerApp.Platforms.iOS.NsFileManagerAppGroupContainerProvider>();
+            builder.Services.AddSingleton<PrayerApp.Platforms.iOS.AppGroupImportDispatcher>();
 #endif
 
             // ViewModels — Transient (fresh per page navigation)
