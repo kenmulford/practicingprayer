@@ -372,6 +372,11 @@ PrayerApp/Resources/AppIcon/app icon rvsd.pen
 /screenshots/verify
 BACKLOG.md
 
+# Xcode user-specific files (PrayerApp.AppIntents native target)
+**/xcuserdata/
+**/*.xcuserstate
+**/DerivedData/
+
 # Private working files (not part of the public repo)
 CLAUDE.md
 docs/tester-feedback/

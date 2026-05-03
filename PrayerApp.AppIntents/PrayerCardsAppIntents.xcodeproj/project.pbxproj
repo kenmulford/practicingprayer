@@ -1,0 +1,752 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BEFB2E932FA7C4CA00FDEF6F /* PrayerAppIntents.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = BEFB2E8A2FA7C4CA00FDEF6F /* PrayerAppIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BE6553B92FA7C3E900C04A2A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BE6553A32FA7C3E800C04A2A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BE6553AA2FA7C3E800C04A2A;
+			remoteInfo = PrayerCardsAppIntents;
+		};
+		BE6553C32FA7C3E900C04A2A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BE6553A32FA7C3E800C04A2A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BE6553AA2FA7C3E800C04A2A;
+			remoteInfo = PrayerCardsAppIntents;
+		};
+		BEFB2E912FA7C4CA00FDEF6F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BE6553A32FA7C3E800C04A2A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BEFB2E892FA7C4CA00FDEF6F;
+			remoteInfo = PrayerAppIntents;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BEFB2E942FA7C4CA00FDEF6F /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				BEFB2E932FA7C4CA00FDEF6F /* PrayerAppIntents.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		BE6553AB2FA7C3E800C04A2A /* PrayerCardsAppIntents.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrayerCardsAppIntents.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BE6553B82FA7C3E900C04A2A /* PrayerCardsAppIntentsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PrayerCardsAppIntentsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BE6553C22FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PrayerCardsAppIntentsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEFB2E8A2FA7C4CA00FDEF6F /* PrayerAppIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = PrayerAppIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BEFB2E972FA7C4CA00FDEF6F /* Exceptions for "PrayerAppIntents" folder in "PrayerAppIntents" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BEFB2E892FA7C4CA00FDEF6F /* PrayerAppIntents */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		BE6553AD2FA7C3E800C04A2A /* PrayerCardsAppIntents */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PrayerCardsAppIntents;
+			sourceTree = "<group>";
+		};
+		BE6553BB2FA7C3E900C04A2A /* PrayerCardsAppIntentsTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PrayerCardsAppIntentsTests;
+			sourceTree = "<group>";
+		};
+		BE6553C52FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PrayerCardsAppIntentsUITests;
+			sourceTree = "<group>";
+		};
+		BEFB2E8B2FA7C4CA00FDEF6F /* PrayerAppIntents */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BEFB2E972FA7C4CA00FDEF6F /* Exceptions for "PrayerAppIntents" folder in "PrayerAppIntents" target */,
+			);
+			path = PrayerAppIntents;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BE6553A82FA7C3E800C04A2A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE6553B52FA7C3E900C04A2A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE6553BF2FA7C3E900C04A2A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BEFB2E872FA7C4CA00FDEF6F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		BE6553A22FA7C3E800C04A2A = {
+			isa = PBXGroup;
+			children = (
+				BE6553AD2FA7C3E800C04A2A /* PrayerCardsAppIntents */,
+				BE6553BB2FA7C3E900C04A2A /* PrayerCardsAppIntentsTests */,
+				BE6553C52FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests */,
+				BEFB2E8B2FA7C4CA00FDEF6F /* PrayerAppIntents */,
+				BE6553AC2FA7C3E800C04A2A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BE6553AC2FA7C3E800C04A2A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BE6553AB2FA7C3E800C04A2A /* PrayerCardsAppIntents.app */,
+				BE6553B82FA7C3E900C04A2A /* PrayerCardsAppIntentsTests.xctest */,
+				BE6553C22FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests.xctest */,
+				BEFB2E8A2FA7C4CA00FDEF6F /* PrayerAppIntents.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BE6553AA2FA7C3E800C04A2A /* PrayerCardsAppIntents */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE6553CC2FA7C3E900C04A2A /* Build configuration list for PBXNativeTarget "PrayerCardsAppIntents" */;
+			buildPhases = (
+				BE6553A72FA7C3E800C04A2A /* Sources */,
+				BE6553A82FA7C3E800C04A2A /* Frameworks */,
+				BE6553A92FA7C3E800C04A2A /* Resources */,
+				BEFB2E942FA7C4CA00FDEF6F /* Embed ExtensionKit Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BEFB2E922FA7C4CA00FDEF6F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BE6553AD2FA7C3E800C04A2A /* PrayerCardsAppIntents */,
+			);
+			name = PrayerCardsAppIntents;
+			packageProductDependencies = (
+			);
+			productName = PrayerCardsAppIntents;
+			productReference = BE6553AB2FA7C3E800C04A2A /* PrayerCardsAppIntents.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BE6553B72FA7C3E900C04A2A /* PrayerCardsAppIntentsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE6553CF2FA7C3E900C04A2A /* Build configuration list for PBXNativeTarget "PrayerCardsAppIntentsTests" */;
+			buildPhases = (
+				BE6553B42FA7C3E900C04A2A /* Sources */,
+				BE6553B52FA7C3E900C04A2A /* Frameworks */,
+				BE6553B62FA7C3E900C04A2A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BE6553BA2FA7C3E900C04A2A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BE6553BB2FA7C3E900C04A2A /* PrayerCardsAppIntentsTests */,
+			);
+			name = PrayerCardsAppIntentsTests;
+			packageProductDependencies = (
+			);
+			productName = PrayerCardsAppIntentsTests;
+			productReference = BE6553B82FA7C3E900C04A2A /* PrayerCardsAppIntentsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		BE6553C12FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE6553D22FA7C3E900C04A2A /* Build configuration list for PBXNativeTarget "PrayerCardsAppIntentsUITests" */;
+			buildPhases = (
+				BE6553BE2FA7C3E900C04A2A /* Sources */,
+				BE6553BF2FA7C3E900C04A2A /* Frameworks */,
+				BE6553C02FA7C3E900C04A2A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BE6553C42FA7C3E900C04A2A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				BE6553C52FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests */,
+			);
+			name = PrayerCardsAppIntentsUITests;
+			packageProductDependencies = (
+			);
+			productName = PrayerCardsAppIntentsUITests;
+			productReference = BE6553C22FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		BEFB2E892FA7C4CA00FDEF6F /* PrayerAppIntents */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BEFB2E982FA7C4CA00FDEF6F /* Build configuration list for PBXNativeTarget "PrayerAppIntents" */;
+			buildPhases = (
+				BEFB2E862FA7C4CA00FDEF6F /* Sources */,
+				BEFB2E872FA7C4CA00FDEF6F /* Frameworks */,
+				BEFB2E882FA7C4CA00FDEF6F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BEFB2E8B2FA7C4CA00FDEF6F /* PrayerAppIntents */,
+			);
+			name = PrayerAppIntents;
+			packageProductDependencies = (
+			);
+			productName = PrayerAppIntents;
+			productReference = BEFB2E8A2FA7C4CA00FDEF6F /* PrayerAppIntents.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BE6553A32FA7C3E800C04A2A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					BE6553AA2FA7C3E800C04A2A = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					BE6553B72FA7C3E900C04A2A = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = BE6553AA2FA7C3E800C04A2A;
+					};
+					BE6553C12FA7C3E900C04A2A = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = BE6553AA2FA7C3E800C04A2A;
+					};
+					BEFB2E892FA7C4CA00FDEF6F = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+				};
+			};
+			buildConfigurationList = BE6553A62FA7C3E800C04A2A /* Build configuration list for PBXProject "PrayerCardsAppIntents" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = BE6553A22FA7C3E800C04A2A;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BE6553AC2FA7C3E800C04A2A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BE6553AA2FA7C3E800C04A2A /* PrayerCardsAppIntents */,
+				BE6553B72FA7C3E900C04A2A /* PrayerCardsAppIntentsTests */,
+				BE6553C12FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests */,
+				BEFB2E892FA7C4CA00FDEF6F /* PrayerAppIntents */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BE6553A92FA7C3E800C04A2A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE6553B62FA7C3E900C04A2A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE6553C02FA7C3E900C04A2A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BEFB2E882FA7C4CA00FDEF6F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BE6553A72FA7C3E800C04A2A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE6553B42FA7C3E900C04A2A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE6553BE2FA7C3E900C04A2A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BEFB2E862FA7C4CA00FDEF6F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BE6553BA2FA7C3E900C04A2A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BE6553AA2FA7C3E800C04A2A /* PrayerCardsAppIntents */;
+			targetProxy = BE6553B92FA7C3E900C04A2A /* PBXContainerItemProxy */;
+		};
+		BE6553C42FA7C3E900C04A2A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BE6553AA2FA7C3E800C04A2A /* PrayerCardsAppIntents */;
+			targetProxy = BE6553C32FA7C3E900C04A2A /* PBXContainerItemProxy */;
+		};
+		BEFB2E922FA7C4CA00FDEF6F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BEFB2E892FA7C4CA00FDEF6F /* PrayerAppIntents */;
+			targetProxy = BEFB2E912FA7C4CA00FDEF6F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		BE6553CA2FA7C3E900C04A2A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BE6553CB2FA7C3E900C04A2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BE6553CD2FA7C3E900C04A2A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BE6553CE2FA7C3E900C04A2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BE6553D02FA7C3E900C04A2A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntentsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PrayerCardsAppIntents.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PrayerCardsAppIntents";
+			};
+			name = Debug;
+		};
+		BE6553D12FA7C3E900C04A2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntentsTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PrayerCardsAppIntents.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PrayerCardsAppIntents";
+			};
+			name = Release;
+		};
+		BE6553D32FA7C3E900C04A2A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntentsUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PrayerCardsAppIntents;
+			};
+			name = Debug;
+		};
+		BE6553D42FA7C3E900C04A2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntentsUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PrayerCardsAppIntents;
+			};
+			name = Release;
+		};
+		BEFB2E952FA7C4CA00FDEF6F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PrayerAppIntents/PrayerAppIntents.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PrayerAppIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PrayerAppIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntents.PrayerAppIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BEFB2E962FA7C4CA00FDEF6F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PrayerAppIntents/PrayerAppIntents.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6GV6UL86RM;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PrayerAppIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PrayerAppIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.multithreadedllc.prayercards.PrayerCardsAppIntents.PrayerAppIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BE6553A62FA7C3E800C04A2A /* Build configuration list for PBXProject "PrayerCardsAppIntents" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE6553CA2FA7C3E900C04A2A /* Debug */,
+				BE6553CB2FA7C3E900C04A2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BE6553CC2FA7C3E900C04A2A /* Build configuration list for PBXNativeTarget "PrayerCardsAppIntents" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE6553CD2FA7C3E900C04A2A /* Debug */,
+				BE6553CE2FA7C3E900C04A2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BE6553CF2FA7C3E900C04A2A /* Build configuration list for PBXNativeTarget "PrayerCardsAppIntentsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE6553D02FA7C3E900C04A2A /* Debug */,
+				BE6553D12FA7C3E900C04A2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BE6553D22FA7C3E900C04A2A /* Build configuration list for PBXNativeTarget "PrayerCardsAppIntentsUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE6553D32FA7C3E900C04A2A /* Debug */,
+				BE6553D42FA7C3E900C04A2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BEFB2E982FA7C4CA00FDEF6F /* Build configuration list for PBXNativeTarget "PrayerAppIntents" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BEFB2E952FA7C4CA00FDEF6F /* Debug */,
+				BEFB2E962FA7C4CA00FDEF6F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BE6553A32FA7C3E800C04A2A /* Project object */;
+}
