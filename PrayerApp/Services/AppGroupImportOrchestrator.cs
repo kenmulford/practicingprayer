@@ -8,11 +8,9 @@ namespace PrayerApp.Services;
 /// <summary>
 /// Reads pending-import.json from the App Group container, stages the raw
 /// text via IImportPayloadService, pushes ConfirmImportPage, deletes the
-/// file in finally, appends a breadcrumb. All collaborators are injected
-/// for testability — there is no static coupling to Shell.Current or
-/// NSFileManager in this class. Lives in main app (not PrayerApp.Shared)
-/// because it depends on Microsoft.Maui.Controls.Page and the iOS Share
-/// Extension cannot transitively depend on MAUI.
+/// file in finally, appends a breadcrumb. Lives in main app (not
+/// PrayerApp.Shared) because it depends on Microsoft.Maui.Controls.Page,
+/// and the iOS Share Extension cannot transitively depend on MAUI.
 /// </summary>
 public sealed class AppGroupImportOrchestrator
 {
@@ -49,15 +47,13 @@ public sealed class AppGroupImportOrchestrator
 
         BreadcrumbOutcome outcome = BreadcrumbOutcome.IoFail;
         int byteCount = -1;
-        bool shouldPush = false;
-        string? rawForStage = null;
+        ImportPayload? payload = null;
 
         try
         {
             var json = File.ReadAllText(payloadPath);
             byteCount = json.Length;
 
-            ImportPayload? payload;
             try
             {
                 payload = JsonSerializer.Deserialize(json, ImportPayloadJsonContext.Default.ImportPayload);
@@ -68,15 +64,9 @@ public sealed class AppGroupImportOrchestrator
                 return;
             }
 
-            if (payload is null || string.IsNullOrWhiteSpace(payload.Raw))
-            {
-                outcome = BreadcrumbOutcome.Empty;
-                return;
-            }
-
-            rawForStage = payload.Raw;
-            outcome = BreadcrumbOutcome.Ok;
-            shouldPush = true;
+            outcome = (payload is null || string.IsNullOrWhiteSpace(payload.Raw))
+                ? BreadcrumbOutcome.Empty
+                : BreadcrumbOutcome.Ok;
         }
         catch
         {
@@ -91,9 +81,9 @@ public sealed class AppGroupImportOrchestrator
         // Stage + push happen OUTSIDE the finally so a push exception
         // can't double-delete or double-breadcrumb. The file is gone
         // either way; the in-memory slot is the source of truth here.
-        if (shouldPush && rawForStage is not null)
+        if (outcome == BreadcrumbOutcome.Ok && payload is not null)
         {
-            _payloadService.StagePayload(rawForStage);
+            _payloadService.StagePayload(payload.Raw);
             var page = _pageFactory();
             var tcs = new TaskCompletionSource();
             _uiDispatcher.Dispatch(async () =>

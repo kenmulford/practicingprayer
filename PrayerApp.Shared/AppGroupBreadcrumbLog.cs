@@ -13,11 +13,17 @@ public enum BreadcrumbOutcome
 
 /// <summary>
 /// Privacy-safe forensics log shared between the iOS Share Extension and
-/// the main app. Append uses a static lock for same-process ordering plus
-/// FileMode.Append for cross-process O_APPEND atomicity — neither process
-/// alone needs the lock, but defensive code paths in tests and future
-/// callers benefit. Truncation is main-app-only (single-writer phase) per
-/// the Slice 3c design.
+/// the main app.
+///
+/// Append uses BOTH a static lock AND FileMode.Append (O_APPEND on POSIX).
+/// The lock guards same-process concurrent calls — empirically required:
+/// without it, the concurrent-writers TDD test lost 1 line in 200 because
+/// .NET's FileStream open+write+close cycle, despite passing FileMode.Append
+/// to the kernel, can race when two threads in the same process interleave
+/// their open() syscalls. O_APPEND covers cross-process atomicity (extension
+/// process vs main-app process) where the lock cannot reach.
+///
+/// Truncation is main-app-only (single-writer phase) per the Slice 3c design.
 ///
 /// Format: &lt;UTC ISO-8601 timestamp&gt; &lt;byte count or '-'&gt; &lt;outcome&gt;
 /// One entry per line. Newest is LAST. ASCII only. No raw user text — ever.
@@ -54,6 +60,9 @@ public static class AppGroupBreadcrumbLog
 
     public static void Truncate(string containerPath)
     {
+        // Microsecond race window: between ReadAllLines and File.Move below,
+        // a concurrent extension Append could land on the pre-Move inode and
+        // be lost. Forensics-only impact, not blocking.
         try
         {
             var logPath = Path.Combine(containerPath, AppGroupConstants.LogFileName);
@@ -81,6 +90,6 @@ public static class AppGroupBreadcrumbLog
         BreadcrumbOutcome.ParseFail => "parse-fail",
         BreadcrumbOutcome.IoFail    => "io-fail",
         BreadcrumbOutcome.WriteOk   => "write-ok",
-        _                            => "unknown",
+        _                            => $"unknown-{(int)outcome}",
     };
 }

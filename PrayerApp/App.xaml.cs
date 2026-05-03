@@ -1,5 +1,7 @@
 #if IOS
 using Microsoft.Extensions.DependencyInjection;
+using PrayerApp.Helpers;
+using PrayerApp.Services;
 #endif
 
 namespace PrayerApp
@@ -21,6 +23,9 @@ namespace PrayerApp
         {
             var window = new Window(new AppShell());
 #if IOS
+            // Static handler — no captured state, so no need to unsubscribe
+            // when the Window is destroyed (the GC clears the delegate when
+            // the Window itself is collected).
             window.Activated += OnWindowActivated;
 #endif
             return window;
@@ -29,25 +34,20 @@ namespace PrayerApp
 #if IOS
         private static void OnWindowActivated(object? sender, EventArgs e)
         {
-            // Fire-and-forget. Activated fires on cold launch (after Shell is
-            // realized) AND on every warm resume. The orchestrator awaits
-            // App.InitTask internally so DB seed completes before any DI
-            // resolution that touches IDBService.
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await InitTask;
-                    var dispatcher = IPlatformApplication.Current?.Services
-                        .GetService<PrayerApp.Platforms.iOS.AppGroupImportDispatcher>();
-                    if (dispatcher is null) return;
-                    await dispatcher.CheckPendingAsync();
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[AppGroupImport] Activated handler failed: {ex}");
-                }
-            });
+            // Activated fires on cold launch (after Shell is realized) AND on
+            // every warm resume. SafeFireAndForget routes any exception to
+            // IDiagnosticLog so failures show up in Settings → About → Send
+            // Diagnostic Info instead of vanishing into Debug.WriteLine.
+            CheckPendingAsync().SafeFireAndForget();
+        }
+
+        private static async Task CheckPendingAsync()
+        {
+            await InitTask;
+            var orchestrator = IPlatformApplication.Current?.Services
+                .GetService<AppGroupImportOrchestrator>();
+            if (orchestrator is null) return;
+            await orchestrator.CheckPendingAsync();
         }
 #endif
     }
