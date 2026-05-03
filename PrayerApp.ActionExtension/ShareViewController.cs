@@ -36,6 +36,22 @@ public class ShareViewController : UIViewController
     // payload from the App Group container. Only the scheme matters for routing.
     private static readonly NSUrl HostAppWakeupUrl = new($"{AppGroupConstants.HostAppScheme}://import");
 
+    // PrayerApp brand muted green. Mirror in PrayerApp/Resources/Styles/Colors.xaml
+    // (Primary) and PrayerApp.csproj's MauiSplashScreen Color — keep the three in sync.
+    // Extension is a separate binary; can't reference XAML resources directly.
+    private static readonly UIColor BrandGreen = UIColor.FromRGB(0x6B, 0x7D, 0x5A);
+
+    // Manual relaunch is the ship UX — iOS 26.4 blocks Share-Extension auto-launch
+    // (both NSExtensionContext.OpenUrl and responder-chain openURL:). The 3-second
+    // delay before CompleteRequest gives the user time to read the "tap PrayerApp"
+    // hint before iOS dismisses the extension.
+    private const double CompleteRequestDelaySeconds = 3.0;
+
+    private const string SuccessCaption = "Saved — tap PrayerApp to confirm";
+    private const string FailureCaption = "Couldn't import — try again";
+
+    private UILabel? _statusLabel;
+
     public ShareViewController() : base()
     {
     }
@@ -112,15 +128,57 @@ public class ShareViewController : UIViewController
     {
         // CompleteRequest must run on the main thread; the LoadItem callback can
         // resume on a non-main queue. UIViewController inherits BeginInvokeOnMainThread
-        // from NSObject. The optional host-app wakeup runs on the same hop, BEFORE
-        // CompleteRequest tears down the extension context.
+        // from NSObject.
         BeginInvokeOnMainThread(() =>
         {
-            if (wakeHostApp)
-                TryWakeHostApp();
-            ExtensionContext?.CompleteRequest(Array.Empty<NSExtensionItem>(), null);
+            var ctx = ExtensionContext;
+            if (ctx is null) return;
+
+            if (!wakeHostApp)
+            {
+                if (_statusLabel is not null)
+                    _statusLabel.Text = FailureCaption;
+                ScheduleCompleteRequest(ctx);
+                return;
+            }
+
+            // Both wakeup attempts (modern OpenUrl + legacy responder-chain) are
+            // forward-compat probes — empirically blocked on iOS 26.4 from Share
+            // Extensions but harmless and may unblock on a future iOS. Outcome
+            // persists to the breadcrumb log.
+            ctx.OpenUrl(HostAppWakeupUrl, success =>
+            {
+                BeginInvokeOnMainThread(() =>
+                {
+                    Debug.WriteLine($"[ShareExt] OpenUrl success: {success}");
+                    AppendWakeBreadcrumb(success);
+                    if (!success) TryWakeHostApp();
+                    ScheduleCompleteRequest(ctx);
+                });
+            });
         });
     }
+
+    private static void ScheduleCompleteRequest(NSExtensionContext ctx)
+    {
+        NSTimer.CreateScheduledTimer(CompleteRequestDelaySeconds, _ =>
+        {
+            ctx.CompleteRequest(Array.Empty<NSExtensionItem>(), null);
+        });
+    }
+
+    private static void AppendWakeBreadcrumb(bool success)
+    {
+        var path = GetAppGroupContainer()?.Path;
+        if (path is null) return;
+        AppGroupBreadcrumbLog.Append(
+            path,
+            success ? BreadcrumbOutcome.HostWakeOk : BreadcrumbOutcome.HostWakeFail,
+            byteCount: -1);
+    }
+
+    private static NSUrl? GetAppGroupContainer()
+        => NSFileManager.DefaultManager.GetContainerUrl(AppGroupConstants.AppGroupId);
 
     /// <summary>
     /// Walk the UIResponder chain looking for an object that responds to
@@ -164,7 +222,7 @@ public class ShareViewController : UIViewController
     /// </summary>
     private static bool WriteToAppGroup(string text)
     {
-        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroupConstants.AppGroupId);
+        var container = GetAppGroupContainer();
         if (container is null)
         {
             Debug.WriteLine("[ShareExt] GetContainerUrl returned null. Entitlement misconfig?");
@@ -202,26 +260,27 @@ public class ShareViewController : UIViewController
 
     private void BuildIndicatorUI()
     {
-        View!.BackgroundColor = UIColor.SystemBackground;
+        View!.BackgroundColor = BrandGreen;
 
         var spinner = new UIActivityIndicatorView(UIActivityIndicatorViewStyle.Medium)
         {
             TranslatesAutoresizingMaskIntoConstraints = false,
             IsAccessibilityElement = false,
+            Color = UIColor.White,
         };
         spinner.StartAnimating();
 
-        var label = new UILabel
+        _statusLabel = new UILabel
         {
-            Text = "Importing prayer cards…",
+            Text = SuccessCaption,
             Font = UIFont.GetPreferredFontForTextStyle(UIFontTextStyle.Body),
-            TextColor = UIColor.Label,
+            TextColor = UIColor.White,
             TextAlignment = UITextAlignment.Center,
             Lines = 0,
             TranslatesAutoresizingMaskIntoConstraints = false,
         };
 
-        var stack = new UIStackView(new UIView[] { spinner, label })
+        var stack = new UIStackView(new UIView[] { spinner, _statusLabel })
         {
             Axis = UILayoutConstraintAxis.Vertical,
             Spacing = 12,
@@ -240,6 +299,6 @@ public class ShareViewController : UIViewController
 
         // Announce to VoiceOver users — the auto-dismissing modal otherwise gives no
         // audible cue, since the sheet closes faster than VO would naturally read it.
-        UIAccessibility.PostNotification(UIAccessibilityPostNotification.Announcement, (NSString)label.Text);
+        UIAccessibility.PostNotification(UIAccessibilityPostNotification.Announcement, (NSString)_statusLabel.Text);
     }
 }

@@ -9,6 +9,8 @@ public enum BreadcrumbOutcome
     ParseFail,
     IoFail,
     WriteOk,
+    HostWakeOk,
+    HostWakeFail,
 }
 
 /// <summary>
@@ -85,11 +87,13 @@ public static class AppGroupBreadcrumbLog
 
     private static string OutcomeToken(BreadcrumbOutcome outcome) => outcome switch
     {
-        BreadcrumbOutcome.Ok        => "ok",
-        BreadcrumbOutcome.Empty     => "empty",
-        BreadcrumbOutcome.ParseFail => "parse-fail",
-        BreadcrumbOutcome.IoFail    => "io-fail",
-        BreadcrumbOutcome.WriteOk   => "write-ok",
-        _                            => $"unknown-{(int)outcome}",
+        BreadcrumbOutcome.Ok           => "ok",
+        BreadcrumbOutcome.Empty        => "empty",
+        BreadcrumbOutcome.ParseFail    => "parse-fail",
+        BreadcrumbOutcome.IoFail       => "io-fail",
+        BreadcrumbOutcome.WriteOk      => "write-ok",
+        BreadcrumbOutcome.HostWakeOk   => "host-wake-ok",
+        BreadcrumbOutcome.HostWakeFail => "host-wake-fail",
+        _                               => $"unknown-{(int)outcome}",
     };
 }
