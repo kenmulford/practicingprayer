@@ -1,0 +1,31 @@
+<Project>
+  <!--
+    Local iOS signing identity. Copy this file to:
+
+        PrayerApp/iOS-signing.local.props
+
+    and replace the placeholder values with your own development /
+    distribution certificate Common Names and provisioning profile names.
+    The local copy is gitignored — your identity stays out of source control.
+
+    PrayerApp.csproj imports this file conditionally (Exists check), so
+    builds work without it: MSBuild + Xcode fall through to automatic
+    signing. iOS device/distribution builds will fail at the codesign
+    step until you provide concrete values here.
+
+    Find your values in Xcode → Settings → Accounts → Manage Certificates,
+    or in Keychain Access. Provisioning profile names show up in
+    ~/Library/MobileDevice/Provisioning Profiles or in the developer
+    portal under Certificates, Identifiers & Profiles.
+  -->
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-ios|AnyCPU'">
+    <CodesignKey>Apple Development: Your Name (TEAMID)</CodesignKey>
+    <CodesignProvision>Your Development Profile Name</CodesignProvision>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-ios|AnyCPU'">
+    <CodesignKey>Apple Distribution: Your Name (TEAMID)</CodesignKey>
+    <CodesignProvision>Your Distribution Profile Name</CodesignProvision>
+  </PropertyGroup>
+</Project>

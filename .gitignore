@@ -388,3 +388,6 @@ window_dump.xml
 /dark_mode_check.png
 /expanded_light.png
 ^1
+
+# Local iOS signing identity (per-developer overrides; never commit)
+PrayerApp/iOS-signing.local.props

@@ -30,18 +30,22 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-ios|AnyCPU'">
 	  <EnableSGenConc>False</EnableSGenConc>
 	  <AdditionalArgs>ValidateXcodeVersion=false</AdditionalArgs>
-	  <CodesignKey>Apple Distribution: Kenneth Mulford (6GV6UL86RM)</CodesignKey>
-	  <CodesignProvision>Practicing Prayer</CodesignProvision>
 	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-ios|AnyCPU'">
 	  <EnableSGenConc>False</EnableSGenConc>
 	  <AdditionalArgs>ValidateXcodeVersion=false</AdditionalArgs>
-	  <CodesignKey>Apple Distribution: Kenneth Mulford (6GV6UL86RM)</CodesignKey>
-	  <CodesignProvision>Practicing Prayer</CodesignProvision>
 	  <CodesignEntitlements>Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
+
+	<!--
+	  iOS signing identity (CodesignKey + CodesignProvision) is per-developer.
+	  Copy iOS-signing.local.props.example to iOS-signing.local.props (gitignored)
+	  and fill in your own values. Without that file, builds fall through to
+	  Xcode automatic signing — fine for simulator, will fail for device/Release.
+	-->
+	<Import Project="iOS-signing.local.props" Condition="Exists('iOS-signing.local.props')" />
 
 	<!--
 	  Android signing — passwords loaded from environment variables.
@@ -59,8 +63,6 @@
 	<PropertyGroup Condition="'$(TargetFramework)'=='net10.0-ios'">
 	  <!-- Xcode 26.2 and 26.3 have identical SDKs; skip the version check until workloads catch up -->
 	  <ValidateXcodeVersion>false</ValidateXcodeVersion>
-	  <CodesignKey>iPhone Distribution</CodesignKey>
-	  <CodesignProvision></CodesignProvision>
 	  <ProvisioningType>manual</ProvisioningType>
 	</PropertyGroup>
 
