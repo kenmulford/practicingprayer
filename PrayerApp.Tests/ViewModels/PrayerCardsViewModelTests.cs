@@ -19,6 +19,7 @@ public class PrayerCardsViewModelTests
     private readonly ITagService _tagService = Substitute.For<ITagService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
     private readonly IBoxService _boxService = Substitute.For<IBoxService>();
+    private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     // Fresh WeakReferenceMessenger per fixture so messenger-driven tests can fire
     // real Send/Register without leaking across tests via the .Default singleton.
     private readonly IMessenger _messenger = new WeakReferenceMessenger();
@@ -1330,6 +1331,87 @@ public class PrayerCardsViewModelTests
         Assert.NotNull(result);
         Assert.True(unboxed.IsExpanded);
         _settings.DidNotReceiveWithAnyArgs().ExpandedSectionIds = Arg.Any<string>();
+    }
+
+    // ── BUG-78 — Imported card opens with empty prayer list ──────────────
+    // ConfirmImportViewModel.SaveAsync persists the card AND its prayers, then
+    // navigates ?saved=cardId. ConsumePendingSavedAsync flipped IsExpanded=true
+    // without loading prayers (the only loader was ToggleExpandedAsync, gated
+    // on !IsExpanded), so an imported card revealed an empty body. Pre-fix
+    // tests asserted IsExpanded but never Prayers.Count.
+
+    private PrayerRequestDetailViewModel BuildStubPrayerRowVm(Prayer p)
+        => new(p, _prayerService, _tagService, _cardService, _onboardingService,
+            _notificationService, _navigationService, _accessibilityService, _settings);
+
+    private void SetupBug78EmptySync(int cardId, params Prayer[] prayers)
+    {
+        SetupSystemBoxes();
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _prayerService.GetPrayersByCardAsync(cardId).Returns(prayers.ToList().AsReadOnly());
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_NewCardViaSync_LoadsPrayers()
+    {
+        SetupBug78EmptySync(42,
+            new Prayer { Id = 100, PrayerCardId = 42, Title = "Pray for Mom", IsImported = true },
+            new Prayer { Id = 101, PrayerCardId = 42, Title = "Pray for Dad", IsImported = true },
+            new Prayer { Id = 102, PrayerCardId = 42, Title = "Pray for Sis", IsImported = true });
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+
+        // Simulate SyncAsync's diff loop adding card 42 between ApplyQueryAttributes
+        // and ConsumePendingSavedAsync (the new-via-sync branch).
+        var newCard = new PrayerCard { Id = 42, Title = "Imported May 2", BoxId = 0, IsImported = true };
+        var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService)
+        {
+            PrayerRowFactory = BuildStubPrayerRowVm
+        };
+        sut.AllPrayerCards.Add(newVm);
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.True(result.IsExpanded);
+        Assert.Equal(3, result.Prayers.Count);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_NewCardViaDb_LoadsPrayers()
+    {
+        SetupBug78EmptySync(42,
+            new Prayer { Id = 100, PrayerCardId = 42, Title = "Pray for Mom", IsImported = true },
+            new Prayer { Id = 101, PrayerCardId = 42, Title = "Pray for Dad", IsImported = true });
+        SetupCardLoadMock(42, new PrayerCard { Id = 42, Title = "Imported May 2", BoxId = 0, IsImported = true });
+
+        // Override the factory at the SUT-construction site so the new-via-db
+        // branch (which builds its own VM via CreateCardViewModel) gets the stub.
+        var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
+            cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
+                _onboardingService, _navigationService, _accessibilityService, _boxService)
+            {
+                PrayerRowFactory = BuildStubPrayerRowVm
+            });
+        await sut.SyncAsync();
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { "saved", "42" } });
+
+        // No SyncAsync between Apply and Consume → falls through to the
+        // new-via-db branch (load card from DB, add to AllPrayerCards).
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.True(result.IsExpanded);
+        Assert.Equal(2, result.Prayers.Count);
     }
 
     // ── Helper ──────────────────────────────────────────────────────────

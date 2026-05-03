@@ -6,6 +6,7 @@ using Microsoft.Maui.LifecycleEvents;
 using PrayerApp.Models;
 using Plugin.LocalNotification;
 using PrayerApp.Services;
+using PrayerApp.Shared;
 using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 using PrayerApp.Views;
@@ -108,9 +109,16 @@ namespace PrayerApp
                         HandleDeepLink(activity?.WebPageUrl?.ToString());
                     });
 
-                    // File open handler (.prayercard files)
+                    // File open handler (.prayercard files) + share-extension wakeup.
                     ios.OpenUrl((app, url, options) =>
                     {
+                        // Wakeup signal from our iOS Share Extension. The payload
+                        // is already in the App Group container; AppGroupImportDispatcher
+                        // (Window.Activated) picks it up on activation. Acknowledge the
+                        // URL so iOS routes the launch to us instead of falling through.
+                        if (url.Scheme == AppGroupConstants.HostAppScheme)
+                            return true;
+
                         if (url.Path?.EndsWith(".prayercard", StringComparison.OrdinalIgnoreCase) == true)
                         {
                             HandleFileOpen(url.Path);

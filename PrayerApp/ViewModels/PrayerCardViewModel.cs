@@ -210,6 +210,14 @@ namespace PrayerApp.ViewModels
 
         public bool HasPrayers => Prayers.Count > 0;
 
+        /// <summary>
+        /// Factory for per-prayer row VMs built by <see cref="LoadPrayersAsync"/>.
+        /// Default chains through <c>IPlatformApplication.Current.Services</c>;
+        /// unit tests override with a stub-services factory.
+        /// </summary>
+        public Func<Prayer, PrayerRequestDetailViewModel> PrayerRowFactory { get; set; }
+            = prayer => new PrayerRequestDetailViewModel(prayer) { ReturnToCards = true };
+
         /// <summary>Available collections for the picker on the card edit form. Excludes system boxes.</summary>
         public ObservableCollection<BoxPickerItem> AvailableBoxes { get; } = new();
 
@@ -486,7 +494,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(AccessibleCardHeader));
         }
 
-        private async Task LoadPrayersAsync()
+        public async Task LoadPrayersAsync()
         {
             // PerfLog.Log($"LoadPrayers.entry id={_prayerCard.Id}");
             try
@@ -499,11 +507,7 @@ namespace PrayerApp.ViewModels
                                             .ThenBy(p => p.Title)
                 )
                 {
-                    var viewModel = new PrayerRequestDetailViewModel(prayer)
-                    {
-                        ReturnToCards = true
-                    };
-                    Prayers.Add(viewModel);
+                    Prayers.Add(PrayerRowFactory(prayer));
                 }
 
                 _prayersLoaded = true;

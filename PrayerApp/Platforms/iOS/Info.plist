@@ -83,5 +83,18 @@
 	<string>This app does not use your location. This entry is required by a third-party library.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app does not use your location. This entry is required by a third-party library.</string>
+	<!-- Share Extension wakeup scheme. Must match AppGroupConstants.HostAppScheme
+	     in PrayerApp.Shared (plist can't reference C# constants — keep in sync). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.multithreadedllc.prayercards</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>practicingprayer</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

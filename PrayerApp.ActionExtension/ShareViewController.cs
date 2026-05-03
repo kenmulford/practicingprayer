@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Foundation;
 using ObjCRuntime;
 using PrayerApp.Shared;
@@ -17,12 +16,25 @@ namespace PrayerApp.ActionExtension;
 /// Class and bundle ID retain the "ActionExtension" name post-pivot from Action
 /// to Share Extension — reusing the bundle ID keeps the existing provisioning
 /// profiles valid.
+///
+/// AOT-clean shape: ViewDidLoad is synchronous; <see cref="NSItemProvider.LoadItem"/>
+/// callback-form replaces <c>await LoadItemAsync</c> + <c>async void ViewDidLoad</c>.
+/// Slice 3c's gate test under <c>-p:UseInterpreter=false</c> hung the scene host
+/// inside the awaited continuation chain even with source-gen JSON in place; the
+/// trimmer was cutting an async-state-machine continuation that wasn't statically
+/// reachable. Eliminating async/await here removes that surface entirely.
 /// </summary>
 [Register("ShareViewController")]
 public class ShareViewController : UIViewController
 {
     private const string PlainTextUti = "public.plain-text";
     private const int MaxPayloadBytes = 256 * 1024;
+
+    // Wakeup URL the responder-chain openURL: trick fires after a successful
+    // payload write. iOS routes the scheme to the host app via Info.plist's
+    // CFBundleURLTypes; Window.Activated → AppGroupImportDispatcher reads the
+    // payload from the App Group container. Only the scheme matters for routing.
+    private static readonly NSUrl HostAppWakeupUrl = new($"{AppGroupConstants.HostAppScheme}://import");
 
     public ShareViewController() : base()
     {
@@ -32,38 +44,56 @@ public class ShareViewController : UIViewController
     {
     }
 
-    public override async void ViewDidLoad()
+    public override void ViewDidLoad()
     {
         base.ViewDidLoad();
         BuildIndicatorUI();
-
-        try
-        {
-            var text = await ExtractPlainTextAsync();
-
-            if (!string.IsNullOrWhiteSpace(text)
-                && System.Text.Encoding.UTF8.GetByteCount(text) <= MaxPayloadBytes)
-            {
-                WriteToAppGroup(text);
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[ShareExt] payload pipeline failed: {ex}");
-        }
-        finally
-        {
-            // CompleteRequest must run on the main thread; LoadItemAsync's continuation
-            // can resume on a non-main queue. UIViewController inherits BeginInvokeOnMainThread
-            // from NSObject.
-            BeginInvokeOnMainThread(() =>
-            {
-                ExtensionContext?.CompleteRequest(Array.Empty<NSExtensionItem>(), null);
-            });
-        }
+        StartImport();
     }
 
-    private async Task<string?> ExtractPlainTextAsync()
+    private void StartImport()
+    {
+        var attachment = FindPlainTextAttachment();
+        if (attachment is null)
+        {
+            FinishOnMainThread();
+            return;
+        }
+
+        // Callback-form LoadItem instead of LoadItemAsync. The completion runs
+        // on whatever thread Foundation picks; file IO and CompleteRequest are
+        // both safe to dispatch from there (file IO directly, CompleteRequest
+        // hopped to main).
+        attachment.LoadItem(PlainTextUti, null, (loaded, error) =>
+        {
+            bool payloadWritten = false;
+            try
+            {
+                if (error is not null)
+                {
+                    Debug.WriteLine($"[ShareExt] LoadItem error: {error.LocalizedDescription}");
+                    return;
+                }
+
+                var text = (loaded as NSString)?.ToString();
+                if (!string.IsNullOrWhiteSpace(text)
+                    && System.Text.Encoding.UTF8.GetByteCount(text) <= MaxPayloadBytes)
+                {
+                    payloadWritten = WriteToAppGroup(text);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ShareExt] payload pipeline failed: {ex}");
+            }
+            finally
+            {
+                FinishOnMainThread(wakeHostApp: payloadWritten);
+            }
+        });
+    }
+
+    private NSItemProvider? FindPlainTextAttachment()
     {
         var inputItems = ExtensionContext?.InputItems ?? Array.Empty<NSExtensionItem>();
         foreach (var item in inputItems)
@@ -71,23 +101,74 @@ public class ShareViewController : UIViewController
             var attachments = item.Attachments ?? Array.Empty<NSItemProvider>();
             foreach (var attachment in attachments)
             {
-                if (!attachment.HasItemConformingTo(PlainTextUti))
-                    continue;
-
-                var loaded = await attachment.LoadItemAsync(PlainTextUti, null);
-                return (loaded as NSString)?.ToString();
+                if (attachment.HasItemConformingTo(PlainTextUti))
+                    return attachment;
             }
         }
         return null;
     }
 
-    private static void WriteToAppGroup(string text)
+    private void FinishOnMainThread(bool wakeHostApp = false)
+    {
+        // CompleteRequest must run on the main thread; the LoadItem callback can
+        // resume on a non-main queue. UIViewController inherits BeginInvokeOnMainThread
+        // from NSObject. The optional host-app wakeup runs on the same hop, BEFORE
+        // CompleteRequest tears down the extension context.
+        BeginInvokeOnMainThread(() =>
+        {
+            if (wakeHostApp)
+                TryWakeHostApp();
+            ExtensionContext?.CompleteRequest(Array.Empty<NSExtensionItem>(), null);
+        });
+    }
+
+    /// <summary>
+    /// Walk the UIResponder chain looking for an object that responds to
+    /// <c>openURL:</c> (single-argument selector). On Share Extensions,
+    /// <see cref="UIApplication.SharedApplication"/> is unavailable; the
+    /// responder-chain trick is the established pattern for asking iOS to
+    /// open a URL. Tolerated by App Review for the share-extension wakeup
+    /// pattern; the URL routes back to our own host app via the custom
+    /// scheme registered in Info.plist.
+    /// </summary>
+    private void TryWakeHostApp()
+    {
+        try
+        {
+            var sel = new ObjCRuntime.Selector("openURL:");
+            UIResponder? responder = this;
+            while (responder is not null)
+            {
+                if (responder.RespondsToSelector(sel))
+                {
+                    responder.PerformSelector(sel, HostAppWakeupUrl);
+                    return;
+                }
+                responder = responder.NextResponder;
+            }
+            Debug.WriteLine("[ShareExt] no responder in chain handles openURL:");
+        }
+        catch (Exception ex)
+        {
+            // Wakeup is best-effort — if it fails the user just falls back to
+            // manually re-opening the app, which still works (Window.Activated
+            // dispatcher reads the pending payload).
+            Debug.WriteLine($"[ShareExt] TryWakeHostApp failed: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// Returns true iff the payload was successfully written to the App Group
+    /// container. False on entitlement misconfig, NSData encoding failure, or
+    /// disk write failure. Caller uses the bool to gate the host-app wakeup.
+    /// </summary>
+    private static bool WriteToAppGroup(string text)
     {
         var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroupConstants.AppGroupId);
         if (container is null)
         {
             Debug.WriteLine("[ShareExt] GetContainerUrl returned null. Entitlement misconfig?");
-            return;
+            return false;
         }
 
         var url = container.Append(AppGroupConstants.PayloadFileName, false);
@@ -103,7 +184,7 @@ public class ShareViewController : UIViewController
         {
             Debug.WriteLine("[ShareExt] NSData.FromString returned null");
             AppGroupBreadcrumbLog.Append(container.Path!, BreadcrumbOutcome.IoFail, byteCount: -1);
-            return;
+            return false;
         }
 
         // atomically:true → sibling temp file, fsync, rename. Crash mid-write leaves
@@ -111,12 +192,12 @@ public class ShareViewController : UIViewController
         if (data.Save(url, atomically: true))
         {
             AppGroupBreadcrumbLog.Append(container.Path!, BreadcrumbOutcome.WriteOk, byteCount: json.Length);
+            return true;
         }
-        else
-        {
-            Debug.WriteLine($"[ShareExt] NSData.Save returned false for {url.AbsoluteString}");
-            AppGroupBreadcrumbLog.Append(container.Path!, BreadcrumbOutcome.IoFail, byteCount: -1);
-        }
+
+        Debug.WriteLine($"[ShareExt] NSData.Save returned false for {url.AbsoluteString}");
+        AppGroupBreadcrumbLog.Append(container.Path!, BreadcrumbOutcome.IoFail, byteCount: -1);
+        return false;
     }
 
     private void BuildIndicatorUI()

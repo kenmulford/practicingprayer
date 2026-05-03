@@ -12,4 +12,9 @@ public static class AppGroupConstants
     public const string PayloadFileName = "pending-import.json";
     public const string LogFileName = "import-log.txt";
     public const int MaxLogLines = 200;
+
+    // Custom URL scheme used by the iOS Share Extension as a host-app wakeup
+    // signal. Mirror in PrayerApp/Platforms/iOS/Info.plist (CFBundleURLSchemes)
+    // — plist entries can't reference C# constants.
+    public const string HostAppScheme = "practicingprayer";
 }

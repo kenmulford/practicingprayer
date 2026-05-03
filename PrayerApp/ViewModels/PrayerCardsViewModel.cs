@@ -187,10 +187,16 @@ namespace PrayerApp.ViewModels
 
         #region Constructors
 
+        // Optional override for unit tests that need to swap the per-card VM
+        // (e.g. to inject a stub PrayerRowFactory for LoadPrayersAsync coverage).
+        // Production leaves this null and uses the default CreateCardViewModel path.
+        private readonly Func<PrayerCard, PrayerCardViewModel>? _cardVmFactory;
+
         public PrayerCardsViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
             IAccessibilityService accessibilityService, ITagService tagService, ISettings settings,
-            IBoxService boxService, IMessenger messenger)
+            IBoxService boxService, IMessenger messenger,
+            Func<PrayerCard, PrayerCardViewModel>? cardVmFactory = null)
         {
             _cardService = cardService;
             _prayerService = prayerService;
@@ -201,6 +207,7 @@ namespace PrayerApp.ViewModels
             _settings = settings;
             _boxService = boxService;
             _messenger = messenger;
+            _cardVmFactory = cardVmFactory;
 
             AllPrayerCards = new ObservableCollection<PrayerCardViewModel>();
             _showCollectionsBanner = !settings.CollectionsBannerDismissed;
@@ -277,7 +284,8 @@ namespace PrayerApp.ViewModels
         }
 
         private PrayerCardViewModel CreateCardViewModel(PrayerCard pc) =>
-            new(pc, _cardService, _prayerService, _onboardingService,
+            _cardVmFactory?.Invoke(pc)
+            ?? new(pc, _cardService, _prayerService, _onboardingService,
                 _navigationService, _accessibilityService, _boxService);
 
         private async Task NewPrayerCardAsync()
@@ -395,6 +403,9 @@ namespace PrayerApp.ViewModels
             if (matched != null && !wasAlreadyInList)
             {
                 // PerfLog.Log("ConsumePendingSavedAsync new-via-sync (matched, NOT was-in-list)");
+                // Load eagerly: setting IsExpanded skips the lazy load path
+                // (ToggleExpandedAsync), so import-with-prayers would reveal empty.
+                await matched.LoadPrayersAsync();
                 _suppressIsExpandedRebuild = true;
                 try
                 {
@@ -417,6 +428,8 @@ namespace PrayerApp.ViewModels
                 var newCard = CreateCardViewModel(card);
                 SubscribeToPropertyChanges(newCard);
                 AllPrayerCards.Add(newCard);
+                // Eager load — same reason as the new-via-sync branch above.
+                await newCard.LoadPrayersAsync();
                 _suppressIsExpandedRebuild = true;
                 try
                 {

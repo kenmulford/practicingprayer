@@ -420,6 +420,23 @@ namespace PrayerApp.ViewModels
             IsReadOnly = false;
         }
 
+        // Test-only DI ctor. The production (Prayer) ctor chains through
+        // IPlatformApplication.Current, which unit tests can't stub; tests
+        // inject this via PrayerCardViewModel.PrayerRowFactory. Internal so the
+        // prod public surface keeps (Prayer) as the only call shape.
+        internal PrayerRequestDetailViewModel(Prayer prayer,
+            IPrayerService prayerService, ITagService tagService,
+            ICardService cardService, IOnboardingService onboardingService,
+            INotificationService notificationService,
+            INavigationService navigationService, IAccessibilityService accessibilityService,
+            ISettings settings)
+            : this(prayerService, tagService, cardService, onboardingService,
+                notificationService, navigationService, accessibilityService, settings)
+        {
+            _prayer = prayer ?? new Prayer();
+            IsReadOnly = false;
+        }
+
         /// <summary>Core save logic shared by Save and Save &amp; Add Another.</summary>
         /// <returns>True if this was a new prayer (first save).</returns>
         private async Task<bool> CoreSaveAsync()
