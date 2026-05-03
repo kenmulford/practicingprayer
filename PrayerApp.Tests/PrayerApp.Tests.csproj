@@ -12,6 +12,15 @@
     <ProjectReference Include="..\PrayerApp.Shared\PrayerApp.Shared.csproj" />
   </ItemGroup>
 
+  <!-- Slice 4 M3 contract test fixture. CopyToOutputDirectory ensures the
+       golden JSON is alongside the test DLL at run time so File.ReadAllText
+       can resolve a relative path. -->
+  <ItemGroup>
+    <None Update="AppIntent\Fixtures\swift-pending-import.golden.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Maui" Version="14.0.1" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.50" />

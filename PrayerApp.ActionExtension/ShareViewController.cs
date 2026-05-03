@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using Foundation;
 using ObjCRuntime;
@@ -92,10 +93,18 @@ public class ShareViewController : UIViewController
                 }
 
                 var text = (loaded as NSString)?.ToString();
-                if (!string.IsNullOrWhiteSpace(text)
-                    && System.Text.Encoding.UTF8.GetByteCount(text) <= MaxPayloadBytes)
+                if (!string.IsNullOrWhiteSpace(text))
                 {
-                    payloadWritten = WriteToAppGroup(text);
+                    // Slice 4 M3: NFC-normalize at the bridge boundary so this
+                    // path matches the App Intents Extension byte-for-byte.
+                    // Mirror: PrayerApp.AppIntents/PrayerAppIntents/AppGroupWriter.swift.
+                    // Some characters can grow under NFC (rare; some Hangul) so
+                    // re-check the byte cap on the normalized form.
+                    var normalized = text.Normalize(NormalizationForm.FormC);
+                    if (System.Text.Encoding.UTF8.GetByteCount(normalized) <= MaxPayloadBytes)
+                    {
+                        payloadWritten = WriteToAppGroup(normalized);
+                    }
                 }
             }
             catch (Exception ex)
@@ -231,6 +240,7 @@ public class ShareViewController : UIViewController
 
         var url = container.Append(AppGroupConstants.PayloadFileName, false);
 
+        // Caller (LoadItem boundary) normalizes to NFC and enforces the byte cap.
         // System.Text.Json source-gen context keeps parity with the 3c read side
         // (HandleAppGroupImport uses JsonDocument.Parse) and avoids IL2026/IL3050
         // under AOT.

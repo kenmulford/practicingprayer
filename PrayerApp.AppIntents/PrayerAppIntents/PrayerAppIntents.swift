@@ -17,8 +17,6 @@
 import AppIntents
 import Foundation
 
-private let appGroupID = "group.com.multithreadedllc.prayercards"
-
 struct ImportTextIntent: AppIntent {
     static let title: LocalizedStringResource = "Save to Practicing Prayer"
     static let description = IntentDescription(
@@ -37,12 +35,7 @@ struct ImportTextIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        // M1 placeholder: stash the payload in App Group UserDefaults so we can
-        // verify the extension actually ran. M3 swaps this for the App Group
-        // pending-import.json write that AppGroupImportOrchestrator consumes.
-        let suite = UserDefaults(suiteName: appGroupID)
-        suite?.set(sharedText, forKey: "m1_received_text")
-        suite?.set(Date(), forKey: "m1_received_at")
+        try AppGroupWriter().writePendingImport(rawText: sharedText)
         return .result()
     }
 }
