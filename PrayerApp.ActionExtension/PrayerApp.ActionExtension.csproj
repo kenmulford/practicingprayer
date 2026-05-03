@@ -15,7 +15,7 @@
 		<ApplicationId>com.multithreadedllc.prayercards.actionextension</ApplicationId>
 		<!-- Versions must match main app or iOS refuses to load the extension. -->
 		<ApplicationDisplayVersion>1.3.0</ApplicationDisplayVersion>
-		<ApplicationVersion>67</ApplicationVersion>
+		<ApplicationVersion>68</ApplicationVersion>
 
 		<!-- Xcode 26.2 and 26.3+ have identical SDKs; skip the validation check (matches main app csproj). -->
 		<ValidateXcodeVersion>false</ValidateXcodeVersion>
@@ -24,15 +24,20 @@
 	<!--
 	  Enable the Mono interpreter for Debug iOS builds. This is a non-MAUI
 	  Microsoft.NET.Sdk project, so it does NOT inherit MAUI's debug-default
-	  UseInterpreter=true. Pure AOT in Debug exposed an "EXC_BAD_ACCESS /
-	  CODESIGNING 2 Invalid Page" launch crash in -[ShareViewController init]
-	  on iPhone 17 — a known symptom of AOT being unable to handle constructs
-	  like generic instantiations, async state machines, or System.Text.Json
-	  reflection on anonymous types (all introduced in slice 3b). Slice 3a's
-	  minimal code surface escaped because AOT could handle it.
+	  UseInterpreter=true. Slice 3b's pure-AOT in Debug exposed an
+	  EXC_BAD_ACCESS / CODESIGNING 2 Invalid Page launch crash in
+	  -[ShareViewController init]. Slice 3c migrated to source-gen JSON
+	  (PrayerApp.Shared.ImportPayloadJsonContext), eliminating the JSON
+	  reflection IL2026 surface — but the AOT pre-implementation gate test
+	  (build with -p:UseInterpreter=false) revealed a SECOND residual AOT
+	  surface: async state machine continuations from `await LoadItemAsync`
+	  + `BeginInvokeOnMainThread(async () => …)`. Symptom this time was
+	  different: extension launched, ran ~2 seconds inside ViewDidLoad's
+	  async path, never reached CompleteRequest, scene host timed out with
+	  "scene-creation-failed". The fix candidate (refactor async-void +
+	  awaited continuations to AOT-clean shapes) is its own future slice.
+	  Release builds remain pure AOT for now; revisit at ship time.
 	  See: https://learn.microsoft.com/dotnet/maui/macios/interpreter
-	  Release builds remain pure AOT until 3c-prep introduces source-gen JSON
-	  and other AOT-clean shapes; revisit at ship time.
 	-->
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-ios|AnyCPU'">
 		<UseInterpreter>true</UseInterpreter>
