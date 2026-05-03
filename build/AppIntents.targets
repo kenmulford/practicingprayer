@@ -1,0 +1,64 @@
+<Project>
+  <!--
+    Slice 4 M2 — build the App Intents Extension via xcodebuild and embed
+    the resulting .appex into the MAUI iOS app via <AdditionalAppExtensions>.
+
+    The Xcode project lives at PrayerApp.AppIntents/PrayerCardsAppIntents.xcodeproj.
+    We build only the PrayerAppIntents *target* (not the scheme) so we skip the
+    throwaway host app's embedded-binary validation, which fails because the
+    extension bundle ID (com.multithreadedllc.prayercards.appintents) is not
+    prefixed by the throwaway host's bundle ID (and we can't rename the host
+    to match without colliding with the real MAUI app's ApplicationId).
+
+    .NET-for-iOS re-signs the .appex on the way into PlugIns/ using the
+    entitlements pointed to by <CodesignEntitlements>. xcodebuild therefore
+    builds unsigned (matches the chamons/xamarin-ios-swift-extension pattern).
+
+    Refs:
+      - https://learn.microsoft.com/dotnet/ios/building-apps/build-items
+      - https://github.com/chamons/xamarin-ios-swift-extension
+  -->
+
+  <PropertyGroup>
+    <AppIntentsXcodeProjectDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\PrayerApp.AppIntents'))</AppIntentsXcodeProjectDir>
+    <AppIntentsTarget>PrayerAppIntents</AppIntentsTarget>
+
+    <AppIntentsXcodeConfig Condition="'$(Configuration)' == 'Release'">Release</AppIntentsXcodeConfig>
+    <AppIntentsXcodeConfig Condition="'$(AppIntentsXcodeConfig)' == ''">Debug</AppIntentsXcodeConfig>
+
+    <!-- _SdkIsSimulator is set by .NET-iOS SDK targets, but is unavailable during
+         static evaluation when this file is imported. Detect from the RID instead;
+         RuntimeIdentifier is set early (typically via -p:RuntimeIdentifier=...). -->
+    <AppIntentsSdk Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iphonesimulator</AppIntentsSdk>
+    <AppIntentsSdk Condition="'$(AppIntentsSdk)' == ''">iphoneos</AppIntentsSdk>
+
+    <AppIntentsBuildOutputRel>DerivedData/AppIntents/Build/Products/$(AppIntentsXcodeConfig)-$(AppIntentsSdk)</AppIntentsBuildOutputRel>
+    <AppIntentsAppexPath>$(AppIntentsXcodeProjectDir)/$(AppIntentsBuildOutputRel)/$(AppIntentsTarget).appex</AppIntentsAppexPath>
+    <AppIntentsEntitlements>$(AppIntentsXcodeProjectDir)/PrayerAppIntents/PrayerAppIntents.entitlements</AppIntentsEntitlements>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_AppIntentsSource Include="$(AppIntentsXcodeProjectDir)/PrayerAppIntents/**/*.swift" />
+    <_AppIntentsSource Include="$(AppIntentsXcodeProjectDir)/PrayerAppIntents/**/*.plist" />
+    <_AppIntentsSource Include="$(AppIntentsXcodeProjectDir)/PrayerAppIntents/**/*.entitlements" />
+    <_AppIntentsSource Include="$(AppIntentsXcodeProjectDir)/PrayerCardsAppIntents.xcodeproj/project.pbxproj" />
+  </ItemGroup>
+
+  <Target Name="BuildAppIntentsExtension"
+          BeforeTargets="_CollectBundleResources;_GenerateBundleName;Compile"
+          Inputs="@(_AppIntentsSource)"
+          Outputs="$(AppIntentsAppexPath)/$(AppIntentsTarget)">
+    <Message Importance="high"
+             Text="Slice 4 M2: building App Intents Extension ($(AppIntentsXcodeConfig) / $(AppIntentsSdk)) via xcodebuild" />
+    <Exec WorkingDirectory="$(AppIntentsXcodeProjectDir)"
+          Command="xcodebuild -project PrayerCardsAppIntents.xcodeproj -target $(AppIntentsTarget) -configuration $(AppIntentsXcodeConfig) -sdk $(AppIntentsSdk) SYMROOT=DerivedData/AppIntents/Build/Products OBJROOT=DerivedData/AppIntents/Build/Intermediates.noindex CODE_SIGN_IDENTITY=&quot;&quot; CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build" />
+  </Target>
+
+  <ItemGroup>
+    <AdditionalAppExtensions Include="$(AppIntentsXcodeProjectDir)">
+      <Name>$(AppIntentsTarget)</Name>
+      <BuildOutput>$(AppIntentsBuildOutputRel)</BuildOutput>
+      <CodesignEntitlements>$(AppIntentsEntitlements)</CodesignEntitlements>
+    </AdditionalAppExtensions>
+  </ItemGroup>
+</Project>

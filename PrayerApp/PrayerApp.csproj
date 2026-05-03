@@ -207,6 +207,9 @@
 	  </ProjectReference>
 	</ItemGroup>
 
+	<!-- Slice 4 M2: build + embed the Swift App Intents Extension via xcodebuild. iOS-only. -->
+	<Import Project="..\build\AppIntents.targets" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'" />
+
 	<ItemGroup>
 	  <Compile Update="Views\PrayerCard\PrayerCardsPage.xaml.cs">
 	    <DependentUpon>PrayerCardsPage.xaml</DependentUpon>
