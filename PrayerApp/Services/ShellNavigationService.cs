@@ -10,6 +10,9 @@ public class ShellNavigationService : INavigationService
     public Task GoToAsync(string route)
         => Shell.Current.GoToAsync(route);
 
+    public Task PushModalAsync(Page page)
+        => Shell.Current.Navigation.PushModalAsync(page);
+
     public Task PopModalAsync()
         => Shell.Current.Navigation.PopModalAsync();
 
