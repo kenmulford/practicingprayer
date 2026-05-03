@@ -1,0 +1,86 @@
+using System.Globalization;
+
+namespace PrayerApp.Shared;
+
+public enum BreadcrumbOutcome
+{
+    Ok,
+    Empty,
+    ParseFail,
+    IoFail,
+    WriteOk,
+}
+
+/// <summary>
+/// Privacy-safe forensics log shared between the iOS Share Extension and
+/// the main app. Append uses a static lock for same-process ordering plus
+/// FileMode.Append for cross-process O_APPEND atomicity — neither process
+/// alone needs the lock, but defensive code paths in tests and future
+/// callers benefit. Truncation is main-app-only (single-writer phase) per
+/// the Slice 3c design.
+///
+/// Format: &lt;UTC ISO-8601 timestamp&gt; &lt;byte count or '-'&gt; &lt;outcome&gt;
+/// One entry per line. Newest is LAST. ASCII only. No raw user text — ever.
+/// </summary>
+public static class AppGroupBreadcrumbLog
+{
+    private static readonly object _appendGate = new();
+
+    public static void Append(string containerPath, BreadcrumbOutcome outcome, int byteCount)
+    {
+        try
+        {
+            var logPath = Path.Combine(containerPath, AppGroupConstants.LogFileName);
+            var ts = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var byteField = byteCount < 0 ? "-" : byteCount.ToString(CultureInfo.InvariantCulture);
+            var line = $"{ts} {byteField} {OutcomeToken(outcome)}\n";
+            var bytes = System.Text.Encoding.ASCII.GetBytes(line);
+            lock (_appendGate)
+            {
+                using var stream = new FileStream(
+                    logPath,
+                    FileMode.Append,
+                    FileAccess.Write,
+                    FileShare.ReadWrite);
+                stream.Write(bytes, 0, bytes.Length);
+            }
+        }
+        catch
+        {
+            // Best-effort forensics — failing to log must never break the
+            // import path. Silent on failure.
+        }
+    }
+
+    public static void Truncate(string containerPath)
+    {
+        try
+        {
+            var logPath = Path.Combine(containerPath, AppGroupConstants.LogFileName);
+            if (!File.Exists(logPath)) return;
+
+            var lines = File.ReadAllLines(logPath);
+            if (lines.Length <= AppGroupConstants.MaxLogLines) return;
+
+            var trimmed = lines[^AppGroupConstants.MaxLogLines..];
+            var tmp = logPath + ".tmp";
+            File.WriteAllLines(tmp, trimmed);
+            File.Move(tmp, logPath, overwrite: true);
+        }
+        catch
+        {
+            // Truncation is best-effort. Failure leaves the log slightly
+            // longer than MaxLogLines; next foreground retries.
+        }
+    }
+
+    private static string OutcomeToken(BreadcrumbOutcome outcome) => outcome switch
+    {
+        BreadcrumbOutcome.Ok        => "ok",
+        BreadcrumbOutcome.Empty     => "empty",
+        BreadcrumbOutcome.ParseFail => "parse-fail",
+        BreadcrumbOutcome.IoFail    => "io-fail",
+        BreadcrumbOutcome.WriteOk   => "write-ok",
+        _                            => "unknown",
+    };
+}
