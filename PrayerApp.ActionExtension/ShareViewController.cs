@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Foundation;
 using ObjCRuntime;
+using PrayerApp.Shared;
 using UIKit;
 
 namespace PrayerApp.ActionExtension;
@@ -20,8 +21,6 @@ namespace PrayerApp.ActionExtension;
 [Register("ShareViewController")]
 public class ShareViewController : UIViewController
 {
-    private const string AppGroup = "group.com.multithreadedllc.prayercards";
-    private const string PayloadFile = "pending-import.json";
     private const string PlainTextUti = "public.plain-text";
     private const int MaxPayloadBytes = 256 * 1024;
 
@@ -84,35 +83,39 @@ public class ShareViewController : UIViewController
 
     private static void WriteToAppGroup(string text)
     {
-        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroup);
+        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroupConstants.AppGroupId);
         if (container is null)
         {
             Debug.WriteLine("[ShareExt] GetContainerUrl returned null. Entitlement misconfig?");
             return;
         }
 
-        var url = container.Append(PayloadFile, false);
+        var url = container.Append(AppGroupConstants.PayloadFileName, false);
 
-        // System.Text.Json keeps parity with the 3c read side (HandleAppGroupImport
-        // will use JsonDocument.Parse).
-        var payload = JsonSerializer.Serialize(new
-        {
-            raw = text,
-            ts = DateTime.UtcNow.ToString("o"),
-        });
+        // System.Text.Json source-gen context keeps parity with the 3c read side
+        // (HandleAppGroupImport uses JsonDocument.Parse) and avoids IL2026/IL3050
+        // under AOT.
+        var payload = new ImportPayload(text, DateTime.UtcNow.ToString("o"));
+        var json = JsonSerializer.Serialize(payload, ImportPayloadJsonContext.Default.ImportPayload);
 
-        var data = NSData.FromString(payload, NSStringEncoding.UTF8);
+        var data = NSData.FromString(json, NSStringEncoding.UTF8);
         if (data is null)
         {
             Debug.WriteLine("[ShareExt] NSData.FromString returned null");
+            AppGroupBreadcrumbLog.Append(container.Path!, BreadcrumbOutcome.IoFail, byteCount: -1);
             return;
         }
 
         // atomically:true → sibling temp file, fsync, rename. Crash mid-write leaves
         // the prior file intact.
-        if (!data.Save(url, atomically: true))
+        if (data.Save(url, atomically: true))
+        {
+            AppGroupBreadcrumbLog.Append(container.Path!, BreadcrumbOutcome.WriteOk, byteCount: json.Length);
+        }
+        else
         {
             Debug.WriteLine($"[ShareExt] NSData.Save returned false for {url.AbsoluteString}");
+            AppGroupBreadcrumbLog.Append(container.Path!, BreadcrumbOutcome.IoFail, byteCount: -1);
         }
     }
 
