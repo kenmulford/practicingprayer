@@ -50,4 +50,8 @@
 		<CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\PrayerApp.Shared\PrayerApp.Shared.csproj" />
+	</ItemGroup>
+
 </Project>

@@ -195,6 +195,11 @@
 	  <Folder Include="Interfaces\" />
 	</ItemGroup>
 
+	<!-- Shared classlib for App Group constants, ImportPayload + source-gen JSON, and breadcrumb log. -->
+	<ItemGroup>
+	  <ProjectReference Include="..\PrayerApp.Shared\PrayerApp.Shared.csproj" />
+	</ItemGroup>
+
 	<!-- Embed the iOS Action Extension as an .appex inside the main app bundle. iOS-only. -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
 	  <ProjectReference Include="..\PrayerApp.ActionExtension\PrayerApp.ActionExtension.csproj">
