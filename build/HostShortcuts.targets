@@ -1,0 +1,159 @@
+<Project>
+  <!--
+    Slice 4 F-27 — build a metadata-only static library against
+    PrayerApp.HostShortcuts/HostShortcuts.xcodeproj and inject the resulting
+    Metadata.appintents/ directory into PrayerApp.app's bundle root via the
+    documented dotnet-iOS BundleResource pipeline.
+
+    Why a separate Xcode project:
+      WFInterchangeAppRegistry / linkd resolve App Shortcut intents by HOST
+      bundle ID (com.multithreadedllc.prayercards). The host has no Swift
+      sources, so appintentsmetadataprocessor never runs against it. Apple DTS
+      (forums thread 759160, Aug 2024) explicitly says App-Shortcut-backing
+      intents must be in the main app target — workaround until FB14857658
+      ships is to source-duplicate the intent declaration into the host.
+
+    Why static-library (not framework, not <XcodeProject>):
+      Apple bug FB13281659 (open since 2023-10-17) makes metadata extraction
+      flaky when intents live in a framework shared between host + extension
+      on TestFlight/ad-hoc builds. <XcodeProject> emits XCFRAMEWORK and
+      forwards as <NativeReference>. Static lib's .a is discarded; only the
+      side-effect Metadata.appintents/ directory matters, and static libs DO
+      trigger appintentsmetadataprocessor (verified on Xcode 26 / iOS 26.4).
+
+    Why CollectBundleResourcesDependsOn + LogicalName:
+      Xamarin maintainer rolfbjarne in dotnet/macios#11984 prescribes exactly
+      this pattern for adding BundleResource items from a target body:
+        <CollectBundleResourcesDependsOn>
+          $(CollectBundleResourcesDependsOn);
+          MyTarget;
+        </CollectBundleResourcesDependsOn>
+      The Xamarin.MacDev.Tasks BundleResource.GetLogicalName method (in
+      msbuild/Xamarin.MacDev.Tasks/BundleResource.cs) reads %(LogicalName)
+      metadata FIRST when computing destination path inside the bundle —
+      NOT %(Link). LogicalName here is Xamarin's custom convention, distinct
+      from the generic SDK %(Link)/%(TargetPath) keys.
+
+    Why <NativeReference Kind="Static" ForceLoad="True">:
+      Apple's runtime requires the AppShortcutsProvider Swift TYPE itself in
+      the host's executable, not just its metadata description. Verified
+      empirically (build 81 on iPhone 17): Metadata.appintents/ alone produces
+      "Attempted to fetch Auto Shortcuts, but couldn't find the
+      AppShortcutsProvider" because linkd looks for the registered Swift class
+      in the host process. Apple Developer Forums thread 710552 (syatyo, Sept
+      2023) prescribes "moving the file containing a concrete
+      AppShortcutsProvider type to my host app target" — which for a hybrid
+      MAUI app means linking the Swift static library's .a into the host's
+      main executable. Microsoft Learn (Xamarin.iOS binding migration) shows
+      the canonical pattern with Kind=Static + ForceLoad=True. ForceLoad keeps
+      Swift symbols that have no direct C-callable references — without it the
+      native linker dead-strips the AppShortcutsProvider class registration.
+      LinkWithSwiftSystemLibraries=true is required so the Swift runtime libs
+      are linked alongside.
+
+    Refs:
+      - https://developer.apple.com/forums/thread/759160 (Apple DTS)
+      - https://developer.apple.com/forums/thread/710552 (AppShortcutsProvider link requirement)
+      - https://github.com/feedback-assistant/reports/issues/425 (FB13281659)
+      - https://github.com/dotnet/macios/issues/11984#issuecomment (rolfbjarne)
+      - https://github.com/dotnet/macios/blob/main/msbuild/Xamarin.MacDev.Tasks/BundleResource.cs (GetLogicalName)
+      - https://learn.microsoft.com/dotnet/maui/migration/ios-binding-projects (NativeReference Static + ForceLoad)
+      - https://learn.microsoft.com/dotnet/ios/building-apps/build-properties (LinkWithSwiftSystemLibraries)
+  -->
+
+  <PropertyGroup>
+    <HostShortcutsXcodeProjectDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\PrayerApp.HostShortcuts'))</HostShortcutsXcodeProjectDir>
+    <HostShortcutsTarget>HostShortcuts</HostShortcutsTarget>
+
+    <HostShortcutsXcodeConfig Condition="'$(Configuration)' == 'Release'">Release</HostShortcutsXcodeConfig>
+    <HostShortcutsXcodeConfig Condition="'$(HostShortcutsXcodeConfig)' == ''">Debug</HostShortcutsXcodeConfig>
+
+    <HostShortcutsSdk Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iphonesimulator</HostShortcutsSdk>
+    <HostShortcutsSdk Condition="'$(HostShortcutsSdk)' == ''">iphoneos</HostShortcutsSdk>
+
+    <HostShortcutsDerivedRoot>DerivedData/HostShortcuts/Build</HostShortcutsDerivedRoot>
+    <HostShortcutsBuildOutputRel>$(HostShortcutsDerivedRoot)/Products/$(HostShortcutsXcodeConfig)-$(HostShortcutsSdk)</HostShortcutsBuildOutputRel>
+    <HostShortcutsMetadataDir>$(HostShortcutsXcodeProjectDir)/$(HostShortcutsBuildOutputRel)/HostShortcuts.appintents/Metadata.appintents</HostShortcutsMetadataDir>
+    <HostShortcutsStaticLib>$(HostShortcutsXcodeProjectDir)/$(HostShortcutsBuildOutputRel)/libHostShortcuts.a</HostShortcutsStaticLib>
+
+    <HostShortcutsBuildStamp>$(HostShortcutsXcodeProjectDir)/$(HostShortcutsDerivedRoot)/HostShortcuts.success.stamp</HostShortcutsBuildStamp>
+
+    <!-- Swift static library contains the AppShortcutsProvider class. The
+         native linker needs Swift's system libraries when linking it into
+         the host executable. Documented in Microsoft Learn build-properties. -->
+    <LinkWithSwiftSystemLibraries Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">true</LinkWithSwiftSystemLibraries>
+
+    <!-- Hook our resource-collection target into the documented dotnet-iOS
+         extensibility point. _CollectBundleResources reads
+         $(CollectBundleResourcesDependsOn) to discover targets that contribute
+         BundleResource items. iOS-only guard: this property is meaningless on
+         Android. -->
+    <CollectBundleResourcesDependsOn Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+      $(CollectBundleResourcesDependsOn);
+      _CollectHostShortcutsBundleResources;
+    </CollectBundleResourcesDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_HostShortcutsSource Include="$(HostShortcutsXcodeProjectDir)/HostShortcuts/**/*.swift" />
+    <_HostShortcutsSource Include="$(HostShortcutsXcodeProjectDir)/HostShortcuts.xcodeproj/project.pbxproj" />
+  </ItemGroup>
+
+  <Target Name="_BuildHostShortcuts"
+          Inputs="@(_HostShortcutsSource)"
+          Outputs="$(HostShortcutsBuildStamp)">
+    <Message Importance="high"
+             Text="Slice 4 F-27: building HostShortcuts metadata-only static library ($(HostShortcutsXcodeConfig) / $(HostShortcutsSdk)) via xcodebuild" />
+    <Exec WorkingDirectory="$(HostShortcutsXcodeProjectDir)"
+          Command="xcodebuild -project HostShortcuts.xcodeproj -target $(HostShortcutsTarget) -configuration $(HostShortcutsXcodeConfig) -sdk $(HostShortcutsSdk) SYMROOT=$(HostShortcutsDerivedRoot)/Products OBJROOT=$(HostShortcutsDerivedRoot)/Intermediates.noindex CODE_SIGN_IDENTITY=&quot;&quot; CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build" />
+    <Touch Files="$(HostShortcutsBuildStamp)" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Adds @(BundleResource) items inside the target body. A top-level
+       <ItemGroup> would evaluate at project load BEFORE xcodebuild produced
+       the metadata files. By emitting the items inside this target — reached
+       via _CollectBundleResources's DependsOnTargets chain — they are visible
+       to the <CollectBundleResources> task call that follows.
+
+       LogicalName (NOT Link) is the metadata that Xamarin.MacDev.Tasks's
+       BundleResource.GetLogicalName method reads first; per dotnet/macios#11984
+       this is the documented path for late-bound bundle resource injection. -->
+  <Target Name="_CollectHostShortcutsBundleResources"
+          DependsOnTargets="_BuildHostShortcuts">
+    <ItemGroup>
+      <_HostShortcutsMetadataFile Include="$(HostShortcutsMetadataDir)\**\*" />
+      <BundleResource Include="@(_HostShortcutsMetadataFile)">
+        <LogicalName>Metadata.appintents/%(_HostShortcutsMetadataFile.RecursiveDir)%(_HostShortcutsMetadataFile.Filename)%(_HostShortcutsMetadataFile.Extension)</LogicalName>
+      </BundleResource>
+    </ItemGroup>
+    <Warning Text="Slice 4 F-27: Metadata.appintents/ glob produced ZERO files at $(HostShortcutsMetadataDir) — host App Shortcuts will not register"
+             Condition="'@(_HostShortcutsMetadataFile)' == ''" />
+  </Target>
+
+  <!-- Add libHostShortcuts.a as a static NativeReference so the host's native
+       linker links it into the main executable. ForceLoad=True keeps Swift
+       symbols that have no direct C-callable references (the AppShortcutsProvider
+       Swift class registration runs in static initializers, which would
+       otherwise be dead-stripped). DependsOnTargets ensures xcodebuild has
+       produced the .a before we register it. BeforeTargets="_ExpandNativeReferences"
+       ensures the SDK sees our NativeReference when it builds the linker
+       inputs. Late-binding inside a target body avoids the project-load
+       evaluation order problem (the .a doesn't exist when csproj loads). -->
+  <Target Name="_AddHostShortcutsNativeReference"
+          BeforeTargets="_ExpandNativeReferences"
+          DependsOnTargets="_BuildHostShortcuts">
+    <ItemGroup>
+      <NativeReference Include="$(HostShortcutsStaticLib)">
+        <Kind>Static</Kind>
+        <ForceLoad>True</ForceLoad>
+        <SmartLink>False</SmartLink>
+      </NativeReference>
+    </ItemGroup>
+    <Warning Text="Slice 4 F-27: libHostShortcuts.a not found at $(HostShortcutsStaticLib) — host AppShortcutsProvider Swift class will not be linked"
+             Condition="!Exists('$(HostShortcutsStaticLib)')" />
+  </Target>
+
+  <Target Name="_CleanHostShortcuts" AfterTargets="Clean">
+    <RemoveDir Directories="$(HostShortcutsXcodeProjectDir)/DerivedData" />
+  </Target>
+</Project>

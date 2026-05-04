@@ -1,13 +1,14 @@
 //
 //  AppGroupWriter.swift
-//  PrayerAppIntents
+//  HostShortcuts (Slice 4 F-27)
 //
-//  Slice 4 M3 — write pending-import.json to the App Group container so the
-//  host MAUI app's AppGroupImportOrchestrator picks it up on Window.Activated.
-//
-//  Wire-format mirror of PrayerApp.ActionExtension/ShareViewController.cs:223-259.
-//  Both extensions emit byte-identical NFC-normalized payloads so the host
-//  parser is single-source-of-truth.
+//  Source-duplicated from PrayerApp.AppIntents/PrayerAppIntents/AppGroupWriter.swift.
+//  Apple DTS's documented workaround for FB14857658 is source duplication: when
+//  AppShortcutsProvider lives in the host target, ImportTextIntent's type
+//  identifier resolves to the host's bundle, so iOS dispatches perform() to
+//  the host's process — which means the host needs its own AppGroupWriter
+//  implementation. Byte format MUST stay byte-identical to the extension's
+//  copy so the host's AppGroupImportOrchestrator parser remains single-source.
 //
 //  Token vocabulary and breadcrumb format match PrayerApp.Shared/AppGroupBreadcrumbLog.cs
 //  exactly. DO NOT diverge — the main app truncates this log on pickup.

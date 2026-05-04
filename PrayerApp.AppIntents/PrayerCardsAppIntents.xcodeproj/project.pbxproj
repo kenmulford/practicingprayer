@@ -52,7 +52,7 @@
 		BE6553AB2FA7C3E800C04A2A /* PrayerCardsAppIntents.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrayerCardsAppIntents.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE6553B82FA7C3E900C04A2A /* PrayerCardsAppIntentsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PrayerCardsAppIntentsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE6553C22FA7C3E900C04A2A /* PrayerCardsAppIntentsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PrayerCardsAppIntentsUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		BEFB2E8A2FA7C4CA00FDEF6F /* PrayerAppIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = PrayerAppIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEFB2E8A2FA7C4CA00FDEF6F /* PrayerAppIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PrayerAppIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -238,7 +238,7 @@
 			);
 			productName = PrayerAppIntents;
 			productReference = BEFB2E8A2FA7C4CA00FDEF6F /* PrayerAppIntents.appex */;
-			productType = "com.apple.product-type.extensionkit-extension";
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 

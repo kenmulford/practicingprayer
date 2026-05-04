@@ -2,19 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>EXAppExtensionAttributes</key>
-	<dict>
-		<key>EXExtensionPointIdentifier</key>
-		<string>com.apple.appintents-extension</string>
-	</dict>
 	<!--
-	  NSExtension is required IN ADDITION to EXAppExtensionAttributes because
-	  this .appex is embedded into a .NET MAUI host via <AdditionalAppExtensions>,
-	  which lands in PlugIns/ (legacy PlugInKit location). iOS's installcoordinationd
-	  reads NSExtension to populate placeholder attributes during install — without
-	  it, install fails with IXErrorDomain Code=17 "extensionDictionary must be set".
-	  Both keys point at com.apple.appintents-extension so registration works on
-	  both code paths. Verified on iPhone 17 sim iOS 26.4 (commit be60bce).
+	  Slice 4 M3 (Option 2): Xcode target product type is the legacy
+	  com.apple.product-type.app-extension (PluginKit), not the iOS-16+
+	  com.apple.product-type.extensionkit-extension. This matches MAUI's
+	  <AdditionalAppExtensions> which copies the .appex into PlugIns/
+	  (legacy PluginKit location); ExtensionKit appex would need to land
+	  in Extensions/ which MAUI doesn't currently support.
+
+	  App Intents work in legacy app-extension product type via the
+	  NSExtensionPointIdentifier=com.apple.appintents-extension declaration
+	  below. The appintentsmetadataprocessor still runs based on AppIntents
+	  framework usage in Swift sources, regardless of product type, and
+	  Metadata.appintents/ is generated inside the .appex bundle.
 	-->
 	<key>NSExtension</key>
 	<dict>
