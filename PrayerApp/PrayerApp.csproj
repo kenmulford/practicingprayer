@@ -209,9 +209,6 @@
 	  </ProjectReference>
 	</ItemGroup>
 
-	<!-- Slice 4 M2: build + embed the Swift App Intents Extension via xcodebuild. iOS-only. -->
-	<Import Project="..\build\AppIntents.targets" Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'" />
-
 	<!-- Slice 4 F-27: build the host's own Metadata.appintents/ via a sibling
 	     static-library Xcode project so WFInterchangeAppRegistry can resolve
 	     com.multithreadedllc.prayercards. iOS-only. -->
