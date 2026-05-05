@@ -76,7 +76,17 @@
     <HostShortcutsMetadataDir>$(HostShortcutsXcodeProjectDir)/$(HostShortcutsBuildOutputRel)/HostShortcuts.appintents/Metadata.appintents</HostShortcutsMetadataDir>
     <HostShortcutsStaticLib>$(HostShortcutsXcodeProjectDir)/$(HostShortcutsBuildOutputRel)/libHostShortcuts.a</HostShortcutsStaticLib>
 
-    <HostShortcutsBuildStamp>$(HostShortcutsXcodeProjectDir)/$(HostShortcutsDerivedRoot)/HostShortcuts.success.stamp</HostShortcutsBuildStamp>
+    <!-- Stamp lives inside the per-config-per-SDK Products dir so the Inputs/Outputs
+         incremental check matches the artifact paths it gates. Putting the stamp
+         at a config-agnostic path causes deterministic build failures when the
+         user switches Config/SDK without `dotnet clean`: Debug-iphoneos build
+         touches the stamp, subsequent Release-iphoneos build sees stamp newer
+         than @(_HostShortcutsSource), MSBuild skips _BuildHostShortcuts, and
+         _AddHostShortcutsNativeReference registers a NativeReference at a
+         path that doesn't exist for the new (Config, SDK) — linker fails.
+         xcodebuild creates the parent Products dir during its own run, so the
+         <Touch> after a successful <Exec> can write the stamp. -->
+    <HostShortcutsBuildStamp>$(HostShortcutsXcodeProjectDir)/$(HostShortcutsBuildOutputRel)/HostShortcuts.success.stamp</HostShortcutsBuildStamp>
 
     <!-- Swift static library contains the AppShortcutsProvider class. The
          native linker needs Swift's system libraries when linking it into
