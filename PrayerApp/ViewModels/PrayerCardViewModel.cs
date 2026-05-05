@@ -494,6 +494,33 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(AccessibleCardHeader));
         }
 
+        private static IOrderedEnumerable<T> SortPrayers<T>(IEnumerable<T> source, Func<T, bool> isAnswered, Func<T, DateTime?> answeredAt, Func<T, string> title) =>
+            source.OrderBy(isAnswered).ThenByDescending(p => answeredAt(p) ?? DateTime.MinValue).ThenBy(title);
+
+        /// <summary>
+        /// In-place reorder of <see cref="Prayers"/> via <see cref="ObservableCollection{T}.Move"/>
+        /// after a single-row update (e.g., Mark Answered) — keeps the row in its correct
+        /// slot without a Clear+Add realize storm.
+        /// </summary>
+        public void ResortPrayers()
+        {
+            var sorted = SortPrayers(Prayers, p => p.IsAnswered, p => p.AnsweredAt, p => p.Title).ToList();
+
+            // Fast path: list already in order. Avoids N IndexOf calls and any
+            // Move-induced CollectionChanged churn on the common non-reordering edit.
+            var inOrder = true;
+            for (int i = 0; i < sorted.Count; i++)
+                if (!ReferenceEquals(sorted[i], Prayers[i])) { inOrder = false; break; }
+            if (inOrder) return;
+
+            for (int targetIndex = 0; targetIndex < sorted.Count; targetIndex++)
+            {
+                var currentIndex = Prayers.IndexOf(sorted[targetIndex]);
+                if (currentIndex != targetIndex)
+                    Prayers.Move(currentIndex, targetIndex);
+            }
+        }
+
         public async Task LoadPrayersAsync()
         {
             // PerfLog.Log($"LoadPrayers.entry id={_prayerCard.Id}");
@@ -501,11 +528,7 @@ namespace PrayerApp.ViewModels
             {
                 var prayers = await _prayerService.GetPrayersByCardAsync(_prayerCard.Id);
                 Prayers.Clear();
-                foreach (var prayer in prayers
-                                            .OrderBy(p => p.IsAnswered)
-                                            .ThenByDescending(p => p.AnsweredAt ?? DateTime.MinValue)
-                                            .ThenBy(p => p.Title)
-                )
+                foreach (var prayer in SortPrayers(prayers, p => p.IsAnswered, p => p.AnsweredAt, p => p.Title))
                 {
                     Prayers.Add(PrayerRowFactory(prayer));
                 }
@@ -526,35 +549,36 @@ namespace PrayerApp.ViewModels
             _addingPrayer = true;
             try
             {
-            // If prayers haven't been loaded yet, load them first so we can
-            // display the new/updated prayer in the expanded accordion.
-            if (!_prayersLoaded)
-                await LoadPrayersAsync();
+                // If prayers haven't been loaded yet, load them first so we can
+                // display the new/updated prayer in the expanded accordion.
+                if (!_prayersLoaded)
+                    await LoadPrayersAsync();
 
-            var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
-            if (existing != null)
-            {
-                existing.Reload();
-                return;
-            }
+                var existing = Prayers.FirstOrDefault(p => p.Id == prayerId);
+                if (existing != null)
+                {
+                    existing.Reload();
+                    ResortPrayers();
+                    return;
+                }
 
-            var prayer = await Prayer.LoadAsync(prayerId);
-            if (prayer is null) return;
-            if (prayer.PrayerCardId != _prayerCard.Id)
-            {
-                return;
-            }
+                var prayer = await Prayer.LoadAsync(prayerId);
+                if (prayer is null) return;
+                if (prayer.PrayerCardId != _prayerCard.Id)
+                {
+                    return;
+                }
 
-            var viewModel = new PrayerRequestDetailViewModel(prayer)
-            {
-                ReturnToCards = true
-            };
-            var insertIndex = Prayers
-                .TakeWhile(p => string.Compare(p.Title, prayer.Title, StringComparison.OrdinalIgnoreCase) < 0)
-                .Count();
-            Prayers.Insert(insertIndex, viewModel);
-            OnPropertyChanged(nameof(HasPrayers));
-            LoadActivePrayerCountAsync().SafeFireAndForget();
+                var viewModel = new PrayerRequestDetailViewModel(prayer)
+                {
+                    ReturnToCards = true
+                };
+                var insertIndex = Prayers
+                    .TakeWhile(p => string.Compare(p.Title, prayer.Title, StringComparison.OrdinalIgnoreCase) < 0)
+                    .Count();
+                Prayers.Insert(insertIndex, viewModel);
+                OnPropertyChanged(nameof(HasPrayers));
+                LoadActivePrayerCountAsync().SafeFireAndForget();
             }
             finally { _addingPrayer = false; }
         }

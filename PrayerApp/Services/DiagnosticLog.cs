@@ -23,6 +23,15 @@ public class DiagnosticLog : IDiagnosticLog
         }
     }
 
+    public void Log(string category, string message)
+    {
+        var entry = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}] [{category}] {message}";
+        lock (_lock)
+        {
+            File.AppendAllText(_logPath, entry + "\n");
+        }
+    }
+
     public string GetLogPath() => _logPath;
 
     public void Trim()

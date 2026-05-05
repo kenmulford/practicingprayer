@@ -464,9 +464,12 @@ public partial class PrayerCardsPage : ContentPage
 
         try
         {
-            // PerfLog.Log("OnAppearing.before PageSync");
-            await PageSync.OnAppearingAsync(vm);
-            // PerfLog.Log("OnAppearing.after PageSync");
+            // BUG-79: see vm.SuppressNextOnAppearingSync. ConsumePendingSavedAsync
+            // below still runs (highlight + scroll on save).
+            var suppressSync = vm.SuppressNextOnAppearingSync;
+            vm.SuppressNextOnAppearingSync = false;
+            if (!suppressSync)
+                await PageSync.OnAppearingAsync(vm);
 
             // PerfLog.Log("OnAppearing.before ConsumePendingSavedAsync");
             var savedCard = await vm.ConsumePendingSavedAsync();
