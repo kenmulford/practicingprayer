@@ -1,6 +1,6 @@
 # BUG-80 — Prayer-card realize-storm class (multiple CRUD paths jetsam at scale)
 
-**Status:** OPEN. Investigation complete; fix scoped (narrow or broad — see "Open scope decisions"). No code committed for BUG-80 yet. **Working tree on `dev` contains the partial BUG-79 fix (B + B4) — uncommitted.** A new session is picking this up cold; this doc is the handoff.
+**Status:** RESOLVED — broad scope. Fix landed on branch `fix/bug-80-realize-storm` (BUG-79 cleanup at `0239485`, BUG-80 broad fix as the next commit). Pending end-to-end UAT on iPhone 17 / iOS 26.4 before merge to `dev`. See "Resolution" section at the bottom. The audit body below is preserved as the design record.
 
 ---
 
@@ -207,3 +207,43 @@ The new session inherits these memos from the project's auto-memory (`MEMORY.md`
 - `feedback_ios_install_freshness_check.md` — bump `<ApplicationVersion>` for fresh install; bundle UUID is the freshness anchor.
 
 The full PerfLog trace and crash-window syslog excerpts for BUG-79 are held privately in Ken's vault under `Projects/Practicing Prayer/Bugs/`. They are **not** committed to this repo (open-source).
+
+---
+
+## Resolution — broad scope
+
+After independent review by staff-IC and lead-TPM agents (both converged on broad without prompting), the realize-storm class was closed in one fix rather than peeling off one mutation source per ticket.
+
+### Concrete changes vs. the audit's recommended consolidated fix
+
+`PrayerCardsViewModel.cs`:
+
+- **Widened the BUG-79 guard** from `changeKind == ChangeKind.Updated` to `changeKind != null`. Created and Deleted both have in-place handlers in `ApplyQueryAttributes` (PrayerSaved branch → `AddOrUpdatePrayerAsync`; PrayerDeleted branch → `RemovePrayer`). For Created broadcasts that originate outside the detail flow (`QuickAddViewModel.SavePrayerAsync` writing to the system "Quick Add" card from the Home tab), CardsPage's next OnAppearing on tab-return runs `SyncAsync()` with no skip and reconciles fresh — verified by tracing QuickAdd's presentation as a sheet modal over `MainPage` (sibling tab to `PrayerCardsPage`).
+- **Threaded `bool skipExpandedPrayerReload`** through `SyncAsync(ChangeKind?, bool)` and `SyncCoreAsync(ChangeKind?, bool)`. Inside the foreach, both reasons combine into one local: `var skipReload = changeKind != null || skipExpandedPrayerReload;`.
+- **Sibling messenger handlers** (`PrayerCardChangedMessage`, `TagChangedMessage`, `CardBoxChangedMessage`) now register with `vm.SyncAsync(null, skipExpandedPrayerReload: true)`. None mutate any card's prayer set.
+- **`BulkChangedMessage` left unguarded** — full data replacement after backup-restore / deep-link import / confirm-import legitimately requires the per-card reload.
+- **Mirrored B4 for Delete:** the PrayerDeleted branch in `ApplyQueryAttributes` now sets `SuppressNextOnAppearingSync = true` after `matched?.RemovePrayer(prayerId)`, closing the pass-2 storm on page-pop.
+- **Comment block at the foreach** names both BUG-79 and BUG-80, explains why `RefreshActivePrayerCount` and `BuildCardTagLookupAsync` still run unconditionally, and points back at this doc.
+
+`PrayerCardsPage.xaml.cs` and `PrayerCardViewModel.cs` were not touched by the BUG-80 fix itself — the consume site for `SuppressNextOnAppearingSync` and the in-place `RemovePrayer` were already wired by the BUG-79 commit.
+
+### What did NOT change
+
+- The `BindableLayout` → virtualized `CollectionView` rework (originally "C" in BUG-79). Still a separate slice. The storm-vector audit is the short-term workaround; virtualization is the long-term fix for the engine itself.
+- `ItemSizingStrategy="MeasureAllItems"` on the outer grouped `CollectionView`. Same.
+- `BulkChangedMessage`-driven backstop (defer reload on a 50+ row expanded card after backup-restore). Deferred until a real repro shows it's needed.
+
+### UAT matrix (manual, pending)
+
+Run all on a card with 55+ prayer requests, expanded, on iPhone 17 / iOS 26.4:
+
+1. **Mark Answered** — was BUG-79; B+B4 verified passing in working tree before broad fix.
+2. **Delete request** — was BUG-80 named repro.
+3. **Edit request** (other than Mark Answered).
+4. **Create request from outside the card detail flow** — QuickAdd from Home tab, then switch back to Cards tab.
+5. **Rename a tag attached to prayers in this card** — verify tag chips update; no jetsam.
+6. **Rename the card itself.**
+7. **Move card to a different box.**
+8. **Backup restore** — verify reload still runs (must NOT be skipped).
+9. **Regression** on a regular small card — confirm normal path unbroken.
+10. **30-prayer card** as threshold check.

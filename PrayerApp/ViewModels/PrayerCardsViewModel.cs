@@ -186,12 +186,14 @@ namespace PrayerApp.ViewModels
         private bool _pendingSavedWasAlreadyInList;
 
         /// <summary>
-        /// BUG-79: set by <see cref="ApplyQueryAttributes"/> when it handled an
-        /// in-place single-row update via <see cref="PrayerCardViewModel.AddOrUpdatePrayerAsync"/>.
-        /// Consumed (and cleared) by <c>PrayerCardsPage.OnAppearing</c> to skip the
-        /// page-pop's full <see cref="SyncAsync()"/> — its per-card <c>ReloadPrayers</c>
-        /// on a non-virtualized 50+ row <c>BindableLayout</c> tips the process into
-        /// a memory-pressure jetsam. See <c>docs/research/BUG-80-prayer-card-realize-storm-handoff.md</c>.
+        /// Set by <see cref="ApplyQueryAttributes"/> when it handled an in-place
+        /// single-row mutation (PrayerSaved → <see cref="PrayerCardViewModel.AddOrUpdatePrayerAsync"/>;
+        /// PrayerDeleted → <see cref="PrayerCardViewModel.RemovePrayer"/>). Consumed
+        /// (and cleared) by <c>PrayerCardsPage.OnAppearing</c> to skip the page-pop's
+        /// full <see cref="SyncAsync()"/>. Without this, <c>ReloadPrayers</c> runs
+        /// against an expanded 50+ row non-virtualized <c>BindableLayout</c> and tips
+        /// the process into a memory-pressure jetsam. See
+        /// <c>docs/research/BUG-80-prayer-card-realize-storm-handoff.md</c>.
         /// </summary>
         public bool SuppressNextOnAppearingSync { get; set; }
 
@@ -240,11 +242,21 @@ namespace PrayerApp.ViewModels
 
             // Cross-page CRUD signals — Cards displays counts and tag chips that derive
             // from every entity type, so subscribe to all of them. Weak refs auto-clean
-            // on GC. BulkChangedMessage covers backup restore / deep-link import.
-            _messenger.Register<PrayerCardsViewModel, PrayerCardChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            // on GC.
+            //
+            // BUG-80 (realize-storm class): card-, tag-, and box-level broadcasts pass
+            // skipExpandedPrayerReload:true because none of them mutate any card's
+            // prayer set — re-realizing rows on a 50+ row non-virtualized BindableLayout
+            // is pure waste at scale and tips the process into jetsam. The card list,
+            // tag chips, box sections, and active-prayer counts still update.
+            // PrayerChangedMessage forwards Kind so SyncCoreAsync can apply the BUG-79
+            // single-row skip (ApplyQueryAttributes already patched the row in place).
+            // BulkChangedMessage stays unguarded — backup restore / deep-link import is
+            // a full data replacement that legitimately requires per-card reload.
+            _messenger.Register<PrayerCardsViewModel, PrayerCardChangedMessage>(this, (vm, _) => vm.SyncAsync(null, skipExpandedPrayerReload: true).SafeFireAndForget());
             _messenger.Register<PrayerCardsViewModel, PrayerChangedMessage>(this, (vm, msg) => vm.SyncAsync(msg.Kind).SafeFireAndForget());
-            _messenger.Register<PrayerCardsViewModel, TagChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
-            _messenger.Register<PrayerCardsViewModel, CardBoxChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
+            _messenger.Register<PrayerCardsViewModel, TagChangedMessage>(this, (vm, _) => vm.SyncAsync(null, skipExpandedPrayerReload: true).SafeFireAndForget());
+            _messenger.Register<PrayerCardsViewModel, CardBoxChangedMessage>(this, (vm, _) => vm.SyncAsync(null, skipExpandedPrayerReload: true).SafeFireAndForget());
             _messenger.Register<PrayerCardsViewModel, BulkChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
         }
 
@@ -367,6 +379,7 @@ namespace PrayerApp.ViewModels
                 {
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     matched?.RemovePrayer(prayerId);
+                    SuppressNextOnAppearingSync = true;
                 }
             }
         }
@@ -482,13 +495,13 @@ namespace PrayerApp.ViewModels
         /// and by entity-change messenger broadcasts. Bursts coalesce via
         /// <see cref="_syncGate"/>; user-driven UI state (multi-select, search, tag chips)
         /// is preserved across syncs. The parameterless overload satisfies
-        /// <see cref="ISyncableViewModel"/>; the <see cref="ChangeKind"/> overload is forwarded
-        /// from entity-change handlers so <see cref="SyncCoreAsync"/> can short-circuit
-        /// per-card prayer reloads on single-row updates (BUG-79).
+        /// <see cref="ISyncableViewModel"/>; the parameterized overload accepts hints from
+        /// entity-change handlers so <see cref="SyncCoreAsync"/> can skip the per-card
+        /// prayer-row reload (BUG-79 / BUG-80 — see the comment at the foreach).
         /// </summary>
-        public Task SyncAsync() => SyncAsync(changeKind: null);
+        public Task SyncAsync() => SyncAsync(changeKind: null, skipExpandedPrayerReload: false);
 
-        public async Task SyncAsync(ChangeKind? changeKind)
+        public async Task SyncAsync(ChangeKind? changeKind, bool skipExpandedPrayerReload = false)
         {
             // Burst-scoped state: capture once before the gate runs. Per-iteration reset
             // would let a coalesced follow-up announce filter counts on the very first
@@ -497,7 +510,7 @@ namespace PrayerApp.ViewModels
             _suppressFilterAnnounce = !_hasSyncedOnce;
             try
             {
-                await _syncGate.RunAsync(() => SyncCoreAsync(changeKind));
+                await _syncGate.RunAsync(() => SyncCoreAsync(changeKind, skipExpandedPrayerReload));
                 _hasSyncedOnce = true;
             }
             finally
@@ -507,7 +520,7 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        private async Task SyncCoreAsync(ChangeKind? changeKind)
+        private async Task SyncCoreAsync(ChangeKind? changeKind, bool skipExpandedPrayerReload)
         {
             // Service caches are auto-invalidated by their own mutation methods (Slice 2);
             // no defensive InvalidateCache call needed here.
@@ -533,15 +546,34 @@ namespace PrayerApp.ViewModels
                 // PerfLog.Log($"SyncCore.addNewCard id={vm.Id} title=\"{vm.Title}\" IsExpanded={vm.IsExpanded}");
             }
 
-            // BUG-79: on a single-row Updated message, ApplyQueryAttributes has already
-            // patched the row in place (AddOrUpdatePrayerAsync → Reload + ResortPrayers).
-            // ReloadPrayers here would re-realize a 50+ row non-virtualized BindableLayout
-            // and tip the process into jetsam. See docs/research/BUG-80-prayer-card-realize-storm-handoff.md.
-            var skipPerCardReload = changeKind == ChangeKind.Updated;
+            // Per-card prayer-row reload is the realize-storm engine: a 50+ row
+            // non-virtualized BindableLayout re-realized inside the foreach tips
+            // the process into jetsam. Skip it whenever we know the broadcast
+            // can't have left an expanded card stale.
+            //
+            // BUG-79: any single-row PrayerChangedMessage. ApplyQueryAttributes
+            // (PrayerSaved → AddOrUpdatePrayerAsync; PrayerDeleted → RemovePrayer)
+            // has already patched the row in place. For Created broadcasts that
+            // originate outside the detail flow (QuickAdd writes to the system
+            // "Quick Add" card from the Home tab), CardsPage's next OnAppearing
+            // runs SyncAsync() with no skip and reconciles fresh.
+            //
+            // BUG-80: sibling broadcasts that don't mutate any card's prayer set
+            // (PrayerCardChangedMessage, TagChangedMessage, CardBoxChangedMessage)
+            // pass skipExpandedPrayerReload:true at registration. BulkChangedMessage
+            // is intentionally NOT in that set — backup restore / deep-link import
+            // is a full data replacement that legitimately requires the reload.
+            //
+            // RefreshActivePrayerCount is a cheap projection over already-loaded
+            // prayers and runs unconditionally. BuildCardTagLookupAsync below also
+            // runs unconditionally so tag chips stay correct on TagChangedMessage.
+            //
+            // See docs/research/BUG-80-prayer-card-realize-storm-handoff.md.
+            var skipReload = changeKind != null || skipExpandedPrayerReload;
             foreach (var vm in AllPrayerCards)
             {
                 vm.RefreshActivePrayerCount();
-                if (vm.IsExpanded && !skipPerCardReload)
+                if (vm.IsExpanded && !skipReload)
                     vm.ReloadPrayers();
             }
 
