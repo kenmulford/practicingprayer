@@ -10,9 +10,9 @@ using UIKit;
 namespace PrayerApp.ActionExtension;
 
 /// <summary>
-/// iOS Share Extension: captures the user's text selection from the Share sheet
-/// and writes it as a JSON payload to the App Group container for the main app
-/// to pick up.
+/// iOS Share Extension: captures the user's text selection from the Share sheet,
+/// writes it as a JSON payload to the App Group container, then auto-launches
+/// the host app via responder-chain → UIApplication.OpenUrl.
 ///
 /// Class and bundle ID retain the "ActionExtension" name post-pivot from Action
 /// to Share Extension — reusing the bundle ID keeps the existing provisioning
@@ -31,25 +31,13 @@ public class ShareViewController : UIViewController
     private const string PlainTextUti = "public.plain-text";
     private const int MaxPayloadBytes = 256 * 1024;
 
-    // Wakeup URL the responder-chain openURL: trick fires after a successful
-    // payload write. iOS routes the scheme to the host app via Info.plist's
-    // CFBundleURLTypes; Window.Activated → AppGroupImportDispatcher reads the
-    // payload from the App Group container. Only the scheme matters for routing.
-    private static readonly NSUrl HostAppWakeupUrl = new($"{AppGroupConstants.HostAppScheme}://import");
-
     // PrayerApp brand muted green. Mirror in PrayerApp/Resources/Styles/Colors.xaml
     // (Primary) and PrayerApp.csproj's MauiSplashScreen Color — keep the three in sync.
     // Extension is a separate binary; can't reference XAML resources directly.
     private static readonly UIColor BrandGreen = UIColor.FromRGB(0x6B, 0x7D, 0x5A);
 
-    // Manual relaunch is the ship UX — iOS 26.4 blocks Share-Extension auto-launch
-    // (both NSExtensionContext.OpenUrl and responder-chain openURL:). The 3-second
-    // delay before CompleteRequest gives the user time to read the "tap PrayerApp"
-    // hint before iOS dismisses the extension.
-    private const double CompleteRequestDelaySeconds = 3.0;
-
-    private const string SuccessCaption = "Saved — tap PrayerApp to confirm";
-    private const string FailureCaption = "Couldn't import — try again";
+    private const string SuccessCaption = "Saving to Practicing Prayer…";
+    private const string FailureCaption = "Couldn't save — try again";
 
     private UILabel? _statusLabel;
 
@@ -73,14 +61,12 @@ public class ShareViewController : UIViewController
         var attachment = FindPlainTextAttachment();
         if (attachment is null)
         {
-            FinishOnMainThread();
+            FinishOnMainThread(payloadWritten: false);
             return;
         }
 
-        // Callback-form LoadItem instead of LoadItemAsync. The completion runs
-        // on whatever thread Foundation picks; file IO and CompleteRequest are
-        // both safe to dispatch from there (file IO directly, CompleteRequest
-        // hopped to main).
+        // LoadItem's completion runs on whatever thread Foundation picks;
+        // file IO is safe there directly, CompleteRequest must be hopped to main.
         attachment.LoadItem(PlainTextUti, null, (loaded, error) =>
         {
             bool payloadWritten = false;
@@ -95,11 +81,9 @@ public class ShareViewController : UIViewController
                 var text = (loaded as NSString)?.ToString();
                 if (!string.IsNullOrWhiteSpace(text))
                 {
-                    // Slice 4 M3: NFC-normalize at the bridge boundary so this
-                    // path matches the App Intents Extension byte-for-byte.
-                    // Mirror: PrayerApp.AppIntents/PrayerAppIntents/AppGroupWriter.swift.
-                    // Some characters can grow under NFC (rare; some Hangul) so
-                    // re-check the byte cap on the normalized form.
+                    // NFC-normalize at the bridge boundary so payload bytes match
+                    // canonicalized form. Some characters can grow under NFC (rare;
+                    // some Hangul) so re-check the byte cap on the normalized form.
                     var normalized = text.Normalize(NormalizationForm.FormC);
                     if (System.Text.Encoding.UTF8.GetByteCount(normalized) <= MaxPayloadBytes)
                     {
@@ -113,7 +97,7 @@ public class ShareViewController : UIViewController
             }
             finally
             {
-                FinishOnMainThread(wakeHostApp: payloadWritten);
+                FinishOnMainThread(payloadWritten);
             }
         });
     }
@@ -133,7 +117,7 @@ public class ShareViewController : UIViewController
         return null;
     }
 
-    private void FinishOnMainThread(bool wakeHostApp = false)
+    private void FinishOnMainThread(bool payloadWritten)
     {
         // CompleteRequest must run on the main thread; the LoadItem callback can
         // resume on a non-main queue. UIViewController inherits BeginInvokeOnMainThread
@@ -143,95 +127,71 @@ public class ShareViewController : UIViewController
             var ctx = ExtensionContext;
             if (ctx is null) return;
 
-            if (!wakeHostApp)
+            if (!payloadWritten)
             {
                 if (_statusLabel is not null)
                     _statusLabel.Text = FailureCaption;
-                ScheduleCompleteRequest(ctx);
+                ctx.CompleteRequest(Array.Empty<NSExtensionItem>(), null);
                 return;
             }
 
-            // Both wakeup attempts (modern OpenUrl + legacy responder-chain) are
-            // forward-compat probes — empirically blocked on iOS 26.4 from Share
-            // Extensions but harmless and may unblock on a future iOS. Outcome
-            // persists to the breadcrumb log.
-            ctx.OpenUrl(HostAppWakeupUrl, success =>
-            {
-                BeginInvokeOnMainThread(() =>
-                {
-                    Debug.WriteLine($"[ShareExt] OpenUrl success: {success}");
-                    AppendWakeBreadcrumb(success);
-                    if (!success) TryWakeHostApp();
-                    ScheduleCompleteRequest(ctx);
-                });
-            });
+            CompleteAndLaunchHost(ctx);
         });
     }
-
-    private static void ScheduleCompleteRequest(NSExtensionContext ctx)
-    {
-        NSTimer.CreateScheduledTimer(CompleteRequestDelaySeconds, _ =>
-        {
-            ctx.CompleteRequest(Array.Empty<NSExtensionItem>(), null);
-        });
-    }
-
-    private static void AppendWakeBreadcrumb(bool success)
-    {
-        var path = GetAppGroupContainer()?.Path;
-        if (path is null) return;
-        AppGroupBreadcrumbLog.Append(
-            path,
-            success ? BreadcrumbOutcome.HostWakeOk : BreadcrumbOutcome.HostWakeFail,
-            byteCount: -1);
-    }
-
-    private static NSUrl? GetAppGroupContainer()
-        => NSFileManager.DefaultManager.GetContainerUrl(AppGroupConstants.AppGroupId);
 
     /// <summary>
-    /// Walk the UIResponder chain looking for an object that responds to
-    /// <c>openURL:</c> (single-argument selector). On Share Extensions,
-    /// <see cref="UIApplication.SharedApplication"/> is unavailable; the
-    /// responder-chain trick is the established pattern for asking iOS to
-    /// open a URL. Tolerated by App Review for the share-extension wakeup
-    /// pattern; the URL routes back to our own host app via the custom
-    /// scheme registered in Info.plist.
+    /// Completes the extension request, then walks the responder chain in the
+    /// completion handler to find a <see cref="UIApplication"/> and calls its
+    /// 3-arg <c>openURL:options:completionHandler:</c> binding to foreground
+    /// the host app via the registered <c>practicingprayer://</c> scheme.
+    ///
+    /// The <c>BeginInvokeOnMainThread</c> hop is load-bearing: CompleteRequest's
+    /// completion fires on <c>com.apple.expiringTaskExecutionQueue</c>, and the
+    /// .NET-for-iOS UIKit bindings call <c>UIApplication.EnsureUIThread()</c>
+    /// on every UIResponder/UIApplication member access — including reading
+    /// <c>UIResponder.NextResponder</c>. Off-main access throws
+    /// <c>UIKitThreadAccessException</c> before any UIKit call reaches the
+    /// system. Reddit/Swift samples of this pattern don't show the hop because
+    /// Swift has no managed-side guard. Don't strip it.
     /// </summary>
-    private void TryWakeHostApp()
+    private void CompleteAndLaunchHost(NSExtensionContext ctx)
     {
-        try
+        var hostUrl = new NSUrl($"{AppGroupConstants.HostAppScheme}://import");
+
+        ctx.CompleteRequest(Array.Empty<NSExtensionItem>(), _ =>
         {
-            var sel = new ObjCRuntime.Selector("openURL:");
-            UIResponder? responder = this;
-            while (responder is not null)
+            BeginInvokeOnMainThread(() => OpenHostAppViaResponderChain(hostUrl));
+        });
+    }
+
+    /// <summary>
+    /// Walks the UIResponder chain starting from this view controller and
+    /// invokes the 3-arg <c>openURL:options:completionHandler:</c> on the
+    /// first <see cref="UIApplication"/> found. Caller must be on the main
+    /// thread (see <see cref="CompleteAndLaunchHost"/>).
+    /// </summary>
+    private void OpenHostAppViaResponderChain(NSUrl url)
+    {
+        UIResponder? responder = this;
+        while (responder is not null)
+        {
+            if (responder is UIApplication app)
             {
-                if (responder.RespondsToSelector(sel))
-                {
-                    responder.PerformSelector(sel, HostAppWakeupUrl);
-                    return;
-                }
-                responder = responder.NextResponder;
+                app.OpenUrl(url, new NSDictionary(), null);
+                return;
             }
-            Debug.WriteLine("[ShareExt] no responder in chain handles openURL:");
-        }
-        catch (Exception ex)
-        {
-            // Wakeup is best-effort — if it fails the user just falls back to
-            // manually re-opening the app, which still works (Window.Activated
-            // dispatcher reads the pending payload).
-            Debug.WriteLine($"[ShareExt] TryWakeHostApp failed: {ex}");
+            responder = responder.NextResponder;
         }
     }
 
     /// <summary>
     /// Returns true iff the payload was successfully written to the App Group
     /// container. False on entitlement misconfig, NSData encoding failure, or
-    /// disk write failure. Caller uses the bool to gate the host-app wakeup.
+    /// disk write failure.
     /// </summary>
     private static bool WriteToAppGroup(string text)
     {
-        var container = GetAppGroupContainer();
+        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroupConstants.AppGroupId);
         if (container is null)
         {
             Debug.WriteLine("[ShareExt] GetContainerUrl returned null. Entitlement misconfig?");
@@ -241,9 +201,9 @@ public class ShareViewController : UIViewController
         var url = container.Append(AppGroupConstants.PayloadFileName, false);
 
         // Caller (LoadItem boundary) normalizes to NFC and enforces the byte cap.
-        // System.Text.Json source-gen context keeps parity with the 3c read side
-        // (HandleAppGroupImport uses JsonDocument.Parse) and avoids IL2026/IL3050
-        // under AOT.
+        // System.Text.Json source-gen context keeps parity with the host's read
+        // side (HandleAppGroupImport uses JsonDocument.Parse) and avoids
+        // IL2026/IL3050 under AOT.
         var payload = new ImportPayload(text, DateTime.UtcNow.ToString("o"));
         var json = JsonSerializer.Serialize(payload, ImportPayloadJsonContext.Default.ImportPayload);
 
