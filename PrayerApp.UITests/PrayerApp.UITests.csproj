@@ -43,8 +43,13 @@
     <Compile Include="../PrayerApp/Services/IDBService.cs" />
     <Compile Include="../PrayerApp/Services/DBService.cs" />
 
-    <!-- DBService.cs invokes PerfLog (Slice 5/6 perf tracing instrumentation). -->
+    <!-- DBService.cs invokes PerfLog (Slice 5/6 perf tracing instrumentation).
+         PerfLog routes through Diagnostics.ResolveLog() on iOS for diagnostics.log
+         capture; in non-MAUI contexts the resolve returns null and the log is a
+         no-op. Both helpers must be linked or PerfLog won't compile here. -->
     <Compile Include="../PrayerApp/Helpers/PerfLog.cs" />
+    <Compile Include="../PrayerApp/Helpers/Diagnostics.cs" />
+    <Compile Include="../PrayerApp/Services/IDiagnosticLog.cs" />
 
     <!-- BoxStrings holds canonical section names referenced by UITests
          (e.g. BoxStrings.Unorganized for the "Loose Cards" Unboxed section). -->
