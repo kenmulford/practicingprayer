@@ -10,11 +10,21 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (BindingContext is ConfirmImportViewModel vm)
-            vm.ConsumePending();
+        if (BindingContext is not ConfirmImportViewModel vm) return;
+
+        // Sync work first so card title + prayer rows paint on the first
+        // frame; the Collection picker populates a tick later. The other
+        // order (await boxes, then consume) introduced a perceptible
+        // cold-cache delay before primary content rendered. Both calls
+        // are idempotent — modal OnAppearing fires on initial show AND
+        // on resume from background; ConsumePending guards via _consumed
+        // and LoadBoxesAsync via _boxesLoaded so the user's mid-flow
+        // Collection pick survives backgrounding.
+        vm.ConsumePending();
+        await vm.LoadBoxesAsync();
     }
 
     private void OnRemovePrayerClicked(object? sender, EventArgs e)

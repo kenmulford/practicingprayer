@@ -17,6 +17,7 @@ public class ConfirmImportViewModelTests
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly IImportPayloadService _payloadService = Substitute.For<IImportPayloadService>();
     private readonly ITextSelectionParser _parser = Substitute.For<ITextSelectionParser>();
+    private readonly IBoxService _boxService = Substitute.For<IBoxService>();
 
     private readonly IMessenger _messenger = new WeakReferenceMessenger();
     private readonly object _recipient = new();
@@ -28,12 +29,17 @@ public class ConfirmImportViewModelTests
         Prayer.SetDBService(_db);
         _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
         _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+        // Default to empty box list — picker tests override before calling
+        // CreateSut. Default lives here (not in CreateSut) so per-test
+        // .Returns() calls aren't clobbered when CreateSut runs.
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
         _messenger.Register<object, BulkChangedMessage>(_recipient, (_, m) => _bulkMessages.Add(m));
     }
 
     private ConfirmImportViewModel CreateSut() =>
         new(_cardService, _prayerService, _navigationService, _accessibilityService,
-            _messenger, _payloadService, _parser);
+            _messenger, _payloadService, _parser, _boxService);
 
     private static ParseResult Result(string suggestedTitle, params (string Title, string? Details)[] prayers) =>
         new(prayers.Select(p => new ParsedPrayer(p.Title, p.Details)).ToList().AsReadOnly(), suggestedTitle);
@@ -309,6 +315,124 @@ public class ConfirmImportViewModelTests
         sut.Prayers.Add(new EditablePrayer());
 
         Assert.Contains(nameof(sut.PrayersHeader), raised);
+    }
+
+    // ── Collection picker (LoadBoxesAsync + SaveAsync BoxId) ──────────
+
+    [Fact]
+    public async Task LoadBoxesAsync_LooseCardsFirst_FollowedByUserBoxes()
+    {
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+            new CardBox { Id = 8, Name = "Work", IsSystem = false },
+        }));
+        var sut = CreateSut();
+
+        await sut.LoadBoxesAsync();
+
+        Assert.Equal(3, sut.AvailableBoxes.Count);
+        Assert.Equal(0, sut.AvailableBoxes[0].BoxId);
+        Assert.Equal("Loose Cards", sut.AvailableBoxes[0].Name);
+        Assert.Equal(7, sut.AvailableBoxes[1].BoxId);
+        Assert.Equal(8, sut.AvailableBoxes[2].BoxId);
+    }
+
+    [Fact]
+    public async Task LoadBoxesAsync_DefaultsSelectedBoxToLooseCards()
+    {
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+
+        await sut.LoadBoxesAsync();
+
+        Assert.NotNull(sut.SelectedBox);
+        Assert.Equal(0, sut.SelectedBox!.BoxId);
+    }
+
+    [Fact]
+    public async Task LoadBoxesAsync_ExcludesSystemBoxes()
+    {
+        // Mirror PrayerCardViewModel.LoadBoxPickerAsync: System and Archived
+        // are out of scope for the import landing page (users shouldn't be
+        // pushed toward archiving an import).
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+            new CardBox { Id = 99, Name = "Archived", IsSystem = true },
+        }));
+        var sut = CreateSut();
+
+        await sut.LoadBoxesAsync();
+
+        Assert.Equal(2, sut.AvailableBoxes.Count); // Loose + Family only
+        Assert.DoesNotContain(sut.AvailableBoxes, b => b.Name == "Archived");
+    }
+
+    [Fact]
+    public async Task LoadBoxesAsync_CalledTwice_DoesNotReloadOrClobberSelection()
+    {
+        // Modal OnAppearing fires on initial show AND on resume from background.
+        // Reloading would clobber a user's mid-flow Collection pick.
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+
+        await sut.LoadBoxesAsync();
+
+        Assert.Equal(7, sut.SelectedBox?.BoxId);
+        Assert.Equal(2, sut.AvailableBoxes.Count);
+        await _boxService.Received(1).GetBoxesAsync();
+    }
+
+    [Fact]
+    public async Task Save_WithSelectedUserBox_AssignsCardToThatBox()
+    {
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.CardTitle = "Family imports";
+        await sut.LoadBoxesAsync();
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 7));
+    }
+
+    [Fact]
+    public async Task Save_WithoutLoadingBoxes_DefaultsToBoxIdZero()
+    {
+        // Defensive: if the picker was never wired (or LoadBoxesAsync failed),
+        // saved imports still land in Loose Cards — matches the prior
+        // hardcoded behavior.
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.CardTitle = "Imported May 1";
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0));
+    }
+
+    [Fact]
+    public async Task Save_WithDefaultLooseCardsSelection_AssignsBoxIdZero()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.CardTitle = "Imported May 1";
+        await sut.LoadBoxesAsync(); // default selection = Loose Cards
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0));
     }
 
     // ── Helpers ──────────────────────────

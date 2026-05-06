@@ -325,6 +325,61 @@ public class PrayerCardTests
         driver.DismissAlertIfPresent();
     }
 
+    /// <summary>Build-95 fallout (Slice 6c): after deleting an expanded card,
+    /// none of its prayer titles should still render anywhere on the page.
+    /// Pre-fix the lazy-realized expanded subtree's explicit BindingContext
+    /// pinned the inner ContentView.Content to the deleted card's vm, so a
+    /// recycled cell rendering a different card still showed the deleted
+    /// card's prayer rows under it. The bug class was masked by BUG-79/80's
+    /// realize-storm crash; once that crash was closed in build 95 the
+    /// staleness became visible.</summary>
+    [Fact]
+    public void Cards_DeleteExpandedCard_DoesNotLeakPrayersToOtherCards()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // Expand Big Card so RealizeExpandedSubtree inflates the lazy
+        // expanded subtree with Big Card's BindingContext.
+        EnsureCardExpanded(driver, "Recycle Big Card");
+
+        // Sanity: at least one Big Card prayer is rendered before delete.
+        Assert.True(
+            driver.IsTextDisplayed("Recycle Big Prayer 0", timeoutSeconds: 10),
+            "Big Card should expand and show its prayers before delete (sanity).");
+
+        // Delete via the inline Delete button + confirm dialog. Same flow as
+        // Cards_DeleteCard_RemovesFromList; the difference is that the target
+        // card is expanded with a realized subtree at delete time.
+        driver.WaitAndTap("Cards_Btn_Delete", timeoutSeconds: 10);
+        driver.DismissAlertIfPresent();
+        Thread.Sleep(TestConfig.DelayAfterSave);
+
+        // Anchor the viewport on the survivor so any leaked Big Card prayer
+        // rows would be near the visible cell, not scrolled off-screen
+        // (avoids a false-pass where the assertions miss content that's
+        // technically present in the tree but outside the visible region).
+        driver.EnsureCardVisible("Recycle Small Card");
+
+        // Post-delete the Loose Cards section's SetCards fires a Reset which
+        // re-dequeues cells. Pre-fix the inner ContentView.Content kept its
+        // first-realize BindingContext = Big Card vm even after the cell
+        // was reassigned — so any of Big Card's prayer titles that remained
+        // visible anywhere on the page indicates the bug.
+        Assert.False(
+            driver.IsTextDisplayed("Recycle Big Prayer 0", timeoutSeconds: 5),
+            "After deleting Big Card, none of its prayer titles should still " +
+            "render. If this fails, a recycled cell's inner BindingContext is " +
+            "still pointing at the deleted card (Slice 6c lazy-realize / " +
+            "build-95 fallout).");
+        Assert.False(
+            driver.IsTextDisplayed("Recycle Big Prayer 2", timeoutSeconds: 3));
+        Assert.False(
+            driver.IsTextDisplayed("Recycle Big Prayer 4", timeoutSeconds: 3));
+    }
+
     /// <summary>3.12: Delete card — navigate to the pre-seeded "Delete Me Card",
     /// expand it, delete via the inline Delete button, confirm. The target card
     /// is a throwaway from the seed; destroying it does not affect the shared
@@ -628,9 +683,7 @@ public class PrayerCardTests
             driver.TapByText(cardName);
         Thread.Sleep(TestConfig.DelayAfterTap);
 
-        bool chipsVisible = TestConfig.IsIOS
-            ? driver.IsTextDisplayed("Edit", timeoutSeconds: 5)
-            : driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
+        bool chipsVisible = driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
 
         string? evidence = chipsVisible ? null
             : driver.DumpPageSource(nameof(Cards_ExpandByTap_RealizesActionChips));
@@ -661,9 +714,7 @@ public class PrayerCardTests
 
         // Confirm chips realized before scroll (otherwise the post-scroll check
         // would be testing realize-on-scroll-back, not survive-recycle).
-        bool chipsBeforeScroll = TestConfig.IsIOS
-            ? driver.IsTextDisplayed("Edit", timeoutSeconds: 5)
-            : driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
+        bool chipsBeforeScroll = driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
         Assert.True(chipsBeforeScroll, "Pre-scroll: chips must be realized.");
 
         // Aggressively scroll the recycler. Each ScrollDown invokes the platform
@@ -694,9 +745,7 @@ public class PrayerCardTests
         // After recycling, the card and its chips must still be intact —
         // the chip MUST appear under the same card name we expanded, not
         // shifted onto a different recycled cell.
-        bool chipsAfterScroll = TestConfig.IsIOS
-            ? driver.IsTextDisplayed("Edit", timeoutSeconds: 5)
-            : driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
+        bool chipsAfterScroll = driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
 
         string? evidence = chipsAfterScroll ? null
             : driver.DumpPageSource(nameof(Cards_RecycledCells_LazyRealizeSurvivesScroll));

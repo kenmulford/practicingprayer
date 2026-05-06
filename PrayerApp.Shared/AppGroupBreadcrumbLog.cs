@@ -11,6 +11,21 @@ public enum BreadcrumbOutcome
     WriteOk,
     HostWakeOk,
     HostWakeFail,
+    // Share-extension upstream-failure outcomes (added when build-95 fallout
+    // exposed the silent-dismiss path on rich-text sources). Without these,
+    // any failure before WriteToAppGroup leaves zero forensic surface.
+    LoadItemError,
+    NoAttachment,
+    UnsupportedType,
+    EmptyText,
+    // Payload exceeded the 256 KB byte cap — either the NSData length pre-check
+    // (multi-MB share) or the post-NFC byte-count check (rare; some Hangul
+    // expand under FormC normalization).
+    Oversized,
+    // Catch-all for unexpected exceptions in the share-extension pipeline.
+    // Breadcrumb token is ASCII-only by contract; the exception detail goes
+    // to Debug.WriteLine and is not preserved here.
+    PipelineError,
 }
 
 /// <summary>
@@ -87,13 +102,19 @@ public static class AppGroupBreadcrumbLog
 
     private static string OutcomeToken(BreadcrumbOutcome outcome) => outcome switch
     {
-        BreadcrumbOutcome.Ok           => "ok",
-        BreadcrumbOutcome.Empty        => "empty",
-        BreadcrumbOutcome.ParseFail    => "parse-fail",
-        BreadcrumbOutcome.IoFail       => "io-fail",
-        BreadcrumbOutcome.WriteOk      => "write-ok",
-        BreadcrumbOutcome.HostWakeOk   => "host-wake-ok",
-        BreadcrumbOutcome.HostWakeFail => "host-wake-fail",
-        _                               => $"unknown-{(int)outcome}",
+        BreadcrumbOutcome.Ok              => "ok",
+        BreadcrumbOutcome.Empty           => "empty",
+        BreadcrumbOutcome.ParseFail       => "parse-fail",
+        BreadcrumbOutcome.IoFail          => "io-fail",
+        BreadcrumbOutcome.WriteOk         => "write-ok",
+        BreadcrumbOutcome.HostWakeOk      => "host-wake-ok",
+        BreadcrumbOutcome.HostWakeFail    => "host-wake-fail",
+        BreadcrumbOutcome.LoadItemError   => "load-item-error",
+        BreadcrumbOutcome.NoAttachment    => "no-attachment",
+        BreadcrumbOutcome.UnsupportedType => "unsupported-type",
+        BreadcrumbOutcome.EmptyText       => "empty-text",
+        BreadcrumbOutcome.Oversized       => "oversized",
+        BreadcrumbOutcome.PipelineError   => "pipeline-error",
+        _                                  => $"unknown-{(int)outcome}",
     };
 }

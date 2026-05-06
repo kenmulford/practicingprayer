@@ -141,10 +141,20 @@ public class EdgeCaseTests
         // fallback for virtualized / off-tree rows (TD-19 pattern, cross-platform).
         // ResetAppUIState clears Cards_Search at the start of the next test.
         driver.EnsureCardVisible("Empty Card Test");
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Empty Card Test", timeoutSeconds: 10);
-        else
-            driver.TapByText("Empty Card Test");
+
+        // Slice 6g auto-reveal-after-save scrolls to the freshly-saved card AND
+        // expands it. The realize is async — give it a brief settle before
+        // checking the state suffix on the composed accessibility description.
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        bool alreadyExpanded = driver.IsTextContainsDisplayed(
+            "Empty Card Test, Expanded", timeoutSeconds: 2);
+
+        if (!alreadyExpanded)
+        {
+            // Auto-reveal didn't land — fall back to the explicit tap path.
+            if (TestConfig.IsIOS) driver.TapByTextContains("Empty Card Test", timeoutSeconds: 10);
+            else driver.TapByText("Empty Card Test");
+        }
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Verify the card expanded and shows the "Add prayer" option.
@@ -190,6 +200,10 @@ public class EdgeCaseTests
         else
         {
             var found = driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 10);
+            // Defense in depth: with Slice 6g auto-reveal, the AddPrayer button
+            // is realized on arrival. The scroll fallback below remains in case
+            // auto-reveal regresses or the cell virtualizes during state
+            // transitions; it short-circuits when the primary path succeeds.
             if (!found)
             {
                 try

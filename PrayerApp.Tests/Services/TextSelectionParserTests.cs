@@ -154,6 +154,177 @@ public class TextSelectionParserTests
         Assert.Equal("Imported May 1", result.SuggestedCardTitle);
     }
 
+    // ── ALL-CAPS header detection ──────────────────────────
+    // Item 4 (next-punch-list): when the imported text starts with an
+    // ALL-CAPS topic line followed by content, the parser uses that line
+    // as the suggested card title (title-cased) and excludes it from the
+    // prayer list. Multiple consecutive headers at the top collapse to
+    // the LAST one (the most specific topic — "MUSSONS OUTREACH" beats
+    // "CORPORATE PRAYER").
+
+    [Fact]
+    public void Parse_AllCapsHeaderFollowedByContent_BecomesCardTitleAndIsExcluded()
+    {
+        var input = "MISSIONS OUTREACH\nPray for the missionaries.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Missions Outreach", result.SuggestedCardTitle);
+        Assert.Single(result.Prayers);
+        Assert.Equal("Pray for the missionaries.", result.Prayers[0].Title);
+    }
+
+    [Fact]
+    public void Parse_TwoConsecutiveAllCapsHeaders_UsesLastAndExcludesBoth()
+    {
+        var input = "CORPORATE PRAYER\nMISSIONS OUTREACH\n  Pray for our Campus Outreach staff.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Missions Outreach", result.SuggestedCardTitle);
+        Assert.Single(result.Prayers);
+        Assert.StartsWith("Pray for our Campus", result.Prayers[0].Title);
+    }
+
+    [Fact]
+    public void Parse_NoHeader_FallsBackToImportedMonthDay()
+    {
+        // Mixed-case from line 1 means no header.
+        var input = "Mom needs prayer.\nDad's surgery on Friday.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Imported May 1", result.SuggestedCardTitle);
+        Assert.Equal(2, result.Prayers.Count);
+    }
+
+    [Fact]
+    public void Parse_AllCapsListWithNoFollowUpContent_DoesNotTreatAsHeader()
+    {
+        // "MOM\nDAD\nSISTER" is a flat ALL-CAPS list, not a header + content.
+        // Without a content line below, none of these get consumed as a title.
+        var input = "MOM\nDAD\nSISTER";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Imported May 1", result.SuggestedCardTitle);
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("MOM", result.Prayers[0].Title);
+        Assert.Equal("DAD", result.Prayers[1].Title);
+        Assert.Equal("SISTER", result.Prayers[2].Title);
+    }
+
+    [Fact]
+    public void Parse_HeaderWithListMarker_DoesNotTreatAsHeader()
+    {
+        // "1. MISSIONS OUTREACH" is a marker-prefixed list item, not a header.
+        var input = "1. MISSIONS OUTREACH\nPray for staff.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Imported May 1", result.SuggestedCardTitle);
+        Assert.Equal(2, result.Prayers.Count);
+        Assert.Equal("MISSIONS OUTREACH", result.Prayers[0].Title);
+    }
+
+    [Fact]
+    public void Parse_VeryShortAllCapsLine_DoesNotTreatAsHeader()
+    {
+        // "OK" is too short to be a meaningful header (< 3 letters).
+        var input = "OK\nPray for us.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Imported May 1", result.SuggestedCardTitle);
+        Assert.Equal(2, result.Prayers.Count);
+    }
+
+    [Fact]
+    public void Parse_LongAllCapsLine_DoesNotTreatAsHeader()
+    {
+        // > 60 chars is sentence-shaped, not header-shaped.
+        var input = "PLEASE PRAY FOR ALL OUR MISSIONARIES SERVING IN MANY DIFFERENT COUNTRIES THIS WEEK\nDetails follow.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Imported May 1", result.SuggestedCardTitle);
+        Assert.Equal(2, result.Prayers.Count);
+    }
+
+    [Fact]
+    public void Parse_HeaderWithBlankLineBeforeContent_StillDetects()
+    {
+        var input = "MISSIONS OUTREACH\n\nPray for staff.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Missions Outreach", result.SuggestedCardTitle);
+        Assert.Single(result.Prayers);
+        Assert.Equal("Pray for staff.", result.Prayers[0].Title);
+    }
+
+    [Fact]
+    public void Parse_HeaderWithEmbeddedDigits_StillDetects()
+    {
+        // A few non-letter chars don't disqualify a header — the threshold
+        // is on letter case ratio, not on character class purity.
+        var input = "WEEK 2 PRAYERS\nPray for the team.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Week 2 Prayers", result.SuggestedCardTitle);
+        Assert.Single(result.Prayers);
+    }
+
+    [Fact]
+    public void Parse_OnlyHeaderNoContent_FallsBackAndKeepsLineAsPrayer()
+    {
+        // Single line that looks like a header but has nothing below.
+        var input = "MISSIONS OUTREACH";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Imported May 1", result.SuggestedCardTitle);
+        Assert.Single(result.Prayers);
+        Assert.Equal("MISSIONS OUTREACH", result.Prayers[0].Title);
+    }
+
+    [Fact]
+    public void Parse_HeaderWithAcronym_PreservesShortUppercaseTokens()
+    {
+        // Tokens of <=3 chars in an ALL-CAPS header are almost always
+        // acronyms (NPM, FBC, USA), not short words. Title-casing them
+        // would produce "Npm Prayer Night" — wrong for any real document.
+        var input = "NPM PRAYER NIGHT\nPray for the team.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("NPM Prayer Night", result.SuggestedCardTitle);
+    }
+
+    [Fact]
+    public void Parse_HeaderWithMultipleAcronyms_PreservesAll()
+    {
+        var input = "FBC NPM RETREAT\nDetails below.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("FBC NPM Retreat", result.SuggestedCardTitle);
+    }
+
+    [Fact]
+    public void Parse_HeaderWithFourCharToken_TitleCasesIt()
+    {
+        // 4-char tokens are usually full words ("BABY", "GIFT"), not
+        // acronyms — the threshold is 3. Users with longer acronyms
+        // (USPS, NASA) will see them title-cased and can edit.
+        var input = "BABY DEDICATION\nPray for the family.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Baby Dedication", result.SuggestedCardTitle);
+    }
+
     // ── Rule 6: long-line title synthesis (2026-05-01) ──────────────────────────
     // Per architecture doc 02-architecture.md rule 6: lines with a clause delimiter
     // (, ; : — -) OR more than 6 space-separated words push the full line into

@@ -207,6 +207,31 @@ internal static class TestDataSeed
 
         await SeedCardWithPrayersAsync(boxId: 0, "UITest Favorite Card",
             Array.Empty<(string, string, bool)>());
+
+        // Build-95 fallout: recycled-cell BindingContext-stale fixture.
+        // "Recycle Big Card" is expanded + deleted by the test; "Recycle
+        // Small Card" is the survivor whose cell may be assigned the Big
+        // Card's recycled cell after the section's Reset notification.
+        // Pre-fix the inner ContentView.Content kept its first-realize
+        // BindingContext pointing at Big, so Big's prayer rows continued
+        // to render under Small's header. Five prayers is enough for the
+        // recycle path; the realize-storm count (50+) only mattered for
+        // the BUG-79/80 crash class, which ships in 1.3.1 build 95.
+        var recyclePrayers = new (string Title, string Details, bool Answered)[]
+        {
+            ("Recycle Big Prayer 0", "Filler 0.", false),
+            ("Recycle Big Prayer 1", "Filler 1.", false),
+            ("Recycle Big Prayer 2", "Filler 2.", false),
+            ("Recycle Big Prayer 3", "Filler 3.", false),
+            ("Recycle Big Prayer 4", "Filler 4.", false),
+        };
+        await SeedCardWithPrayersAsync(boxId: 0, "Recycle Big Card", recyclePrayers);
+
+        await SeedCardWithPrayersAsync(boxId: 0, "Recycle Small Card", new[]
+        {
+            ("Recycle Small Survivor",
+             "Should still be the only prayer visible after Big is deleted.", false),
+        });
     }
 
     private static async Task SeedCardWithPrayersAsync(int boxId, string cardTitle,

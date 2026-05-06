@@ -186,6 +186,16 @@ public static class AppExtensions
             $"Text '{text}'", maxScrolls, scrollableAutomationId);
 
     /// <summary>
+    /// Scroll down until an element whose visible text <em>contains</em> the given
+    /// substring is found. Use when the target text varies (e.g. section header
+    /// "Loose Cards · 11 cards" — anchor on "Loose Cards" instead of the full string).
+    /// </summary>
+    public static AppiumElement ScrollDownToTextContains(this AppiumDriver driver, string text,
+        int maxScrolls = 5, string? scrollableAutomationId = null)
+        => ScrollDownUntil(driver, TextContainsLocator(text),
+            $"Text containing '{text}'", maxScrolls, scrollableAutomationId);
+
+    /// <summary>
     /// Ensure a card on the Prayer Cards page is scrolled into view. No-op if the card
     /// text is already visible. Safe to call before any <c>TapByText</c> / <c>TapByTextContains</c>
     /// on a card name — protects tests from position-in-list variance as the Loose Cards
@@ -270,6 +280,67 @@ public static class AppExtensions
         }
 
         throw new NoSuchElementException($"{description} not found after {maxScrolls} scrolls.");
+    }
+
+    /// <summary>
+    /// Reset the Cards_List_Cards CollectionView to its top position. Best-
+    /// effort: silently no-ops if the list isn't on screen (e.g. test isn't
+    /// on the Cards tab). Called from ResetAppUIState so the next test gets
+    /// a known scroll position. Uses the inverse of <see cref="ScrollDown"/>
+    /// (Android: swipe down; iOS: <c>mobile: scroll direction=up</c>) and
+    /// runs a generous-but-bounded number of iterations to reach the top.
+    /// </summary>
+    private static void ResetCardsListScroll(AppiumDriver driver)
+    {
+        const int MaxIterations = 8;
+
+        // Cheap presence gate — bypass the loop on tabs that don't host the
+        // cards list (Home / Prayers / Tags / Settings).
+        if (!driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 0)) return;
+
+        if (TestConfig.IsIOS)
+        {
+            string listId;
+            try { listId = driver.FindByAutomationId("Cards_List_Cards").Id; }
+            catch (WebDriverException) { return; }
+
+            // Save/restore the implicit wait so this universal teardown doesn't
+            // clobber a future caller that customised the wait window.
+            var priorWait = driver.Manage().Timeouts().ImplicitWait;
+            try
+            {
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(0);
+                for (int i = 0; i < MaxIterations; i++)
+                {
+                    driver.ExecuteScript("mobile: scroll", new Dictionary<string, object>
+                    {
+                        { "elementId", listId },
+                        { "direction", "up" }
+                    });
+                }
+            }
+            catch (WebDriverException) { /* container went off-page mid-loop */ }
+            finally { driver.Manage().Timeouts().ImplicitWait = priorWait; }
+            return;
+        }
+
+        var size = driver.Manage().Window.Size;
+        for (int i = 0; i < MaxIterations; i++)
+        {
+            try
+            {
+                driver.ExecuteScript("mobile: swipeGesture", new Dictionary<string, object>
+                {
+                    { "left", size.Width / 4 },
+                    { "top", size.Height / 4 },
+                    { "width", size.Width / 2 },
+                    { "height", size.Height / 2 },
+                    { "direction", "down" },
+                    { "percent", 0.7 }
+                });
+            }
+            catch (WebDriverException) { return; }
+        }
     }
 
     /// <summary>Perform a single scroll-down gesture.</summary>
@@ -567,6 +638,17 @@ public static class AppExtensions
     /// </summary>
     public static void ResetAppUIState(this AppiumDriver driver, AppiumSetup setup)
     {
+        // Cards list scroll position is preserved across tab navigation. A
+        // prior test (e.g. Slice 6g auto-reveal-after-save in
+        // EmptyCardExpand) can leave the list mid-scrolled, putting the next
+        // test's target card above the current viewport. EnsureCardVisible
+        // only scrolls down, so without a top-reset its search-bar fallback
+        // fires and the page lands in a filtered-list state where chips and
+        // composed accessibility descriptions on cards aren't reachable.
+        // Run BEFORE the fast-path so it applies even when we're already at
+        // a tab root.
+        ResetCardsListScroll(driver);
+
         // Fast path: already at a tab root with no pending alert.
         if (!driver.IsAlertPresent() && driver.IsDisplayed("Home", timeoutSeconds: 0))
             return;

@@ -54,6 +54,25 @@ public class AppGroupBreadcrumbLogTests : IDisposable
         Assert.Matches(@"^\S+ - io-fail$", lines[0]);
     }
 
+    [Theory]
+    [InlineData(BreadcrumbOutcome.LoadItemError, "load-item-error")]
+    [InlineData(BreadcrumbOutcome.NoAttachment, "no-attachment")]
+    [InlineData(BreadcrumbOutcome.UnsupportedType, "unsupported-type")]
+    [InlineData(BreadcrumbOutcome.EmptyText, "empty-text")]
+    [InlineData(BreadcrumbOutcome.Oversized, "oversized")]
+    [InlineData(BreadcrumbOutcome.PipelineError, "pipeline-error")]
+    public void Append_ShareExtensionUpstreamOutcomes_WriteExpectedTokens(
+        BreadcrumbOutcome outcome, string expectedToken)
+    {
+        // The share-extension upstream-failure breadcrumbs (added when build-95
+        // fallout exposed the silent-dismiss path on rich-text sources) need
+        // stable forensic tokens — log readers grep these strings.
+        AppGroupBreadcrumbLog.Append(_tempDir, outcome, byteCount: -1);
+
+        var lines = File.ReadAllLines(LogPath);
+        Assert.Matches($@"^\S+ - {expectedToken}$", lines[0]);
+    }
+
     [Fact]
     public async Task Append_ConcurrentWriters_NoLostUpdates()
     {

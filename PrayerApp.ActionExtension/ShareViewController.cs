@@ -58,9 +58,18 @@ public class ShareViewController : UIViewController
 
     private void StartImport()
     {
+        // Resolve the App Group container path up front so upstream-failure
+        // breadcrumbs (NoAttachment, LoadItemError, UnsupportedType, EmptyText)
+        // can land on disk even when WriteToAppGroup never runs. Without these,
+        // a build-95-style "shared but nothing happened" report leaves zero
+        // forensic surface (the bug that motivated this fix).
+        var container = NSFileManager.DefaultManager.GetContainerUrl(AppGroupConstants.AppGroupId);
+        var containerPath = container?.Path;
+
         var attachment = FindPlainTextAttachment();
         if (attachment is null)
         {
+            TryAppendBreadcrumb(containerPath, BreadcrumbOutcome.NoAttachment);
             FinishOnMainThread(payloadWritten: false);
             return;
         }
@@ -75,31 +84,82 @@ public class ShareViewController : UIViewController
                 if (error is not null)
                 {
                     Debug.WriteLine($"[ShareExt] LoadItem error: {error.LocalizedDescription}");
+                    TryAppendBreadcrumb(containerPath, BreadcrumbOutcome.LoadItemError);
                     return;
                 }
 
-                var text = (loaded as NSString)?.ToString();
-                if (!string.IsNullOrWhiteSpace(text))
+                // Narrow `loaded` to the three shapes iOS may return for
+                // public.plain-text. NSString: typed text, Safari page-text
+                // selections. NSAttributedString: Notes / Pages / Word / Mail
+                // (rich-text sources — the build-95 dropped path). NSData:
+                // some PDF/Files share paths. iOS doesn't auto-coerce; the
+                // prior implementation cast only NSString and silently
+                // dismissed the modal on the other two.
+                //
+                // NSData.ToArray() copies native bytes onto the managed heap;
+                // gate on Length first so a multi-MB share can't OOM the
+                // extension before the post-NFC byte cap rejects it.
+                string? plainString = null;
+                string? attributedString = null;
+                byte[]? rawBytes = null;
+                if (loaded is NSString ns)
                 {
-                    // NFC-normalize at the bridge boundary so payload bytes match
-                    // canonicalized form. Some characters can grow under NFC (rare;
-                    // some Hangul) so re-check the byte cap on the normalized form.
-                    var normalized = text.Normalize(NormalizationForm.FormC);
-                    if (System.Text.Encoding.UTF8.GetByteCount(normalized) <= MaxPayloadBytes)
+                    plainString = ns.ToString();
+                }
+                else if (loaded is NSAttributedString ats)
+                {
+                    attributedString = ats.Value;
+                }
+                else if (loaded is NSData data)
+                {
+                    if (data.Length <= (nuint)MaxPayloadBytes)
                     {
-                        payloadWritten = WriteToAppGroup(normalized);
+                        rawBytes = data.ToArray();
                     }
+                    else
+                    {
+                        TryAppendBreadcrumb(containerPath, BreadcrumbOutcome.Oversized);
+                        return;
+                    }
+                }
+
+                var (text, outcome) = SharePayloadExtractor.Classify(
+                    plainString, attributedString, rawBytes);
+                if (outcome is not null)
+                {
+                    TryAppendBreadcrumb(containerPath, outcome.Value);
+                    return;
+                }
+
+                // NFC-normalize at the bridge boundary so payload bytes match
+                // canonicalized form. Some characters can grow under NFC (rare;
+                // some Hangul) so re-check the byte cap on the normalized form.
+                var normalized = text!.Normalize(NormalizationForm.FormC);
+                if (System.Text.Encoding.UTF8.GetByteCount(normalized) <= MaxPayloadBytes)
+                {
+                    payloadWritten = WriteToAppGroup(normalized);
+                }
+                else
+                {
+                    TryAppendBreadcrumb(containerPath, BreadcrumbOutcome.Oversized);
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[ShareExt] payload pipeline failed: {ex}");
+                TryAppendBreadcrumb(containerPath, BreadcrumbOutcome.PipelineError);
             }
             finally
             {
                 FinishOnMainThread(payloadWritten);
             }
         });
+    }
+
+    private static void TryAppendBreadcrumb(string? containerPath, BreadcrumbOutcome outcome)
+    {
+        if (containerPath is null) return;
+        AppGroupBreadcrumbLog.Append(containerPath, outcome, byteCount: -1);
     }
 
     private NSItemProvider? FindPlainTextAttachment()

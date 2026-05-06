@@ -179,6 +179,10 @@ public partial class PrayerCardsPage : ContentPage
             if (ev.PropertyName != nameof(PrayerCardViewModel.IsExpanded) || subscribed is null) return;
             // Realize before the margin tween so chips/list have a layout pass concurrent
             // with the animation, not after — avoids "blank then content" flash on expand.
+            // Gated on IsExpanded here (asymmetric with Rebind's unconditional call):
+            // a collapse transition for the same vm doesn't need a re-anchor — host.Content
+            // already binds to this vm and the inner IsVisible="{Binding IsExpanded}"
+            // will hide the prayer list naturally. Avoids a no-op call on every collapse.
             if (subscribed.IsExpanded) RealizeExpandedSubtree(expandedHost, subscribed);
             AnimateCardMargin(border, CardMarginFor(subscribed.IsExpanded));
         };
@@ -204,15 +208,17 @@ public partial class PrayerCardsPage : ContentPage
                 if (border.Margin != target)
                     border.Margin = target;
                 // Rebind() is called both from OnCardBorderLoaded (fresh cell) and from
-                // BindingContextChanged (recycled cell). For a fresh expanded cell —
-                // the load path that matters most for save→Cards — host.Content is null
-                // here and this realizes the chips/list/button before first paint.
-                // For a recycled cell whose host already has Content, Realize is an
-                // idempotent no-op and the inner bindings re-evaluate against the new
-                // BindingContext. M1 fallback if BindableLayout misbehaves on
-                // ItemsSource swap: prepend `expandedHost.Content = null;` to force
-                // a rebuild rather than rely on inner-binding re-evaluation.
-                if (subscribed.IsExpanded) RealizeExpandedSubtree(expandedHost, subscribed);
+                // BindingContextChanged (recycled cell). RealizeExpandedSubtree
+                // self-gates: for a fresh collapsed cell host.Content is null and
+                // vm.IsExpanded is false → no-op. For a fresh expanded cell — the
+                // load path that matters most for save→Cards — it inflates the
+                // chips/list/button before first paint. For a recycled cell whose
+                // host already has Content, it re-anchors the inner BindingContext
+                // to the new vm (build-95 fallout: explicit first-realize
+                // BindingContext breaks inheritance from the recycled host, so
+                // without the re-anchor the inner subtree keeps rendering the
+                // previously-bound card's prayer rows).
+                RealizeExpandedSubtree(expandedHost, subscribed);
             }
             // PerfLog.Log($"Rebind.exit id={newId}");
         }
@@ -255,30 +261,62 @@ public partial class PrayerCardsPage : ContentPage
     private DataTemplate? _expandedSubtreeTemplate;
 
     /// <summary>
-    /// Lazily inflates the chips + prayer-list + add-prayer subtree from the
-    /// page-level CardExpandedSubtreeTemplate resource. Idempotent — no-op if
-    /// Content is already set. The explicit BindingContext write defends against
-    /// propagation timing edge cases where the host's context might lead the
-    /// inheritance chain by a frame on first realization.
+    /// CONTRACT: this method is NOT a "realize once and skip" no-op. It must be
+    /// called on every <c>Rebind</c> so the inner content's BindingContext
+    /// re-anchors to the recycled cell's new vm. Two execution paths:
+    ///
+    ///   (a) host.Content already inflated → re-anchor only
+    ///       (build-95 fallout: explicit first-inflate BindingContext breaks
+    ///        inheritance from the recycled host; without the re-anchor a
+    ///        Card-A cell recycled to render Card B keeps Card A's prayer rows
+    ///        under B's header).
+    ///   (b) host.Content null AND vm.IsExpanded → lazy inflate
+    ///       (Slice 6c PERF-10 — defer chips/list until the cell first expands).
+    ///   (c) host.Content null AND vm collapsed → no-op
+    ///       (preserves Slice 6c's cold-load + tab-switch optimization).
+    ///
+    /// The explicit <c>content.BindingContext = vm</c> on first inflate defends
+    /// against propagation timing edge cases where the host's context might
+    /// lead the inheritance chain by a frame on first realization.
+    ///
+    /// Future maintainers: do NOT re-introduce an early-return on
+    /// <c>host.Content is not null</c>. The early-return is what shipped in
+    /// Slice 6c and was the root cause of the build-95 cell-recycling stale-
+    /// binding bug.
     /// </summary>
     /// <remarks>
-    /// `View` is fully qualified because the code-behind imports `Android.Views`
-    /// (for native gesture handling on Android), which clashes on the bare name.
+    /// <c>View</c> is fully qualified because the code-behind imports
+    /// <c>Android.Views</c> (for native gesture handling on Android), which
+    /// clashes on the bare name.
     /// </remarks>
     private void RealizeExpandedSubtree(ContentView? host, PrayerCardViewModel vm)
     {
-        if (host is null || host.Content is not null) return;
-        _expandedSubtreeTemplate ??= Resources[ExpandedSubtreeTemplateKey] as DataTemplate;
-        if (_expandedSubtreeTemplate is null) return;
-        var content = (Microsoft.Maui.Controls.View)_expandedSubtreeTemplate.CreateContent();
-        content.BindingContext = vm;
-        host.Content = content;
-        // PerfLog.Log($"ExpandedSubtree.realized id={vm.Id} Prayers.Count={vm.Prayers.Count}");
+        if (host is null) return;
 
-        // Slice 6g hardening (#2): if a saved-card waiter is set up and this is
-        // the cell it's waiting for, signal it. ScrollTo can then proceed against
-        // a fully-inflated cell instead of an estimated layout position.
-        if (_expectedSavedCardId == vm.Id)
+        if (host.Content is Microsoft.Maui.Controls.View existing)
+        {
+            // Path (a) — see CONTRACT.
+            if (!ReferenceEquals(existing.BindingContext, vm))
+                existing.BindingContext = vm;
+        }
+        else if (vm.IsExpanded)
+        {
+            // Path (b) — see CONTRACT.
+            _expandedSubtreeTemplate ??= Resources[ExpandedSubtreeTemplateKey] as DataTemplate;
+            if (_expandedSubtreeTemplate is null) return;
+            var content = (Microsoft.Maui.Controls.View)_expandedSubtreeTemplate.CreateContent();
+            content.BindingContext = vm;
+            host.Content = content;
+            // PerfLog.Log($"ExpandedSubtree.realized id={vm.Id} Prayers.Count={vm.Prayers.Count}");
+        }
+
+        // Slice 6g hardening (#2): signal the saved-card waiter ONLY when the
+        // cell is laid out for THIS vm (host.Content non-null AND vm expanded).
+        // Without the gate, path (a) would satisfy the waiter on a recycled
+        // cell whose new vm is still collapsed — ScrollTo would then fire
+        // against an estimated layout position, the exact race the TCS was
+        // added to close. (QA find on the build-95 cards-recycle fix.)
+        if (_expectedSavedCardId == vm.Id && vm.IsExpanded && host.Content is not null)
             _savedCardRealizedTcs?.TrySetResult(vm.Id);
     }
 

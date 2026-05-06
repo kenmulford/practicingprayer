@@ -339,7 +339,10 @@ namespace PrayerApp
             if (intent.Action == Android.Content.Intent.ActionProcessText
                 && OperatingSystem.IsAndroidVersionAtLeast(23))
             {
-                var text = intent.GetStringExtra(Android.Content.Intent.ExtraProcessText);
+                // EXTRA_PROCESS_TEXT is a CharSequence; GetStringExtra returns null for a
+                // SpannableString (Chrome / Gmail rich-text), silently dropping the share.
+                // See AOSP Intent.java EXTRA_PROCESS_TEXT JavaDoc.
+                var text = intent.GetCharSequenceExtra(Android.Content.Intent.ExtraProcessText)?.ToString();
                 if (!string.IsNullOrWhiteSpace(text))
                     HandleSelectionImport(text);
                 return;

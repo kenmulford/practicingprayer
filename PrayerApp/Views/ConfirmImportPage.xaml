@@ -13,6 +13,19 @@
                     Padding="12">
                 <VerticalStackLayout Spacing="8">
 
+                    <Label Text="Collection"
+                           Style="{StaticResource FormLabel}" />
+                    <Border Style="{StaticResource PickerField}">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Picker ItemsSource="{Binding AvailableBoxes}"
+                                    SelectedItem="{Binding SelectedBox}"
+                                    AutomationId="ConfirmImport_Picker_Box"
+                                    SemanticProperties.Hint="Choose which collection this imported card belongs to"
+                                    HorizontalOptions="Fill" />
+                            <Label Grid.Column="1" Style="{StaticResource PickerIndicator}" />
+                        </Grid>
+                    </Border>
+
                     <Label Text="Card Title"
                            Style="{StaticResource FormLabel}" />
                     <Entry x:Name="CardTitleEntry"

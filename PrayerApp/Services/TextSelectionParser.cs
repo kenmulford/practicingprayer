@@ -26,14 +26,17 @@ public class TextSelectionParser : ITextSelectionParser
 
     public ParseResult Parse(string rawText)
     {
-        var suggestedTitle = $"Imported {_now():MMM d}";
+        var defaultTitle = $"Imported {_now():MMM d}";
         var normalized = TextNormalization.NormalizeQuotes(rawText) ?? string.Empty;
         var lines = LineSplitter.Split(normalized);
 
+        var (headerTitle, linesToSkip) = ExtractHeaderTitle(lines);
+        var suggestedTitle = headerTitle ?? defaultTitle;
+
         var entries = new List<ParsedPrayer>(lines.Length);
-        foreach (var line in lines)
+        for (int i = linesToSkip; i < lines.Length; i++)
         {
-            var content = CollapseLine(MarkerStripper.Replace(line, string.Empty));
+            var content = CollapseLine(MarkerStripper.Replace(lines[i], string.Empty));
             if (content.Length == 0) continue;
             entries.Add(BuildPrayer(content));
         }
@@ -44,6 +47,100 @@ public class TextSelectionParser : ITextSelectionParser
         }
 
         return new ParseResult(entries.AsReadOnly(), suggestedTitle);
+    }
+
+    // Header-detection thresholds. Tuned for the corporate-prayer-document
+    // shape ("CORPORATE PRAYER" / "MUSSONS OUTREACH" → "Pray for...");
+    // adjust if real imports surface false positives or negatives.
+    private const int MinHeaderLetters = 3;
+    private const int MaxHeaderLength = 60;
+    private const double UppercaseRatioThreshold = 0.8;
+
+    /// <summary>
+    /// Scans the leading lines for an ALL-CAPS topic header. Multiple
+    /// consecutive headers collapse to the LAST one — when a corporate
+    /// prayer document has both a section header and a topic header
+    /// ("CORPORATE PRAYER" / "MUSSONS OUTREACH"), the topic line wins.
+    /// A content line (non-blank, non-header) must follow the header
+    /// candidate(s); without that signal an ALL-CAPS list
+    /// ("MOM\nDAD\nSISTER") would lose its first item. Returns the
+    /// title-cased header (or null) plus the count of leading lines to
+    /// skip during prayer extraction.
+    /// </summary>
+    private static (string? Title, int LinesToSkip) ExtractHeaderTitle(string[] lines)
+    {
+        int headerEnd = -1;
+        string? headerTrimmed = null;
+        bool sawContent = false;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var trimmed = lines[i].Trim();
+            if (trimmed.Length == 0) continue;
+
+            if (IsHeaderLine(trimmed))
+            {
+                headerEnd = i;
+                headerTrimmed = trimmed;
+            }
+            else
+            {
+                sawContent = true;
+                break;
+            }
+        }
+
+        return headerEnd < 0 || !sawContent
+            ? (null, 0)
+            : (TitleCase(headerTrimmed!), headerEnd + 1);
+    }
+
+    private static bool IsHeaderLine(string trimmed)
+    {
+        if (trimmed.Length < MinHeaderLetters || trimmed.Length > MaxHeaderLength) return false;
+        if (MarkerStripper.IsMatch(trimmed)) return false;
+
+        int letters = 0, upper = 0;
+        foreach (var c in trimmed)
+        {
+            if (char.IsLetter(c))
+            {
+                letters++;
+                if (char.IsUpper(c)) upper++;
+            }
+        }
+        return letters >= MinHeaderLetters
+            && (double)upper / letters >= UppercaseRatioThreshold;
+    }
+
+    // Tokens of <= this length in an ALL-CAPS header are treated as
+    // acronyms and preserved as-is (NPM, FBC, USA). 4+ overlaps with
+    // common short words (BABY, GIFT) and would mis-preserve them.
+    private const int MaxAcronymLength = 3;
+
+    private static string TitleCase(string s)
+    {
+        var titled = System.Globalization.CultureInfo.InvariantCulture.TextInfo
+            .ToTitleCase(s.ToLowerInvariant());
+
+        var sourceTokens = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var titledTokens = titled.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (sourceTokens.Length != titledTokens.Length) return titled;
+
+        for (int i = 0; i < sourceTokens.Length; i++)
+        {
+            if (sourceTokens[i].Length <= MaxAcronymLength && IsAllUpperLetters(sourceTokens[i]))
+                titledTokens[i] = sourceTokens[i];
+        }
+        return string.Join(' ', titledTokens);
+    }
+
+    private static bool IsAllUpperLetters(string token)
+    {
+        if (token.Length == 0) return false;
+        foreach (var c in token)
+            if (!char.IsLetter(c) || !char.IsUpper(c)) return false;
+        return true;
     }
 
     private static string CollapseLine(string text) =>

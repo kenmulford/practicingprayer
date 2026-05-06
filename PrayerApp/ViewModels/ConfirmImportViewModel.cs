@@ -3,6 +3,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using PrayerApp.Helpers;
 using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
@@ -19,10 +20,27 @@ public class ConfirmImportViewModel : ObservableObject
     private readonly IMessenger _messenger;
     private readonly IImportPayloadService _payloadService;
     private readonly ITextSelectionParser _parser;
+    private readonly IBoxService _boxService;
 
     private bool _consumed;
+    private bool _boxesLoaded;
 
     public ObservableCollection<EditablePrayer> Prayers { get; } = new();
+
+    /// <summary>
+    /// Picker source for the Collection field on the Confirm Import page.
+    /// "Loose Cards" (BoxId=0) is always first and is the default selection;
+    /// user-created collections follow in BoxService order. System / Archived
+    /// boxes are excluded — same pattern as the card edit form.
+    /// </summary>
+    public ObservableCollection<BoxPickerItem> AvailableBoxes { get; } = new();
+
+    private BoxPickerItem? _selectedBox;
+    public BoxPickerItem? SelectedBox
+    {
+        get => _selectedBox;
+        set => SetProperty(ref _selectedBox, value);
+    }
 
     public string PrayersHeader => $"Prayers ({Prayers.Count})";
 
@@ -60,7 +78,8 @@ public class ConfirmImportViewModel : ObservableObject
         IAccessibilityService accessibilityService,
         IMessenger messenger,
         IImportPayloadService payloadService,
-        ITextSelectionParser parser)
+        ITextSelectionParser parser,
+        IBoxService boxService)
     {
         _cardService = cardService;
         _prayerService = prayerService;
@@ -69,6 +88,7 @@ public class ConfirmImportViewModel : ObservableObject
         _messenger = messenger;
         _payloadService = payloadService;
         _parser = parser;
+        _boxService = boxService;
 
         SaveCommand = new AsyncRelayCommand(SaveAsync, CanSave);
         CancelCommand = new AsyncRelayCommand(CancelAsync);
@@ -93,7 +113,8 @@ public class ConfirmImportViewModel : ObservableObject
         IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IMessenger>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IImportPayloadService>(),
-        IPlatformApplication.Current!.Services.GetRequiredService<ITextSelectionParser>())
+        IPlatformApplication.Current!.Services.GetRequiredService<ITextSelectionParser>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>())
     { }
 
     public void ConsumePending()
@@ -110,6 +131,32 @@ public class ConfirmImportViewModel : ObservableObject
             Prayers.Add(new EditablePrayer { Title = p.Title, Details = p.Details });
     }
 
+    /// <summary>
+    /// Loads the Collection picker. "Loose Cards" (BoxId=0) is always first
+    /// and is the default selection — matches the prior hardcoded behavior
+    /// (a freshly imported card with no BoxId set lands in Loose Cards).
+    /// User-created collections follow in BoxService order; system / archived
+    /// boxes are excluded (mirrors PrayerCardViewModel.LoadBoxPickerAsync).
+    /// Idempotent — the modal's OnAppearing fires on initial show and on
+    /// resume from background; reloading would clobber a user's mid-flow
+    /// selection.
+    /// </summary>
+    public async Task LoadBoxesAsync()
+    {
+        if (_boxesLoaded) return;
+        _boxesLoaded = true;
+
+        var boxes = await _boxService.GetBoxesAsync();
+
+        var looseCards = new BoxPickerItem(0, BoxStrings.Unorganized);
+        AvailableBoxes.Add(looseCards);
+
+        foreach (var box in boxes.Where(b => !b.IsSystem))
+            AvailableBoxes.Add(new BoxPickerItem(box.Id, box.Name));
+
+        SelectedBox = looseCards;
+    }
+
     private bool CanSave()
         => !IsBusy
            && !string.IsNullOrWhiteSpace(CardTitle)
@@ -123,6 +170,7 @@ public class ConfirmImportViewModel : ObservableObject
             var card = new PrayerCard
             {
                 Title = NormalizeQuotes(CardTitle)?.Trim() ?? string.Empty,
+                BoxId = SelectedBox?.BoxId ?? 0,
                 IsImported = true
             };
             await card.SaveAsync();
