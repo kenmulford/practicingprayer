@@ -8,7 +8,7 @@ body:
       value: |
         Thanks for taking the time to suggest a feature. Please describe the problem you're trying to solve, not just the solution — that helps us think about alternatives.
 
-  - type: input
+  - type: textarea
     id: summary
     attributes:
       label: Summary

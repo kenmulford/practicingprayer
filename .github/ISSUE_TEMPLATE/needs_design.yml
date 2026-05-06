@@ -1,0 +1,54 @@
+name: Needs design
+description: Feature or change with open scope decisions before implementation
+title: "[Needs-design] "
+labels: ["needs-design"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for ideas where the **what** is clear but the **how** isn't yet — open architectural questions, multiple valid approaches, or scope decisions to make before any code lands. Implementation should NOT start from a needs-design issue without a follow-up plan or comment thread that resolves the open questions.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the change.
+      placeholder: e.g. Confidential cards / collections — biometric or PIN to view
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What's hard, missing, or awkward today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: questions
+    attributes:
+      label: Open questions
+      description: The decisions that need to be made before implementation. Use a list.
+      placeholder: |
+        - **Granularity:** card-level, box-level, or both?
+        - **Locked-state UI:** blurred, generic title, or omit from list entirely?
+        - **PIN role:** biometric fallback only, or always-available alternative?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Background / context
+      description: Stack notes, related research, prior art, links to existing approaches in the codebase.
+    validations:
+      required: false
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Out of scope
+      description: What this issue does NOT cover.
+    validations:
+      required: false
