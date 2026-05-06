@@ -92,6 +92,51 @@ public class ConfirmImportViewModelTests
         _parser.Received(1).Parse(Arg.Any<string>());
     }
 
+    [Fact]
+    public void ConsumePending_WithStructured_PopulatesDirectlyAndSkipsParser()
+    {
+        // Deep-link / .prayercard inbound: payload is already structured JSON,
+        // parsed inside DeepLinkService. Re-running it through the
+        // text-selection parser would mangle clauses (e.g., split a notes
+        // string on ';' inside a sentence).
+        var staged = new ParseResult(new[]
+        {
+            new ParsedPrayer("Mom", "chemo starts Tuesday; pray for nausea relief"),
+            new ParsedPrayer("Dad", null),
+        }, "My Card");
+        _payloadService.ConsumeStructured().Returns(staged);
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.Equal("My Card", sut.CardTitle);
+        Assert.Equal(2, sut.Prayers.Count);
+        Assert.Equal("Mom", sut.Prayers[0].Title);
+        Assert.Equal("chemo starts Tuesday; pray for nausea relief", sut.Prayers[0].Details);
+        Assert.Equal("Dad", sut.Prayers[1].Title);
+        _parser.DidNotReceive().Parse(Arg.Any<string>());
+    }
+
+    [Fact]
+    public void ConsumePending_StructuredAndRaw_PrefersStructured()
+    {
+        // If both slots happen to be staged (shouldn't in practice), prefer
+        // the structured payload — it's already authoritative; raw would
+        // re-parse the same content lossy.
+        var staged = new ParseResult(new[] { new ParsedPrayer("S1", null) }, "Structured Title");
+        _payloadService.ConsumeStructured().Returns(staged);
+        _payloadService.ConsumePayload().Returns("raw");
+        _parser.Parse("raw").Returns(Result("Raw Title", ("R1", null)));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.Equal("Structured Title", sut.CardTitle);
+        Assert.Single(sut.Prayers);
+        Assert.Equal("S1", sut.Prayers[0].Title);
+        _parser.DidNotReceive().Parse(Arg.Any<string>());
+    }
+
     // ── SaveCommand.CanExecute ──────────────────────────
 
     [Fact]
@@ -259,6 +304,20 @@ public class ConfirmImportViewModelTests
         await sut.CancelCommand.ExecuteAsync(null);
 
         await _navigationService.Received(1).PopModalAsync();
+    }
+
+    [Fact]
+    public async Task Cancel_DrainsBothPayloadSlots()
+    {
+        // If the user dismisses before OnAppearing fires ConsumePending, a
+        // stale payload (raw OR structured) could surface on the next launch.
+        // Cancel must drain both channels to be safe.
+        var sut = CreateSut();
+
+        await sut.CancelCommand.ExecuteAsync(null);
+
+        _payloadService.Received(1).ConsumePayload();
+        _payloadService.Received(1).ConsumeStructured();
     }
 
     // ── AddPrayer / RemovePrayer ──────────────────────────

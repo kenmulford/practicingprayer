@@ -190,8 +190,16 @@ namespace PrayerApp
             builder.Services.AddSingleton<IAccessibilityService, MauiAccessibilityService>();
             // OS share sheet abstraction (enables unit testing of share logic)
             builder.Services.AddSingleton<IShareService, ShareService>();
-            // Deep link sharing service
-            builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>();
+            // Deep link sharing service.
+            // Inbound deep-link / .prayercard imports stage a structured
+            // payload and push ConfirmImportPage modally via
+            // INavigationService.PushModalOnUiThreadAsync (which handles
+            // the cold-start gate + UI-thread hop internally).
+            builder.Services.AddSingleton<IDeepLinkService>(sp => new DeepLinkService(
+                sp.GetRequiredService<INavigationService>(),
+                sp.GetRequiredService<IShareService>(),
+                sp.GetRequiredService<IImportPayloadService>(),
+                () => sp.GetRequiredService<PrayerApp.Views.ConfirmImportPage>()));
             // Context-menu / share-extension import pipeline
             builder.Services.AddSingleton<IImportPayloadService, ImportPayloadService>();
             builder.Services.AddSingleton<ITextSelectionParser, TextSelectionParser>();
@@ -209,7 +217,6 @@ namespace PrayerApp
                 sp.GetRequiredService<IAppGroupContainerProvider>(),
                 sp.GetRequiredService<IImportPayloadService>(),
                 sp.GetRequiredService<INavigationService>(),
-                sp.GetRequiredService<Microsoft.Maui.Dispatching.IDispatcher>(),
                 () => sp.GetRequiredService<PrayerApp.Views.ConfirmImportPage>()));
 #endif
 

@@ -2,8 +2,6 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CommunityToolkit.Mvvm.Messaging;
-using PrayerApp.Messages;
 using PrayerApp.Models;
 using static PrayerApp.Helpers.TextNormalization;
 
@@ -15,28 +13,33 @@ public class DeepLinkService : IDeepLinkService
     private const string Footer = "(Shared via Practicing Prayer)";
     private const int MaxUrlLength = 1800;
 
-    private readonly ICardService _cardService;
-    private readonly IPrayerService _prayerService;
     private readonly INavigationService _nav;
     private readonly IShareService _shareService;
-    private readonly IMessenger _messenger;
+    private readonly IImportPayloadService _importPayloadService;
+    private readonly Func<Page> _confirmImportPageFactory;
     private readonly Func<string> _getCacheDir;
 
-    public DeepLinkService(ICardService cardService, IPrayerService prayerService,
-        INavigationService nav, IShareService shareService, IMessenger messenger)
-        : this(cardService, prayerService, nav, shareService, messenger, () => FileSystem.CacheDirectory)
+    public DeepLinkService(
+        INavigationService nav,
+        IShareService shareService,
+        IImportPayloadService importPayloadService,
+        Func<Page> confirmImportPageFactory)
+        : this(nav, shareService, importPayloadService, confirmImportPageFactory, () => FileSystem.CacheDirectory)
     {
     }
 
-    // Test-only constructor: avoids MAUI FileSystem dependency
-    internal DeepLinkService(ICardService cardService, IPrayerService prayerService,
-        INavigationService nav, IShareService shareService, IMessenger messenger, Func<string> getCacheDir)
+    // Test-only constructor: avoids MAUI FileSystem dependency.
+    internal DeepLinkService(
+        INavigationService nav,
+        IShareService shareService,
+        IImportPayloadService importPayloadService,
+        Func<Page> confirmImportPageFactory,
+        Func<string> getCacheDir)
     {
-        _cardService = cardService;
-        _prayerService = prayerService;
         _nav = nav;
         _shareService = shareService;
-        _messenger = messenger;
+        _importPayloadService = importPayloadService;
+        _confirmImportPageFactory = confirmImportPageFactory;
         _getCacheDir = getCacheDir;
     }
 
@@ -160,13 +163,13 @@ public class DeepLinkService : IDeepLinkService
             {
                 var data = JsonSerializer.Deserialize<SharedCard>(json);
                 if (data is not null)
-                    await ImportCardAsync(data);
+                    await StageCardAsync(data);
             }
             else
             {
                 var data = JsonSerializer.Deserialize<SharedRequest>(json);
                 if (data is not null)
-                    await ImportRequestAsync(data);
+                    await StageRequestAsync(data);
             }
         }
         catch (Exception ex) when (ex is FormatException or JsonException or InvalidDataException)
@@ -208,7 +211,7 @@ public class DeepLinkService : IDeepLinkService
         }
 
         if (data is not null)
-            await ImportRequestAsync(data);
+            await StageRequestAsync(data);
     }
 
     private async Task HandleCardAsync(System.Collections.Specialized.NameValueCollection query)
@@ -254,166 +257,50 @@ public class DeepLinkService : IDeepLinkService
         }
 
         if (data is not null)
-            await ImportCardAsync(data);
+            await StageCardAsync(data);
     }
 
-    // ── Shared import logic ─────────────────────────────────────────────────
+    // ── Stage → ConfirmImportPage handoff ───────────────────────────────────
 
-    private async Task ImportRequestAsync(SharedRequest data)
+    /// <summary>
+    /// Single-prayer URL / file inbound. Locked decision: SuggestedCardTitle
+    /// defaults to the prayer title (user can rename on ConfirmImportPage).
+    /// </summary>
+    private async Task StageRequestAsync(SharedRequest data)
     {
         var title = NormalizeQuotes(data.Title);
+        if (string.IsNullOrWhiteSpace(title)) return;
+
         var detail = string.IsNullOrEmpty(data.Notes) ? null : NormalizeQuotes(data.Notes);
-
-        if (string.IsNullOrWhiteSpace(title))
-            return;
-
-        var isDuplicate = await IsDuplicateRequestAsync(data);
-        var preview = string.IsNullOrWhiteSpace(detail) ? title : $"{title}\n\n{detail}";
-        var confirmed = await ConfirmImportAsync(
-            "Prayer Shared With You",
-            preview,
-            isDuplicate ? "You've already saved this prayer." : null);
-        if (!confirmed) return;
-
-        var sharedCard = await _cardService.GetOrCreateSharedCardAsync();
-
-        var prayer = new Prayer
-        {
-            PrayerCardId = sharedCard.Id,
-            Title = title,
-            Details = detail,
-            IsImported = true,
-            CanNotify = false
-        };
-        await prayer.SaveAsync();
-
-        _cardService.InvalidateCache();
-        _prayerService.InvalidateCache();
-        _messenger.Send(new BulkChangedMessage());
-        await _nav.GoToAsync(Routes.PrayerCardsTabImported(sharedCard.Id));
+        var staged = new ParseResult(
+            new[] { new ParsedPrayer(title, detail) },
+            title);
+        _importPayloadService.StageStructured(staged);
+        await PushConfirmImportPageAsync();
     }
 
-    private async Task ImportCardAsync(SharedCard data)
+    private async Task StageCardAsync(SharedCard data)
     {
         var title = NormalizeQuotes(data.Title);
+        if (string.IsNullOrWhiteSpace(title)) return;
 
-        if (string.IsNullOrWhiteSpace(title))
-            return;
-
-        // Filter out empty-title requests (data quality guard)
-        var requests = data.Requests?.Where(r => !string.IsNullOrWhiteSpace(r?.Title)).ToArray();
-        if (requests is null || requests.Length == 0)
-            return;
-
-        var isDuplicate = await IsDuplicateCardAsync(data);
-        var prayerCount = requests.Length;
-        var preview = $"\"{title}\" with {prayerCount} prayer{(prayerCount == 1 ? "" : "s")}";
-        var confirmed = await ConfirmImportAsync(
-            "Prayer Card Shared With You",
-            preview,
-            isDuplicate ? "You've already imported this card." : null);
-        if (!confirmed) return;
-
-        var card = new PrayerCard
-        {
-            Title = title,
-            IsImported = true
-        };
-        await card.SaveAsync();
-
-        foreach (var req in requests)
-        {
-            var prayer = new Prayer
-            {
-                PrayerCardId = card.Id,
-                Title = NormalizeQuotes(req.Title) ?? "",
-                Details = string.IsNullOrEmpty(req.Notes) ? null : NormalizeQuotes(req.Notes),
-                IsImported = true,
-                CanNotify = false
-            };
-            await prayer.SaveAsync();
-        }
-
-        _cardService.InvalidateCache();
-        _prayerService.InvalidateCache();
-        _messenger.Send(new BulkChangedMessage());
-        await _nav.GoToAsync(Routes.PrayerCardsTabImported(card.Id));
-    }
-
-    // ── Duplicate detection ──────────────────────────────────────────────────
-
-    /// <summary>
-    /// Shows an import confirmation dialog with a "Save" button, or "Save Again"
-    /// plus a warning line when <paramref name="duplicateNotice"/> is non-null.
-    /// </summary>
-    private Task<bool> ConfirmImportAsync(string alertTitle, string preview, string? duplicateNotice)
-    {
-        var isDuplicate = duplicateNotice is not null;
-        var prompt = isDuplicate
-            ? $"{preview}\n\n{duplicateNotice}"
-            : $"{preview}\n\nSave to your prayer journal?";
-        var confirmText = isDuplicate ? "Save Again" : "Save";
-        return _nav.DisplayConfirmAsync(alertTitle, prompt, confirmText, "Decline");
-    }
-
-    /// <summary>
-    /// Checks whether an imported card with the same title and prayer title set
-    /// already exists. Only considers non-system cards flagged IsImported=true.
-    /// Match is case-insensitive, trimmed, smart-quote normalized.
-    /// </summary>
-    private async Task<bool> IsDuplicateCardAsync(SharedCard data)
-    {
-        var incomingTitle = NormalizeForMatch(data.Title);
-        var incomingPrayerTitles = (data.Requests ?? [])
+        // Filter out empty-title requests (data quality guard).
+        var requests = data.Requests?
             .Where(r => !string.IsNullOrWhiteSpace(r?.Title))
-            .Select(r => NormalizeForMatch(r!.Title))
-            .OrderBy(t => t, StringComparer.Ordinal)
-            .ToList();
+            .ToArray();
+        if (requests is null || requests.Length == 0) return;
 
-        var cards = await _cardService.GetCardsAsync();
-        var candidates = cards.Where(c =>
-            c.IsImported && !c.IsSystem && NormalizeForMatch(c.Title) == incomingTitle);
-
-        foreach (var card in candidates)
-        {
-            var prayers = await _prayerService.GetPrayersByCardAsync(card.Id);
-            var existingTitles = prayers
-                .Where(p => !string.IsNullOrWhiteSpace(p.Title))
-                .Select(p => NormalizeForMatch(p.Title))
-                .OrderBy(t => t, StringComparer.Ordinal)
-                .ToList();
-
-            if (existingTitles.SequenceEqual(incomingPrayerTitles))
-                return true;
-        }
-        return false;
+        var staged = new ParseResult(
+            requests.Select(r => new ParsedPrayer(
+                NormalizeQuotes(r!.Title) ?? string.Empty,
+                string.IsNullOrEmpty(r.Notes) ? null : NormalizeQuotes(r.Notes))).ToArray(),
+            title);
+        _importPayloadService.StageStructured(staged);
+        await PushConfirmImportPageAsync();
     }
 
-    /// <summary>
-    /// Checks whether an imported prayer with the same title and notes already
-    /// exists in the "Shared with me" card. Match is case-insensitive, trimmed,
-    /// smart-quote normalized. Returns false if the shared card doesn't exist
-    /// yet (no previous imports).
-    /// </summary>
-    private async Task<bool> IsDuplicateRequestAsync(SharedRequest data)
-    {
-        var cards = await _cardService.GetCardsAsync();
-        var sharedCard = cards.FirstOrDefault(c =>
-            c.IsSystem && c.Title == PrayerCard.TitleSharedWithMe);
-        if (sharedCard is null)
-            return false;
-
-        var incomingTitle = NormalizeForMatch(data.Title);
-        var incomingNotes = NormalizeForMatch(data.Notes);
-
-        var prayers = await _prayerService.GetPrayersByCardAsync(sharedCard.Id);
-        return prayers.Any(p =>
-            NormalizeForMatch(p.Title) == incomingTitle &&
-            NormalizeForMatch(p.Details) == incomingNotes);
-    }
-
-    private static string NormalizeForMatch(string? s)
-        => (NormalizeQuotes(s) ?? "").Trim().ToLowerInvariant();
+    private Task PushConfirmImportPageAsync()
+        => _nav.PushModalOnUiThreadAsync(_confirmImportPageFactory());
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 

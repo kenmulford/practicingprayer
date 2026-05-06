@@ -125,6 +125,7 @@
     <Compile Include="../PrayerApp/Services/TextSelectionParser.cs" />
     <Compile Include="../PrayerApp/Services/IImportPayloadService.cs" />
     <Compile Include="../PrayerApp/Services/ImportPayloadService.cs" />
+    <Compile Include="../PrayerApp/Services/ModalPushSequence.cs" />
     <Compile Include="../PrayerApp/Services/IAppGroupContainerProvider.cs" />
     <Compile Include="../PrayerApp/Services/AppGroupImportOrchestrator.cs" />
     <Compile Include="../PrayerApp/ViewModels/EditablePrayer.cs" />

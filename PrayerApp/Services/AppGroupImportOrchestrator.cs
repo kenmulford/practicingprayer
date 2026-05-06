@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Dispatching;
 using PrayerApp.Shared;
 
 namespace PrayerApp.Services;
@@ -17,20 +16,17 @@ public sealed class AppGroupImportOrchestrator
     private readonly IAppGroupContainerProvider _container;
     private readonly IImportPayloadService _payloadService;
     private readonly INavigationService _navigation;
-    private readonly IDispatcher _uiDispatcher;
     private readonly Func<Page> _pageFactory;
 
     public AppGroupImportOrchestrator(
         IAppGroupContainerProvider container,
         IImportPayloadService payloadService,
         INavigationService navigation,
-        IDispatcher uiDispatcher,
         Func<Page> pageFactory)
     {
         _container = container;
         _payloadService = payloadService;
         _navigation = navigation;
-        _uiDispatcher = uiDispatcher;
         _pageFactory = pageFactory;
     }
 
@@ -84,20 +80,7 @@ public sealed class AppGroupImportOrchestrator
         if (outcome == BreadcrumbOutcome.Ok && payload is not null)
         {
             _payloadService.StagePayload(payload.Raw);
-            var page = _pageFactory();
-            var tcs = new TaskCompletionSource();
-            _uiDispatcher.Dispatch(async () =>
-            {
-                try
-                {
-                    await _navigation.PushModalAsync(page);
-                }
-                finally
-                {
-                    tcs.TrySetResult();
-                }
-            });
-            await tcs.Task;
+            await _navigation.PushModalOnUiThreadAsync(_pageFactory());
         }
     }
 }

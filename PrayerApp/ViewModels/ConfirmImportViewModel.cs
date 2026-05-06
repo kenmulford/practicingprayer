@@ -122,10 +122,16 @@ public class ConfirmImportViewModel : ObservableObject
         if (_consumed) return;
         _consumed = true;
 
-        var raw = _payloadService.ConsumePayload();
-        if (string.IsNullOrEmpty(raw)) return;
+        // Structured channel (deep-link / .prayercard) wins: payload is
+        // already authoritative and re-parsing as text would mangle clauses.
+        var result = _payloadService.ConsumeStructured();
+        if (result is null)
+        {
+            var raw = _payloadService.ConsumePayload();
+            if (string.IsNullOrEmpty(raw)) return;
+            result = _parser.Parse(raw);
+        }
 
-        var result = _parser.Parse(raw);
         CardTitle = result.SuggestedCardTitle;
         foreach (var p in result.Prayers)
             Prayers.Add(new EditablePrayer { Title = p.Title, Details = p.Details });
@@ -204,9 +210,11 @@ public class ConfirmImportViewModel : ObservableObject
 
     private async Task CancelAsync()
     {
-        // Drain in case the user dismissed before OnAppearing fired ConsumePending,
-        // otherwise a stale payload could surface on the next launch.
+        // Drain both channels in case the user dismissed before OnAppearing
+        // fired ConsumePending — a stale payload (raw or structured) could
+        // otherwise surface on the next launch.
         _payloadService.ConsumePayload();
+        _payloadService.ConsumeStructured();
         await _navigationService.PopModalAsync();
     }
 

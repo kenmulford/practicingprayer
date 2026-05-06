@@ -22,6 +22,14 @@ namespace PrayerApp
         protected override Window CreateWindow(IActivationState? activationState)
         {
             var window = new Window(new AppShell());
+
+            // Cross-platform: Activated fires after Shell is realized on
+            // cold launch (and on every warm resume). First fire flips
+            // the ShellNavigationService cold-start gate so deep-link /
+            // file imports staged from intent / open-url callbacks can
+            // safely PushModalAsync.
+            window.Activated += SignalShellReadyOnce;
+
 #if IOS
             // Static handler — no captured state, so no need to unsubscribe
             // when the Window is destroyed (the GC clears the delegate when
@@ -29,6 +37,18 @@ namespace PrayerApp
             window.Activated += OnWindowActivated;
 #endif
             return window;
+        }
+
+        private static void SignalShellReadyOnce(object? sender, EventArgs e)
+        {
+            // Activated fires on every warm resume; the gate only needs to
+            // flip once. Unsubscribe so subsequent resumes skip the DI lookup.
+            if (sender is Window w) w.Activated -= SignalShellReadyOnce;
+
+            var nav = IPlatformApplication.Current?.Services
+                .GetService<PrayerApp.Services.INavigationService>();
+            if (nav is PrayerApp.Services.ShellNavigationService shellNav)
+                shellNav.SignalShellReady();
         }
 
 #if IOS
