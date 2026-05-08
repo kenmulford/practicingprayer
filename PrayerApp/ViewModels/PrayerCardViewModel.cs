@@ -14,7 +14,6 @@ namespace PrayerApp.ViewModels
     public class PrayerCardViewModel : ObservableObject, IQueryAttributable, IEditGuard
     {
         private PrayerCard _prayerCard;
-        private bool _isExpanded;
         private bool _prayersLoaded;
         private bool _addingPrayer;
         private string _originalTitle = string.Empty;
@@ -24,6 +23,15 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly IBoxService _boxService;
+
+        // Single-expand invariant lives on PrayerCardsViewModel.ExpandedCardId.
+        // Per-card IsExpanded is a read-only projection over that — see the
+        // property below. The page-VM raises RaiseIsExpandedChanged() on the
+        // before-and-after card when ExpandedCardId mutates.
+        // Public set: tests that bypass the CreateCardViewModel factory wire
+        // this manually. Production wires it once via the factory; nothing
+        // mutates it post-attach.
+        public PrayerCardsViewModel? Parent { get; set; }
 
         /// <summary>
         /// True while SaveAsync is in flight. Drives the page-level ActivityIndicator
@@ -98,20 +106,21 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public bool IsExpanded
+        // Read-only derived. Single source of truth: PrayerCardsViewModel.ExpandedCardId.
+        // The page-VM owns the singleton invariant — eliminates the cascade-collapse
+        // handler and its `_suppressIsExpandedRebuild` flag (the smoke alarm: when a
+        // flag suppresses side-effects you fired on purpose, the abstraction is wrong).
+        public bool IsExpanded => Parent?.ExpandedCardId == _prayerCard.Id;
+
+        // Internal — called by PrayerCardsViewModel when ExpandedCardId changes,
+        // for both the previously-expanded card (collapse) and the newly-expanded
+        // card (expand). All derived projections re-raise here.
+        internal void RaiseIsExpandedChanged()
         {
-            get => _isExpanded;
-            set
-            {
-                if (_isExpanded != value)
-                {
-                    _isExpanded = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(ShowBadge));
-                    OnPropertyChanged(nameof(ShowActionChips));
-                    OnPropertyChanged(nameof(AccessibleCardHeader));
-                }
-            }
+            OnPropertyChanged(nameof(IsExpanded));
+            OnPropertyChanged(nameof(ShowBadge));
+            OnPropertyChanged(nameof(ShowActionChips));
+            OnPropertyChanged(nameof(AccessibleCardHeader));
         }
 
         public bool IsSystem => _prayerCard.IsSystem;
@@ -366,16 +375,16 @@ namespace PrayerApp.ViewModels
         private async Task ToggleExpandedAsync()
         {
             // PerfLog.Log($"ToggleExpanded.entry id={_prayerCard.Id} IsExpanded={IsExpanded} _prayersLoaded={_prayersLoaded} Prayers.Count={Prayers.Count}");
-            if (!IsExpanded && !_prayersLoaded)
+            // Delegate to the page-VM's ExpandedCardId so the singleton invariant
+            // is enforced structurally instead of via a cascade handler.
+            if (Parent is null) return;
+            var nowExpanded = Parent.ExpandedCardId == _prayerCard.Id;
+            if (!nowExpanded && !_prayersLoaded)
             {
                 // Load first, then reveal — avoids empty flash
                 await LoadPrayersAsync();
-                IsExpanded = true;
             }
-            else
-            {
-                IsExpanded = !IsExpanded;
-            }
+            Parent.ExpandedCardId = nowExpanded ? null : _prayerCard.Id;
         }
 
         private bool _isFavoriteSaving;

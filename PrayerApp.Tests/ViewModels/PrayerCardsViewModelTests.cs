@@ -391,7 +391,8 @@ public class PrayerCardsViewModelTests
         // Simulate SyncAsync's diff loop having added the new card
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService);
+            _onboardingService, _navigationService, _accessibilityService, _boxService)
+        { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
         var sectionsBeforeConsume = sut.BoxSections;
@@ -742,12 +743,12 @@ public class PrayerCardsViewModelTests
         var vmBeta  = sut.AllPrayerCards.First(c => c.Id == 2);
 
         // Expand Alpha first — Beta is collapsed, no auto-collapse needed.
-        vmAlpha.IsExpanded = true;
+        sut.ExpandedCardId = vmAlpha.Id;
         Assert.True(vmAlpha.IsExpanded);
         Assert.False(vmBeta.IsExpanded);
 
-        // Expand Beta — Alpha must auto-collapse.
-        vmBeta.IsExpanded = true;
+        // Expand Beta — Alpha must auto-collapse (singleton invariant).
+        sut.ExpandedCardId = vmBeta.Id;
         Assert.True(vmBeta.IsExpanded);
         Assert.False(vmAlpha.IsExpanded);
     }
@@ -767,8 +768,8 @@ public class PrayerCardsViewModelTests
         var vmAlpha = sut.AllPrayerCards.First(c => c.Id == 1);
         var vmBeta  = sut.AllPrayerCards.First(c => c.Id == 2);
 
-        vmAlpha.IsExpanded = true;
-        vmAlpha.IsExpanded = false;
+        sut.ExpandedCardId = vmAlpha.Id;
+        sut.ExpandedCardId = null;
 
         // Beta was never touched — must remain collapsed.
         Assert.False(vmBeta.IsExpanded);
@@ -1254,7 +1255,8 @@ public class PrayerCardsViewModelTests
         // and ConsumePendingSavedAsync (the order Shell + OnAppearing produce).
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService);
+            _onboardingService, _navigationService, _accessibilityService, _boxService)
+        { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
         var result = await sut.ConsumePendingSavedAsync();
@@ -1288,7 +1290,7 @@ public class PrayerCardsViewModelTests
 
         // User has card 1 expanded before the save begins.
         var card1Vm = sut.AllPrayerCards.First(c => c.Id == 1);
-        card1Vm.IsExpanded = true;
+        sut.ExpandedCardId = card1Vm.Id;
 
         // Save flow: a new card 3 has been inserted. Diff loop adds it to AllPrayerCards.
         var newCard = new PrayerCard { Id = 3, Title = "C", BoxId = 0 };
@@ -1425,7 +1427,8 @@ public class PrayerCardsViewModelTests
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
             _onboardingService, _navigationService, _accessibilityService, _boxService)
         {
-            PrayerRowFactory = BuildStubPrayerRowVm
+            PrayerRowFactory = BuildStubPrayerRowVm,
+            Parent = sut
         };
         sut.AllPrayerCards.Add(newVm);
 
@@ -1509,7 +1512,7 @@ public class PrayerCardsViewModelTests
         var sut = CreateSut();
         await sut.SyncAsync();
         var vmX = sut.AllPrayerCards.First(c => c.Id == 3);
-        vmX.IsExpanded = true; // unrelated expanded card — must not be touched by the move
+        sut.ExpandedCardId = vmX.Id; // unrelated expanded card — must not be touched by the move
 
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object>
@@ -1534,12 +1537,37 @@ public class PrayerCardsViewModelTests
         var sut = CreateSut();
         await sut.SyncAsync();
         var vmAlpha = sut.AllPrayerCards.First(c => c.Id == 1);
-        vmAlpha.IsExpanded = true;
+        sut.ExpandedCardId = vmAlpha.Id;
 
         _prayerService.ClearReceivedCalls();
         await sut.SyncAsync(ChangeKind.Updated);
 
         _prayerService.DidNotReceive().GetPrayersByCardAsync(Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task EditPrayer_NotMove_AutoExpandsParentEvenWhenAnotherCardExpanded()
+    {
+        // R-1 guard semantic: edits (no oldCardId) ALWAYS auto-expand the parent.
+        // Only MOVE flows defer to the user's current selection.
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.ExpandedCardId = 1; // user has Alpha expanded
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object>
+            {
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" }
+                // no OldCardId — this is an edit, not a move
+            });
+
+        Assert.Equal(2, sut.ExpandedCardId);
     }
 
     [Fact]

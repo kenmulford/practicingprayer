@@ -50,13 +50,6 @@ namespace PrayerApp.ViewModels
         // a CRUD elsewhere refreshed this page.
         private bool _hasSyncedOnce;
 
-        // PERF-1: setting matched.IsExpanded = true in ConsumePendingSavedAsync cascades
-        // into the IsExpanded handler, which collapses other expanded cards; each cascading
-        // collapse calls RebuildSections, which replaces BoxSections and forces MAUI's
-        // CollectionViewHandler on Android to reset its RecyclerView adapter (~600ms per
-        // visible Border). 3+ cascading rebuilds = ~5s UI-thread blockage.
-        private bool _suppressIsExpandedRebuild;
-
         // Slice 6a / PERF-10: collapses bursts of concurrent SyncAsync triggers (messenger
         // broadcast + PageSync.OnAppearingAsync + sibling rebroadcasts) into one in-flight
         // sync plus one coalesced follow-up. Each SyncAsync tail replaces BoxSections,
@@ -105,6 +98,48 @@ namespace PrayerApp.ViewModels
         }
 
         public bool IsBusyOverall => _isLoading || _isAwaitingSavedCard;
+
+        // Single source of truth for the per-card expand state. Per-card
+        // PrayerCardViewModel.IsExpanded is a read-only projection over this:
+        // `_parent.ExpandedCardId == this.Id`. The setter manually re-raises
+        // PropertyChanged on the before-and-after card so bindings refresh, and
+        // emits the accessibility announce + the post-collapse RebuildSections
+        // that used to live in the deleted cascade-collapse handler.
+        // Because the singleton invariant is enforced structurally (one int? slot,
+        // no fan-out), there is no `_suppressIsExpandedRebuild` flag to maintain.
+        private int? _expandedCardId;
+        public int? ExpandedCardId
+        {
+            get => _expandedCardId;
+            set
+            {
+                if (_expandedCardId == value) return;
+                var previousId = _expandedCardId;
+                _expandedCardId = value;
+                OnPropertyChanged();
+
+                // Resolve once — same VM is used for IsExpanded re-raise AND announce.
+                var previousCard = previousId is int prev
+                    ? AllPrayerCards.FirstOrDefault(c => c.Id == prev) : null;
+                var nextCard = value is int next
+                    ? AllPrayerCards.FirstOrDefault(c => c.Id == next) : null;
+
+                previousCard?.RaiseIsExpandedChanged();
+                nextCard?.RaiseIsExpandedChanged();
+
+                // Accessibility announce — moved here from the deleted cascade handler.
+                if (nextCard != null)
+                    _accessibilityService.Announce($"Expanded {nextCard.Title}");
+                else if (previousCard != null)
+                    _accessibilityService.Announce($"Collapsed {previousCard.Title}");
+
+                // Re-sort sections whenever a previously-expanded card transitions away
+                // (collapse OR switch-expand A→B). Favorite changes made while a card is
+                // expanded land in the new section order at the next natural transition.
+                // First-expand (previousId == null) leaves sort alone — same as before.
+                if (previousId is not null) RebuildSections();
+            }
+        }
 
         /// <summary>True when no sections exist (no data loaded). Used to control EmptyView visibility.</summary>
         public bool HasNoSections => BoxSections.Count == 0;
@@ -305,10 +340,16 @@ namespace PrayerApp.ViewModels
             _cardTagIds = lookup;
         }
 
-        private PrayerCardViewModel CreateCardViewModel(PrayerCard pc) =>
-            _cardVmFactory?.Invoke(pc)
-            ?? new(pc, _cardService, _prayerService, _onboardingService,
-                _navigationService, _accessibilityService, _boxService);
+        private PrayerCardViewModel CreateCardViewModel(PrayerCard pc)
+        {
+            var vm = _cardVmFactory?.Invoke(pc)
+                ?? new PrayerCardViewModel(pc, _cardService, _prayerService, _onboardingService,
+                    _navigationService, _accessibilityService, _boxService);
+            // Wire the back-reference so per-card IsExpanded can project over
+            // ExpandedCardId, and ToggleExpandedAsync can write back through.
+            vm.Parent = this;
+            return vm;
+        }
 
         private async Task NewPrayerCardAsync()
         {
@@ -329,6 +370,9 @@ namespace PrayerApp.ViewModels
 
                 if (matched != null)
                 {
+                    // Clear the singleton expand slot if it pointed at this card —
+                    // otherwise IsExpanded stays "true" against a removed-from-list VM.
+                    if (_expandedCardId == matched.Id) ExpandedCardId = null;
                     UnsubscribeFromPropertyChanges(matched);
                     AllPrayerCards.Remove(matched);
                     RebuildSections();
@@ -353,10 +397,12 @@ namespace PrayerApp.ViewModels
                 if (int.TryParse(query[Routes.QueryKeys.PrayerSaved].ToString(), out int prayerId)
                     && int.TryParse(query[Routes.QueryKeys.ParentCardId].ToString(), out int parentCardId))
                 {
-                    // If the prayer moved to a different card, remove it from the old card
+                    // Move flow has an oldCardId; non-move (edit-only) does not.
+                    bool isMove = false;
                     if (query.TryGetValue(Routes.QueryKeys.OldCardId, out var oldVal)
                         && int.TryParse(oldVal?.ToString(), out int oldCardId))
                     {
+                        isMove = true;
                         var oldCard = AllPrayerCards.FirstOrDefault(card => card.Id == oldCardId);
                         oldCard?.RemovePrayer(prayerId);
                     }
@@ -364,8 +410,11 @@ namespace PrayerApp.ViewModels
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     if (matched != null)
                     {
-                        // Re-expand the parent card so the user sees their saved prayer
-                        matched.IsExpanded = true;
+                        // R-1: a move shouldn't steal expansion from an unrelated
+                        // user-expanded card. Non-move saves (edits) always auto-expand
+                        // the parent so the user sees their saved prayer in context.
+                        if (!isMove || _expandedCardId is null || _expandedCardId == matched.Id)
+                            ExpandedCardId = matched.Id;
                         matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
                         matched.RefreshActivePrayerCount();
                         SuppressNextOnAppearingSync = true;
@@ -427,16 +476,12 @@ namespace PrayerApp.ViewModels
             if (matched != null && !wasAlreadyInList)
             {
                 // PerfLog.Log("ConsumePendingSavedAsync new-via-sync (matched, NOT was-in-list)");
-                // Load eagerly: setting IsExpanded skips the lazy load path
-                // (ToggleExpandedAsync), so import-with-prayers would reveal empty.
+                // Load eagerly: writing ExpandedCardId doesn't go through the
+                // lazy ToggleExpandedAsync path, so import-with-prayers would
+                // reveal empty without an explicit load here.
                 await matched.LoadPrayersAsync();
-                _suppressIsExpandedRebuild = true;
-                try
-                {
-                    matched.IsExpanded = true;
-                    matched.IsHighlighted = true;
-                }
-                finally { _suppressIsExpandedRebuild = false; }
+                ExpandedCardId = matched.Id;
+                matched.IsHighlighted = true;
                 EnsureSectionExpandedFor(matched);
                 return matched;
             }
@@ -454,13 +499,8 @@ namespace PrayerApp.ViewModels
                 AllPrayerCards.Add(newCard);
                 // Eager load — same reason as the new-via-sync branch above.
                 await newCard.LoadPrayersAsync();
-                _suppressIsExpandedRebuild = true;
-                try
-                {
-                    newCard.IsExpanded = true;
-                    newCard.IsHighlighted = true;
-                }
-                finally { _suppressIsExpandedRebuild = false; }
+                ExpandedCardId = newCard.Id;
+                newCard.IsHighlighted = true;
                 RebuildSections();
                 EnsureSectionExpandedFor(newCard);
                 return newCard;
@@ -533,6 +573,8 @@ namespace PrayerApp.ViewModels
             var toRemove = AllPrayerCards.Where(c => !freshIds.Contains(c.Id)).ToList();
             foreach (var vm in toRemove)
             {
+                // Clear the singleton expand slot if it pointed at a removed card.
+                if (_expandedCardId == vm.Id) ExpandedCardId = null;
                 UnsubscribeFromPropertyChanges(vm);
                 AllPrayerCards.Remove(vm);
             }
@@ -806,30 +848,15 @@ namespace PrayerApp.ViewModels
 
         private void SubscribeToPropertyChanges(PrayerCardViewModel card)
         {
+            // The IsExpanded cascade-collapse handler that used to live here was
+            // deleted in Commit 3 — the singleton invariant is enforced structurally
+            // by ExpandedCardId. Accessibility announce + post-collapse RebuildSections
+            // moved into the ExpandedCardId setter.
             void Handler(object? s, System.ComponentModel.PropertyChangedEventArgs e)
             {
                 if (e.PropertyName == nameof(PrayerCardViewModel.Title))
                 {
                     RebuildSections();
-                }
-                else if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded))
-                {
-                    if (card.IsExpanded)
-                    {
-                        foreach (var other in AllPrayerCards)
-                            if (other != card && other.IsExpanded)
-                                other.IsExpanded = false;
-                    }
-                    else if (!_suppressIsExpandedRebuild)
-                    {
-                        // Re-sort on collapse so favorite changes take effect
-                        // at a natural transition point (not while user is interacting)
-                        RebuildSections();
-                    }
-
-                    _accessibilityService.Announce(card.IsExpanded
-                        ? $"Expanded {card.Title}"
-                        : $"Collapsed {card.Title}");
                 }
             }
 
@@ -841,6 +868,9 @@ namespace PrayerApp.ViewModels
         {
             if (_cardHandlers.Remove(card, out var handler))
                 card.PropertyChanged -= handler;
+            // Break the parent ↔ card back-reference so a removed VM doesn't keep
+            // the page VM rooted via in-flight SafeFireAndForget continuations.
+            card.Parent = null;
         }
 
         #endregion
