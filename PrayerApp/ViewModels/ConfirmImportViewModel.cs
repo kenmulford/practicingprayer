@@ -60,8 +60,19 @@ public class ConfirmImportViewModel : ObservableObject
     public ImportMode ImportMode
     {
         get => _importMode;
-        set { SetProperty(ref _importMode, value); NotifySaveCanExecute(); }
+        set
+        {
+            if (SetProperty(ref _importMode, value))
+            {
+                NotifySaveCanExecute();
+                OnPropertyChanged(nameof(IsNewCardMode));
+                OnPropertyChanged(nameof(IsExistingCardMode));
+            }
+        }
     }
+
+    public bool IsNewCardMode => ImportMode == ImportMode.NewCard;
+    public bool IsExistingCardMode => ImportMode == ImportMode.ExistingCard;
 
     public ObservableCollection<CardPickerItem> AvailableCards { get; } = new();
 

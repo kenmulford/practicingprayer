@@ -35,4 +35,11 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
             vm.RemovePrayerCommand.Execute(row);
         }
     }
+
+    private void OnCardItemTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Border { BindingContext: CardPickerItem item } &&
+            BindingContext is ConfirmImportViewModel vm)
+            vm.SelectCardCommand.Execute(item);
+    }
 }

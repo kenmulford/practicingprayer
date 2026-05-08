@@ -23,6 +23,10 @@
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="10">
 
+            <Label Text="Collection and Card"
+                   Style="{StaticResource SectionHeading}"
+                   Margin="0,4,0,0" />
+
             <Border Style="{StaticResource PrayerCardBorder}"
                     Padding="12">
                 <VerticalStackLayout Spacing="8">
@@ -40,13 +44,79 @@
                         </Grid>
                     </Border>
 
+                    <Label Text="Add to" Style="{StaticResource FormLabel}" />
+                    <Border Style="{StaticResource PickerField}" Padding="3">
+                        <Grid ColumnDefinitions="*, *" ColumnSpacing="2">
+                            <!-- New Card tab -->
+                            <Border Grid.Column="0"
+                                    AutomationId="ConfirmImport_Seg_NewCard"
+                                    Padding="8,6"
+                                    StrokeThickness="0"
+                                    BackgroundColor="Transparent">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding IsNewCardMode}"
+                                                 Value="True">
+                                        <Setter Property="BackgroundColor"
+                                                Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="New Card"
+                                       HorizontalTextAlignment="Center"
+                                       FontSize="13"
+                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsNewCardMode}" Value="True">
+                                            <Setter Property="TextColor" Value="White" />
+                                            <Setter Property="FontAttributes" Value="Bold" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SetNewCardModeCommand}" />
+                                </Border.GestureRecognizers>
+                            </Border>
+                            <!-- Existing Card tab -->
+                            <Border Grid.Column="1"
+                                    AutomationId="ConfirmImport_Seg_ExistingCard"
+                                    Padding="8,6"
+                                    StrokeThickness="0"
+                                    BackgroundColor="Transparent">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding IsExistingCardMode}"
+                                                 Value="True">
+                                        <Setter Property="BackgroundColor"
+                                                Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="Existing Card"
+                                       HorizontalTextAlignment="Center"
+                                       FontSize="13"
+                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsExistingCardMode}" Value="True">
+                                            <Setter Property="TextColor" Value="White" />
+                                            <Setter Property="FontAttributes" Value="Bold" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SetExistingCardModeCommand}" />
+                                </Border.GestureRecognizers>
+                            </Border>
+                        </Grid>
+                    </Border>
+
                     <Label Text="Card Title"
-                           Style="{StaticResource FormLabel}" />
+                           Style="{StaticResource FormLabel}"
+                           IsVisible="{Binding IsNewCardMode}" />
                     <Entry x:Name="CardTitleEntry"
                            Text="{Binding CardTitle}"
                            AutomationId="ConfirmImport_Entry_CardTitle"
                            Placeholder="Card title"
                            SemanticProperties.Hint="Title for the imported prayer card"
+                           IsVisible="{Binding IsNewCardMode}"
                            HorizontalOptions="Fill">
                         <Entry.Behaviors>
                             <behaviors:SelectAllOnFocusBehavior />
@@ -55,6 +125,42 @@
 
                 </VerticalStackLayout>
             </Border>
+
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding AvailableCards}"
+                                 AutomationId="ConfirmImport_List_Cards"
+                                 IsVisible="{Binding IsExistingCardMode}"
+                                 Spacing="0">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="viewModels:CardPickerItem">
+                        <Border Style="{StaticResource PrayerCardBorder}"
+                                Padding="12,10"
+                                Margin="0,0,0,4"
+                                AutomationId="ConfirmImport_Item_Card">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <Label Grid.Column="0"
+                                       Text="{Binding Title}"
+                                       VerticalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                                <Label Grid.Column="1"
+                                       Text="&#x2713;"
+                                       IsVisible="False"
+                                       VerticalOptions="Center"
+                                       FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                            </Grid>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCardItemTapped" />
+                            </Border.GestureRecognizers>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
 
             <Label Text="{Binding PrayersHeader}"
                    Style="{StaticResource SectionHeading}"
