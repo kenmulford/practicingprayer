@@ -232,6 +232,21 @@ internal static class TestDataSeed
             ("Recycle Small Survivor",
              "Should still be the only prayer visible after Big is deleted.", false),
         });
+
+        // Move-prayer fixture (TD-20 / Commit 1 test prereqs).
+        // "Move Source Card" starts with 3 prayers; "Move Target Card" starts empty.
+        // Tests move "Prayer One" to the target and assert source shrinks to 2 and
+        // target grows to 1. Also used to verify no stuck Border.Margin on source
+        // after the move (regression for the declarative-margin fix in Commit 2).
+        await SeedCardWithPrayersAsync(boxId: 0, "Move Source Card", new[]
+        {
+            ("Prayer One",   "First prayer in the move-prayer fixture.", false),
+            ("Prayer Two",   "Second prayer in the move-prayer fixture.", false),
+            ("Prayer Three", "Third prayer in the move-prayer fixture.", false),
+        });
+
+        await SeedCardWithPrayersAsync(boxId: 0, "Move Target Card",
+            Array.Empty<(string, string, bool)>());
     }
 
     private static async Task SeedCardWithPrayersAsync(int boxId, string cardTitle,
