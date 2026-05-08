@@ -594,7 +594,8 @@
                                     Margin="8,0,0,0" />
                             </Grid>
 
-                        <BoxView Style="{StaticResource DividerLine}" />
+                        <BoxView Style="{StaticResource DividerLine}"
+                                 IsVisible="{Binding IsExpanded}" />
 
                         <!-- Slice 6c real (PERF-10): Lazy-realized expanded subtree.
                              Content (chips + prayer list + Add Prayer button) is set
