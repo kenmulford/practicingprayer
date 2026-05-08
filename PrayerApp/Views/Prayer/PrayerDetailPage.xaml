@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              x:Class="PrayerApp.Views.Prayer.PrayerDetailPage"
              x:DataType="viewModels:PrayerRequestDetailViewModel"
              xmlns:models="clr-namespace:PrayerApp.Models"
@@ -141,7 +142,11 @@
                            AutomationId="Detail_Entry_Title"
                            Placeholder="Prayer title"
                            SemanticProperties.Hint="Prayer request title"
-                           HorizontalOptions="Fill" />
+                           HorizontalOptions="Fill">
+                        <Entry.Behaviors>
+                            <behaviors:SelectAllOnFocusBehavior />
+                        </Entry.Behaviors>
+                    </Entry>
 
                     <!-- Details -->
                     <Label Text="Details"

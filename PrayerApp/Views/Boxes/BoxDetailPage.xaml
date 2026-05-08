@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              x:Class="PrayerApp.Views.Boxes.BoxDetailPage"
              x:DataType="viewModels:BoxDetailViewModel"
              Title="Collection"
@@ -40,7 +41,11 @@
                        AutomationId="BoxDetail_Entry_Name"
                        Placeholder="Collection name"
                        IsReadOnly="{Binding IsSystem}"
-                       ReturnType="Done" />
+                       ReturnType="Done">
+                    <Entry.Behaviors>
+                        <behaviors:SelectAllOnFocusBehavior />
+                    </Entry.Behaviors>
+                </Entry>
             </VerticalStackLayout>
 
         </VerticalStackLayout>

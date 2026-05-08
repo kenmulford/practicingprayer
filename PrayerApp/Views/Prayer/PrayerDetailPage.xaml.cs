@@ -130,9 +130,7 @@ public partial class PrayerDetailPage : ContentPage
 
             if (vm.IsEditable)
             {
-                // New mode: focus Title so the keyboard opens immediately.
-                // Edit mode: focus Title AND select all existing text so typing replaces it.
-                await FocusTitleAsync(selectAll: !vm.IsNew);
+                await FocusTitleAsync();
             }
         }
     }
@@ -143,16 +141,12 @@ public partial class PrayerDetailPage : ContentPage
     /// BUG-70). Harmless when called from PendingFocusTitle after Save &amp; Add Another
     /// (no Shell push to wait on, but the gate adds no observable latency).
     /// </summary>
-    private async Task FocusTitleAsync(bool selectAll)
+    private async Task FocusTitleAsync()
     {
         await Dispatcher.DrainLayoutPassAsync();
         try
         {
-            if (TitleEntry.Focus() && selectAll)
-            {
-                TitleEntry.CursorPosition = 0;
-                TitleEntry.SelectionLength = TitleEntry.Text?.Length ?? 0;
-            }
+            TitleEntry.Focus();
         }
         catch (Exception ex)
         {
@@ -180,7 +174,7 @@ public partial class PrayerDetailPage : ContentPage
     {
         try
         {
-            await FocusTitleAsync(selectAll: false);
+            await FocusTitleAsync();
         }
         finally
         {
