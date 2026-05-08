@@ -11,6 +11,16 @@ using static PrayerApp.Helpers.TextNormalization;
 
 namespace PrayerApp.ViewModels;
 
+public enum ImportMode { NewCard, ExistingCard }
+
+public class CardPickerItem : ObservableObject
+{
+    public int CardId { get; init; }
+    public string Title { get; init; } = string.Empty;
+    private bool _isSelected;
+    public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }
+}
+
 public class ConfirmImportViewModel : ObservableObject
 {
     private readonly ICardService _cardService;
@@ -39,7 +49,27 @@ public class ConfirmImportViewModel : ObservableObject
     public BoxPickerItem? SelectedBox
     {
         get => _selectedBox;
-        set => SetProperty(ref _selectedBox, value);
+        set
+        {
+            if (SetProperty(ref _selectedBox, value))
+                LoadCardsForBoxAsync().SafeFireAndForget();
+        }
+    }
+
+    private ImportMode _importMode;
+    public ImportMode ImportMode
+    {
+        get => _importMode;
+        set { SetProperty(ref _importMode, value); NotifySaveCanExecute(); }
+    }
+
+    public ObservableCollection<CardPickerItem> AvailableCards { get; } = new();
+
+    private CardPickerItem? _selectedCard;
+    public CardPickerItem? SelectedCard
+    {
+        get => _selectedCard;
+        set { SetProperty(ref _selectedCard, value); NotifySaveCanExecute(); }
     }
 
     public string PrayersHeader => $"Prayers ({Prayers.Count})";
@@ -70,6 +100,9 @@ public class ConfirmImportViewModel : ObservableObject
     public IAsyncRelayCommand CancelCommand { get; }
     public ICommand AddPrayerCommand { get; }
     public ICommand RemovePrayerCommand { get; }
+    public ICommand SetNewCardModeCommand { get; }
+    public ICommand SetExistingCardModeCommand { get; }
+    public IRelayCommand<CardPickerItem> SelectCardCommand { get; }
 
     public ConfirmImportViewModel(
         ICardService cardService,
@@ -97,6 +130,15 @@ public class ConfirmImportViewModel : ObservableObject
         {
             if (row is null) return;
             Prayers.Remove(row);
+        });
+        SetNewCardModeCommand = new RelayCommand(() => ImportMode = ImportMode.NewCard);
+        SetExistingCardModeCommand = new RelayCommand(() => ImportMode = ImportMode.ExistingCard);
+        SelectCardCommand = new RelayCommand<CardPickerItem>(item =>
+        {
+            if (item is null) return;
+            if (SelectedCard is not null) SelectedCard.IsSelected = false;
+            SelectedCard = item;
+            item.IsSelected = true;
         });
 
         Prayers.CollectionChanged += (_, _) =>
@@ -163,16 +205,55 @@ public class ConfirmImportViewModel : ObservableObject
         SelectedBox = looseCards;
     }
 
+    private async Task LoadCardsForBoxAsync()
+    {
+        var all = await _cardService.GetCardsAsync();
+        var boxId = SelectedBox?.BoxId ?? 0;
+        var filtered = all
+            .Where(c => c.BoxId == boxId && !c.IsSystem)
+            .OrderBy(c => c.Title);
+        AvailableCards.Clear();
+        foreach (var c in filtered)
+            AvailableCards.Add(new CardPickerItem { CardId = c.Id, Title = c.Title });
+        SelectedCard = null;
+    }
+
     private bool CanSave()
         => !IsBusy
-           && !string.IsNullOrWhiteSpace(CardTitle)
-           && Prayers.Count > 0;
+           && Prayers.Any(p => !string.IsNullOrWhiteSpace(p.Title))
+           && (ImportMode == ImportMode.NewCard
+                   ? !string.IsNullOrWhiteSpace(CardTitle)
+                   : SelectedCard is not null);
 
     private async Task SaveAsync()
     {
         IsBusy = true;
         try
         {
+            if (ImportMode == ImportMode.ExistingCard && SelectedCard is not null)
+            {
+                var existingSavedCount = 0;
+                foreach (var row in Prayers.Where(r => !string.IsNullOrWhiteSpace(r.Title)))
+                {
+                    var prayer = new Prayer
+                    {
+                        PrayerCardId = SelectedCard.CardId,
+                        Title = NormalizeQuotes(row.Title)?.Trim() ?? string.Empty,
+                        Details = string.IsNullOrWhiteSpace(row.Details) ? null : NormalizeQuotes(row.Details)!.Trim(),
+                        IsImported = true,
+                        CanNotify = false
+                    };
+                    await prayer.SaveAsync();
+                    existingSavedCount++;
+                }
+                _cardService.InvalidateCache();
+                _prayerService.InvalidateCache();
+                _messenger.Send(new BulkChangedMessage());
+                _accessibilityService.Announce($"Imported {existingSavedCount} prayers to {SelectedCard.Title}");
+                await _navigationService.GoToAsync(Routes.PrayerCardsTabImportedToExisting(SelectedCard.CardId));
+                return;
+            }
+
             var card = new PrayerCard
             {
                 Title = NormalizeQuotes(CardTitle)?.Trim() ?? string.Empty,

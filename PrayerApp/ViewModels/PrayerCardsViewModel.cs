@@ -427,6 +427,23 @@ namespace PrayerApp.ViewModels
                     }
                 }
             }
+            else if (query.ContainsKey(Routes.QueryKeys.ImportedToExisting))
+            {
+                if (int.TryParse(query[Routes.QueryKeys.ImportedToExisting].ToString(), out int cardId))
+                {
+                    var matched = AllPrayerCards.FirstOrDefault(c => c.Id == cardId);
+                    if (matched != null)
+                    {
+                        ExpandedCardId = matched.Id;
+                        matched.LoadPrayersAsync().SafeFireAndForget();
+                        matched.RefreshActivePrayerCount();
+                        PendingSavedIdentifier = matched.Identifier;
+                        _pendingSavedWasAlreadyInList = true;
+                        _pendingSavedIsMoveTarget = true;
+                        // Do NOT set SuppressNextOnAppearingSync — BulkChangedMessage triggers sync
+                    }
+                }
+            }
             else if (query.ContainsKey(Routes.QueryKeys.PrayerDeleted) && query.ContainsKey(Routes.QueryKeys.ParentCardId))
             {
                 if (int.TryParse(query[Routes.QueryKeys.PrayerDeleted].ToString(), out int prayerId)
