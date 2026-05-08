@@ -48,4 +48,7 @@ public class ShellNavigationService : INavigationService
             _dispatcher,
             _shellReady.Task,
             () => Shell.Current.Navigation.PushModalAsync(page));
+
+    public Task PushModalWithNavigationBarAsync(Page page)
+        => PushModalOnUiThreadAsync(new NavigationPage(page));
 }

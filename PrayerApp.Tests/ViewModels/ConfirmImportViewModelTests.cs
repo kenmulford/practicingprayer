@@ -320,6 +320,69 @@ public class ConfirmImportViewModelTests
         _payloadService.Received(1).ConsumeStructured();
     }
 
+    // ── DrainIfNotConsumed (swipe-dismiss safety net) ─────────────────────
+
+    [Fact]
+    public void DrainIfNotConsumed_FirstCall_DrainsBothChannels()
+    {
+        // iOS PageSheet swipe-dismiss does not fire CancelCommand. The page's
+        // OnDisappearing wires DrainIfNotConsumed so a swipe-down doesn't
+        // leak a stale payload to the next launch.
+        var sut = CreateSut();
+
+        sut.DrainIfNotConsumed();
+
+        _payloadService.Received(1).ConsumePayload();
+        _payloadService.Received(1).ConsumeStructured();
+    }
+
+    [Fact]
+    public void DrainIfNotConsumed_SecondCall_IsNoOp()
+    {
+        // OnDisappearing can fire more than once across the page lifecycle;
+        // the guard must keep the drain to a single round trip per ViewModel.
+        var sut = CreateSut();
+
+        sut.DrainIfNotConsumed();
+        sut.DrainIfNotConsumed();
+
+        _payloadService.Received(1).ConsumePayload();
+        _payloadService.Received(1).ConsumeStructured();
+    }
+
+    [Fact]
+    public async Task SaveAsync_ThenDrainIfNotConsumed_DoesNotDrainAgain()
+    {
+        // Save's path through ConsumePending already pulled both channels.
+        // SaveAsync flips the consumed flag so OnDisappearing's safety-net
+        // call is a no-op rather than re-invoking the (now-empty) Consume*.
+        var sut = SetupSutWithRows(("Mom", null));
+        // Reset call counts: SetupSutWithRows ran ConsumePending which already
+        // hit ConsumePayload once; the assertion below targets the post-save
+        // window only.
+        _payloadService.ClearReceivedCalls();
+
+        await sut.SaveCommand.ExecuteAsync(null);
+        sut.DrainIfNotConsumed();
+
+        _payloadService.DidNotReceive().ConsumePayload();
+        _payloadService.DidNotReceive().ConsumeStructured();
+    }
+
+    [Fact]
+    public async Task CancelAsync_ThenDrainIfNotConsumed_DoesNotDrainAgain()
+    {
+        // Cancel itself drains both channels via DrainIfNotConsumed; a
+        // follow-on OnDisappearing must not trigger a second round trip.
+        var sut = CreateSut();
+
+        await sut.CancelCommand.ExecuteAsync(null);
+        sut.DrainIfNotConsumed();
+
+        _payloadService.Received(1).ConsumePayload();
+        _payloadService.Received(1).ConsumeStructured();
+    }
+
     // ── AddPrayer / RemovePrayer ──────────────────────────
 
     [Fact]
@@ -391,10 +454,13 @@ public class ConfirmImportViewModelTests
         await sut.LoadBoxesAsync();
 
         Assert.Equal(3, sut.AvailableBoxes.Count);
-        Assert.Equal(0, sut.AvailableBoxes[0].BoxId);
-        Assert.Equal("Loose Cards", sut.AvailableBoxes[0].Name);
-        Assert.Equal(7, sut.AvailableBoxes[1].BoxId);
-        Assert.Equal(8, sut.AvailableBoxes[2].BoxId);
+        // Picker is RealBoxPickerItem-only outside Existing-Card mode.
+        var realBoxes = sut.AvailableBoxes.OfType<RealBoxPickerItem>().ToList();
+        Assert.Equal(3, realBoxes.Count);
+        Assert.Equal(0, realBoxes[0].BoxId);
+        Assert.Equal("Loose Cards", realBoxes[0].Name);
+        Assert.Equal(7, realBoxes[1].BoxId);
+        Assert.Equal(8, realBoxes[2].BoxId);
     }
 
     [Fact]
@@ -408,8 +474,8 @@ public class ConfirmImportViewModelTests
 
         await sut.LoadBoxesAsync();
 
-        Assert.NotNull(sut.SelectedBox);
-        Assert.Equal(0, sut.SelectedBox!.BoxId);
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(0, selected.BoxId);
     }
 
     [Fact]
@@ -442,11 +508,12 @@ public class ConfirmImportViewModelTests
         }));
         var sut = CreateSut();
         await sut.LoadBoxesAsync();
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
 
         await sut.LoadBoxesAsync();
 
-        Assert.Equal(7, sut.SelectedBox?.BoxId);
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(7, selected.BoxId);
         Assert.Equal(2, sut.AvailableBoxes.Count);
         await _boxService.Received(1).GetBoxesAsync();
     }
@@ -461,7 +528,7 @@ public class ConfirmImportViewModelTests
         var sut = SetupSutWithRows(("Mom", null));
         sut.CardTitle = "Family imports";
         await sut.LoadBoxesAsync();
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
 
         await sut.SaveCommand.ExecuteAsync(null);
 
@@ -603,112 +670,329 @@ public class ConfirmImportViewModelTests
         Assert.False(sut.SaveCommand.CanExecute(null));
     }
 
-    // ── AvailableCards filtering ──────────────────────────────────────────
+    // ── AvailableCardGroups filtering (hybrid card picker) ────────────────
 
     [Fact]
-    public async Task AvailableCards_AfterSelectedBoxChanges_ContainsOnlyCardsForThatBox()
+    public async Task LoadCardGroupsAsync_AllCollectionsSentinel_ShowsAllCardsGrouped()
     {
-        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7 };
-        var card2 = new PrayerCard { Id = 2, Title = "Beta", BoxId = 8 };
+        // Default ExistingCard mode pre-selects the All-collections sentinel;
+        // every non-system card surfaces, partitioned by collection.
+        var alpha = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
+        var beta = new PrayerCard { Id = 2, Title = "Beta", BoxId = 8, IsSystem = false };
+        var loose = new PrayerCard { Id = 3, Title = "Loose1", BoxId = 0, IsSystem = false };
         _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
-            new[] { card1, card2 }));
+            new[] { alpha, beta, loose }));
         _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
         {
             new CardBox { Id = 7, Name = "Family", IsSystem = false },
+            new CardBox { Id = 8, Name = "Work", IsSystem = false },
         }));
         var sut = CreateSut();
         await sut.LoadBoxesAsync();
 
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        sut.SetExistingCardModeCommand.Execute(null);
         await Task.Delay(50);
 
-        Assert.Single(sut.AvailableCards);
-        Assert.Equal("Alpha", sut.AvailableCards[0].Title);
+        // 3 groups: Family, Loose Cards, Work
+        Assert.Equal(3, sut.AvailableCardGroups.Count);
+        var totalCards = sut.AvailableCardGroups.Sum(g => g.Cards.Count);
+        Assert.Equal(3, totalCards);
     }
 
     [Fact]
-    public async Task AvailableCards_BoxChange_NullsSelectedCard()
+    public async Task LoadCardGroupsAsync_SpecificBox_FiltersToThatCollection()
     {
-        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7 };
+        var alpha = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
+        var beta = new PrayerCard { Id = 2, Title = "Beta", BoxId = 8, IsSystem = false };
         _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
-            new[] { card1 }));
+            new[] { alpha, beta }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+            new CardBox { Id = 8, Name = "Work", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        Assert.Single(sut.AvailableCardGroups);
+        Assert.Equal("Family", sut.AvailableCardGroups[0].CollectionName);
+        Assert.Single(sut.AvailableCardGroups[0].Cards);
+        Assert.Equal("Alpha", sut.AvailableCardGroups[0].Cards[0].Title);
+    }
+
+    [Fact]
+    public async Task LoadCardGroupsAsync_SortsCardsAlphabeticallyWithinGroup()
+    {
+        var zulu = new PrayerCard { Id = 1, Title = "Zulu", BoxId = 7, IsSystem = false };
+        var alpha = new PrayerCard { Id = 2, Title = "Alpha", BoxId = 7, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { zulu, alpha }));
         _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
         {
             new CardBox { Id = 7, Name = "Family", IsSystem = false },
         }));
         var sut = CreateSut();
         await sut.LoadBoxesAsync();
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        sut.SetExistingCardModeCommand.Execute(null);
         await Task.Delay(50);
-        sut.SelectedCard = sut.AvailableCards.FirstOrDefault();
+
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        Assert.Equal("Alpha", sut.AvailableCardGroups[0].Cards[0].Title);
+        Assert.Equal("Zulu", sut.AvailableCardGroups[0].Cards[1].Title);
+    }
+
+    [Fact]
+    public async Task LoadCardGroupsAsync_SortsGroupsByCollectionName()
+    {
+        var workCard = new PrayerCard { Id = 1, Title = "WC", BoxId = 8, IsSystem = false };
+        var familyCard = new PrayerCard { Id = 2, Title = "FC", BoxId = 7, IsSystem = false };
+        var apostlesCard = new PrayerCard { Id = 3, Title = "AC", BoxId = 9, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { workCard, familyCard, apostlesCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 8, Name = "Work", IsSystem = false },
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+            new CardBox { Id = 9, Name = "Apostles", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        Assert.Equal("Apostles", sut.AvailableCardGroups[0].CollectionName);
+        Assert.Equal("Family", sut.AvailableCardGroups[1].CollectionName);
+        Assert.Equal("Work", sut.AvailableCardGroups[2].CollectionName);
+    }
+
+    [Fact]
+    public async Task LoadCardGroupsAsync_LooseCardsAppearAsGroup_BoxId0()
+    {
+        // BoxId 0 cards must surface under the "Loose Cards" header — without
+        // a name lookup hit, they would fall into "Unknown" and look broken.
+        var loose = new PrayerCard { Id = 1, Title = "Stray", BoxId = 0, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { loose }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        Assert.Single(sut.AvailableCardGroups);
+        Assert.Equal("Loose Cards", sut.AvailableCardGroups[0].CollectionName);
+    }
+
+    [Fact]
+    public async Task LoadCardGroupsAsync_ExcludesSystemCards()
+    {
+        var user = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
+        var system = new PrayerCard { Id = 2, Title = "System", BoxId = 7, IsSystem = true };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { user, system }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        var allCards = sut.AvailableCardGroups.SelectMany(g => g.Cards).ToList();
+        Assert.DoesNotContain(allCards, c => c.CardId == 2);
+        Assert.Single(allCards);
+    }
+
+    [Fact]
+    public async Task LoadCardGroupsAsync_BoxChange_NullsSelectedCard()
+    {
+        var alpha = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { alpha }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        await Task.Delay(50);
+        sut.SelectedCard = sut.AvailableCardGroups[0].Cards.FirstOrDefault();
         Assert.NotNull(sut.SelectedCard);
 
-        // Change box — should null SelectedCard
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 0);
+        // Change to a different box → SelectedCard must clear so save-gate stays accurate.
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 0);
         await Task.Delay(50);
 
         Assert.Null(sut.SelectedCard);
     }
 
+    // ── ImportMode flip — All-sentinel insertion / removal ────────────────
+
     [Fact]
-    public async Task AvailableCards_ExcludesSystemCards()
+    public async Task EnteringExistingCardMode_AddsAllSentinelAndSelectsIt()
     {
-        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
-        var card2 = new PrayerCard { Id = 2, Title = "System Card", BoxId = 7, IsSystem = true };
-        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
-            new[] { card1, card2 }));
+        // The All-collections sentinel only exists in ExistingCard mode; it
+        // would be misleading in NewCard mode (a new card needs ONE BoxId).
         _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
         {
             new CardBox { Id = 7, Name = "Family", IsSystem = false },
         }));
         var sut = CreateSut();
         await sut.LoadBoxesAsync();
+        Assert.DoesNotContain(sut.AvailableBoxes, b => b is AllCollectionsPickerItem);
 
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
-        await Task.Delay(50);
+        sut.SetExistingCardModeCommand.Execute(null);
 
-        Assert.DoesNotContain(sut.AvailableCards, c => c.CardId == 2);
-        Assert.Single(sut.AvailableCards);
+        Assert.IsType<AllCollectionsPickerItem>(sut.AvailableBoxes[0]);
+        Assert.IsType<AllCollectionsPickerItem>(sut.SelectedBox);
     }
 
     [Fact]
-    public async Task AvailableCards_SortedByTitle()
+    public async Task LeavingExistingCardMode_RemovesAllSentinel()
     {
-        var cardZ = new PrayerCard { Id = 1, Title = "Zulu", BoxId = 7, IsSystem = false };
-        var cardA = new PrayerCard { Id = 2, Title = "Alpha", BoxId = 7, IsSystem = false };
-        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
-            new[] { cardZ, cardA }));
         _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
         {
             new CardBox { Id = 7, Name = "Family", IsSystem = false },
         }));
         var sut = CreateSut();
         await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        Assert.Contains(sut.AvailableBoxes, b => b is AllCollectionsPickerItem);
 
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
-        await Task.Delay(50);
+        sut.SetNewCardModeCommand.Execute(null);
 
-        Assert.Equal("Alpha", sut.AvailableCards[0].Title);
-        Assert.Equal("Zulu", sut.AvailableCards[1].Title);
+        Assert.DoesNotContain(sut.AvailableBoxes, b => b is AllCollectionsPickerItem);
+        // SelectedBox restored to Loose Cards so a NewCard save still has a valid BoxId.
+        var selectedAfter = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(0, selectedAfter.BoxId);
     }
 
     [Fact]
-    public async Task AvailableCards_BoxWithNoMatchingCards_IsEmpty()
+    public async Task SelectedBoxChange_InExistingCardMode_TriggersReload()
     {
-        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 8, IsSystem = false };
+        var alpha = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
         _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
-            new[] { card1 }));
+            new[] { alpha }));
         _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
         {
-            new CardBox { Id = 7, Name = "Empty Box", IsSystem = false },
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
         }));
         var sut = CreateSut();
         await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+        _cardService.ClearReceivedCalls();
 
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
         await Task.Delay(50);
 
-        Assert.Empty(sut.AvailableCards);
+        await _cardService.Received().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task SelectedBoxChange_InNewCardMode_DoesNotTriggerCardLoad()
+    {
+        // NewCard mode: the picker drives the new card's BoxId. There is no
+        // card list to refresh, and pulling cards on every box change is waste.
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+        _cardService.ClearReceivedCalls();
+
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        await _cardService.DidNotReceive().GetCardsAsync();
+    }
+
+    // ── HasNoAvailableCards (empty-state Label) ───────────────────────────
+
+    [Fact]
+    public void HasNoAvailableCards_TrueWhenAllGroupsEmpty_FalseOtherwise()
+    {
+        var sut = CreateSut();
+
+        // NewCard mode with no groups → false (empty state is only meaningful
+        // in ExistingCard mode; the list is hidden anyway).
+        Assert.False(sut.HasNoAvailableCards);
+
+        sut.SetExistingCardModeCommand.Execute(null);
+        // ExistingCard mode + no groups → true (empty surface)
+        Assert.True(sut.HasNoAvailableCards);
+    }
+
+    [Fact]
+    public void HasNoAvailableCards_FalseWhenAtLeastOneGroupHasCards()
+    {
+        var sut = CreateSut();
+        sut.SetExistingCardModeCommand.Execute(null);
+        Assert.True(sut.HasNoAvailableCards);
+
+        sut.AvailableCardGroups.Add(new CardCollectionGroup
+        {
+            CollectionName = "Family",
+            Cards = { new CardPickerItem { CardId = 1, Title = "Alpha" } },
+        });
+
+        Assert.False(sut.HasNoAvailableCards);
+    }
+
+    [Fact]
+    public void HasNoAvailableCards_RaisesPropertyChanged_OnImportModeSwitch()
+    {
+        var sut = CreateSut();
+        var fired = 0;
+        sut.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConfirmImportViewModel.HasNoAvailableCards))
+                fired++;
+        };
+
+        sut.SetExistingCardModeCommand.Execute(null);
+
+        Assert.True(fired >= 1);
+    }
+
+    [Fact]
+    public void HasNoAvailableCards_RaisesPropertyChanged_OnAvailableCardGroupsChange()
+    {
+        // CollectionChanged → property changed; the XAML binding only
+        // refreshes when PropertyChanged fires, so this wiring matters.
+        var sut = CreateSut();
+        sut.SetExistingCardModeCommand.Execute(null);
+        var fired = 0;
+        sut.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConfirmImportViewModel.HasNoAvailableCards))
+                fired++;
+        };
+
+        sut.AvailableCardGroups.Add(new CardCollectionGroup
+        {
+            CollectionName = "Family",
+            Cards = { new CardPickerItem { CardId = 1, Title = "Alpha" } },
+        });
+        sut.AvailableCardGroups.Clear();
+
+        Assert.True(fired >= 2);
     }
 
     // ── SelectCardCommand ─────────────────────────────────────────────────
@@ -827,6 +1111,109 @@ public class ConfirmImportViewModelTests
         await _navigationService.Received(1).GoToAsync(Routes.PrayerCardsTabImportedToExisting(42));
         await _navigationService.DidNotReceive().GoToAsync(
             Arg.Is<string>(s => s.Contains("saved=")));
+    }
+
+    // ── Re-entrancy: in-flight LoadBoxesAsync ─────────────────────────────
+
+    [Fact]
+    public async Task LoadBoxesAsync_ReentrantWhileInFlight_DoesNotDoubleLoad()
+    {
+        // Race window: caller A awaits LoadBoxesAsync; mid-await on
+        // GetBoxesAsync, caller B (e.g. re-entrant OnAppearing on resume)
+        // calls LoadBoxesAsync. The in-flight guard keeps the second call
+        // from re-issuing GetBoxesAsync and from double-populating
+        // AvailableBoxes.
+        var tcs = new TaskCompletionSource<IReadOnlyList<CardBox>>();
+        _boxService.GetBoxesAsync().Returns(tcs.Task);
+        var sut = CreateSut();
+
+        var first = sut.LoadBoxesAsync();
+        var second = sut.LoadBoxesAsync(); // re-entrant before first completes
+        tcs.SetResult(new[] { new CardBox { Id = 7, Name = "Family", IsSystem = false } });
+        await Task.WhenAll(first, second);
+
+        Assert.Equal(2, sut.AvailableBoxes.Count); // Loose + Family — not 4
+        await _boxService.Received(1).GetBoxesAsync();
+    }
+
+    // ── CardCollectionGroup keyed on BoxId ────────────────────────────────
+
+    [Fact]
+    public async Task LoadCardGroupsAsync_TwoBoxesWithSameName_DoesNotMerge()
+    {
+        // CardBox.Name uniqueness is not enforced; data drift can produce
+        // two rows with the same display name. Grouping by name would
+        // silently merge their card lists. Group key is BoxId.
+        var c1 = new PrayerCard { Id = 1, Title = "A", BoxId = 7, IsSystem = false };
+        var c2 = new PrayerCard { Id = 2, Title = "B", BoxId = 8, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { c1, c2 }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+            new CardBox { Id = 8, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        Assert.Equal(2, sut.AvailableCardGroups.Count);
+        var ids = sut.AvailableCardGroups.Select(g => g.BoxId).OrderBy(i => i).ToArray();
+        Assert.Equal(new[] { 7, 8 }, ids);
+    }
+
+    // ── HasNoAvailableCards change-detection guard ────────────────────────
+
+    [Fact]
+    public void HasNoAvailableCards_OnlyFiresPropertyChangedWhenValueActuallyChanges()
+    {
+        // Clear()+N×Add() fires N+1 CollectionChanged events on
+        // AvailableCardGroups, but HasNoAvailableCards transitions at most
+        // once (true → false on the first non-empty add). Without the cache,
+        // the bound binding would receive a PropertyChanged storm.
+        var sut = CreateSut();
+        sut.SetExistingCardModeCommand.Execute(null);
+        var fired = 0;
+        sut.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConfirmImportViewModel.HasNoAvailableCards))
+                fired++;
+        };
+
+        sut.AvailableCardGroups.Add(new CardCollectionGroup
+        {
+            BoxId = 1, CollectionName = "A",
+            Cards = { new CardPickerItem { CardId = 1, Title = "x" } }
+        });
+        sut.AvailableCardGroups.Add(new CardCollectionGroup
+        {
+            BoxId = 2, CollectionName = "B",
+            Cards = { new CardPickerItem { CardId = 2, Title = "y" } }
+        });
+        sut.AvailableCardGroups.Add(new CardCollectionGroup
+        {
+            BoxId = 3, CollectionName = "C",
+            Cards = { new CardPickerItem { CardId = 3, Title = "z" } }
+        });
+
+        Assert.Equal(1, fired);
+    }
+
+    // ── Dispose idempotency ───────────────────────────────────────────────
+
+    [Fact]
+    public void Dispose_IsIdempotent()
+    {
+        // Page lifecycle can call Dispose() more than once via OnDisappearing
+        // (and Dispose() also runs implicitly via the test harness after
+        // SaveAsync/CancelAsync). Second call must not throw.
+        var sut = CreateSut();
+
+        sut.Dispose();
+        var ex = Record.Exception(() => sut.Dispose());
+
+        Assert.Null(ex);
     }
 
     // ── Helpers ──────────────────────────

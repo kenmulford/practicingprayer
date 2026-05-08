@@ -324,7 +324,10 @@ namespace PrayerApp.ViewModels
             {
                 IsBusy = true;
                 bool isNew = _prayerCard.Id == 0;
-                _prayerCard.BoxId = _selectedBox?.BoxId ?? 0;
+                // Card-edit picker is RealBoxPickerItem-only; defensive
+                // pattern-match keeps the read type-safe and returns the
+                // Loose-Cards default if a future refactor admits a sentinel.
+                _prayerCard.BoxId = _selectedBox is RealBoxPickerItem real ? real.BoxId : 0;
                 // PerfLog.Log("SaveAsync.before SaveCardAsync");
                 await _cardService.SaveCardAsync(_prayerCard);
                 // PerfLog.Log("SaveAsync.after SaveCardAsync");
@@ -470,15 +473,20 @@ namespace PrayerApp.ViewModels
             AvailableBoxes.Clear();
 
             // "Loose Cards" (no collection) always first
-            var looseCards = new BoxPickerItem(0, BoxStrings.Unorganized);
+            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
             AvailableBoxes.Add(looseCards);
 
             // User-created boxes only (no System/Archived)
             foreach (var box in boxes.Where(b => !b.IsSystem))
-                AvailableBoxes.Add(new BoxPickerItem(box.Id, box.Name));
+                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
 
-            // Set selection to match current card's BoxId
-            SelectedBox = AvailableBoxes.FirstOrDefault(b => b.BoxId == _prayerCard.BoxId)
+            // Set selection to match current card's BoxId — the card-edit
+            // picker only contains RealBoxPickerItem rows (no All-collections
+            // sentinel), so OfType<RealBoxPickerItem> is a no-op cast filter
+            // that yields the right element type for the BoxId predicate.
+            SelectedBox = AvailableBoxes
+                              .OfType<RealBoxPickerItem>()
+                              .FirstOrDefault(b => b.BoxId == _prayerCard.BoxId)
                           ?? looseCards;
         }
 
@@ -612,25 +620,59 @@ namespace PrayerApp.ViewModels
     }
 
     /// <summary>
-    /// Lightweight DTO for the Collection picker on the card edit form.
-    /// Equals/GetHashCode by BoxId so MAUI Picker SelectedItem binding works correctly.
+    /// Picker source row for the Collection field. Two flavours, enforced
+    /// by the type system rather than a runtime sentinel flag:
+    ///   • <see cref="RealBoxPickerItem"/> — a real CardBox row (or the
+    ///     synthesised Loose Cards bucket at BoxId=0). Carries a BoxId.
+    ///   • <see cref="AllCollectionsPickerItem"/> — the "no filter" sentinel,
+    ///     only valid in Confirm-Import / Existing-Card mode. Has no BoxId.
+    /// Pattern-match on <see cref="RealBoxPickerItem"/> before reading
+    /// BoxId; the compiler then enforces "check before use" instead of
+    /// callsites remembering to skip <c>== -1</c>.
     /// </summary>
-    public class BoxPickerItem
+    public abstract class BoxPickerItem
+    {
+        /// <summary>Display label for the Picker row.</summary>
+        public string Name { get; protected init; } = string.Empty;
+
+        public override string ToString() => Name;
+    }
+
+    /// <summary>
+    /// A real (or Loose-Cards) box. Equals/GetHashCode by <see cref="BoxId"/>
+    /// so MAUI Picker SelectedItem binding round-trips correctly across
+    /// re-issued AvailableBoxes lists.
+    /// </summary>
+    public sealed class RealBoxPickerItem : BoxPickerItem
     {
         public int BoxId { get; }
-        public string Name { get; }
 
-        public BoxPickerItem(int boxId, string name)
+        public RealBoxPickerItem(int boxId, string name)
         {
             BoxId = boxId;
             Name = name;
         }
 
         public override bool Equals(object? obj) =>
-            obj is BoxPickerItem other && BoxId == other.BoxId;
+            obj is RealBoxPickerItem other && BoxId == other.BoxId;
 
         public override int GetHashCode() => BoxId.GetHashCode();
+    }
 
-        public override string ToString() => Name;
+    /// <summary>
+    /// Singleton "no collection filter" picker entry — used only on the
+    /// Confirm Import page in Existing-Card mode.
+    /// <see cref="ConfirmImportViewModel.LoadBoxesAsync"/> does not produce
+    /// this; it is inserted/removed when ImportMode flips. Equality is
+    /// reference-based via the singleton instance.
+    /// </summary>
+    public sealed class AllCollectionsPickerItem : BoxPickerItem
+    {
+        public static AllCollectionsPickerItem Instance { get; } = new();
+
+        private AllCollectionsPickerItem()
+        {
+            Name = "All collections";
+        }
     }
 }

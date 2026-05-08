@@ -10,7 +10,11 @@ namespace PrayerApp.Platforms.iOS.Handlers;
 /// which feels more natural for lightweight modals on iPad's large display.
 /// On iPhone, PageSheet and FullScreen are visually identical.
 ///
-/// Applies only to pages that implement <see cref="Views.IPageSheetModal"/>.
+/// Applies to pages that implement <see cref="Views.IPageSheetModal"/>, OR
+/// to a <see cref="NavigationPage"/> whose root child implements that
+/// marker — ConfirmImportPage is wrapped in a NavigationPage so its
+/// ToolbarItems render in the modal nav bar; the wrapper is the actual
+/// presented controller, so the PageSheet style must apply to it.
 /// Pages like RestoreProgressPage (blocking progress) stay full-screen.
 /// </summary>
 public static class ModalPageSheetHandler
@@ -19,12 +23,22 @@ public static class ModalPageSheetHandler
     {
         PageHandler.Mapper.AppendToMapping("iPadPageSheet", (handler, view) =>
         {
-            if (view is not PrayerApp.Views.IPageSheetModal || view is not Page page)
-                return;
+            if (view is not Page page) return;
+            if (!IsPageSheetTarget(page)) return;
 
             var vc = page.FindViewController();
             if (vc != null)
                 vc.ModalPresentationStyle = UIModalPresentationStyle.PageSheet;
         });
+    }
+
+    private static bool IsPageSheetTarget(Page page)
+    {
+        if (page is PrayerApp.Views.IPageSheetModal) return true;
+        // NavigationPage wrapper: keep PageSheet style on iPad when the
+        // wrapped root page opted into the marker.
+        if (page is NavigationPage nav && nav.RootPage is PrayerApp.Views.IPageSheetModal)
+            return true;
+        return false;
     }
 }

@@ -300,7 +300,7 @@ public class DeepLinkService : IDeepLinkService
     }
 
     private Task PushConfirmImportPageAsync()
-        => _nav.PushModalOnUiThreadAsync(_confirmImportPageFactory());
+        => _nav.PushModalWithNavigationBarAsync(_confirmImportPageFactory());
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 

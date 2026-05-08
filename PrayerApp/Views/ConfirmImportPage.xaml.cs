@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using PrayerApp.ViewModels;
 
 namespace PrayerApp.Views;
@@ -25,6 +26,35 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
         // Collection pick survives backgrounding.
         vm.ConsumePending();
         await vm.LoadBoxesAsync();
+        vm.PropertyChanged += OnVmPropertyChanged;
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        // Swipe-dismiss on iOS PageSheet modals does not fire CancelCommand;
+        // this is the only drain path for that case.
+        if (BindingContext is ConfirmImportViewModel vm)
+        {
+            vm.PropertyChanged -= OnVmPropertyChanged;
+            vm.DrainIfNotConsumed();
+            // Dispose() is idempotent — safe even if OnDisappearing fires
+            // more than once across the page lifecycle (modal pop is the
+            // expected single-fire case, but defence-in-depth).
+            vm.Dispose();
+        }
+    }
+
+    private async void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ConfirmImportViewModel.IsExistingCardMode)) return;
+        if (BindingContext is not ConfirmImportViewModel vm || !vm.IsExistingCardMode) return;
+        cardGroupsList.Opacity = 0;
+        cardGroupsList.TranslationY = 6;
+        await Task.WhenAll(
+            cardGroupsList.FadeToAsync(1, 220, Easing.CubicOut),
+            cardGroupsList.TranslateToAsync(0, 0, 220, Easing.CubicOut)
+        );
     }
 
     private void OnRemovePrayerClicked(object? sender, EventArgs e)

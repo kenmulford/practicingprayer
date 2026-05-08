@@ -1794,7 +1794,7 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
-    public async Task ApplyQueryAttributes_ImportedToExisting_DoesNotSuppressSync()
+    public async Task ApplyQueryAttributes_ImportedToExisting_SuppressesSync()
     {
         SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
@@ -1807,7 +1807,45 @@ public class PrayerCardsViewModelTests
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object> { { Routes.QueryKeys.ImportedToExisting, "2" } });
 
-        Assert.False(sut.SuppressNextOnAppearingSync);
+        Assert.True(sut.SuppressNextOnAppearingSync);
+    }
+
+    [Fact]
+    public async Task ImportedToExisting_SuppressesOnAppearingSync_ButBulkChangedMessageStillRefreshesAsync()
+    {
+        // UAT-107 item 3 contract lock: SuppressNextOnAppearingSync = true on the
+        // ImportedToExisting path is only safe because BulkChangedMessage (raised by
+        // ConfirmImportViewModel.SaveAsync at PrayerApp/ViewModels/ConfirmImportViewModel.cs:442)
+        // drives the actual list refresh. This test locks the composition: after
+        // ApplyQueryAttributes flips the suppression flag, a BulkChangedMessage MUST
+        // still trigger SyncAsync (observed via _cardService.GetCardsAsync()).
+        // Pairs with ApplyQueryAttributes_ImportedToExisting_SuppressesSync (suppression
+        // half) and BulkChangedMessage_TriggersSyncAsync (bulk-message → sync half).
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        _cardService.ClearReceivedCalls();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { Routes.QueryKeys.ImportedToExisting, "2" } });
+
+        // Pre-condition: suppression set (asserted in the sibling test, repeated here
+        // so the composition this test guards is self-evident from the body).
+        Assert.True(sut.SuppressNextOnAppearingSync);
+
+        _messenger.Send(new BulkChangedMessage());
+        await Task.Yield();
+        await Task.Yield();
+
+        // The suppression flag intentionally only gates OnAppearing's sync, not the
+        // messenger-driven sync. If a future change ever short-circuited
+        // BulkChangedMessage on this flag, the import-to-existing list would silently
+        // stop refreshing — exactly the bug this regression net catches.
+        await _cardService.Received().GetCardsAsync();
     }
 
     // ── Helper ──────────────────────────────────────────────────────────

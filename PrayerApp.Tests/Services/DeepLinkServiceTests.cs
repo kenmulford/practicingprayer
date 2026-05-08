@@ -173,7 +173,7 @@ public class DeepLinkServiceTests : IDisposable
 
         await _service.HandleAsync(uri);
 
-        await _nav.Received(1).PushModalOnUiThreadAsync(_confirmImportPage);
+        await _nav.Received(1).PushModalWithNavigationBarAsync(_confirmImportPage);
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public class DeepLinkServiceTests : IDisposable
 
         await _service.HandleAsync(uri);
 
-        await _nav.Received(1).PushModalOnUiThreadAsync(_confirmImportPage);
+        await _nav.Received(1).PushModalWithNavigationBarAsync(_confirmImportPage);
     }
 
     [Fact]
@@ -299,7 +299,7 @@ public class DeepLinkServiceTests : IDisposable
         Received.InOrder(() =>
         {
             _payloadService.StageStructured(Arg.Any<ParseResult>());
-            _nav.PushModalOnUiThreadAsync(_confirmImportPage);
+            _nav.PushModalWithNavigationBarAsync(_confirmImportPage);
         });
     }
 
@@ -318,7 +318,7 @@ public class DeepLinkServiceTests : IDisposable
         await _service.HandleAsync(BuildCompressedUrl("r", json));
         await _service.HandleAsync(BuildCompressedUrl("r", json));
 
-        await _nav.Received(2).PushModalOnUiThreadAsync(_confirmImportPage);
+        await _nav.Received(2).PushModalWithNavigationBarAsync(_confirmImportPage);
     }
 
     [Fact]
@@ -337,7 +337,7 @@ public class DeepLinkServiceTests : IDisposable
         await _service.HandleAsync(uri);
 
         _payloadService.DidNotReceive().StageStructured(Arg.Any<ParseResult>());
-        await _nav.DidNotReceive().PushModalOnUiThreadAsync(Arg.Any<Page>());
+        await _nav.DidNotReceive().PushModalWithNavigationBarAsync(Arg.Any<Page>());
     }
 
     [Fact]
@@ -361,7 +361,7 @@ public class DeepLinkServiceTests : IDisposable
         await _service.HandleAsync("https://example.com/other");
 
         _payloadService.DidNotReceive().StageStructured(Arg.Any<ParseResult>());
-        await _nav.DidNotReceive().PushModalOnUiThreadAsync(Arg.Any<Page>());
+        await _nav.DidNotReceive().PushModalWithNavigationBarAsync(Arg.Any<Page>());
     }
 
     [Fact]
@@ -451,7 +451,7 @@ public class DeepLinkServiceTests : IDisposable
 
         _payloadService.Received(1).StageStructured(Arg.Is<ParseResult>(s =>
             s.SuggestedCardTitle == "Shared Card" && s.Prayers.Count == 2));
-        await _nav.Received(1).PushModalOnUiThreadAsync(_confirmImportPage);
+        await _nav.Received(1).PushModalWithNavigationBarAsync(_confirmImportPage);
     }
 
     [Fact]

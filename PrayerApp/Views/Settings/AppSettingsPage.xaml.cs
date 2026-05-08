@@ -76,8 +76,9 @@ public partial class AppSettingsPage : ContentPage
                 "1. Pray for Mom\n" +
                 "2. Pray for Dad\n" +
                 "3. Pray for Sis");
-            await Shell.Current.Navigation.PushModalAsync(
-                services.GetRequiredService<ConfirmImportPage>());
+            await services.GetRequiredService<INavigationService>()
+                .PushModalWithNavigationBarAsync(
+                    services.GetRequiredService<ConfirmImportPage>());
         });
 #endif
     }

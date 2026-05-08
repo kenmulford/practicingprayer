@@ -219,10 +219,13 @@ public class PrayerCardViewModelTests
         await sut.LoadBoxPickerAsync();
 
         Assert.Equal(3, sut.AvailableBoxes.Count); // Loose Cards + 2 user boxes, no system
-        Assert.Equal(BoxStrings.Unorganized, sut.AvailableBoxes[0].Name);
-        Assert.Equal(0, sut.AvailableBoxes[0].BoxId);
-        Assert.Equal("Family", sut.AvailableBoxes[1].Name);
-        Assert.Equal("Ministry", sut.AvailableBoxes[2].Name);
+        // Card-edit picker is RealBoxPickerItem-only — no All-collections sentinel.
+        var realBoxes = sut.AvailableBoxes.OfType<RealBoxPickerItem>().ToList();
+        Assert.Equal(3, realBoxes.Count);
+        Assert.Equal(BoxStrings.Unorganized, realBoxes[0].Name);
+        Assert.Equal(0, realBoxes[0].BoxId);
+        Assert.Equal("Family", realBoxes[1].Name);
+        Assert.Equal("Ministry", realBoxes[2].Name);
     }
 
     [Fact]
@@ -238,8 +241,8 @@ public class PrayerCardViewModelTests
             _onboardingService, _navigationService, _accessibilityService, _boxService);
         await sut.LoadBoxPickerAsync();
 
-        Assert.NotNull(sut.SelectedBox);
-        Assert.Equal(5, sut.SelectedBox!.BoxId);
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(5, selected.BoxId);
     }
 
     [Fact]
@@ -253,8 +256,8 @@ public class PrayerCardViewModelTests
         var sut = CreateSut(); // new PrayerCard has BoxId=0
         await sut.LoadBoxPickerAsync();
 
-        Assert.NotNull(sut.SelectedBox);
-        Assert.Equal(0, sut.SelectedBox!.BoxId);
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(0, selected.BoxId);
     }
 
     [Fact]
@@ -268,7 +271,7 @@ public class PrayerCardViewModelTests
         var sut = CreateSut();
         sut.Title = "Test Card";
         await sut.LoadBoxPickerAsync();
-        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 5);
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 5);
 
         await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
 
@@ -277,22 +280,28 @@ public class PrayerCardViewModelTests
     }
 
     [Fact]
-    public void BoxPickerItem_EqualsByBoxId()
+    public void RealBoxPickerItem_EqualsByBoxId()
     {
-        var a = new BoxPickerItem(5, "Family");
-        var b = new BoxPickerItem(5, "Different Name");
+        var a = new RealBoxPickerItem(5, "Family");
+        var b = new RealBoxPickerItem(5, "Different Name");
 
         Assert.Equal(a, b);
         Assert.Equal(a.GetHashCode(), b.GetHashCode());
     }
 
     [Fact]
-    public void BoxPickerItem_NotEqual_DifferentBoxId()
+    public void RealBoxPickerItem_NotEqual_DifferentBoxId()
     {
-        var a = new BoxPickerItem(5, "Family");
-        var b = new BoxPickerItem(6, "Family");
+        var a = new RealBoxPickerItem(5, "Family");
+        var b = new RealBoxPickerItem(6, "Family");
 
         Assert.NotEqual(a, b);
+    }
+
+    [Fact]
+    public void AllCollectionsPickerItem_IsSingleton()
+    {
+        Assert.Same(AllCollectionsPickerItem.Instance, AllCollectionsPickerItem.Instance);
     }
 
     // ── IsBusy on Save ─────────────────────────────────────────────────

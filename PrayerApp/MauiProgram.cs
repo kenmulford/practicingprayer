@@ -427,8 +427,9 @@ namespace PrayerApp
                     await App.InitTask;
                     var services = IPlatformApplication.Current!.Services;
                     services.GetRequiredService<IImportPayloadService>().StagePayload(text);
-                    await Shell.Current.Navigation.PushModalAsync(
-                        services.GetRequiredService<ConfirmImportPage>());
+                    await services.GetRequiredService<INavigationService>()
+                        .PushModalWithNavigationBarAsync(
+                            services.GetRequiredService<ConfirmImportPage>());
                 }
                 catch (Exception ex)
                 {

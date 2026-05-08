@@ -80,7 +80,7 @@ public sealed class AppGroupImportOrchestrator
         if (outcome == BreadcrumbOutcome.Ok && payload is not null)
         {
             _payloadService.StagePayload(payload.Raw);
-            await _navigation.PushModalOnUiThreadAsync(_pageFactory());
+            await _navigation.PushModalWithNavigationBarAsync(_pageFactory());
         }
     }
 }

@@ -21,7 +21,22 @@ public class CardPickerItem : ObservableObject
     public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }
 }
 
-public class ConfirmImportViewModel : ObservableObject
+/// <summary>
+/// Group of <see cref="CardPickerItem"/>s under a single collection name on
+/// the Confirm Import page. Drives the nested BindableLayout in
+/// ConfirmImportPage.xaml — collection header, card rows, divider per group.
+/// Keyed on <see cref="BoxId"/> (not <see cref="CollectionName"/>): two CardBox
+/// rows can share a display name (e.g. user-renamed legacy "Family" alongside
+/// a new "Family") and we must not silently merge their card lists.
+/// </summary>
+public class CardCollectionGroup
+{
+    public int BoxId { get; init; }
+    public string CollectionName { get; init; } = string.Empty;
+    public ObservableCollection<CardPickerItem> Cards { get; init; } = new();
+}
+
+public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 {
     private readonly ICardService _cardService;
     private readonly IPrayerService _prayerService;
@@ -32,17 +47,29 @@ public class ConfirmImportViewModel : ObservableObject
     private readonly ITextSelectionParser _parser;
     private readonly IBoxService _boxService;
 
+    // Fallback group header for cards whose BoxId doesn't resolve to a known
+    // CardBox — only reachable if data integrity drifted (a card pointing at
+    // a deleted box that wasn't re-parented). BoxId 0 is seeded separately so
+    // legitimate Loose Cards never land here.
+    private const string UnknownCollectionName = "Unknown";
+
     private bool _consumed;
+    private bool _payloadConsumed;
     private bool _boxesLoaded;
-    private CancellationTokenSource _loadCardsCts = new();
+    private bool _boxesLoading;
+    private bool _hasNoAvailableCardsCached;
+    private CancellationTokenSource? _loadCardGroupsCts = new();
 
     public ObservableCollection<EditablePrayer> Prayers { get; } = new();
 
     /// <summary>
     /// Picker source for the Collection field on the Confirm Import page.
-    /// "Loose Cards" (BoxId=0) is always first and is the default selection;
-    /// user-created collections follow in BoxService order. System / Archived
-    /// boxes are excluded — same pattern as the card edit form.
+    /// In NewCard mode: "Loose Cards" (BoxId=0) at index 0 (default selection),
+    /// user-created collections follow in BoxService order. In ExistingCard
+    /// mode the "All collections" sentinel is inserted at index 0 and selected
+    /// by default — the picker becomes an optional filter rather than a
+    /// destination. System / Archived boxes are excluded — same pattern as
+    /// the card edit form.
     /// </summary>
     public ObservableCollection<BoxPickerItem> AvailableBoxes { get; } = new();
 
@@ -53,7 +80,13 @@ public class ConfirmImportViewModel : ObservableObject
         set
         {
             if (SetProperty(ref _selectedBox, value))
-                LoadCardsForBoxAsync().SafeFireAndForget();
+            {
+                // NewCard mode: picker drives the new card's BoxId; nothing
+                // to reload. ExistingCard mode: picker is a filter — refresh
+                // the grouped card list.
+                if (IsExistingCardMode)
+                    LoadCardGroupsAsync().SafeFireAndForget();
+            }
         }
     }
 
@@ -65,17 +98,78 @@ public class ConfirmImportViewModel : ObservableObject
         {
             if (SetProperty(ref _importMode, value))
             {
+                ApplyImportModeSideEffects();
                 NotifySaveCanExecute();
                 OnPropertyChanged(nameof(IsNewCardMode));
                 OnPropertyChanged(nameof(IsExistingCardMode));
+                RaiseHasNoAvailableCardsIfChanged();
             }
+        }
+    }
+
+    /// <summary>
+    /// Maintains picker state when ImportMode flips. ExistingCard adds the
+    /// All-collections sentinel at index 0 and selects it (so the user sees
+    /// every card across all collections by default — fits the small-library
+    /// path). NewCard removes the sentinel and restores Loose Cards as the
+    /// default — a NewCard save needs ONE BoxId, and Loose Cards mirrors the
+    /// pre-mode-toggle baseline. Skips if LoadBoxesAsync hasn't run yet
+    /// (constructor-time mode set in tests, e.g.).
+    /// </summary>
+    private void ApplyImportModeSideEffects()
+    {
+        if (!_boxesLoaded)
+        {
+            // No picker contents to mutate yet; just clear/load card groups
+            // so the empty-state binding stays accurate for the new mode.
+            if (IsExistingCardMode)
+                LoadCardGroupsAsync().SafeFireAndForget();
+            else
+                AvailableCardGroups.Clear();
+            return;
+        }
+
+        if (IsExistingCardMode)
+        {
+            if (!AvailableBoxes.Contains(AllCollectionsPickerItem.Instance))
+                AvailableBoxes.Insert(0, AllCollectionsPickerItem.Instance);
+            SelectedBox = AllCollectionsPickerItem.Instance;
+        }
+        else
+        {
+            AvailableBoxes.Remove(AllCollectionsPickerItem.Instance);
+            // Restore Loose Cards as the NewCard default — a saved card
+            // needs a real BoxId, and Loose Cards (0) is the safe baseline.
+            var looseCards = AvailableBoxes
+                .OfType<RealBoxPickerItem>()
+                .FirstOrDefault(b => b.BoxId == 0);
+            if (looseCards is not null)
+                SelectedBox = looseCards;
+            AvailableCardGroups.Clear();
         }
     }
 
     public bool IsNewCardMode => ImportMode == ImportMode.NewCard;
     public bool IsExistingCardMode => ImportMode == ImportMode.ExistingCard;
 
-    public ObservableCollection<CardPickerItem> AvailableCards { get; } = new();
+    /// <summary>
+    /// True when the user is in Existing-Card mode AND every group is empty
+    /// (or no groups exist). Drives an empty-state Label in the XAML so the
+    /// user sees "No cards in this collection" instead of an empty area
+    /// that looks like a broken list. Recomputes whenever ImportMode changes
+    /// or AvailableCardGroups' contents change.
+    /// </summary>
+    public bool HasNoAvailableCards =>
+        IsExistingCardMode && AvailableCardGroups.All(g => g.Cards.Count == 0);
+
+    /// <summary>
+    /// Grouped card list for Existing-Card mode — collection name + the
+    /// non-system cards under that BoxId, sorted alphabetically within and
+    /// across groups. Always mutated in place via Clear()/Add() in
+    /// LoadCardGroupsAsync — do not reassign. HasNoAvailableCards notification
+    /// is wired to this instance via CollectionChanged in the constructor.
+    /// </summary>
+    public ObservableCollection<CardCollectionGroup> AvailableCardGroups { get; } = new();
 
     private CardPickerItem? _selectedCard;
     public CardPickerItem? SelectedCard
@@ -158,6 +252,29 @@ public class ConfirmImportViewModel : ObservableObject
             NotifySaveCanExecute();
             OnPropertyChanged(nameof(PrayersHeader));
         };
+
+        // HasNoAvailableCards drives the empty-state Label in the XAML; it
+        // depends on AvailableCardGroups, which changes inside
+        // LoadCardGroupsAsync via Clear()+Add() — both fire CollectionChanged.
+        // Cache + change-detection: a Clear()+N×Add() sequence is N+1
+        // CollectionChanged events but at most one logical transition on this
+        // bool. Don't spam PropertyChanged on every intermediate state.
+        _hasNoAvailableCardsCached = HasNoAvailableCards;
+        AvailableCardGroups.CollectionChanged += (_, _) => RaiseHasNoAvailableCardsIfChanged();
+    }
+
+    /// <summary>
+    /// Single chokepoint for <see cref="HasNoAvailableCards"/> notification —
+    /// fires <see cref="ObservableObject.OnPropertyChanged"/> only on a real
+    /// transition. Called from the AvailableCardGroups CollectionChanged
+    /// handler and from <see cref="ImportMode"/>'s setter.
+    /// </summary>
+    private void RaiseHasNoAvailableCardsIfChanged()
+    {
+        var current = HasNoAvailableCards;
+        if (current == _hasNoAvailableCardsCached) return;
+        _hasNoAvailableCardsCached = current;
+        OnPropertyChanged(nameof(HasNoAvailableCards));
     }
 
     public ConfirmImportViewModel() : this(
@@ -203,38 +320,89 @@ public class ConfirmImportViewModel : ObservableObject
     /// </summary>
     public async Task LoadBoxesAsync()
     {
-        if (_boxesLoaded) return;
-        _boxesLoaded = true;
+        // _boxesLoaded only flips AFTER population — otherwise a future
+        // refactor that adds an early `await` between flag-set and Add()
+        // would silently leave AvailableBoxes empty for a re-entrant caller
+        // who short-circuited on the flag. _boxesLoading covers the in-flight
+        // window so a re-entrant OnAppearing (e.g. resume from background)
+        // doesn't double-issue GetBoxesAsync.
+        if (_boxesLoaded || _boxesLoading) return;
+        _boxesLoading = true;
+        try
+        {
+            var boxes = await _boxService.GetBoxesAsync();
 
-        var boxes = await _boxService.GetBoxesAsync();
+            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
+            AvailableBoxes.Add(looseCards);
 
-        var looseCards = new BoxPickerItem(0, BoxStrings.Unorganized);
-        AvailableBoxes.Add(looseCards);
+            foreach (var box in boxes.Where(b => !b.IsSystem))
+                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
 
-        foreach (var box in boxes.Where(b => !b.IsSystem))
-            AvailableBoxes.Add(new BoxPickerItem(box.Id, box.Name));
-
-        SelectedBox = looseCards;
+            SelectedBox = looseCards;
+            _boxesLoaded = true;
+        }
+        finally
+        {
+            _boxesLoading = false;
+        }
     }
 
-    private async Task LoadCardsForBoxAsync()
+    /// <summary>
+    /// Builds the grouped card list for Existing-Card mode. Two filter modes
+    /// driven by SelectedBox:
+    ///   • All-collections sentinel (default in ExistingCard mode): every
+    ///     non-system card, partitioned by collection — supports the small-
+    ///     library happy path where the user picks any card without first
+    ///     knowing its collection.
+    ///   • Specific BoxId: narrowed to that one collection — the 50+ card
+    ///     filtered path, single group visible.
+    /// Loose Cards (BoxId 0) gets a synthesized name so cards there don't
+    /// fall through to "Unknown" when no CardBox row exists for it.
+    /// </summary>
+    private async Task LoadCardGroupsAsync()
     {
-        _loadCardsCts.Cancel();
-        _loadCardsCts.Dispose();
-        _loadCardsCts = new CancellationTokenSource();
-        var token = _loadCardsCts.Token;
+        _loadCardGroupsCts?.Cancel();
+        _loadCardGroupsCts?.Dispose();
+        _loadCardGroupsCts = new CancellationTokenSource();
+        var token = _loadCardGroupsCts.Token;
 
-        var all = await _cardService.GetCardsAsync();
+        var allCards = await _cardService.GetCardsAsync();
+        if (token.IsCancellationRequested) return;
+        var allBoxes = await _boxService.GetBoxesAsync();
         if (token.IsCancellationRequested) return;
 
-        var boxId = SelectedBox?.BoxId ?? 0;
-        var filtered = all
-            .Where(c => c.BoxId == boxId && !c.IsSystem)
-            .OrderBy(c => c.Title);
+        // BoxId 0 is the "loose cards" sentinel — there is no CardBox row
+        // for it, so seed the lookup so the group header shows the proper
+        // label rather than "Unknown". For data-drift duplicates (two
+        // CardBox rows with the same Id is impossible — DB PK; same NAME is
+        // possible), ToDictionary is keyed by Id, which is what we want.
+        var boxNames = allBoxes.ToDictionary(b => b.Id, b => b.Name);
+        boxNames[0] = BoxStrings.Unorganized;
 
-        AvailableCards.Clear();
-        foreach (var c in filtered)
-            AvailableCards.Add(new CardPickerItem { CardId = c.Id, Title = c.Title });
+        IEnumerable<PrayerCard> filtered = allCards.Where(c => !c.IsSystem);
+        if (SelectedBox is RealBoxPickerItem real)
+            filtered = filtered.Where(c => c.BoxId == real.BoxId);
+
+        // GroupBy BoxId (not name): two CardBox rows with the same display
+        // name would otherwise silently merge their card lists. The group's
+        // BoxId field carries the partition key forward for any UI/test code
+        // that needs to disambiguate same-named groups.
+        var groups = filtered
+            .GroupBy(c => c.BoxId)
+            .Select(g => new CardCollectionGroup
+            {
+                BoxId = g.Key,
+                CollectionName = boxNames.TryGetValue(g.Key, out var name) ? name : UnknownCollectionName,
+                Cards = new ObservableCollection<CardPickerItem>(
+                    g.OrderBy(c => c.Title)
+                     .Select(c => new CardPickerItem { CardId = c.Id, Title = c.Title }))
+            })
+            .OrderBy(g => g.CollectionName)
+            .ToList();
+
+        AvailableCardGroups.Clear();
+        foreach (var grp in groups)
+            AvailableCardGroups.Add(grp);
         SelectedCard = null;
     }
 
@@ -248,6 +416,9 @@ public class ConfirmImportViewModel : ObservableObject
     private async Task SaveAsync()
     {
         IsBusy = true;
+        // ConsumePending already drained both channels by save time;
+        // skip the OnDisappearing safety-net.
+        _payloadConsumed = true;
         try
         {
             if (ImportMode == ImportMode.ExistingCard && SelectedCard is not null)
@@ -277,7 +448,10 @@ public class ConfirmImportViewModel : ObservableObject
             var card = new PrayerCard
             {
                 Title = NormalizeQuotes(CardTitle)?.Trim() ?? string.Empty,
-                BoxId = SelectedBox?.BoxId ?? 0,
+                // Only RealBoxPickerItem carries a BoxId; null and the
+                // All-collections sentinel both fall through to BoxId 0
+                // (Loose Cards) — the safe NewCard default.
+                BoxId = SelectedBox is RealBoxPickerItem real ? real.BoxId : 0,
                 IsImported = true
             };
             await card.SaveAsync();
@@ -311,13 +485,41 @@ public class ConfirmImportViewModel : ObservableObject
 
     private async Task CancelAsync()
     {
-        // Drain both channels in case the user dismissed before OnAppearing
-        // fired ConsumePending — a stale payload (raw or structured) could
-        // otherwise surface on the next launch.
-        _payloadService.ConsumePayload();
-        _payloadService.ConsumeStructured();
+        // Cancel before OnAppearing fired ConsumePending would otherwise
+        // leave a staged payload to auto-re-import on the next launch.
+        DrainIfNotConsumed();
         await _navigationService.PopModalAsync();
     }
 
+    /// <summary>
+    /// Idempotently drains both staged-payload channels so a payload cannot
+    /// auto-re-import on the next app launch. Wired from
+    /// <see cref="Views.ConfirmImportPage.OnDisappearing"/> as the swipe-dismiss
+    /// safety net — iOS PageSheet modals can be swiped down without firing
+    /// CancelCommand, so SaveAsync / CancelAsync alone don't cover the gap.
+    /// First call drains; subsequent calls (and calls after Save/Cancel) are
+    /// no-ops via the <see cref="_payloadConsumed"/> guard.
+    /// </summary>
+    public void DrainIfNotConsumed()
+    {
+        if (_payloadConsumed) return;
+        _payloadConsumed = true;
+        _payloadService.ConsumePayload();
+        _payloadService.ConsumeStructured();
+    }
+
     private void NotifySaveCanExecute() => SaveCommand.NotifyCanExecuteChanged();
+
+    /// <summary>
+    /// Idempotent — disposes the in-flight CancellationTokenSource so the
+    /// final instance doesn't leak when the modal closes. Wired from
+    /// <see cref="Views.ConfirmImportPage.OnDisappearing"/>. Subsequent calls
+    /// are no-ops; the field is nulled so a second Dispose() can't hit a
+    /// disposed CTS.
+    /// </summary>
+    public void Dispose()
+    {
+        _loadCardGroupsCts?.Dispose();
+        _loadCardGroupsCts = null;
+    }
 }

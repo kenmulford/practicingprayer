@@ -440,7 +440,8 @@ namespace PrayerApp.ViewModels
                         PendingSavedIdentifier = matched.Identifier;
                         _pendingSavedWasAlreadyInList = true;
                         _pendingSavedIsMoveTarget = true;
-                        // Do NOT set SuppressNextOnAppearingSync — BulkChangedMessage triggers sync
+                        // Suppress the OnAppearing sync race; BulkChangedMessage drives the actual list refresh.
+                        SuppressNextOnAppearingSync = true;
                     }
                 }
             }

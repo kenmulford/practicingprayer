@@ -46,7 +46,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalOnUiThreadAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
         Assert.False(File.Exists(LogPath));  // no breadcrumb when no file
     }
 
@@ -59,7 +59,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.Received(1).StagePayload("Pray for Mom");
-        await _navigation.Received(1).PushModalOnUiThreadAsync(_fakePage);
+        await _navigation.Received(1).PushModalWithNavigationBarAsync(_fakePage);
         Assert.False(File.Exists(PayloadPath));
         Assert.Contains(" ok", File.ReadAllText(LogPath));
     }
@@ -73,7 +73,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalOnUiThreadAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
         Assert.False(File.Exists(PayloadPath));
         Assert.Contains("parse-fail", File.ReadAllText(LogPath));
     }
@@ -87,7 +87,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalOnUiThreadAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
         Assert.False(File.Exists(PayloadPath));
         Assert.Contains("empty", File.ReadAllText(LogPath));
     }
@@ -114,7 +114,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalOnUiThreadAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
     }
 
     [Fact]
