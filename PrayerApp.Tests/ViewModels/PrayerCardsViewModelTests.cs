@@ -1537,10 +1537,13 @@ public class PrayerCardsViewModelTests
     }
 
     [Fact]
-    public async Task ApplyQueryAttributes_PrayerSaved_DoesNotTriggerCascadeCollapseOfUnrelatedExpandedCards()
+    public async Task MovePrayer_AlwaysAutoExpandsTarget_CollapsesPriorExpandedCard()
     {
-        // R-1: matched.IsExpanded = true fires the cascade handler, collapsing ALL
-        // other expanded cards including unrelated ones. Fixed in Commit 3 via ExpandedCardId.
+        // The move flow saves a prayer to a different card. The user should land
+        // on the target card expanded so they see the saved prayer in context.
+        // Whatever was previously expanded (source A or unrelated X) collapses —
+        // the structural ExpandedCardId design only signals prev+next, so there's
+        // no R-1 cascade across unrelated cards.
         SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
@@ -1549,8 +1552,9 @@ public class PrayerCardsViewModelTests
 
         var sut = CreateSut();
         await sut.SyncAsync();
+        var vmBeta = sut.AllPrayerCards.First(c => c.Id == 2);
         var vmX = sut.AllPrayerCards.First(c => c.Id == 3);
-        sut.ExpandedCardId = vmX.Id; // unrelated expanded card — must not be touched by the move
+        sut.ExpandedCardId = vmX.Id;
 
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object>
@@ -1560,7 +1564,9 @@ public class PrayerCardsViewModelTests
                 { Routes.QueryKeys.OldCardId, "1" }
             });
 
-        Assert.True(vmX.IsExpanded);
+        Assert.Equal(2, sut.ExpandedCardId);
+        Assert.True(vmBeta.IsExpanded);
+        Assert.False(vmX.IsExpanded);
     }
 
     [Fact]

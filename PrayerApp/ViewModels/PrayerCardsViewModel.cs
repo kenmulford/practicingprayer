@@ -397,12 +397,10 @@ namespace PrayerApp.ViewModels
                 if (int.TryParse(query[Routes.QueryKeys.PrayerSaved].ToString(), out int prayerId)
                     && int.TryParse(query[Routes.QueryKeys.ParentCardId].ToString(), out int parentCardId))
                 {
-                    // Move flow has an oldCardId; non-move (edit-only) does not.
-                    bool isMove = false;
+                    // Remove from old card if this is a move.
                     if (query.TryGetValue(Routes.QueryKeys.OldCardId, out var oldVal)
                         && int.TryParse(oldVal?.ToString(), out int oldCardId))
                     {
-                        isMove = true;
                         var oldCard = AllPrayerCards.FirstOrDefault(card => card.Id == oldCardId);
                         oldCard?.RemovePrayer(prayerId);
                     }
@@ -410,11 +408,11 @@ namespace PrayerApp.ViewModels
                     var matched = AllPrayerCards.FirstOrDefault(card => card.Id == parentCardId);
                     if (matched != null)
                     {
-                        // R-1: a move shouldn't steal expansion from an unrelated
-                        // user-expanded card. Non-move saves (edits) always auto-expand
-                        // the parent so the user sees their saved prayer in context.
-                        if (!isMove || _expandedCardId is null || _expandedCardId == matched.Id)
-                            ExpandedCardId = matched.Id;
+                        // Always auto-expand the target so the user sees their saved
+                        // prayer in context. The pre-refactor R-1 race (cascade
+                        // collapsing unrelated cards) is structurally impossible under
+                        // the ExpandedCardId design — only prev+next get signaled.
+                        ExpandedCardId = matched.Id;
                         matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
                         matched.RefreshActivePrayerCount();
                         SuppressNextOnAppearingSync = true;
