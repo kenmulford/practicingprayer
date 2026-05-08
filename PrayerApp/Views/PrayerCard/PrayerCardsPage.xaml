@@ -472,6 +472,7 @@
                             Style="{StaticResource PrayerCardBorder}"
                             Padding="0"
                             Margin="14,0,0,0"
+                            StrokeThickness="0"
                             Loaded="OnCardBorderLoaded">
                         <!-- Margin default matches the collapsed state so first-Loaded in
                              OnCardBorderLoaded doesn't write the property — every Margin
