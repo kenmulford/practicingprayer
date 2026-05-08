@@ -7,6 +7,19 @@
              x:DataType="viewModels:ConfirmImportViewModel"
              Title="Confirm Import"
              SafeAreaEdges="All">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cancel"
+                     AutomationId="ConfirmImport_Btn_Cancel"
+                     Priority="1"
+                     x:DataType="viewModels:ConfirmImportViewModel"
+                     Command="{Binding CancelCommand}" />
+        <ToolbarItem Text="Save"
+                     AutomationId="ConfirmImport_Btn_Save"
+                     Priority="0"
+                     x:DataType="viewModels:ConfirmImportViewModel"
+                     Command="{Binding SaveCommand}"
+                     SemanticProperties.Hint="Save the imported card and prayers" />
+    </ContentPage.ToolbarItems>
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="10">
 
@@ -97,21 +110,6 @@
                     Style="{StaticResource GhostButton}"
                     Command="{Binding AddPrayerCommand}"
                     HorizontalOptions="Fill" />
-
-            <Grid ColumnDefinitions="*, *" ColumnSpacing="8" Margin="0,8,0,40">
-                <Button Grid.Column="0"
-                        Text="Cancel"
-                        AutomationId="ConfirmImport_Btn_Cancel"
-                        Style="{StaticResource GhostButton}"
-                        Command="{Binding CancelCommand}"
-                        HorizontalOptions="Fill" />
-                <Button Grid.Column="1"
-                        Text="Save"
-                        AutomationId="ConfirmImport_Btn_Save"
-                        Command="{Binding SaveCommand}"
-                        SemanticProperties.Hint="Save the imported card and prayers"
-                        HorizontalOptions="Fill" />
-            </Grid>
 
         </VerticalStackLayout>
     </ScrollView>
