@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              x:Class="PrayerApp.Views.ConfirmImportPage"
              x:DataType="viewModels:ConfirmImportViewModel"
              Title="Confirm Import"
@@ -33,7 +34,11 @@
                            AutomationId="ConfirmImport_Entry_CardTitle"
                            Placeholder="Card title"
                            SemanticProperties.Hint="Title for the imported prayer card"
-                           HorizontalOptions="Fill" />
+                           HorizontalOptions="Fill">
+                        <Entry.Behaviors>
+                            <behaviors:SelectAllOnFocusBehavior />
+                        </Entry.Behaviors>
+                    </Entry>
 
                 </VerticalStackLayout>
             </Border>
@@ -56,7 +61,11 @@
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
                                            SemanticProperties.Description="Prayer title"
-                                           VerticalOptions="Center" />
+                                           VerticalOptions="Center">
+                                        <Entry.Behaviors>
+                                            <behaviors:SelectAllOnFocusBehavior />
+                                        </Entry.Behaviors>
+                                    </Entry>
                                     <Button Grid.Column="1"
                                             Text="✕"
                                             Clicked="OnRemovePrayerClicked"
