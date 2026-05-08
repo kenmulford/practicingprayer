@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp;
 using PrayerApp.Helpers;
 using PrayerApp.Messages;
 using PrayerApp.Models;
@@ -729,13 +730,10 @@ public class PrayerCardsViewModelTests
     public async Task ExpandingOneCard_CollapsesOtherExpandedCards()
     {
         // Only one card expanded at a time — the View's margin-animation contract depends on this.
-        SetupSystemBoxes();
+        SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
-        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
-        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
-        SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
         await sut.SyncAsync();
@@ -758,13 +756,10 @@ public class PrayerCardsViewModelTests
     public async Task CollapsingExpandedCard_DoesNotAffectOtherCards()
     {
         // Only the IsExpanded=true transition fires the auto-collapse loop.
-        SetupSystemBoxes();
+        SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
-        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
-        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
-        SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
         await sut.SyncAsync();
@@ -1476,13 +1471,10 @@ public class PrayerCardsViewModelTests
     [Fact]
     public async Task MovePrayer_OldCardId_BranchInApplyQueryAttributes_RemovesFromOldCard()
     {
-        SetupSystemBoxes();
+        SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
-        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
-        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
-        SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
         await sut.SyncAsync();
@@ -1492,9 +1484,9 @@ public class PrayerCardsViewModelTests
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object>
             {
-                { "prayerSaved", "10" },
-                { "parentCardId", "2" },
-                { "oldCardId", "1" }
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
             });
 
         // Synchronous effects: target expanded, source not expanded, sync suppressed.
@@ -1506,17 +1498,13 @@ public class PrayerCardsViewModelTests
     [Fact]
     public async Task ApplyQueryAttributes_PrayerSaved_DoesNotTriggerCascadeCollapseOfUnrelatedExpandedCards()
     {
-        // R-1: matched.IsExpanded = true fires the cascade handler (line 368),
-        // collapsing ALL other expanded cards including unrelated ones.
-        // Fixed in Commit 3 via ExpandedCardId — this test is RED until then.
-        SetupSystemBoxes();
+        // R-1: matched.IsExpanded = true fires the cascade handler, collapsing ALL
+        // other expanded cards including unrelated ones. Fixed in Commit 3 via ExpandedCardId.
+        SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
         var card3 = new PrayerCard { Id = 3, Title = "Xray",  BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2, card3 }.AsReadOnly());
-        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
-        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
-        SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
         await sut.SyncAsync();
@@ -1526,9 +1514,9 @@ public class PrayerCardsViewModelTests
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object>
             {
-                { "prayerSaved", "10" },
-                { "parentCardId", "2" },
-                { "oldCardId", "1" }
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
             });
 
         Assert.True(vmX.IsExpanded);
@@ -1537,14 +1525,11 @@ public class PrayerCardsViewModelTests
     [Fact]
     public async Task RealizeStormCanary_PrayerChangedMessageOnExpandedCard_DoesNotReloadPrayers()
     {
-        // BUG-79/80 guard: SyncAsync(ChangeKind.Updated) must skip ReloadPrayers
-        // on expanded cards (skipReload = changeKind != null). Regression canary.
-        SetupSystemBoxes();
+        // BUG-79/80 guard: SyncAsync(ChangeKind.Updated) skips ReloadPrayers when
+        // changeKind != null. Regression canary — must stay green after every refactor.
+        SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1 }.AsReadOnly());
-        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
-        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
-        SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
         await sut.SyncAsync();
@@ -1560,26 +1545,22 @@ public class PrayerCardsViewModelTests
     [Fact]
     public async Task MovePrayer_ToCardNotInList_SuppressNextSyncNotSet()
     {
-        // When parentCardId is absent from AllPrayerCards (e.g. a card created in
-        // the same save flow that hasn't synced yet), matched == null — the branch
-        // doesn't expand or suppress. The next OnAppearing SyncAsync adds the card.
-        SetupSystemBoxes();
+        // When parentCardId is not in AllPrayerCards (card created in the same save
+        // flow, not synced yet), matched == null — branch exits without expanding or
+        // suppressing. The next OnAppearing SyncAsync adds the card.
+        SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1 }.AsReadOnly());
-        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
-        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
-        SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
         await sut.SyncAsync();
 
-        // parentCardId=99 is not in AllPrayerCards
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object>
             {
-                { "prayerSaved", "10" },
-                { "parentCardId", "99" },
-                { "oldCardId", "1" }
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "99" },
+                { Routes.QueryKeys.OldCardId, "1" }
             });
 
         Assert.False(sut.SuppressNextOnAppearingSync);
@@ -1590,26 +1571,22 @@ public class PrayerCardsViewModelTests
     public async Task MovePrayer_WhileSearchActive_MoveStillAppliedToAllPrayerCards()
     {
         // ApplyQueryAttributes operates on AllPrayerCards, not the filtered BoxSections.
-        // A move while search is active must still expand the target card.
-        SetupSystemBoxes();
+        SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
         _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
-        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
-        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
-        SetupDbMocks(new List<PrayerCardTag>());
 
         var sut = CreateSut();
         await sut.SyncAsync();
-        sut.SearchText = "Alpha"; // only Alpha visible in BoxSections
+        sut.SearchText = "Alpha"; // filters BoxSections to Alpha only
         var vmBeta = sut.AllPrayerCards.First(c => c.Id == 2);
 
         ((IQueryAttributable)sut).ApplyQueryAttributes(
             new Dictionary<string, object>
             {
-                { "prayerSaved", "10" },
-                { "parentCardId", "2" },
-                { "oldCardId", "1" }
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
             });
 
         Assert.True(vmBeta.IsExpanded); // AllPrayerCards updated regardless of filter
