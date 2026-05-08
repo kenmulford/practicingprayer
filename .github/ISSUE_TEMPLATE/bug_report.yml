@@ -76,11 +76,11 @@ body:
       required: true
 
   - type: textarea
-    id: diagnostic
+    id: screenshots
     attributes:
-      label: Diagnostic log (optional)
+      label: Screenshots (optional)
       description: |
-        If you can, attach or paste a diagnostic log. In the app, go to Settings → About → "Send Diagnostic Info" to export the log file. Review it before posting and remove anything you don't want public.
+        Drag images directly into this field. If a screenshot shows personal prayer content, names, or notes, blur or crop those before posting.
     validations:
       required: false
 
@@ -88,6 +88,6 @@ body:
     id: context
     attributes:
       label: Additional context (optional)
-      description: Screenshots, related issues, frequency, anything else helpful.
+      description: Related issues, frequency, anything else helpful.
     validations:
       required: false

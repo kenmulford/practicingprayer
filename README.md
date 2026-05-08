@@ -92,6 +92,7 @@ Architecture, conventions, and known gotchas are documented in [ARCHITECTURE.md]
 This started as (and primarily remains) a personal project. Issues and pull requests are welcome, but I make no commitments on response time or scope. If you fork it for your own use, that's exactly what the GPL-3.0 license is for.
 
 - **Bug reports** and **feature requests** go through the [issue templates](https://github.com/kenmulford/PracticingPrayer/issues/new/choose) — they prompt for the details I need to act on them.
+- **Pull requests** — see [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, test expectations, and labels.
 - **Personal questions** and **prayer stories** are better handled privately — email [practicingprayerapp@gmail.com](mailto:practicingprayerapp@gmail.com) instead of opening an issue.
 
 ## License
