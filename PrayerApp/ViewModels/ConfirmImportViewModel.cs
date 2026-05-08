@@ -34,6 +34,7 @@ public class ConfirmImportViewModel : ObservableObject
 
     private bool _consumed;
     private bool _boxesLoaded;
+    private CancellationTokenSource _loadCardsCts = new();
 
     public ObservableCollection<EditablePrayer> Prayers { get; } = new();
 
@@ -218,11 +219,19 @@ public class ConfirmImportViewModel : ObservableObject
 
     private async Task LoadCardsForBoxAsync()
     {
+        _loadCardsCts.Cancel();
+        _loadCardsCts.Dispose();
+        _loadCardsCts = new CancellationTokenSource();
+        var token = _loadCardsCts.Token;
+
         var all = await _cardService.GetCardsAsync();
+        if (token.IsCancellationRequested) return;
+
         var boxId = SelectedBox?.BoxId ?? 0;
         var filtered = all
             .Where(c => c.BoxId == boxId && !c.IsSystem)
             .OrderBy(c => c.Title);
+
         AvailableCards.Clear();
         foreach (var c in filtered)
             AvailableCards.Add(new CardPickerItem { CardId = c.Id, Title = c.Title });

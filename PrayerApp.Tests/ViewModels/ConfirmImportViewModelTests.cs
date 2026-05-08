@@ -581,6 +581,28 @@ public class ConfirmImportViewModelTests
         Assert.False(sut.SaveCommand.CanExecute(null));
     }
 
+    [Fact]
+    public void CanSave_NewCardMode_AllPrayerTitlesBlank_ReturnsFalse()
+    {
+        var sut = CreateSut();
+        sut.CardTitle = "My Card";
+        sut.AddPrayerCommand.Execute(null); // adds row with blank Title
+        // ImportMode defaults to NewCard, prayer count > 0 but all titles blank
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void CanSave_ExistingCardMode_AllPrayerTitlesBlank_ReturnsFalse()
+    {
+        var sut = CreateSut();
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 1, Title = "Family" };
+        sut.AddPrayerCommand.Execute(null); // adds row with blank Title
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
+    }
+
     // ── AvailableCards filtering ──────────────────────────────────────────
 
     [Fact]

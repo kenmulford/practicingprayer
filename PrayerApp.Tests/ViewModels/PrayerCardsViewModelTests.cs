@@ -1793,6 +1793,23 @@ public class PrayerCardsViewModelTests
         Assert.Null(sut.PendingSavedIdentifier);
     }
 
+    [Fact]
+    public async Task ApplyQueryAttributes_ImportedToExisting_DoesNotSuppressSync()
+    {
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { Routes.QueryKeys.ImportedToExisting, "2" } });
+
+        Assert.False(sut.SuppressNextOnAppearingSync);
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)
