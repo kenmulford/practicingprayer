@@ -595,7 +595,13 @@
                             </Grid>
 
                         <BoxView Style="{StaticResource DividerLine}"
-                                 IsVisible="{Binding IsExpanded}" />
+                                 IsVisible="False">
+                            <BoxView.Triggers>
+                                <DataTrigger TargetType="BoxView" Binding="{Binding IsExpanded}" Value="True">
+                                    <Setter Property="IsVisible" Value="True" />
+                                </DataTrigger>
+                            </BoxView.Triggers>
+                        </BoxView>
 
                         <!-- Slice 6c real (PERF-10): Lazy-realized expanded subtree.
                              Content (chips + prayer list + Add Prayer button) is set
