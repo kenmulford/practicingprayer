@@ -219,6 +219,9 @@ namespace PrayerApp.ViewModels
         /// happens to add the row before ConsumePendingSavedAsync runs).
         /// </summary>
         private bool _pendingSavedWasAlreadyInList;
+        // True when PendingSavedIdentifier was staged by the move-prayer path rather
+        // than the new-card path. ConsumePendingSavedAsync scrolls without highlighting.
+        private bool _pendingSavedIsMoveTarget;
 
         /// <summary>
         /// Set by <see cref="ApplyQueryAttributes"/> when it handled an in-place
@@ -416,6 +419,11 @@ namespace PrayerApp.ViewModels
                         matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
                         matched.RefreshActivePrayerCount();
                         SuppressNextOnAppearingSync = true;
+                        // Stage scroll-to machinery so OnAppearing scrolls to the target.
+                        // The card is always already in the list, so wasAlreadyInList=true.
+                        PendingSavedIdentifier = matched.Identifier;
+                        _pendingSavedWasAlreadyInList = true;
+                        _pendingSavedIsMoveTarget = true;
                     }
                 }
             }
@@ -447,16 +455,26 @@ namespace PrayerApp.ViewModels
             var id = PendingSavedIdentifier;
             if (string.IsNullOrEmpty(id)) return null;
             var wasAlreadyInList = _pendingSavedWasAlreadyInList;
+            var isMoveTarget = _pendingSavedIsMoveTarget;
             PendingSavedIdentifier = null;
             _pendingSavedWasAlreadyInList = false;
+            _pendingSavedIsMoveTarget = false;
 
             var matched = AllPrayerCards.FirstOrDefault(c => c.Identifier == id);
 
-            // Edit case: card was already in the list when ApplyQueryAttributes ran.
-            // Just reload + rebuild; don't expand/highlight; return null so the View
-            // doesn't ScrollTo (and doesn't risk the adapter race that crashed Galaxy Ultra).
+            // Card already existed when ApplyQueryAttributes ran — either an edit or a move.
             if (matched != null && wasAlreadyInList)
             {
+                if (isMoveTarget)
+                {
+                    // Move-prayer: scroll to the target so the user sees where their prayer
+                    // landed. No highlight — the card isn't new. AddOrUpdatePrayerAsync
+                    // (fire-and-forget in ApplyQueryAttributes) handles prayer-list refresh.
+                    // PerfLog.Log("ConsumePendingSavedAsync move-target (matched, was-in-list, isMoveTarget)");
+                    EnsureSectionExpandedFor(matched);
+                    return matched;
+                }
+                // Edit case: just reload + rebuild; don't scroll (Galaxy Ultra adapter race).
                 // PerfLog.Log("ConsumePendingSavedAsync edit-path (matched, was-in-list)");
                 matched.Reload();
                 RebuildSections();

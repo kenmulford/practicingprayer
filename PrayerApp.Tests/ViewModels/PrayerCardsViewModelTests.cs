@@ -1665,6 +1665,78 @@ public class PrayerCardsViewModelTests
         Assert.True(sut.SuppressNextOnAppearingSync);
     }
 
+    [Fact]
+    public async Task MovePrayer_SetsPendingSavedIdentifierOnTarget()
+    {
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object>
+            {
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
+            });
+
+        Assert.Equal("2", sut.PendingSavedIdentifier);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_MoveTarget_ReturnsTargetCard()
+    {
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object>
+            {
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
+            });
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Id);
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_MoveTarget_DoesNotHighlightTarget()
+    {
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object>
+            {
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
+            });
+
+        await sut.ConsumePendingSavedAsync();
+
+        var vmBeta = sut.AllPrayerCards.First(c => c.Id == 2);
+        Assert.False(vmBeta.IsHighlighted);
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)
