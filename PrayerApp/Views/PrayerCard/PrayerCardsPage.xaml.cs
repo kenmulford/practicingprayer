@@ -166,14 +166,33 @@ public partial class PrayerCardsPage : ContentPage
         // persists across CollectionView cell recycling.
         var expandedHost = border.FindByName<ContentView>("ExpandedSubtreeHost");
 
-        // Margin is bound declaratively via the IsExpanded DataTrigger in XAML.
-        // Rebind() exists for the build-95 cell-recycle path: when CollectionView
+        // Margin is declarative via the IsExpanded DataTrigger in XAML. But the
+        // inner prayer-list subtree is lazily realized by code-behind into
+        // ExpandedSubtreeHost — that needs an IsExpanded transition signal so
+        // first-time expand inflates the content (path (b) of RealizeExpandedSubtree).
+        // Rebind() also handles the build-95 cell-recycle path: when CollectionView
         // swaps BindingContext, host.Content's first-realize BindingContext breaks
         // inheritance and must be re-anchored to the new vm.
+        PrayerCardViewModel? subscribed = null;
+        // Read the firing vm via `sender` rather than the captured `subscribed` field.
+        // Under rapid cell recycle the field can be reassigned between event-fire and
+        // handler-dispatch — sender always points at the actual originator.
+        System.ComponentModel.PropertyChangedEventHandler handler = (sender, ev) =>
+        {
+            if (ev.PropertyName != nameof(PrayerCardViewModel.IsExpanded)) return;
+            if (sender is PrayerCardViewModel vm && vm.IsExpanded)
+                RealizeExpandedSubtree(expandedHost, vm);
+        };
+
         void Rebind()
         {
-            if (border.BindingContext is PrayerCardViewModel vm)
-                RealizeExpandedSubtree(expandedHost, vm);
+            if (subscribed is not null) subscribed.PropertyChanged -= handler;
+            subscribed = border.BindingContext as PrayerCardViewModel;
+            if (subscribed is not null)
+            {
+                subscribed.PropertyChanged += handler;
+                RealizeExpandedSubtree(expandedHost, subscribed);
+            }
         }
 
         Rebind();
@@ -183,6 +202,7 @@ public partial class PrayerCardsPage : ContentPage
 
         void OnUnloaded(object? _, EventArgs __)
         {
+            if (subscribed is not null) subscribed.PropertyChanged -= handler;
             border.BindingContextChanged -= OnBindingContextChanged;
             border.Unloaded -= OnUnloaded;
         }

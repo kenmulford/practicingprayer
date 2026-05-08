@@ -776,6 +776,44 @@ public class PrayerCardsViewModelTests
         Assert.False(vmAlpha.IsExpanded);
     }
 
+    [Fact]
+    public async Task ExpandedCardId_Set_RaisesIsExpandedPropertyChanged_OnPrevAndNextCards()
+    {
+        // The View's RealizeExpandedSubtree closure subscribes to IsExpanded
+        // PropertyChanged on each card VM. If ExpandedCardId mutation stops
+        // raising IsExpanded-changed on the prev+next cards, tap-to-expand
+        // silently does nothing on device. (Regression caught in Commit 2 slim.)
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        var vmAlpha = sut.AllPrayerCards.First(c => c.Id == 1);
+        var vmBeta  = sut.AllPrayerCards.First(c => c.Id == 2);
+
+        var alphaIsExpandedRaised = 0;
+        var betaIsExpandedRaised  = 0;
+        vmAlpha.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded)) alphaIsExpandedRaised++; };
+        vmBeta.PropertyChanged  += (_, e) => { if (e.PropertyName == nameof(PrayerCardViewModel.IsExpanded)) betaIsExpandedRaised++; };
+
+        // First expand: only Beta flips state.
+        sut.ExpandedCardId = vmBeta.Id;
+        Assert.Equal(0, alphaIsExpandedRaised);
+        Assert.Equal(1, betaIsExpandedRaised);
+
+        // Switch expand A↔B: both cards flip.
+        sut.ExpandedCardId = vmAlpha.Id;
+        Assert.Equal(1, alphaIsExpandedRaised);
+        Assert.Equal(2, betaIsExpandedRaised);
+
+        // Collapse: only Alpha flips back.
+        sut.ExpandedCardId = null;
+        Assert.Equal(2, alphaIsExpandedRaised);
+        Assert.Equal(2, betaIsExpandedRaised);
+    }
+
     // ── Multi-select ─────────────────────────────────────────────────
 
     [Fact]
