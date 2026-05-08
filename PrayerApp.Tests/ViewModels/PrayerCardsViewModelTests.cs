@@ -1737,6 +1737,62 @@ public class PrayerCardsViewModelTests
         Assert.False(vmBeta.IsHighlighted);
     }
 
+    // ── ApplyQueryAttributes ImportedToExisting ───────────────────────────
+
+    [Fact]
+    public async Task ApplyQueryAttributes_ImportedToExisting_ExpandsTargetCard()
+    {
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { Routes.QueryKeys.ImportedToExisting, "2" } });
+
+        Assert.Equal(2, sut.ExpandedCardId);
+    }
+
+    [Fact]
+    public async Task ApplyQueryAttributes_ImportedToExisting_StagesMoveTargetScroll()
+    {
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1, card2 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { Routes.QueryKeys.ImportedToExisting, "2" } });
+
+        var result = await sut.ConsumePendingSavedAsync();
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Id);
+    }
+
+    [Fact]
+    public async Task ApplyQueryAttributes_ImportedToExisting_UnknownCardId_IsNoOp()
+    {
+        SetupDefaultSyncMocks();
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card1 }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        var expandedBefore = sut.ExpandedCardId;
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { { Routes.QueryKeys.ImportedToExisting, "99" } });
+
+        Assert.Equal(expandedBefore, sut.ExpandedCardId);
+        Assert.Null(sut.PendingSavedIdentifier);
+    }
+
     // ── Helper ──────────────────────────────────────────────────────────
 
     private void SetupDbMocks(List<PrayerCardTag> junctions)

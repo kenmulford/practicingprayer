@@ -494,6 +494,319 @@ public class ConfirmImportViewModelTests
         await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0));
     }
 
+    // ── ImportMode switching ──────────────────────────────────────────────
+
+    [Fact]
+    public void ImportMode_DefaultIsNewCard()
+    {
+        var sut = CreateSut();
+
+        Assert.Equal(ImportMode.NewCard, sut.ImportMode);
+    }
+
+    [Fact]
+    public void SetNewCardModeCommand_SetsImportModeToNewCard()
+    {
+        var sut = CreateSut();
+        sut.SetExistingCardModeCommand.Execute(null);
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+
+        sut.SetNewCardModeCommand.Execute(null);
+
+        Assert.Equal(ImportMode.NewCard, sut.ImportMode);
+    }
+
+    [Fact]
+    public void SetExistingCardModeCommand_SetsImportModeToExistingCard()
+    {
+        var sut = CreateSut();
+
+        sut.SetExistingCardModeCommand.Execute(null);
+
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+    }
+
+    // ── CanSave per mode ──────────────────────────────────────────────────
+
+    [Fact]
+    public void CanSave_ExistingCardMode_NullSelectedCard_WithPrayers_ReturnsFalse()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.SetExistingCardModeCommand.Execute(null);
+        // SelectedCard is null by default
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void CanSave_ExistingCardMode_SelectedCardSet_WithPrayers_ReturnsTrue()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 1, Title = "Family" };
+
+        Assert.True(sut.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void CanSave_ExistingCardMode_SelectedCardSet_NoPrayers_ReturnsFalse()
+    {
+        var sut = CreateSut();
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 1, Title = "Family" };
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void SwitchingImportMode_FiresSaveCommandCanExecuteChanged()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.CardTitle = "My Card";
+        var canExecuteChangedFired = false;
+        sut.SaveCommand.CanExecuteChanged += (_, _) => canExecuteChangedFired = true;
+
+        sut.SetExistingCardModeCommand.Execute(null);
+
+        Assert.True(canExecuteChangedFired);
+    }
+
+    [Fact]
+    public void CanSave_NewCardMode_BlankCardTitle_WithPrayers_ReturnsFalse()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.CardTitle = "   ";
+        // ImportMode is NewCard by default
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
+    }
+
+    // ── AvailableCards filtering ──────────────────────────────────────────
+
+    [Fact]
+    public async Task AvailableCards_AfterSelectedBoxChanges_ContainsOnlyCardsForThatBox()
+    {
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7 };
+        var card2 = new PrayerCard { Id = 2, Title = "Beta", BoxId = 8 };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { card1, card2 }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        Assert.Single(sut.AvailableCards);
+        Assert.Equal("Alpha", sut.AvailableCards[0].Title);
+    }
+
+    [Fact]
+    public async Task AvailableCards_BoxChange_NullsSelectedCard()
+    {
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7 };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { card1 }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        await Task.Delay(50);
+        sut.SelectedCard = sut.AvailableCards.FirstOrDefault();
+        Assert.NotNull(sut.SelectedCard);
+
+        // Change box — should null SelectedCard
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 0);
+        await Task.Delay(50);
+
+        Assert.Null(sut.SelectedCard);
+    }
+
+    [Fact]
+    public async Task AvailableCards_ExcludesSystemCards()
+    {
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
+        var card2 = new PrayerCard { Id = 2, Title = "System Card", BoxId = 7, IsSystem = true };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { card1, card2 }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        Assert.DoesNotContain(sut.AvailableCards, c => c.CardId == 2);
+        Assert.Single(sut.AvailableCards);
+    }
+
+    [Fact]
+    public async Task AvailableCards_SortedByTitle()
+    {
+        var cardZ = new PrayerCard { Id = 1, Title = "Zulu", BoxId = 7, IsSystem = false };
+        var cardA = new PrayerCard { Id = 2, Title = "Alpha", BoxId = 7, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { cardZ, cardA }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        Assert.Equal("Alpha", sut.AvailableCards[0].Title);
+        Assert.Equal("Zulu", sut.AvailableCards[1].Title);
+    }
+
+    [Fact]
+    public async Task AvailableCards_BoxWithNoMatchingCards_IsEmpty()
+    {
+        var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 8, IsSystem = false };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { card1 }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Empty Box", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+
+        sut.SelectedBox = sut.AvailableBoxes.First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        Assert.Empty(sut.AvailableCards);
+    }
+
+    // ── SelectCardCommand ─────────────────────────────────────────────────
+
+    [Fact]
+    public void SelectCardCommand_SetsSelectedCard()
+    {
+        var sut = CreateSut();
+        var item = new CardPickerItem { CardId = 1, Title = "Family" };
+
+        sut.SelectCardCommand.Execute(item);
+
+        Assert.Same(item, sut.SelectedCard);
+    }
+
+    [Fact]
+    public void SelectCardCommand_ClearsIsSelectedOnPreviousItem()
+    {
+        var sut = CreateSut();
+        var prev = new CardPickerItem { CardId = 1, Title = "Old" };
+        var next = new CardPickerItem { CardId = 2, Title = "New" };
+        sut.SelectCardCommand.Execute(prev);
+        Assert.True(prev.IsSelected);
+
+        sut.SelectCardCommand.Execute(next);
+
+        Assert.False(prev.IsSelected);
+    }
+
+    [Fact]
+    public void SelectCardCommand_SetsIsSelectedOnNewItem()
+    {
+        var sut = CreateSut();
+        var item = new CardPickerItem { CardId = 1, Title = "Family" };
+
+        sut.SelectCardCommand.Execute(item);
+
+        Assert.True(item.IsSelected);
+    }
+
+    // ── SaveAsync existing-card path ──────────────────────────────────────
+
+    [Fact]
+    public async Task Save_ExistingCard_CreatesPrayerWithCorrectCardId_NoNewPrayerCardCreated()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.PrayerCardId == 42));
+        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
+    }
+
+    [Fact]
+    public async Task Save_ExistingCard_TrimsAndNormalizesQuotes()
+    {
+        // Use curly quotes to verify NormalizeQuotes runs, and leading/trailing spaces for Trim
+        var sut = SetupSutWithRows(("  “Mom”  ", "  heal’s concern  "));
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
+            p.Title == "\"Mom\"" && p.Details == "heal's concern"));
+    }
+
+    [Fact]
+    public async Task Save_ExistingCard_SkipsRowsWithBlankTitle()
+    {
+        var sut = SetupSutWithRows(("Mom", null), ("   ", null), ("Dad", null));
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+    }
+
+    [Fact]
+    public async Task Save_ExistingCard_InvalidatesBothCaches()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        _cardService.Received(1).InvalidateCache();
+        _prayerService.Received(1).InvalidateCache();
+    }
+
+    [Fact]
+    public async Task Save_ExistingCard_SendsBulkChangedMessage()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        Assert.Single(_bulkMessages);
+    }
+
+    [Fact]
+    public async Task Save_ExistingCard_NavigatesToImportedToExistingRoute()
+    {
+        var sut = SetupSutWithRows(("Mom", null));
+        sut.SetExistingCardModeCommand.Execute(null);
+        sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _navigationService.Received(1).GoToAsync(Routes.PrayerCardsTabImportedToExisting(42));
+        await _navigationService.DidNotReceive().GoToAsync(
+            Arg.Is<string>(s => s.Contains("saved=")));
+    }
+
     // ── Helpers ──────────────────────────
 
     private ConfirmImportViewModel SetupSutWithRows(params (string Title, string? Details)[] rows)
