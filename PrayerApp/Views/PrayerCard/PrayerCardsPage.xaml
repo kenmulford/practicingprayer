@@ -362,7 +362,7 @@
                             <Setter Property="Opacity" Value="0.4" />
                         </DataTrigger>
                     </VerticalStackLayout.Triggers>
-                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,8">
+                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,12">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
                         </Grid.GestureRecognizers>
