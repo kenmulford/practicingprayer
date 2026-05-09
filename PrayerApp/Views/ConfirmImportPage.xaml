@@ -50,6 +50,7 @@
                                     AutomationId="ConfirmImport_Seg_NewCard"
                                     Padding="8,6"
                                     StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 5"
                                     BackgroundColor="Transparent">
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border"
@@ -79,6 +80,7 @@
                                     AutomationId="ConfirmImport_Seg_ExistingCard"
                                     Padding="8,6"
                                     StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 5"
                                     BackgroundColor="Transparent">
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border"
