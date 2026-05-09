@@ -245,7 +245,9 @@
                    Placeholder="Search cards..."
                    SearchButtonPressed="OnSearchButtonPressed"
                    SemanticProperties.Hint="Search prayer cards by name"
-                   BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
+                   BackgroundColor="{OnPlatform iOS=Transparent,
+                                                MacCatalyst=Transparent,
+                                                Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
         <!-- Tag filter chips -->
         <ScrollView Grid.Row="1"
