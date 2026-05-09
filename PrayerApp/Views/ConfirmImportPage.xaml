@@ -50,6 +50,7 @@
                                     AutomationId="ConfirmImport_Seg_NewCard"
                                     Padding="8,6"
                                     StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 5"
                                     BackgroundColor="Transparent">
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border"
@@ -79,6 +80,7 @@
                                     AutomationId="ConfirmImport_Seg_ExistingCard"
                                     Padding="8,6"
                                     StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 5"
                                     BackgroundColor="Transparent">
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border"
@@ -260,11 +262,16 @@
                 </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
 
-            <Button Text="+ Add another prayer"
+            <Button Text="+ Add another prayer ›"
                     AutomationId="ConfirmImport_Btn_AddPrayer"
-                    Style="{StaticResource GhostButton}"
                     Command="{Binding AddPrayerCommand}"
-                    HorizontalOptions="Fill" />
+                    FontSize="17"
+                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                    BackgroundColor="Transparent"
+                    FontAttributes="Bold"
+                    Padding="16,8,12,10"
+                    BorderWidth="0"
+                    HorizontalOptions="Center" />
 
         </VerticalStackLayout>
     </ScrollView>

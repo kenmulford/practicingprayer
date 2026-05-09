@@ -87,7 +87,9 @@
                        AutomationId="List_Search_Prayers"
                        Placeholder="Search prayers..."
                        SearchButtonPressed="OnSearchButtonPressed"
-                       BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
+                       BackgroundColor="{OnPlatform iOS=Transparent,
+                                                    MacCatalyst=Transparent,
+                                                    Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
             <!-- Tag chip row — only shown when tags exist -->
             <ScrollView Orientation="Horizontal"

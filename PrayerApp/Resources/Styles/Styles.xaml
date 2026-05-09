@@ -676,25 +676,28 @@
     <Style x:Key="PickerSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="CharacterSpacing" Value="0.3" />
-        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
     </Style>
 
     <!-- CardsSectionHeader: outer group header on PrayerCardsPage (e.g. "Loose Cards", "Family").
          Issue #33 P4 — per-platform visual language.
-           iOS — UPPERCASE via Label.TextTransform, +0.6 character-spacing, 13pt;
+           iOS — UPPERCASE via Label.TextTransform, +0.3 character-spacing, 13pt;
                  matches iOS Settings/Mail UITableView grouped section convention.
+                 Tightened from 0.6 → 0.3 (issue #33 UAT-9) to reduce small-caps + tracking
+                 shimmer on dark backgrounds; uppercase group labels carry less tracking on
+                 dark than light per Apple Settings.app convention.
            Android — normal-case, bold (Material 3 Title Small approximation), 13pt,
                      no letterspacing.
-         Sized at 13pt (down from prior inline 15pt) to preserve outer > inner hierarchy
-         alongside the 12pt PickerSectionHeader used by the inner "Prayers" header. -->
+         Sized at 13pt to set the outer-group level; the inner expanded-card "Prayers"
+         header is 15pt Bold (UAT-8) so hierarchy reads via weight + treatment, not size. -->
     <Style x:Key="CardsSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
-        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
         <Setter Property="VerticalOptions" Value="Center" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="CharacterSpacing">
             <Setter.Value>
                 <OnPlatform x:TypeArguments="x:Double" Default="0">
-                    <On Platform="iOS, MacCatalyst" Value="0.6" />
+                    <On Platform="iOS, MacCatalyst" Value="0.3" />
                 </OnPlatform>
             </Setter.Value>
         </Setter>

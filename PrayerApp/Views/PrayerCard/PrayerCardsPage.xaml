@@ -168,11 +168,14 @@
 
                 <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
                 <Label
-                    Text="Prayers"
-                    Style="{StaticResource PickerSectionHeader}"
+                    Text="{Binding PrayersHeader}"
+                    AutomationId="Card_PrayersHeader"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    TextColor="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}"
+                    SemanticProperties.HeadingLevel="Level2"
                     IsVisible="{Binding IsExpanded}"
-                    Margin="4,8,0,4"
-                    AutomationProperties.IsInAccessibleTree="False" />
+                    Margin="4,8,0,4" />
                 <!-- Issue #33 P2: prayer rows sit directly on the expanded card's
                      CardExpandedLight/Dark background; PickerInsetSeparator delineates
                      rows. 8pt horizontal margin keeps rows inset from the card edge. -->
@@ -245,14 +248,16 @@
                    Placeholder="Search cards..."
                    SearchButtonPressed="OnSearchButtonPressed"
                    SemanticProperties.Hint="Search prayer cards by name"
-                   BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
+                   BackgroundColor="{OnPlatform iOS=Transparent,
+                                                MacCatalyst=Transparent,
+                                                Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
         <!-- Tag filter chips -->
         <ScrollView Grid.Row="1"
                     Orientation="Horizontal"
                     IsVisible="{Binding HasTags}"
                     HorizontalScrollBarVisibility="Never"
-                    Margin="12,0">
+                    Margin="12,8,12,0">
             <HorizontalStackLayout
                 BindableLayout.ItemsSource="{Binding AvailableTags}"
                 Spacing="6"
@@ -357,7 +362,7 @@
                             <Setter Property="Opacity" Value="0.4" />
                         </DataTrigger>
                     </VerticalStackLayout.Triggers>
-                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,8">
+                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,12">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
                         </Grid.GestureRecognizers>

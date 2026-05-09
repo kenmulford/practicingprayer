@@ -208,6 +208,7 @@ namespace PrayerApp.ViewModels
                     OnPropertyChanged(nameof(CanShare));
                     OnPropertyChanged(nameof(HasAnyPrayer));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
+                    OnPropertyChanged(nameof(PrayersHeader));
                     ((IRelayCommand)ShareCommand).NotifyCanExecuteChanged();
                 }
             }
@@ -220,6 +221,15 @@ namespace PrayerApp.ViewModels
         /// !IsExpanded since the count is a collapsed-row affordance only.
         /// </summary>
         public bool HasAnyPrayer => !IsExpanded && ActivePrayerCount > 0;
+
+        /// <summary>
+        /// Display string for the inner "Prayers" section header inside an expanded card
+        /// (issue #33 UAT-8). Returns "Prayers" when ActivePrayerCount is zero (clean
+        /// affordance on an empty card) and "Prayers (N)" when there are active prayers.
+        /// Mirrors ConfirmImportViewModel.PrayersHeader semantic for cross-page consistency.
+        /// </summary>
+        public string PrayersHeader =>
+            ActivePrayerCount > 0 ? $"Prayers ({ActivePrayerCount})" : "Prayers";
 
         /// <summary>
         /// Composed accessible label for the card header. VoiceOver reads:
