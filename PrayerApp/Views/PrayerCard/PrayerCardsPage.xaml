@@ -168,11 +168,14 @@
 
                 <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
                 <Label
-                    Text="Prayers"
-                    Style="{StaticResource PickerSectionHeader}"
+                    Text="{Binding PrayersHeader}"
+                    AutomationId="Card_PrayersHeader"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    TextColor="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}"
+                    SemanticProperties.HeadingLevel="Level2"
                     IsVisible="{Binding IsExpanded}"
-                    Margin="4,8,0,4"
-                    AutomationProperties.IsInAccessibleTree="False" />
+                    Margin="4,8,0,4" />
                 <!-- Issue #33 P2: prayer rows sit directly on the expanded card's
                      CardExpandedLight/Dark background; PickerInsetSeparator delineates
                      rows. 8pt horizontal margin keeps rows inset from the card edge. -->
