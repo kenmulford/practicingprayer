@@ -209,12 +209,7 @@
                                         Margin="6,0,0,0"
                                         AutomationProperties.IsInAccessibleTree="False" />
                                 </Grid>
-                                <!-- Inline color binding — style-only AppThemeBinding
-                                     doesn't reliably propagate to all BindableLayout children -->
-                                <BoxView Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}"
-                                         Opacity="0.4"
-                                         HeightRequest="1"
-                                         HorizontalOptions="Fill"
+                                <BoxView Style="{StaticResource PickerInsetSeparator}"
                                          AutomationProperties.IsInAccessibleTree="False" />
                             </VerticalStackLayout>
                         </DataTemplate>
