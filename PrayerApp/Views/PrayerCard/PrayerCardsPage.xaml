@@ -422,11 +422,8 @@
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
 
-                <!-- Card body — inline action buttons replace SwipeView for reliability on iOS -->
-                <!-- UX-32: Left indent reinforces nesting under section headers -->
-                <!-- Multi-select: outer Grid reserves col 0 for the check so the ENTIRE Border shifts
-                     right (header + chips + prayer list), matching the iOS Mail pattern. When
-                     IsMultiSelectMode is False, the check is hidden and col 0 collapses to 0 width. -->
+                <!-- Inter-cell separator (issue #33 P1); hidden when expanded so the lifted-card shadow reads cleanly. -->
+                <Grid RowDefinitions="*,Auto">
                 <Grid ColumnDefinitions="Auto,*">
                     <!-- Check slot (outside the card). Aligned with header row center via Margin top.
                          Source swaps based on per-card IsMultiSelected; tint reinforces state.
@@ -462,9 +459,10 @@
                     <Border Grid.Column="1"
                             Style="{StaticResource PrayerCardBorder}"
                             Padding="0"
-                            Margin="14,0,0,0"
+                            Margin="{StaticResource CardContentLeftInsetMargin}"
                             StrokeThickness="0"
                             Loaded="OnCardBorderLoaded">
+                        <!-- Task 1A coordination: remove this inline once IsHighlighted/IsMultiSelected triggers migrate to CardStates VSM (style is now StrokeThickness=0 default). -->
                         <!-- Margin default matches the collapsed state so first-Loaded in
                              OnCardBorderLoaded doesn't write the property — every Margin
                              write invalidates parent layout, which on Android schedules
@@ -606,6 +604,16 @@
 
                         </VerticalStackLayout>
                     </Border>
+                </Grid>
+                <BoxView Grid.Row="1"
+                         Style="{StaticResource PickerInsetSeparator}"
+                         Margin="{StaticResource CardContentLeftInsetMargin}">
+                    <BoxView.Triggers>
+                        <DataTrigger TargetType="BoxView" Binding="{Binding IsExpanded}" Value="True">
+                            <Setter Property="IsVisible" Value="False" />
+                        </DataTrigger>
+                    </BoxView.Triggers>
+                </BoxView>
                 </Grid>
 
             </DataTemplate>

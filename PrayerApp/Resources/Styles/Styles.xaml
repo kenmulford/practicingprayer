@@ -447,17 +447,19 @@
     </Style>
     -->
 
-    <!-- Named style for all prayer card Borders — CardLight bg (light) / CardDark bg (dark),
-         8px corners. Set Padding inline on each usage site; all other appearance props come from here. -->
+    <!-- Visual chrome strip-back (issue #33 P1): no default Stroke/StrokeThickness.
+         Borders are surface-only by default; state cues (IsHighlighted, IsMultiSelected)
+         set Stroke + StrokeThickness via the CardStates VisualStateManager group (Task 1A).
+         Set Padding inline on each usage site; all other appearance props come from here. -->
     <Style x:Key="PrayerCardBorder" TargetType="Border">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="8" />
             </Setter.Value>
         </Setter>
+        <!-- CardStates VSM group injected here in Task 1A. -->
     </Style>
 
     <!-- ActionChip: rounded action button for card actions (expanded view).
@@ -601,6 +603,11 @@
         <Setter Property="HorizontalOptions" Value="Fill" />
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
     </Style>
+
+    <!-- CardContentLeftInsetMargin: shared 14pt left inset that aligns content with the
+         cell-Border left edge on PrayerCardsPage (cell Border at PrayerCardsPage.xaml:470
+         and the inter-cell separator below it both reference this). Issue #33 P1. -->
+    <Thickness x:Key="CardContentLeftInsetMargin">14,0,0,0</Thickness>
 
     <!-- PickerInsetSeparator: subtle inset rule between rows inside a PickerGroupCard.
          Lighter than DividerLine (no Primary color, lower opacity) so it reads as

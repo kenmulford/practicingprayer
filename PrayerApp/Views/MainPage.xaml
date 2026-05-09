@@ -137,6 +137,10 @@
                             <DataTrigger TargetType="Border" Binding="{Binding HasOverdue}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource OverdueLight}, Dark={StaticResource OverdueDark}}" />
                                 <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
+                                <!-- Issue #33 P1: PrayerCardBorder style flipped StrokeThickness default to 0.
+                                     This DataTrigger writes Stroke; explicit StrokeThickness keeps the warm-gold
+                                     overdue-state border visible. -->
+                                <Setter Property="StrokeThickness" Value="1.5" />
                             </DataTrigger>
                         </Border.Triggers>
                         <VerticalStackLayout HorizontalOptions="Center" Spacing="2">
