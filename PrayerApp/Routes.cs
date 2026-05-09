@@ -29,6 +29,8 @@ public static class Routes
     // (IsExpanded, IsHighlighted, EnsureSectionExpandedFor, ScrollToSavedCardAsync).
     public static string PrayerCardsTabImported(int savedCardId)
         => $"{PrayerCardsTab}?{QueryKeys.Saved}={savedCardId}";
+    public static string PrayerCardsTabImportedToExisting(int cardId)
+        => $"{PrayerCardsTab}?{QueryKeys.ImportedToExisting}={cardId}";
 
     // Prayer Time scope query parameter values
     public const string ScopeAll = "all";
@@ -49,5 +51,6 @@ public static class Routes
         public const string PrayerDeleted = "prayerDeleted";
         public const string ParentCardId = "parentCardId";
         public const string OldCardId = "oldCardId";
+        public const string ImportedToExisting = "importedToExisting";
     }
 }

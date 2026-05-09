@@ -1,9 +1,12 @@
+using System.ComponentModel;
 using PrayerApp.ViewModels;
 
 namespace PrayerApp.Views;
 
 public partial class ConfirmImportPage : ContentPage, IPageSheetModal
 {
+    private bool _animating;
+
     public ConfirmImportPage(ConfirmImportViewModel vm)
     {
         InitializeComponent();
@@ -25,6 +28,82 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
         // Collection pick survives backgrounding.
         vm.ConsumePending();
         await vm.LoadBoxesAsync();
+        vm.PropertyChanged -= OnVmPropertyChanged;
+        vm.PropertyChanged += OnVmPropertyChanged;
+
+        // Restore collapsed state when resuming with an existing selection
+        // (e.g. backgrounded mid-flow). No animation — page is just appearing.
+        if (vm.IsExistingCardMode && vm.SelectedCard is not null)
+        {
+            cardGroupsList.IsVisible = false;
+            selectedCardSummary.IsVisible = true;
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        // Swipe-dismiss on iOS PageSheet modals does not fire CancelCommand;
+        // this is the only drain path for that case.
+        if (BindingContext is ConfirmImportViewModel vm)
+        {
+            vm.PropertyChanged -= OnVmPropertyChanged;
+            vm.DrainIfNotConsumed();
+            // Dispose() is idempotent — safe even if OnDisappearing fires
+            // more than once across the page lifecycle (modal pop is the
+            // expected single-fire case, but defence-in-depth).
+            vm.Dispose();
+        }
+    }
+
+    private async void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (BindingContext is not ConfirmImportViewModel vm) return;
+        // Mid-animation property changes are intentionally dropped rather than queued.
+        if (_animating) return;
+
+        _animating = true;
+        try
+        {
+            if (e.PropertyName == nameof(ConfirmImportViewModel.SelectedCard))
+            {
+                if (vm.SelectedCard is not null && cardGroupsList.IsVisible)
+                {
+                    await cardGroupsList.FadeToAsync(0, 180, Easing.CubicIn);
+                    cardGroupsList.IsVisible = false;
+                    cardGroupsList.Opacity = 1;
+                    selectedCardSummary.Opacity = 0;
+                    selectedCardSummary.IsVisible = true;
+                    await selectedCardSummary.FadeToAsync(1, 220, Easing.CubicOut);
+                }
+                else if (vm.SelectedCard is null && selectedCardSummary.IsVisible)
+                {
+                    // Selection cleared while summary is showing — collection filter changed
+                    await CollapseSummaryAndShowListAsync();
+                }
+            }
+            else if (e.PropertyName == nameof(ConfirmImportViewModel.IsExistingCardMode))
+            {
+                if (vm.IsExistingCardMode)
+                {
+                    selectedCardSummary.IsVisible = false;
+                    await ShowCardListEntranceAsync();
+                }
+                else
+                {
+                    // Switching to New Card mode — hide both the list and any visible summary
+                    await cardGroupsList.FadeToAsync(0, 150, Easing.CubicIn);
+                    cardGroupsList.IsVisible = false;
+                    cardGroupsList.Opacity = 1;
+                    cardGroupsList.TranslationY = 0;
+                    selectedCardSummary.IsVisible = false;
+                }
+            }
+        }
+        finally
+        {
+            _animating = false;
+        }
     }
 
     private void OnRemovePrayerClicked(object? sender, EventArgs e)
@@ -34,5 +113,48 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
         {
             vm.RemovePrayerCommand.Execute(row);
         }
+    }
+
+    private void OnCardItemTapped(object? sender, TappedEventArgs e)
+    {
+        if (_animating) return;
+        if (sender is Border { BindingContext: CardPickerItem item } &&
+            BindingContext is ConfirmImportViewModel vm)
+            vm.SelectCardCommand.Execute(item);
+    }
+
+    private async void OnChangeCardTapped(object? sender, TappedEventArgs e)
+    {
+        if (_animating) return;
+        _animating = true;
+        try
+        {
+            // Does NOT clear SelectedCard — checkmark stays on the prior selection
+            // so the user can confirm or pick a different row.
+            await CollapseSummaryAndShowListAsync();
+        }
+        finally
+        {
+            _animating = false;
+        }
+    }
+
+    private async Task CollapseSummaryAndShowListAsync()
+    {
+        await selectedCardSummary.FadeToAsync(0, 150, Easing.CubicIn);
+        selectedCardSummary.IsVisible = false;
+        selectedCardSummary.Opacity = 1;
+        await ShowCardListEntranceAsync();
+    }
+
+    private async Task ShowCardListEntranceAsync()
+    {
+        cardGroupsList.Opacity = 0;
+        cardGroupsList.TranslationY = 20;
+        cardGroupsList.IsVisible = true;
+        await Task.WhenAll(
+            cardGroupsList.FadeToAsync(1, 280, Easing.CubicOut),
+            cardGroupsList.TranslateToAsync(0, 0, 280, Easing.CubicOut)
+        );
     }
 }

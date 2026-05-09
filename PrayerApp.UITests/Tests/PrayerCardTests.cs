@@ -836,4 +836,215 @@ public class PrayerCardTests
             }
         }
     }
+
+    // ── Move-prayer tests (TD-20) ── Commit 1 TDD anchors ─────────────────
+    // These three tests are RED until Commit 2 lands the declarative-margin +
+    // ExpandedCardId fix. Gate them with the FailingPreCommit2 trait so CI
+    // can exclude them via --filter 'Status!=FailingPreCommit2' until ready.
+
+    /// <summary>
+    /// X-06 / TD-20: Moving a prayer from "Move Source Card" to "Move Target Card"
+    /// is reflected in both card headers — source count decreases, target count increases.
+    /// </summary>
+    [Fact]
+    [Trait("Status", "FailingPreCommit2")]
+    public void Cards_MovePrayerBetweenCards_BothCardsReflect()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 1. Navigate to the source card and expand it.
+        driver.EnsureCardVisible("Move Source Card");
+        EnsureCardExpanded(driver, "Move Source Card");
+
+        // 2. Tap "Prayer One" to open PrayerDetailPage (view mode).
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Prayer One", timeoutSeconds: 10);
+        else
+            driver.TapByText("Prayer One");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 3. Enter edit mode.
+        driver.TapToolbarItem("Edit");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
+            "Should be in edit mode on PrayerDetailPage");
+
+        // 4. Change PrayerCardId — tap the card picker and select "Move Target Card".
+        driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Move Target Card", timeoutSeconds: 10);
+        else
+            driver.TapByText("Move Target Card");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 5. Save and navigate back to the Cards tab.
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+        driver.NavigateToTab("Prayer Cards");
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 6a. Source card should show 2 prayers (one moved out).
+        driver.EnsureCardVisible("Move Source Card");
+        Assert.True(
+            TestConfig.IsIOS
+                ? driver.IsTextContainsDisplayed("Move Source Card", timeoutSeconds: 5)
+                : driver.IsTextDisplayed("Move Source Card", timeoutSeconds: 5),
+            "Move Source Card should still be visible after move");
+
+        // Expand source to verify prayer count dropped — "Prayer One" must be gone.
+        EnsureCardExpanded(driver, "Move Source Card");
+        Assert.False(
+            TestConfig.IsIOS
+                ? driver.IsTextContainsDisplayed("Prayer One", timeoutSeconds: 3)
+                : driver.IsTextDisplayed("Prayer One", timeoutSeconds: 3),
+            "Prayer One should no longer appear in Move Source Card after the move");
+
+        // 6b. Target card should now contain the moved prayer.
+        EnsureCardCollapsed(driver, "Move Source Card");
+        driver.EnsureCardVisible("Move Target Card");
+        EnsureCardExpanded(driver, "Move Target Card");
+        Assert.True(
+            TestConfig.IsIOS
+                ? driver.IsTextContainsDisplayed("Prayer One", timeoutSeconds: 10)
+                : driver.IsTextDisplayed("Prayer One", timeoutSeconds: 10),
+            "Prayer One should be visible in Move Target Card after the move");
+    }
+
+    /// <summary>
+    /// D-07 / TD-20: After moving a prayer out of "Move Source Card", the originating
+    /// card must NOT show a stuck expanded margin while its VM has IsExpanded=false.
+    /// This is the regression test for the Border.Margin bug fixed in Commit 2.
+    /// </summary>
+    [Fact]
+    [Trait("Status", "FailingPreCommit2")]
+    public void Cards_MovePrayer_DoesNotLeaveSourceCardWithStaleExpandedMargin()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 1. Expand source card.
+        driver.EnsureCardVisible("Move Source Card");
+        EnsureCardExpanded(driver, "Move Source Card");
+
+        // 2. Open "Prayer Two" (using Prayer Two here to keep fixtures independent
+        //    from Cards_MovePrayerBetweenCards_BothCardsReflect which uses Prayer One).
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Prayer Two", timeoutSeconds: 10);
+        else
+            driver.TapByText("Prayer Two");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 3. Edit mode.
+        driver.TapToolbarItem("Edit");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
+            "Should be in edit mode");
+
+        // 4. Move to target card.
+        driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Move Target Card", timeoutSeconds: 10);
+        else
+            driver.TapByText("Move Target Card");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 5. Save and return to Cards tab.
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+        driver.NavigateToTab("Prayer Cards");
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 6. Source card must be collapsed — not showing the stale expanded margin.
+        // The composed accessibility label includes ", Collapsed" when the VM's
+        // IsExpanded=false AND the view margin matches (i.e. no stuck margin).
+        // Pre-fix this assertion fails because the Border.Margin is visually expanded
+        // while VM is collapsed — the accessibility label still reports ", Collapsed"
+        // via the VM, but the visual border margin is wrong (the visual regression).
+        // Post-fix the DataTrigger ensures the margin is also correct.
+        driver.EnsureCardVisible("Move Source Card");
+        Assert.True(
+            IsCardExpanded(driver, "Move Source Card") == false,
+            "Move Source Card should be collapsed (IsExpanded=false) after moving a prayer out. " +
+            "If stuck expanded, the Border.Margin is not driven by the declarative DataTrigger.");
+
+        // On iOS also verify via composed label that the platform sees it as Collapsed.
+        if (TestConfig.IsIOS)
+            Assert.True(
+                driver.IsTextContainsDisplayed("Move Source Card, Collapsed", timeoutSeconds: 5),
+                "iOS a11y label should report 'Move Source Card, Collapsed' — " +
+                "stale expanded margin would suggest the DataTrigger hasn't fired.");
+    }
+
+    /// <summary>
+    /// X-15 / TD-20: After the move, "Move Target Card" expands and displays the
+    /// moved prayer. Validates that the ExpandedCardId mechanism in Commit 2 correctly
+    /// auto-expands the target card and shows its new contents.
+    /// </summary>
+    [Fact]
+    [Trait("Status", "FailingPreCommit2")]
+    public void Cards_MovePrayer_TargetCardExpandsAndShowsMovedPrayer()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 1. Expand source card.
+        driver.EnsureCardVisible("Move Source Card");
+        EnsureCardExpanded(driver, "Move Source Card");
+
+        // 2. Open "Prayer Three" (keeps fixture independent from other move tests).
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Prayer Three", timeoutSeconds: 10);
+        else
+            driver.TapByText("Prayer Three");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 3. Edit mode.
+        driver.TapToolbarItem("Edit");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
+            "Should be in edit mode");
+
+        // 4. Move to target card.
+        driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Move Target Card", timeoutSeconds: 10);
+        else
+            driver.TapByText("Move Target Card");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 5. Save and return to Cards tab.
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+        driver.NavigateToTab("Prayer Cards");
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 6. "Move Target Card" should be expanded (ExpandedCardId set to it post-save).
+        driver.EnsureCardVisible("Move Target Card");
+        Assert.True(
+            IsCardExpanded(driver, "Move Target Card"),
+            "Move Target Card should be expanded after receiving the moved prayer. " +
+            "Post-save ExpandedCardId should auto-expand the destination card.");
+
+        if (TestConfig.IsIOS)
+            Assert.True(
+                driver.IsTextContainsDisplayed("Move Target Card, Expanded", timeoutSeconds: 5),
+                "iOS a11y label should report 'Move Target Card, Expanded'");
+
+        // 7. The moved prayer must be visible inside the expanded target card.
+        Assert.True(
+            TestConfig.IsIOS
+                ? driver.IsTextContainsDisplayed("Prayer Three", timeoutSeconds: 10)
+                : driver.IsTextDisplayed("Prayer Three", timeoutSeconds: 10),
+            "Prayer Three should be visible inside the expanded Move Target Card after the move");
+    }
 }

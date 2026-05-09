@@ -391,3 +391,4 @@ window_dump.xml
 
 # Local iOS signing identity (per-developer overrides; never commit)
 PrayerApp/iOS-signing.local.props
+/.superpowers

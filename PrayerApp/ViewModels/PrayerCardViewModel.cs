@@ -14,7 +14,6 @@ namespace PrayerApp.ViewModels
     public class PrayerCardViewModel : ObservableObject, IQueryAttributable, IEditGuard
     {
         private PrayerCard _prayerCard;
-        private bool _isExpanded;
         private bool _prayersLoaded;
         private bool _addingPrayer;
         private string _originalTitle = string.Empty;
@@ -24,6 +23,15 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly IBoxService _boxService;
+
+        // Single-expand invariant lives on PrayerCardsViewModel.ExpandedCardId.
+        // Per-card IsExpanded is a read-only projection over that — see the
+        // property below. The page-VM raises RaiseIsExpandedChanged() on the
+        // before-and-after card when ExpandedCardId mutates.
+        // Public set: tests that bypass the CreateCardViewModel factory wire
+        // this manually. Production wires it once via the factory; nothing
+        // mutates it post-attach.
+        public PrayerCardsViewModel? Parent { get; set; }
 
         /// <summary>
         /// True while SaveAsync is in flight. Drives the page-level ActivityIndicator
@@ -98,20 +106,21 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public bool IsExpanded
+        // Read-only derived. Single source of truth: PrayerCardsViewModel.ExpandedCardId.
+        // The page-VM owns the singleton invariant — eliminates the cascade-collapse
+        // handler and its `_suppressIsExpandedRebuild` flag (the smoke alarm: when a
+        // flag suppresses side-effects you fired on purpose, the abstraction is wrong).
+        public bool IsExpanded => Parent?.ExpandedCardId == _prayerCard.Id;
+
+        // Internal — called by PrayerCardsViewModel when ExpandedCardId changes,
+        // for both the previously-expanded card (collapse) and the newly-expanded
+        // card (expand). All derived projections re-raise here.
+        internal void RaiseIsExpandedChanged()
         {
-            get => _isExpanded;
-            set
-            {
-                if (_isExpanded != value)
-                {
-                    _isExpanded = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(ShowBadge));
-                    OnPropertyChanged(nameof(ShowActionChips));
-                    OnPropertyChanged(nameof(AccessibleCardHeader));
-                }
-            }
+            OnPropertyChanged(nameof(IsExpanded));
+            OnPropertyChanged(nameof(ShowBadge));
+            OnPropertyChanged(nameof(ShowActionChips));
+            OnPropertyChanged(nameof(AccessibleCardHeader));
         }
 
         public bool IsSystem => _prayerCard.IsSystem;
@@ -315,7 +324,10 @@ namespace PrayerApp.ViewModels
             {
                 IsBusy = true;
                 bool isNew = _prayerCard.Id == 0;
-                _prayerCard.BoxId = _selectedBox?.BoxId ?? 0;
+                // Card-edit picker is RealBoxPickerItem-only; defensive
+                // pattern-match keeps the read type-safe and returns the
+                // Loose-Cards default if a future refactor admits a sentinel.
+                _prayerCard.BoxId = _selectedBox is RealBoxPickerItem real ? real.BoxId : 0;
                 // PerfLog.Log("SaveAsync.before SaveCardAsync");
                 await _cardService.SaveCardAsync(_prayerCard);
                 // PerfLog.Log("SaveAsync.after SaveCardAsync");
@@ -366,16 +378,16 @@ namespace PrayerApp.ViewModels
         private async Task ToggleExpandedAsync()
         {
             // PerfLog.Log($"ToggleExpanded.entry id={_prayerCard.Id} IsExpanded={IsExpanded} _prayersLoaded={_prayersLoaded} Prayers.Count={Prayers.Count}");
-            if (!IsExpanded && !_prayersLoaded)
+            // Delegate to the page-VM's ExpandedCardId so the singleton invariant
+            // is enforced structurally instead of via a cascade handler.
+            if (Parent is null) return;
+            var nowExpanded = Parent.ExpandedCardId == _prayerCard.Id;
+            if (!nowExpanded && !_prayersLoaded)
             {
                 // Load first, then reveal — avoids empty flash
                 await LoadPrayersAsync();
-                IsExpanded = true;
             }
-            else
-            {
-                IsExpanded = !IsExpanded;
-            }
+            Parent.ExpandedCardId = nowExpanded ? null : _prayerCard.Id;
         }
 
         private bool _isFavoriteSaving;
@@ -461,15 +473,20 @@ namespace PrayerApp.ViewModels
             AvailableBoxes.Clear();
 
             // "Loose Cards" (no collection) always first
-            var looseCards = new BoxPickerItem(0, BoxStrings.Unorganized);
+            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
             AvailableBoxes.Add(looseCards);
 
             // User-created boxes only (no System/Archived)
             foreach (var box in boxes.Where(b => !b.IsSystem))
-                AvailableBoxes.Add(new BoxPickerItem(box.Id, box.Name));
+                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
 
-            // Set selection to match current card's BoxId
-            SelectedBox = AvailableBoxes.FirstOrDefault(b => b.BoxId == _prayerCard.BoxId)
+            // Set selection to match current card's BoxId — the card-edit
+            // picker only contains RealBoxPickerItem rows (no All-collections
+            // sentinel), so OfType<RealBoxPickerItem> is a no-op cast filter
+            // that yields the right element type for the BoxId predicate.
+            SelectedBox = AvailableBoxes
+                              .OfType<RealBoxPickerItem>()
+                              .FirstOrDefault(b => b.BoxId == _prayerCard.BoxId)
                           ?? looseCards;
         }
 
@@ -603,25 +620,59 @@ namespace PrayerApp.ViewModels
     }
 
     /// <summary>
-    /// Lightweight DTO for the Collection picker on the card edit form.
-    /// Equals/GetHashCode by BoxId so MAUI Picker SelectedItem binding works correctly.
+    /// Picker source row for the Collection field. Two flavours, enforced
+    /// by the type system rather than a runtime sentinel flag:
+    ///   • <see cref="RealBoxPickerItem"/> — a real CardBox row (or the
+    ///     synthesised Loose Cards bucket at BoxId=0). Carries a BoxId.
+    ///   • <see cref="AllCollectionsPickerItem"/> — the "no filter" sentinel,
+    ///     only valid in Confirm-Import / Existing-Card mode. Has no BoxId.
+    /// Pattern-match on <see cref="RealBoxPickerItem"/> before reading
+    /// BoxId; the compiler then enforces "check before use" instead of
+    /// callsites remembering to skip <c>== -1</c>.
     /// </summary>
-    public class BoxPickerItem
+    public abstract class BoxPickerItem
+    {
+        /// <summary>Display label for the Picker row.</summary>
+        public string Name { get; protected init; } = string.Empty;
+
+        public override string ToString() => Name;
+    }
+
+    /// <summary>
+    /// A real (or Loose-Cards) box. Equals/GetHashCode by <see cref="BoxId"/>
+    /// so MAUI Picker SelectedItem binding round-trips correctly across
+    /// re-issued AvailableBoxes lists.
+    /// </summary>
+    public sealed class RealBoxPickerItem : BoxPickerItem
     {
         public int BoxId { get; }
-        public string Name { get; }
 
-        public BoxPickerItem(int boxId, string name)
+        public RealBoxPickerItem(int boxId, string name)
         {
             BoxId = boxId;
             Name = name;
         }
 
         public override bool Equals(object? obj) =>
-            obj is BoxPickerItem other && BoxId == other.BoxId;
+            obj is RealBoxPickerItem other && BoxId == other.BoxId;
 
         public override int GetHashCode() => BoxId.GetHashCode();
+    }
 
-        public override string ToString() => Name;
+    /// <summary>
+    /// Singleton "no collection filter" picker entry — used only on the
+    /// Confirm Import page in Existing-Card mode.
+    /// <see cref="ConfirmImportViewModel.LoadBoxesAsync"/> does not produce
+    /// this; it is inserted/removed when ImportMode flips. Equality is
+    /// reference-based via the singleton instance.
+    /// </summary>
+    public sealed class AllCollectionsPickerItem : BoxPickerItem
+    {
+        public static AllCollectionsPickerItem Instance { get; } = new();
+
+        private AllCollectionsPickerItem()
+        {
+            Name = "All collections";
+        }
     }
 }

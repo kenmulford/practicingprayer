@@ -159,8 +159,6 @@ public partial class PrayerCardsPage : ContentPage
     private void OnCardBorderLoaded(object? sender, EventArgs e)
     {
         if (sender is not Border border) return;
-        var initialId = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
-        // PerfLog.Log($"OnCardBorderLoaded.entry id={initialId}");
 
         // Slice 6c real (PERF-10): The ExpandedSubtreeHost ContentView is realized
         // on demand from the page-level CardExpandedSubtreeTemplate. Reference is
@@ -168,59 +166,33 @@ public partial class PrayerCardsPage : ContentPage
         // persists across CollectionView cell recycling.
         var expandedHost = border.FindByName<ContentView>("ExpandedSubtreeHost");
 
-        // Margin is a Thickness (not animatable by FadeTo/TranslateTo) — tween via the low-level
-        // Animation class. CollectionView recycles Borders by swapping BindingContext *without*
-        // firing Loaded/Unloaded, so we must re-subscribe on BindingContextChanged — otherwise a
-        // recycled Border stays subscribed to its previous card and animates margins driven by the
-        // wrong card's IsExpanded changes (cards appear at the wrong indent after a tap).
+        // Margin is declarative via the IsExpanded DataTrigger in XAML. But the
+        // inner prayer-list subtree is lazily realized by code-behind into
+        // ExpandedSubtreeHost — that needs an IsExpanded transition signal so
+        // first-time expand inflates the content (path (b) of RealizeExpandedSubtree).
+        // Rebind() also handles the build-95 cell-recycle path: when CollectionView
+        // swaps BindingContext, host.Content's first-realize BindingContext breaks
+        // inheritance and must be re-anchored to the new vm.
         PrayerCardViewModel? subscribed = null;
-        System.ComponentModel.PropertyChangedEventHandler handler = (_, ev) =>
+        // Read the firing vm via `sender` rather than the captured `subscribed` field.
+        // Under rapid cell recycle the field can be reassigned between event-fire and
+        // handler-dispatch — sender always points at the actual originator.
+        System.ComponentModel.PropertyChangedEventHandler handler = (sender, ev) =>
         {
-            if (ev.PropertyName != nameof(PrayerCardViewModel.IsExpanded) || subscribed is null) return;
-            // Realize before the margin tween so chips/list have a layout pass concurrent
-            // with the animation, not after — avoids "blank then content" flash on expand.
-            // Gated on IsExpanded here (asymmetric with Rebind's unconditional call):
-            // a collapse transition for the same vm doesn't need a re-anchor — host.Content
-            // already binds to this vm and the inner IsVisible="{Binding IsExpanded}"
-            // will hide the prayer list naturally. Avoids a no-op call on every collapse.
-            if (subscribed.IsExpanded) RealizeExpandedSubtree(expandedHost, subscribed);
-            AnimateCardMargin(border, CardMarginFor(subscribed.IsExpanded));
+            if (ev.PropertyName != nameof(PrayerCardViewModel.IsExpanded)) return;
+            if (sender is PrayerCardViewModel vm && vm.IsExpanded)
+                RealizeExpandedSubtree(expandedHost, vm);
         };
 
         void Rebind()
         {
-            var newId = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
-            // PerfLog.Log($"Rebind.fire prev={subscribed?.Id ?? -1} new={newId}");
             if (subscribed is not null) subscribed.PropertyChanged -= handler;
             subscribed = border.BindingContext as PrayerCardViewModel;
             if (subscribed is not null)
             {
                 subscribed.PropertyChanged += handler;
-                // Snap (no tween) to the new card's state so recycled borders don't animate from
-                // the previous card's margin. Skip the assignment if the value already matches —
-                // every Margin write invalidates parent layout, and on Android that schedules
-                // the next measure pass, which loads the next cell, which calls Rebind again
-                // (cascade). The XAML default is the collapsed Margin so first-Loaded on a
-                // collapsed card here is a no-op; only an expanded card or a recycled cell with
-                // a state flip writes the property.
-                border.AbortAnimation("CardMarginTween");
-                var target = CardMarginFor(subscribed.IsExpanded);
-                if (border.Margin != target)
-                    border.Margin = target;
-                // Rebind() is called both from OnCardBorderLoaded (fresh cell) and from
-                // BindingContextChanged (recycled cell). RealizeExpandedSubtree
-                // self-gates: for a fresh collapsed cell host.Content is null and
-                // vm.IsExpanded is false → no-op. For a fresh expanded cell — the
-                // load path that matters most for save→Cards — it inflates the
-                // chips/list/button before first paint. For a recycled cell whose
-                // host already has Content, it re-anchors the inner BindingContext
-                // to the new vm (build-95 fallout: explicit first-realize
-                // BindingContext breaks inheritance from the recycled host, so
-                // without the re-anchor the inner subtree keeps rendering the
-                // previously-bound card's prayer rows).
                 RealizeExpandedSubtree(expandedHost, subscribed);
             }
-            // PerfLog.Log($"Rebind.exit id={newId}");
         }
 
         Rebind();
@@ -329,25 +301,6 @@ public partial class PrayerCardsPage : ContentPage
     // t=27257 — 624 ms gap).
     private int _expectedSavedCardId = -1;
     private TaskCompletionSource<int>? _savedCardRealizedTcs;
-
-    private static Thickness CardMarginFor(bool expanded)
-        => expanded ? new Thickness(0, 8) : new Thickness(14, 0, 0, 0);
-
-    private static void AnimateCardMargin(Border border, Thickness target)
-    {
-        var id = (border.BindingContext as PrayerCardViewModel)?.Id ?? -1;
-        // PerfLog.Log($"AnimateCardMargin.entry id={id}");
-        // Android respects system animation settings automatically; no reduced-motion guard needed.
-        var from = border.Margin;
-        var tween = new Animation(v => border.Margin = new Thickness(
-            from.Left   + (target.Left   - from.Left)   * v,
-            from.Top    + (target.Top    - from.Top)    * v,
-            from.Right  + (target.Right  - from.Right)  * v,
-            from.Bottom + (target.Bottom - from.Bottom) * v), 0, 1);
-        tween.Commit(border, "CardMarginTween", rate: 16, length: 200, easing: Easing.CubicInOut);
-        // Commit returns immediately — measures scheduling cost only, not the 200ms runtime.
-        // PerfLog.Log($"AnimateCardMargin.exit id={id} (Commit returned)");
-    }
 
     // BUG-60: On Android, MAUI TapGestureRecognizer and native GestureDetector conflict.
     // Handle both tap and long-press natively via GestureDetector on the header Grid,

@@ -1,3 +1,4 @@
+using PrayerApp.Models;
 using PrayerApp.Services;
 
 namespace PrayerApp.Tests.Services;
@@ -5,6 +6,9 @@ namespace PrayerApp.Tests.Services;
 public class ImportPayloadServiceTests
 {
     private readonly ImportPayloadService _sut = new();
+
+    private static ParseResult SampleStaged(string title = "card") =>
+        new(new[] { new ParsedPrayer("p1", null) }, title);
 
     [Fact]
     public void ConsumePayload_WhenNothingStaged_ReturnsNull()
@@ -53,5 +57,91 @@ public class ImportPayloadServiceTests
 
         Assert.NotNull(consumed);
         Assert.Contains(consumed, values);
+    }
+
+    // ── Structured channel (deep-link / .prayercard inbound) ───────────────
+
+    [Fact]
+    public void ConsumeStructured_WhenNothingStaged_ReturnsNull()
+    {
+        Assert.Null(_sut.ConsumeStructured());
+    }
+
+    [Fact]
+    public void StageStructured_ThenConsume_ReturnsStagedValue()
+    {
+        var staged = SampleStaged("My Card");
+
+        _sut.StageStructured(staged);
+
+        Assert.Same(staged, _sut.ConsumeStructured());
+    }
+
+    [Fact]
+    public void ConsumeStructured_IsOneShot_SecondCallReturnsNull()
+    {
+        _sut.StageStructured(SampleStaged());
+
+        _ = _sut.ConsumeStructured();
+
+        Assert.Null(_sut.ConsumeStructured());
+    }
+
+    [Fact]
+    public void StageStructured_TwiceWithoutConsume_LatestWins()
+    {
+        var first = SampleStaged("first");
+        var second = SampleStaged("second");
+
+        _sut.StageStructured(first);
+        _sut.StageStructured(second);
+
+        Assert.Same(second, _sut.ConsumeStructured());
+    }
+
+    [Fact]
+    public void StageStructured_DoesNotAffectRawSlot()
+    {
+        // Independence: the structured slot and raw slot are separate channels.
+        // Staging structured must not clobber a previously-staged raw payload.
+        _sut.StagePayload("raw");
+        _sut.StageStructured(SampleStaged());
+
+        Assert.Equal("raw", _sut.ConsumePayload());
+    }
+
+    [Fact]
+    public void StagePayload_DoesNotAffectStructuredSlot()
+    {
+        // Independence in the other direction.
+        var staged = SampleStaged();
+        _sut.StageStructured(staged);
+        _sut.StagePayload("raw");
+
+        Assert.Same(staged, _sut.ConsumeStructured());
+    }
+
+    [Fact]
+    public void ConsumeStructured_DoesNotDrainRawSlot()
+    {
+        // Reading one slot must not drain the other.
+        _sut.StagePayload("raw");
+        _sut.StageStructured(SampleStaged());
+
+        _ = _sut.ConsumeStructured();
+
+        Assert.Equal("raw", _sut.ConsumePayload());
+    }
+
+    [Fact]
+    public void ConsumePayload_DoesNotDrainStructuredSlot()
+    {
+        var staged = SampleStaged();
+        _sut.StagePayload("raw");
+        _sut.StageStructured(staged);
+
+        _ = _sut.ConsumePayload();
+
+        Assert.Same(staged, _sut.ConsumeStructured());
     }
 }

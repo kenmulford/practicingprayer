@@ -1,0 +1,53 @@
+name: Tech debt
+description: Internal-quality work — refactor, test infrastructure, build tooling
+title: "[Tech-debt] "
+labels: ["tech-debt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for internal-quality work: refactors, test-infrastructure improvements, build-tooling cleanups, and similar contributor-friendly chores. For user-facing bugs use the Bug report template; for new features use Feature request.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the work.
+      placeholder: e.g. Consolidate Thread.Sleep literals into named TestConfig.Delay* constants
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why this matters — current friction, future risk, or the constraint it removes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Verifiable outcomes. Use a checklist.
+      placeholder: |
+        - [ ] All bare `Thread.Sleep(<literal>)` sites in PrayerApp.UITests/ are replaced with named constants
+        - [ ] UITest suite remains green on Android + iOS
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Out of scope
+      description: What this issue does NOT cover. Helps prevent scope creep in PRs.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Background / context (optional)
+      description: Links to related issues, PRs, or files that help understand the work.
+    validations:
+      required: false

@@ -22,14 +22,9 @@ public partial class BoxDetailPage : ContentPage
             // is stable when Focus() is called. Dispatcher.DispatchAsync alone resolves
             // immediately on the UI thread and fires Focus() mid-animation (BUG-70).
             // 300ms also gives ApplyQueryAttributes → LoadAsync time to populate Name
-            // for edit mode before we compute the selection length.
+            // in edit mode before focus fires.
             await Task.Delay(300);
-            if (NameEntry.Focus() && vm.IsExisting)
-            {
-                // Edit mode: select all existing text so typing replaces it cleanly.
-                NameEntry.CursorPosition = 0;
-                NameEntry.SelectionLength = NameEntry.Text?.Length ?? 0;
-            }
+            NameEntry.Focus();
         }
     }
 

@@ -38,16 +38,14 @@
                         <VerticalStackLayout Spacing="4"
                                              IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}">
                             <Label Text="Collection" Style="{StaticResource FormLabel}" />
-                            <Border Style="{StaticResource PickerField}">
-                                <Grid ColumnDefinitions="*, Auto">
-                                    <Picker ItemsSource="{Binding AvailableBoxes}"
-                                            SelectedItem="{Binding SelectedBox}"
-                                            AutomationId="Card_Picker_Box"
-                                            SemanticProperties.Hint="Choose which collection this card belongs to"
-                                            HorizontalOptions="Fill" />
-                                    <Label Style="{StaticResource PickerIndicator}" />
-                                </Grid>
-                            </Border>
+                            <Grid ColumnDefinitions="*, Auto">
+                                <Picker ItemsSource="{Binding AvailableBoxes}"
+                                        SelectedItem="{Binding SelectedBox}"
+                                        AutomationId="Card_Picker_Box"
+                                        SemanticProperties.Hint="Choose which collection this card belongs to"
+                                        HorizontalOptions="Fill" />
+                                <Label Style="{StaticResource PickerIndicator}" />
+                            </Grid>
                         </VerticalStackLayout>
 
                         <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />

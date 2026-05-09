@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Dispatching;
 using NSubstitute;
 using PrayerApp.Services;
 using PrayerApp.Shared;
@@ -14,7 +13,6 @@ public class AppGroupImportOrchestratorTests : IDisposable
     private readonly IAppGroupContainerProvider _provider = Substitute.For<IAppGroupContainerProvider>();
     private readonly IImportPayloadService _payloadService = Substitute.For<IImportPayloadService>();
     private readonly INavigationService _navigation = Substitute.For<INavigationService>();
-    private readonly IDispatcher _dispatcher = Substitute.For<IDispatcher>();
     private readonly Page _fakePage = Substitute.For<Page>();
 
     public AppGroupImportOrchestratorTests()
@@ -22,14 +20,6 @@ public class AppGroupImportOrchestratorTests : IDisposable
         _tempDir = Path.Combine(Path.GetTempPath(), $"orchestrator-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
         _provider.ResolveContainerPath().Returns(_tempDir);
-
-        // IDispatcher.Dispatch runs the action synchronously in tests so the
-        // orchestrator's await on the modal push completes deterministically.
-        _dispatcher.Dispatch(Arg.Any<Action>()).Returns(call =>
-        {
-            ((Action)call[0])();
-            return true;
-        });
     }
 
     public void Dispose()
@@ -41,7 +31,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
     private string LogPath => Path.Combine(_tempDir, AppGroupConstants.LogFileName);
 
     private AppGroupImportOrchestrator NewOrchestrator() =>
-        new(_provider, _payloadService, _navigation, _dispatcher, () => _fakePage);
+        new(_provider, _payloadService, _navigation, () => _fakePage);
 
     private static string SerializePayload(string raw) =>
         JsonSerializer.Serialize(
@@ -56,7 +46,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
         Assert.False(File.Exists(LogPath));  // no breadcrumb when no file
     }
 
@@ -69,7 +59,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.Received(1).StagePayload("Pray for Mom");
-        await _navigation.Received(1).PushModalAsync(_fakePage);
+        await _navigation.Received(1).PushModalWithNavigationBarAsync(_fakePage);
         Assert.False(File.Exists(PayloadPath));
         Assert.Contains(" ok", File.ReadAllText(LogPath));
     }
@@ -83,7 +73,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
         Assert.False(File.Exists(PayloadPath));
         Assert.Contains("parse-fail", File.ReadAllText(LogPath));
     }
@@ -97,7 +87,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
         Assert.False(File.Exists(PayloadPath));
         Assert.Contains("empty", File.ReadAllText(LogPath));
     }
@@ -124,7 +114,7 @@ public class AppGroupImportOrchestratorTests : IDisposable
         await orchestrator.CheckPendingAsync();
 
         _payloadService.DidNotReceiveWithAnyArgs().StagePayload(default!);
-        await _navigation.DidNotReceiveWithAnyArgs().PushModalAsync(default!);
+        await _navigation.DidNotReceiveWithAnyArgs().PushModalWithNavigationBarAsync(default!);
     }
 
     [Fact]
