@@ -369,11 +369,8 @@
                                Margin="0,0,6,0" />
                         <Label Grid.Column="1"
                                Text="{Binding HeaderText}"
-                               FontSize="15"
-                               FontFamily="OpenSansSemibold"
-                               AutomationProperties.IsInAccessibleTree="False"
-                               TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
-                               VerticalOptions="Center" />
+                               Style="{StaticResource CardsSectionHeader}"
+                               AutomationProperties.IsInAccessibleTree="False" />
                     </Grid>
                     <BoxView Style="{StaticResource DividerLine}" Margin="4,0"
                              AutomationProperties.IsInAccessibleTree="False" />

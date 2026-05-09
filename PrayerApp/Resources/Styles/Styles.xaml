@@ -700,6 +700,41 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
     </Style>
 
+    <!-- CardsSectionHeader: outer group header on PrayerCardsPage (e.g. "Loose Cards", "Family").
+         Issue #33 P4 — per-platform visual language.
+           iOS — UPPERCASE via Label.TextTransform, +0.6 character-spacing, 13pt;
+                 matches iOS Settings/Mail UITableView grouped section convention.
+           Android — normal-case, bold (Material 3 Title Small approximation), 13pt,
+                     no letterspacing.
+         Sized at 13pt (down from prior inline 15pt) to preserve outer > inner hierarchy
+         alongside the 12pt PickerSectionHeader used by the inner "Prayers" header. -->
+    <Style x:Key="CardsSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="CharacterSpacing">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="x:Double" Default="0">
+                    <On Platform="iOS, MacCatalyst" Value="0.6" />
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="FontAttributes">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="FontAttributes" Default="None">
+                    <On Platform="Android" Value="Bold" />
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="TextTransform">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="TextTransform" Default="None">
+                    <On Platform="iOS, MacCatalyst" Value="Uppercase" />
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- PickerRow: transparent tap-target row inside a PickerGroupCard.
          Generous padding matches iOS table row insets. No stroke (card handles border). -->
     <Style x:Key="PickerRow" TargetType="Border">
