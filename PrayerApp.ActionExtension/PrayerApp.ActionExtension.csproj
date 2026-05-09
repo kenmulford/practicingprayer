@@ -15,7 +15,7 @@
 		<ApplicationId>com.multithreadedllc.prayercards.actionextension</ApplicationId>
 		<!-- Versions must match main app or iOS refuses to load the extension. -->
 		<ApplicationDisplayVersion>1.3.3</ApplicationDisplayVersion>
-		<ApplicationVersion>108</ApplicationVersion>
+		<ApplicationVersion>109</ApplicationVersion>
 
 		<!-- Xcode 26.2 and 26.3+ have identical SDKs; skip the validation check (matches main app csproj). -->
 		<ValidateXcodeVersion>false</ValidateXcodeVersion>

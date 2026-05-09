@@ -602,6 +602,50 @@
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
     </Style>
 
+    <!-- PickerInsetSeparator: subtle inset rule between rows inside a PickerGroupCard.
+         Lighter than DividerLine (no Primary color, lower opacity) so it reads as
+         structural-only rather than branded. Left-inset 16 matches PickerRow padding. -->
+    <Style x:Key="PickerInsetSeparator" TargetType="BoxView">
+        <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}" />
+        <Setter Property="Opacity" Value="{AppThemeBinding Light=0.4, Dark=0.6}" />
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="Margin" Value="16,0,0,0" />
+        <Setter Property="HorizontalOptions" Value="Fill" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
+    </Style>
+
+    <!-- ── Picker group styles (iOS inset-grouped section pattern) ───────── -->
+
+    <!-- PickerGroupCard: rounded section card containing picker rows.
+         Matches iOS UITableView insetGrouped appearance. -->
+    <Style x:Key="PickerGroupCard" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="10" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- PickerSectionHeader: small gray label above each PickerGroupCard.
+         Approximates iOS section header — small, muted, no bold. -->
+    <Style x:Key="PickerSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="CharacterSpacing" Value="0.3" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
+    </Style>
+
+    <!-- PickerRow: transparent tap-target row inside a PickerGroupCard.
+         Generous padding matches iOS table row insets. No stroke (card handles border). -->
+    <Style x:Key="PickerRow" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Stroke" Value="Transparent" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="Padding" Value="16,13" />
+    </Style>
+
     <Style TargetType="Page" ApplyToDerivedTypes="True">
         <Setter Property="Padding" Value="0"/>
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PageLight}, Dark={StaticResource PageDark}}" />

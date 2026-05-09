@@ -175,7 +175,11 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
     public CardPickerItem? SelectedCard
     {
         get => _selectedCard;
-        set { SetProperty(ref _selectedCard, value); NotifySaveCanExecute(); }
+        set
+        {
+            if (SetProperty(ref _selectedCard, value))
+                NotifySaveCanExecute();
+        }
     }
 
     public string PrayersHeader => $"Prayers ({Prayers.Count})";
