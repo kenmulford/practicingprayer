@@ -118,7 +118,6 @@ namespace PrayerApp.ViewModels
         internal void RaiseIsExpandedChanged()
         {
             OnPropertyChanged(nameof(IsExpanded));
-            OnPropertyChanged(nameof(ShowBadge));
             OnPropertyChanged(nameof(HasAnyPrayer));
             OnPropertyChanged(nameof(ShowActionChips));
             OnPropertyChanged(nameof(AccessibleCardHeader));
@@ -213,9 +212,6 @@ namespace PrayerApp.ViewModels
                 }
             }
         }
-
-        /// <summary>Show the count badge when the card is collapsed.</summary>
-        public bool ShowBadge => !IsExpanded;
 
         /// <summary>
         /// Gates the parenthetical "(N)" prayer count Label on the collapsed card row
