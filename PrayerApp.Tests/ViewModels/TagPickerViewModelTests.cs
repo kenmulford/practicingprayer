@@ -343,6 +343,51 @@ public class TagPickerViewModelTests
     // ── DoneCommand ──────────────────────────────────────────────────
 
     [Fact]
+    public async Task DoneCommand_WithPendingText_SubmitsTagBeforeDismissing()
+    {
+        var sut = CreateSut();
+        sut.Initialize(0, MakeTags(), []);
+        sut.TagSearchText = "Worship";
+
+        await ((IAsyncRelayCommand)sut.DoneCommand).ExecuteAsync(null);
+
+        Assert.Single(sut.SelectedTags);
+        Assert.Equal("Worship", sut.SelectedTags[0].Name);
+        await _navigationService.Received(1).PopModalAsync();
+    }
+
+    [Fact]
+    public async Task DoneCommand_WithPendingNewTag_CreatesTagBeforeDismissing()
+    {
+        var newTag = new PrayerTag { Id = 99, Name = "Gratitude" };
+        _tagService.SaveTagAsync(Arg.Any<PrayerTag>()).Returns(newTag);
+
+        var sut = CreateSut();
+        sut.Initialize(0, MakeTags(), []);
+        sut.TagSearchText = "Gratitude";
+
+        await ((IAsyncRelayCommand)sut.DoneCommand).ExecuteAsync(null);
+
+        await _tagService.Received(1).SaveTagAsync(Arg.Is<PrayerTag>(t => t.Name == "Gratitude"));
+        Assert.Single(sut.SelectedTags);
+        Assert.Equal("Gratitude", sut.SelectedTags[0].Name);
+        await _navigationService.Received(1).PopModalAsync();
+    }
+
+    [Fact]
+    public async Task DoneCommand_WithWhitespaceOnly_DoesNotSubmitTag()
+    {
+        var sut = CreateSut();
+        sut.Initialize(0, MakeTags(), []);
+        sut.TagSearchText = "   ";
+
+        await ((IAsyncRelayCommand)sut.DoneCommand).ExecuteAsync(null);
+
+        Assert.Empty(sut.SelectedTags);
+        await _navigationService.Received(1).PopModalAsync();
+    }
+
+    [Fact]
     public async Task DoneCommand_DismissesModal()
     {
         var sut = CreateSut();
