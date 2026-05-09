@@ -257,7 +257,7 @@
                     Orientation="Horizontal"
                     IsVisible="{Binding HasTags}"
                     HorizontalScrollBarVisibility="Never"
-                    Margin="12,0">
+                    Margin="12,8,12,0">
             <HorizontalStackLayout
                 BindableLayout.ItemsSource="{Binding AvailableTags}"
                 Spacing="6"
