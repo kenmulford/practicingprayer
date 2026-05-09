@@ -542,28 +542,18 @@
                                         <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                     </Image.Behaviors>
                                 </Image>
-                                <!-- Active prayer count badge (collapsed only) -->
-                                <Border
+                                <!-- Active prayer count — parenthetical muted text on collapsed cards (issue #33 P3).
+                                     HasAnyPrayer hides the Label entirely when count is zero or the card is expanded. -->
+                                <Label
                                     Grid.Column="3"
-                                    IsVisible="{Binding ShowBadge}"
-                                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
-                                    StrokeShape="RoundRectangle 10"
-                                    Stroke="Transparent"
-                                    Padding="6,2"
-                                    HeightRequest="20"
-                                    MinimumWidthRequest="20"
+                                    Style="{StaticResource MutedText}"
+                                    Text="{Binding ActivePrayerCount, StringFormat='({0})'}"
+                                    IsVisible="{Binding HasAnyPrayer}"
+                                    FontSize="14"
                                     VerticalOptions="Center"
                                     HorizontalOptions="End"
                                     Margin="0,0,8,0"
-                                    AutomationProperties.IsInAccessibleTree="false">
-                                    <Label
-                                        Text="{Binding ActivePrayerCount}"
-                                        FontSize="11"
-                                        FontAttributes="Bold"
-                                        TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center" />
-                                </Border>
+                                    AutomationProperties.IsInAccessibleTree="False" />
                                 <Label
                                     Grid.Column="4"
                                     Text="★"

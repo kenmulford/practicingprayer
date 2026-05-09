@@ -119,6 +119,7 @@ namespace PrayerApp.ViewModels
         {
             OnPropertyChanged(nameof(IsExpanded));
             OnPropertyChanged(nameof(ShowBadge));
+            OnPropertyChanged(nameof(HasAnyPrayer));
             OnPropertyChanged(nameof(ShowActionChips));
             OnPropertyChanged(nameof(AccessibleCardHeader));
         }
@@ -206,6 +207,7 @@ namespace PrayerApp.ViewModels
                 if (SetProperty(ref _activePrayerCount, value))
                 {
                     OnPropertyChanged(nameof(CanShare));
+                    OnPropertyChanged(nameof(HasAnyPrayer));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
                     ((IRelayCommand)ShareCommand).NotifyCanExecuteChanged();
                 }
@@ -214,6 +216,14 @@ namespace PrayerApp.ViewModels
 
         /// <summary>Show the count badge when the card is collapsed.</summary>
         public bool ShowBadge => !IsExpanded;
+
+        /// <summary>
+        /// Gates the parenthetical "(N)" prayer count Label on the collapsed card row
+        /// (issue #33 P3). Hidden when the card has no active prayers — keeps an empty
+        /// card's title row visually clean instead of trailing a "(0)". Also gated by
+        /// !IsExpanded since the count is a collapsed-row affordance only.
+        /// </summary>
+        public bool HasAnyPrayer => !IsExpanded && ActivePrayerCount > 0;
 
         /// <summary>
         /// Composed accessible label for the card header. VoiceOver reads:

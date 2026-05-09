@@ -416,4 +416,62 @@ public class PrayerCardViewModelTests
 
         Assert.Contains(nameof(PrayerCardViewModel.CardVisualState), raised);
     }
+
+    // ── HasAnyPrayer (issue #33 P3) ────────────────────────────────────
+    // Gates the parenthetical "(N)" prayer count Label on the collapsed card row.
+    // Definition: !IsExpanded && ActivePrayerCount > 0. Without a Parent VM,
+    // IsExpanded resolves false (Parent?.ExpandedCardId == _prayerCard.Id is
+    // false on a null Parent), so the gate is purely count-driven in tests.
+
+    [Fact]
+    public void HasAnyPrayer_DefaultsToFalse()
+    {
+        var sut = CreateSut();
+        // ActivePrayerCount defaults to 0
+        Assert.False(sut.HasAnyPrayer);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_TrueWhenActiveCountAboveZero()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 3;
+
+        Assert.True(sut.HasAnyPrayer);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_FalseWhenActiveCountIsZero()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 5;
+        sut.ActivePrayerCount = 0;
+
+        Assert.False(sut.HasAnyPrayer);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_ActivePrayerCountChange_ZeroToNonZero_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.ActivePrayerCount = 4;
+
+        Assert.Contains(nameof(PrayerCardViewModel.HasAnyPrayer), raised);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_ActivePrayerCountChange_NonZeroToZero_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 2;
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.ActivePrayerCount = 0;
+
+        Assert.Contains(nameof(PrayerCardViewModel.HasAnyPrayer), raised);
+    }
 }
