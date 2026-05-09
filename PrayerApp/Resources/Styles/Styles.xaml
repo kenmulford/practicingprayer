@@ -688,8 +688,8 @@
                  dark than light per Apple Settings.app convention.
            Android — normal-case, bold (Material 3 Title Small approximation), 13pt,
                      no letterspacing.
-         Sized at 13pt (down from prior inline 15pt) to preserve outer > inner hierarchy
-         alongside the 12pt PickerSectionHeader used by the inner "Prayers" header. -->
+         Sized at 13pt to set the outer-group level; the inner expanded-card "Prayers"
+         header is 15pt Bold (UAT-8) so hierarchy reads via weight + treatment, not size. -->
     <Style x:Key="CardsSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
         <Setter Property="VerticalOptions" Value="Center" />
