@@ -211,6 +211,8 @@ public class TagPickerViewModel : ObservableObject
 
     private async Task DoneAsync()
     {
+        if (!string.IsNullOrWhiteSpace(_tagSearchText))
+            await SubmitTagEntryAsync();
         _dismissed.TrySetResult();
         await _navigationService.PopModalAsync();
     }

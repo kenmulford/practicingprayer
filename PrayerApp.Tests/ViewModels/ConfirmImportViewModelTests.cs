@@ -1200,6 +1200,33 @@ public class ConfirmImportViewModelTests
         Assert.Equal(1, fired);
     }
 
+    // ── SelectedBox persistence across mode toggle ────────────────────────
+
+    [Fact]
+    public async Task ToggleToNewCardMode_WithRealBoxSelected_PreservesSelectedBox()
+    {
+        // Arrange: boxes loaded, switch to ExistingCard, pick a non-Loose box.
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        // SelectedBox is now AllCollectionsPickerItem; pick the real Family box.
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(7, ((RealBoxPickerItem)sut.SelectedBox).BoxId);
+
+        // Act: toggle back to NewCard mode.
+        sut.SetNewCardModeCommand.Execute(null);
+
+        // Assert: SelectedBox is still the Family box, not reset to Loose Cards.
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(7, selected.BoxId);
+    }
+
     // ── Dispose idempotency ───────────────────────────────────────────────
 
     [Fact]
