@@ -356,4 +356,64 @@ public class PrayerCardViewModelTests
 
         await _cardService.Received(1).SaveCardAsync(Arg.Any<PrayerCard>());
     }
+
+    // ── CardVisualState (issue #33 P1A) ─────────────────────────────────
+    // Drives the CardStates VisualStateGroup on the cell Border.
+    // Precedence: MultiSelected > Highlighted > Normal.
+
+    [Fact]
+    public void CardVisualState_DefaultsToNormal()
+    {
+        var sut = CreateSut();
+        Assert.Equal("Normal", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_HighlightedOnly_IsHighlighted()
+    {
+        var sut = CreateSut();
+        sut.IsHighlighted = true;
+        Assert.Equal("Highlighted", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_MultiSelectedOnly_IsMultiSelected()
+    {
+        var sut = CreateSut();
+        sut.IsMultiSelected = true;
+        Assert.Equal("MultiSelected", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_BothFlags_MultiSelectedWins()
+    {
+        var sut = CreateSut();
+        sut.IsHighlighted = true;
+        sut.IsMultiSelected = true;
+        Assert.Equal("MultiSelected", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_IsHighlightedChange_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.IsHighlighted = true;
+
+        Assert.Contains(nameof(PrayerCardViewModel.CardVisualState), raised);
+    }
+
+    [Fact]
+    public void CardVisualState_IsMultiSelectedChange_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.IsMultiSelected = true;
+
+        Assert.Contains(nameof(PrayerCardViewModel.CardVisualState), raised);
+    }
 }

@@ -158,15 +158,34 @@ namespace PrayerApp.ViewModels
         public bool IsHighlighted
         {
             get => _isHighlighted;
-            set => SetProperty(ref _isHighlighted, value);
+            set
+            {
+                if (SetProperty(ref _isHighlighted, value))
+                    OnPropertyChanged(nameof(CardVisualState));
+            }
         }
 
         private bool _isMultiSelected;
         public bool IsMultiSelected
         {
             get => _isMultiSelected;
-            set => SetProperty(ref _isMultiSelected, value);
+            set
+            {
+                if (SetProperty(ref _isMultiSelected, value))
+                    OnPropertyChanged(nameof(CardVisualState));
+            }
         }
+
+        /// <summary>
+        /// Drives the <c>CardStates</c> <see cref="Microsoft.Maui.Controls.VisualStateGroup"/>
+        /// on the cell <c>Border</c> via <see cref="PrayerApp.Behaviors.VisualStateBindingBehavior"/>.
+        /// Precedence: <c>MultiSelected</c> &gt; <c>Highlighted</c> &gt; <c>Normal</c>
+        /// (matches the prior DataTrigger ordering on PrayerCardsPage).
+        /// </summary>
+        public string CardVisualState =>
+            IsMultiSelected ? "MultiSelected"
+            : IsHighlighted ? "Highlighted"
+            : "Normal";
 
         // Mirrored from PrayerCardsViewModel.IsMultiSelectMode so the card check slot
         // in the DataTemplate can bind directly (CollectionView DataTemplate NameScope

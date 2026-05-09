@@ -4,6 +4,7 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
+             xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
              x:DataType="viewModels:PrayerCardsViewModel"
@@ -460,9 +461,8 @@
                             Style="{StaticResource PrayerCardBorder}"
                             Padding="0"
                             Margin="{StaticResource CardContentLeftInsetMargin}"
-                            StrokeThickness="0"
+                            behaviors:VisualStateBindingBehavior.Source="{Binding CardVisualState}"
                             Loaded="OnCardBorderLoaded">
-                        <!-- Task 1A coordination: remove this inline once IsHighlighted/IsMultiSelected triggers migrate to CardStates VSM (style is now StrokeThickness=0 default). -->
                         <!-- Margin default matches the collapsed state so first-Loaded in
                              OnCardBorderLoaded doesn't write the property — every Margin
                              write invalidates parent layout, which on Android schedules
@@ -471,11 +471,6 @@
                              Expanded state (0,8) is set by code-behind only when needed,
                              then animated by AnimateCardMargin on user-driven toggles. -->
                         <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
-                                <Setter Property="Stroke" Value="{AppThemeBinding
-                                    Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
-                                <Setter Property="StrokeThickness" Value="2.5" />
-                            </DataTrigger>
                             <!-- Expanded cards get a subtle "lifted paper" shadow. iOS Shadow rendering
                                  can be uneven — keep it soft so absence isn't visually jarring. -->
                             <DataTrigger TargetType="Border" Binding="{Binding IsExpanded}" Value="True">
@@ -497,11 +492,6 @@
                             <DataTrigger TargetType="Border" Binding="{Binding IsSystem}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{AppThemeBinding
                                     Light={StaticResource SystemCardLight}, Dark={StaticResource SystemCardDark}}" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsMultiSelected}" Value="True">
-                                <Setter Property="Stroke" Value="{AppThemeBinding
-                                    Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                <Setter Property="StrokeThickness" Value="2.5" />
                             </DataTrigger>
                         </Border.Triggers>
                         <!-- BUG-60: Long-press wired in code-behind — iOS via OnCardBorderLoaded, Android via OnCardHeaderLoaded -->
