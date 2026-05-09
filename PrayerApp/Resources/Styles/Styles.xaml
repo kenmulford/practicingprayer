@@ -647,28 +647,7 @@
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
     </Style>
 
-    <!-- PrayerListCard: rounded inset container for prayer rows within an expanded card.
-         8px corner radius matches PrayerCardBorder; 1px stroke distinguishes it from the
-         outer card. Background uses the PrayerListBg semantic color so it sits visually
-         between CardLight and PageLight. -->
-    <Style x:Key="PrayerListCard" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PrayerListBgLight}, Dark={StaticResource PrayerListBgDark}}" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="8" />
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Margin" Value="8,0,8,0" />
-        <Setter Property="Shadow">
-            <Setter.Value>
-                <Shadow Brush="Black" Offset="0,1" Radius="2" Opacity="0.06" />
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- PrayerRow: transparent row inside a PrayerListCard. The card handles
+    <!-- PrayerRow: transparent row inside an expanded prayer card. The card handles
          background color; rows are tap targets only. -->
     <Style x:Key="PrayerRow" TargetType="Border">
         <Setter Property="BackgroundColor" Value="Transparent" />

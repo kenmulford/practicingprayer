@@ -174,8 +174,8 @@
                     Margin="4,8,0,4"
                     AutomationProperties.IsInAccessibleTree="False" />
                 <!-- Issue #33 P2: prayer rows sit directly on the expanded card's
-                     CardExpandedLight/Dark background; PickerInsetSeparator delineates rows.
-                     Margin preserves the horizontal inset PrayerListCard provided. -->
+                     CardExpandedLight/Dark background; PickerInsetSeparator delineates
+                     rows. 8pt horizontal margin keeps rows inset from the card edge. -->
                 <VerticalStackLayout
                     Spacing="0"
                     IsVisible="{Binding IsExpanded}"
@@ -462,13 +462,12 @@
                             Margin="{StaticResource CardContentLeftInsetMargin}"
                             behaviors:VisualStateBindingBehavior.Source="{Binding CardVisualState}"
                             Loaded="OnCardBorderLoaded">
-                        <!-- Margin default matches the collapsed state so first-Loaded in
-                             OnCardBorderLoaded doesn't write the property — every Margin
-                             write invalidates parent layout, which on Android schedules
-                             the next measure pass, which loads the next cell, etc. (The
-                             cascade source confirmed by PERF-10 probes 2026-04-26.)
-                             Expanded state (0,8) is set by code-behind only when needed,
-                             then animated by AnimateCardMargin on user-driven toggles. -->
+                        <!-- Inline Margin default matches the collapsed state so the
+                             IsExpanded DataTrigger below is the sole writer on transition.
+                             Every Margin write invalidates parent layout, which on Android
+                             schedules the next measure pass, which loads the next cell,
+                             etc. — keeping the default aligned with collapsed avoids a
+                             trigger-fire cascade on first realization (PERF-10, 2026-04-26). -->
                         <Border.Triggers>
                             <!-- Expanded cards get a subtle "lifted paper" shadow. iOS Shadow rendering
                                  can be uneven — keep it soft so absence isn't visually jarring. -->
