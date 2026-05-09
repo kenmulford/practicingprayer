@@ -166,55 +166,51 @@
                 </HorizontalStackLayout>
 
                 <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
-                <VerticalStackLayout
+                <Label
+                    Text="Prayers"
+                    Style="{StaticResource PickerSectionHeader}"
                     IsVisible="{Binding IsExpanded}"
-                    Spacing="0"
-                    BindableLayout.ItemsSource="{Binding Prayers}">
-                    <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
-                            <VerticalStackLayout Spacing="0">
-                                <Grid
-                                    Padding="16,10,12,10"
-                                    ColumnDefinitions="*,Auto,Auto"
-                                    SemanticProperties.Description="{Binding AccessibleSummary}">
-                                    <Grid.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
-                                    </Grid.GestureRecognizers>
-                                    <Label
-                                        Text="{Binding Title}"
-                                        FontSize="16"
-                                        AutomationProperties.IsInAccessibleTree="False"
-                                        TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
-                                        TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
-                                        VerticalOptions="Center" />
-                                    <Image
-                                        Grid.Column="1"
-                                        Source="imported.png"
-                                        HeightRequest="16"
-                                        WidthRequest="16"
-                                        IsVisible="{Binding IsImported}"
-                                        VerticalOptions="Center"
-                                        Margin="4,0"
-                                        AutomationProperties.IsInAccessibleTree="False">
-                                        <Image.Behaviors>
-                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                        </Image.Behaviors>
-                                    </Image>
-                                    <Label
-                                        Grid.Column="2"
-                                        Text="{Binding AnsweredAtDisplay}"
-                                        Style="{StaticResource SuccessBadge}"
-                                        IsVisible="{Binding IsAnswered}"
-                                        VerticalOptions="Start"
-                                        Margin="6,0,0,0"
-                                        AutomationProperties.IsInAccessibleTree="False" />
-                                </Grid>
-                                <BoxView Style="{StaticResource PickerInsetSeparator}"
-                                         AutomationProperties.IsInAccessibleTree="False" />
-                            </VerticalStackLayout>
-                        </DataTemplate>
-                    </BindableLayout.ItemTemplate>
-                </VerticalStackLayout>
+                    Margin="4,8,0,4"
+                    AutomationProperties.IsInAccessibleTree="False" />
+                <Border Style="{StaticResource PrayerListCard}"
+                        IsVisible="{Binding IsExpanded}">
+                    <VerticalStackLayout
+                        Spacing="0"
+                        BindableLayout.ItemsSource="{Binding Prayers}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
+                                <VerticalStackLayout Spacing="0">
+                                    <Border Style="{StaticResource PrayerRow}"
+                                            SemanticProperties.Description="{Binding AccessibleSummary}">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
+                                        </Border.GestureRecognizers>
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <Label
+                                                Grid.Column="0"
+                                                Text="{Binding Title}"
+                                                FontSize="16"
+                                                AutomationProperties.IsInAccessibleTree="False"
+                                                TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                                                TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                                                VerticalOptions="Center" />
+                                            <Label
+                                                Grid.Column="1"
+                                                Text="{Binding AnsweredAtDisplay}"
+                                                Style="{StaticResource SuccessBadge}"
+                                                IsVisible="{Binding IsAnswered}"
+                                                VerticalOptions="Start"
+                                                Margin="6,0,0,0"
+                                                AutomationProperties.IsInAccessibleTree="False" />
+                                        </Grid>
+                                    </Border>
+                                    <BoxView Style="{StaticResource PickerInsetSeparator}"
+                                             AutomationProperties.IsInAccessibleTree="False" />
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </Border>
 
                 <Button
                     Text="+ Add prayer ›"
@@ -222,13 +218,13 @@
                     IsVisible="{Binding IsExpanded}"
                     AutomationId="Cards_Btn_AddPrayer"
                     SemanticProperties.Hint="Add a new prayer request to this card"
-                    FontSize="14"
+                    FontSize="17"
                     TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                     BackgroundColor="Transparent"
                     FontAttributes="Bold"
                     Padding="16,8,12,10"
                     BorderWidth="0"
-                    HorizontalOptions="Start" />
+                    HorizontalOptions="Center" />
 
             </VerticalStackLayout>
         </DataTemplate>
