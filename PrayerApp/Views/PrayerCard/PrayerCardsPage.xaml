@@ -422,9 +422,10 @@
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
 
-                <!-- Inter-cell separator (issue #33 P1); hidden when expanded so the lifted-card shadow reads cleanly. -->
-                <Grid RowDefinitions="*,Auto">
-                <Grid ColumnDefinitions="Auto,*">
+                <!-- Inter-cell separator (issue #33 P1); hidden when expanded so the lifted-card shadow reads cleanly.
+                     Single Grid combines multi-select shifter columns (Auto,*) with row 1 separator slot —
+                     keeps the cell-template container chain at dev-baseline depth (no wrapper Grid). -->
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,Auto">
                     <!-- Check slot (outside the card). Aligned with header row center via Margin top.
                          Source swaps based on per-card IsMultiSelected; tint reinforces state.
                          IsInAccessibleTree=False — selection state is announced via the header's
@@ -582,16 +583,18 @@
 
                         </VerticalStackLayout>
                     </Border>
-                </Grid>
-                <BoxView Grid.Row="1"
-                         Style="{StaticResource PickerInsetSeparator}"
-                         Margin="{StaticResource CardContentLeftInsetMargin}">
-                    <BoxView.Triggers>
-                        <DataTrigger TargetType="BoxView" Binding="{Binding IsExpanded}" Value="True">
-                            <Setter Property="IsVisible" Value="False" />
-                        </DataTrigger>
-                    </BoxView.Triggers>
-                </BoxView>
+                    <!-- Inter-cell separator at row 1; spans both Grid columns so the line crosses the
+                         multi-select gutter when collapsed. The Margin's left inset still pulls the visible
+                         line back from the cell edge to align with card content. -->
+                    <BoxView Grid.Row="1" Grid.ColumnSpan="2"
+                             Style="{StaticResource PickerInsetSeparator}"
+                             Margin="{StaticResource CardContentLeftInsetMargin}">
+                        <BoxView.Triggers>
+                            <DataTrigger TargetType="BoxView" Binding="{Binding IsExpanded}" Value="True">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </BoxView.Triggers>
+                    </BoxView>
                 </Grid>
 
             </DataTemplate>
