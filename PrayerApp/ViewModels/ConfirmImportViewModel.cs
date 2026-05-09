@@ -138,13 +138,17 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         else
         {
             AvailableBoxes.Remove(AllCollectionsPickerItem.Instance);
-            // Restore Loose Cards as the NewCard default — a saved card
-            // needs a real BoxId, and Loose Cards (0) is the safe baseline.
-            var looseCards = AvailableBoxes
-                .OfType<RealBoxPickerItem>()
-                .FirstOrDefault(b => b.BoxId == 0);
-            if (looseCards is not null)
-                SelectedBox = looseCards;
+            // Guard: only reset when the sentinel was selected. Real box
+            // selections survive the toggle — SaveAsync's RealBoxPickerItem
+            // guard assigns BoxId correctly for any real box.
+            if (SelectedBox is not RealBoxPickerItem)
+            {
+                var looseCards = AvailableBoxes
+                    .OfType<RealBoxPickerItem>()
+                    .FirstOrDefault(b => b.BoxId == 0);
+                if (looseCards is not null)
+                    SelectedBox = looseCards;
+            }
             AvailableCardGroups.Clear();
         }
     }
