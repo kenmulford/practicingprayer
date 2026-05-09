@@ -479,7 +479,7 @@ public class PrayerCardViewModelTests
     // Inner expanded-card "Prayers" header display string. Returns "Prayers"
     // when ActivePrayerCount==0 (clean affordance on an empty card) and
     // "Prayers (N)" when there are active prayers. PropertyChanged fires
-    // from the ActivePrayerCount setter and from RaiseIsExpandedChanged().
+    // from the ActivePrayerCount setter (the real dependency edge).
 
     [Fact]
     public void PrayersHeader_DefaultsToPlainPrayers()
@@ -522,17 +522,5 @@ public class PrayerCardViewModelTests
 
         Assert.Contains(nameof(PrayerCardViewModel.PrayersHeader), raised);
         Assert.Equal("Prayers", sut.PrayersHeader);
-    }
-
-    [Fact]
-    public void PrayersHeader_RaiseIsExpandedChanged_RaisesPropertyChanged()
-    {
-        var sut = CreateSut();
-        var raised = new List<string?>();
-        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
-
-        sut.RaiseIsExpandedChanged();
-
-        Assert.Contains(nameof(PrayerCardViewModel.PrayersHeader), raised);
     }
 }

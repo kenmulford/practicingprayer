@@ -121,7 +121,6 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(HasAnyPrayer));
             OnPropertyChanged(nameof(ShowActionChips));
             OnPropertyChanged(nameof(AccessibleCardHeader));
-            OnPropertyChanged(nameof(PrayersHeader));
         }
 
         public bool IsSystem => _prayerCard.IsSystem;
