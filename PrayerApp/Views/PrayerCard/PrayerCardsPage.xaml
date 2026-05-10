@@ -6,6 +6,7 @@
              xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
              xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
@@ -248,9 +249,8 @@
                    Placeholder="Search cards..."
                    SearchButtonPressed="OnSearchButtonPressed"
                    SemanticProperties.Hint="Search prayer cards by name"
-                   BackgroundColor="{OnPlatform iOS=Transparent,
-                                                MacCatalyst=Transparent,
-                                                Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
+                   ios:SearchBar.SearchBarStyle="Minimal"
+                   BackgroundColor="{OnPlatform Default=Transparent, Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
         <!-- Tag filter chips -->
         <ScrollView Grid.Row="1"
