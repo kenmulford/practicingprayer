@@ -447,15 +447,43 @@
     </Style>
     -->
 
-    <!-- Named style for all prayer card Borders — CardLight bg (light) / CardDark bg (dark),
-         8px corners. Set Padding inline on each usage site; all other appearance props come from here. -->
+    <!-- Visual chrome strip-back (issue #33 P1 + P1A): no default Stroke/StrokeThickness;
+         state cues (IsHighlighted, IsMultiSelected) flow through the CardStates VSM group
+         below, driven by PrayerCardViewModel.CardVisualState via VisualStateBindingBehavior.
+         Borders are surface-only at rest; Normal is the sole writer of StrokeThickness=0.
+         Set Padding inline on each usage site; all other appearance props come from here. -->
     <Style x:Key="PrayerCardBorder" TargetType="Border">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="8" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <Setter.Value>
+                <VisualStateGroupList>
+                    <VisualStateGroup x:Name="CardStates">
+                        <VisualState x:Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="Stroke" Value="Transparent" />
+                                <Setter Property="StrokeThickness" Value="0" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState x:Name="Highlighted">
+                            <VisualState.Setters>
+                                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState x:Name="MultiSelected">
+                            <VisualState.Setters>
+                                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
             </Setter.Value>
         </Setter>
     </Style>
@@ -602,6 +630,11 @@
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
     </Style>
 
+    <!-- CardContentLeftInsetMargin: shared 14pt left inset that aligns content with the
+         cell-Border left edge on PrayerCardsPage (cell Border at PrayerCardsPage.xaml:470
+         and the inter-cell separator below it both reference this). Issue #33 P1. -->
+    <Thickness x:Key="CardContentLeftInsetMargin">14,0,0,0</Thickness>
+
     <!-- PickerInsetSeparator: subtle inset rule between rows inside a PickerGroupCard.
          Lighter than DividerLine (no Primary color, lower opacity) so it reads as
          structural-only rather than branded. Left-inset 16 matches PickerRow padding. -->
@@ -614,28 +647,7 @@
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
     </Style>
 
-    <!-- PrayerListCard: rounded inset container for prayer rows within an expanded card.
-         8px corner radius matches PrayerCardBorder; 1px stroke distinguishes it from the
-         outer card. Background uses the PrayerListBg semantic color so it sits visually
-         between CardLight and PageLight. -->
-    <Style x:Key="PrayerListCard" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PrayerListBgLight}, Dark={StaticResource PrayerListBgDark}}" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="8" />
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Margin" Value="8,0,8,0" />
-        <Setter Property="Shadow">
-            <Setter.Value>
-                <Shadow Brush="Black" Offset="0,1" Radius="2" Opacity="0.06" />
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- PrayerRow: transparent row inside a PrayerListCard. The card handles
+    <!-- PrayerRow: transparent row inside an expanded prayer card. The card handles
          background color; rows are tap targets only. -->
     <Style x:Key="PrayerRow" TargetType="Border">
         <Setter Property="BackgroundColor" Value="Transparent" />
@@ -664,7 +676,45 @@
     <Style x:Key="PickerSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="CharacterSpacing" Value="0.3" />
-        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+    </Style>
+
+    <!-- CardsSectionHeader: outer group header on PrayerCardsPage (e.g. "Loose Cards", "Family").
+         Issue #33 P4 — per-platform visual language.
+           iOS — UPPERCASE via Label.TextTransform, +0.3 character-spacing, 13pt;
+                 matches iOS Settings/Mail UITableView grouped section convention.
+                 Tightened from 0.6 → 0.3 (issue #33 UAT-9) to reduce small-caps + tracking
+                 shimmer on dark backgrounds; uppercase group labels carry less tracking on
+                 dark than light per Apple Settings.app convention.
+           Android — normal-case, bold (Material 3 Title Small approximation), 13pt,
+                     no letterspacing.
+         Sized at 13pt to set the outer-group level; the inner expanded-card "Prayers"
+         header is 15pt Bold (UAT-8) so hierarchy reads via weight + treatment, not size. -->
+    <Style x:Key="CardsSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="CharacterSpacing">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="x:Double" Default="0">
+                    <On Platform="iOS, MacCatalyst" Value="0.3" />
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="FontAttributes">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="FontAttributes" Default="None">
+                    <On Platform="Android" Value="Bold" />
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="TextTransform">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="TextTransform" Default="None">
+                    <On Platform="iOS, MacCatalyst" Value="Uppercase" />
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- PickerRow: transparent tap-target row inside a PickerGroupCard.

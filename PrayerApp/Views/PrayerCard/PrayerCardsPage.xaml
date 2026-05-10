@@ -4,7 +4,9 @@
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
              xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
+             xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
@@ -167,50 +169,53 @@
 
                 <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
                 <Label
-                    Text="Prayers"
-                    Style="{StaticResource PickerSectionHeader}"
+                    Text="{Binding PrayersHeader}"
+                    AutomationId="Card_PrayersHeader"
+                    Style="{StaticResource CardsSectionHeader}"
+                    SemanticProperties.HeadingLevel="Level2"
                     IsVisible="{Binding IsExpanded}"
-                    Margin="4,8,0,4"
-                    AutomationProperties.IsInAccessibleTree="False" />
-                <Border Style="{StaticResource PrayerListCard}"
-                        IsVisible="{Binding IsExpanded}">
-                    <VerticalStackLayout
-                        Spacing="0"
-                        BindableLayout.ItemsSource="{Binding Prayers}">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
-                                <VerticalStackLayout Spacing="0">
-                                    <Border Style="{StaticResource PrayerRow}"
-                                            SemanticProperties.Description="{Binding AccessibleSummary}">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
-                                        </Border.GestureRecognizers>
-                                        <Grid ColumnDefinitions="*, Auto">
-                                            <Label
-                                                Grid.Column="0"
-                                                Text="{Binding Title}"
-                                                FontSize="16"
-                                                AutomationProperties.IsInAccessibleTree="False"
-                                                TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
-                                                TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
-                                                VerticalOptions="Center" />
-                                            <Label
-                                                Grid.Column="1"
-                                                Text="{Binding AnsweredAtDisplay}"
-                                                Style="{StaticResource SuccessBadge}"
-                                                IsVisible="{Binding IsAnswered}"
-                                                VerticalOptions="Start"
-                                                Margin="6,0,0,0"
-                                                AutomationProperties.IsInAccessibleTree="False" />
-                                        </Grid>
-                                    </Border>
-                                    <BoxView Style="{StaticResource PickerInsetSeparator}"
-                                             AutomationProperties.IsInAccessibleTree="False" />
-                                </VerticalStackLayout>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </VerticalStackLayout>
-                </Border>
+                    Margin="24,8,0,4" />
+                <!-- Issue #33 P2: prayer rows sit directly on the expanded card's
+                     CardExpandedLight/Dark background; PickerInsetSeparator delineates
+                     rows. 8pt horizontal margin keeps rows inset from the card edge. -->
+                <VerticalStackLayout
+                    Spacing="0"
+                    IsVisible="{Binding IsExpanded}"
+                    Margin="8,0,8,0"
+                    BindableLayout.ItemsSource="{Binding Prayers}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:PrayerRequestDetailViewModel">
+                            <VerticalStackLayout Spacing="0">
+                                <Border Style="{StaticResource PrayerRow}"
+                                        SemanticProperties.Description="{Binding AccessibleSummary}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <Label
+                                            Grid.Column="0"
+                                            Text="{Binding Title}"
+                                            FontSize="16"
+                                            AutomationProperties.IsInAccessibleTree="False"
+                                            TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                                            TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                                            VerticalOptions="Center" />
+                                        <Label
+                                            Grid.Column="1"
+                                            Text="{Binding AnsweredAtDisplay}"
+                                            Style="{StaticResource SuccessBadge}"
+                                            IsVisible="{Binding IsAnswered}"
+                                            VerticalOptions="Start"
+                                            Margin="6,0,0,0"
+                                            AutomationProperties.IsInAccessibleTree="False" />
+                                    </Grid>
+                                </Border>
+                                <BoxView Style="{StaticResource PickerInsetSeparator}"
+                                         AutomationProperties.IsInAccessibleTree="False" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
 
                 <Button
                     Text="+ Add prayer ›"
@@ -242,14 +247,15 @@
                    Placeholder="Search cards..."
                    SearchButtonPressed="OnSearchButtonPressed"
                    SemanticProperties.Hint="Search prayer cards by name"
-                   BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark=Transparent}" />
+                   ios:SearchBar.SearchBarStyle="Minimal"
+                   BackgroundColor="{OnPlatform Default=Transparent, Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
         <!-- Tag filter chips -->
         <ScrollView Grid.Row="1"
                     Orientation="Horizontal"
                     IsVisible="{Binding HasTags}"
                     HorizontalScrollBarVisibility="Never"
-                    Margin="12,0">
+                    Margin="12,8,12,0">
             <HorizontalStackLayout
                 BindableLayout.ItemsSource="{Binding AvailableTags}"
                 Spacing="6"
@@ -366,13 +372,10 @@
                                Margin="0,0,6,0" />
                         <Label Grid.Column="1"
                                Text="{Binding HeaderText}"
-                               FontSize="15"
-                               FontFamily="OpenSansSemibold"
-                               AutomationProperties.IsInAccessibleTree="False"
-                               TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
-                               VerticalOptions="Center" />
+                               Style="{StaticResource CardsSectionHeader}"
+                               AutomationProperties.IsInAccessibleTree="False" />
                     </Grid>
-                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0"
+                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0,4,8"
                              AutomationProperties.IsInAccessibleTree="False" />
                 </VerticalStackLayout>
             </DataTemplate>
@@ -422,12 +425,10 @@
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="viewModels:PrayerCardViewModel">
 
-                <!-- Card body — inline action buttons replace SwipeView for reliability on iOS -->
-                <!-- UX-32: Left indent reinforces nesting under section headers -->
-                <!-- Multi-select: outer Grid reserves col 0 for the check so the ENTIRE Border shifts
-                     right (header + chips + prayer list), matching the iOS Mail pattern. When
-                     IsMultiSelectMode is False, the check is hidden and col 0 collapses to 0 width. -->
-                <Grid ColumnDefinitions="Auto,*">
+                <!-- Inter-cell separator (issue #33 P1); hidden when expanded so the lifted-card shadow reads cleanly.
+                     Single Grid combines multi-select shifter columns (Auto,*) with row 1 separator slot —
+                     keeps the cell-template container chain at dev-baseline depth (no wrapper Grid). -->
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="*,Auto">
                     <!-- Check slot (outside the card). Aligned with header row center via Margin top.
                          Source swaps based on per-card IsMultiSelected; tint reinforces state.
                          IsInAccessibleTree=False — selection state is announced via the header's
@@ -462,22 +463,16 @@
                     <Border Grid.Column="1"
                             Style="{StaticResource PrayerCardBorder}"
                             Padding="0"
-                            Margin="14,0,0,0"
-                            StrokeThickness="0"
+                            Margin="{StaticResource CardContentLeftInsetMargin}"
+                            behaviors:VisualStateBindingBehavior.Source="{Binding CardVisualState}"
                             Loaded="OnCardBorderLoaded">
-                        <!-- Margin default matches the collapsed state so first-Loaded in
-                             OnCardBorderLoaded doesn't write the property — every Margin
-                             write invalidates parent layout, which on Android schedules
-                             the next measure pass, which loads the next cell, etc. (The
-                             cascade source confirmed by PERF-10 probes 2026-04-26.)
-                             Expanded state (0,8) is set by code-behind only when needed,
-                             then animated by AnimateCardMargin on user-driven toggles. -->
+                        <!-- Inline Margin default matches the collapsed state so the
+                             IsExpanded DataTrigger below is the sole writer on transition.
+                             Every Margin write invalidates parent layout, which on Android
+                             schedules the next measure pass, which loads the next cell,
+                             etc. — keeping the default aligned with collapsed avoids a
+                             trigger-fire cascade on first realization (PERF-10, 2026-04-26). -->
                         <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsHighlighted}" Value="True">
-                                <Setter Property="Stroke" Value="{AppThemeBinding
-                                    Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
-                                <Setter Property="StrokeThickness" Value="2.5" />
-                            </DataTrigger>
                             <!-- Expanded cards get a subtle "lifted paper" shadow. iOS Shadow rendering
                                  can be uneven — keep it soft so absence isn't visually jarring. -->
                             <DataTrigger TargetType="Border" Binding="{Binding IsExpanded}" Value="True">
@@ -499,11 +494,6 @@
                             <DataTrigger TargetType="Border" Binding="{Binding IsSystem}" Value="True">
                                 <Setter Property="BackgroundColor" Value="{AppThemeBinding
                                     Light={StaticResource SystemCardLight}, Dark={StaticResource SystemCardDark}}" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsMultiSelected}" Value="True">
-                                <Setter Property="Stroke" Value="{AppThemeBinding
-                                    Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                                <Setter Property="StrokeThickness" Value="2.5" />
                             </DataTrigger>
                         </Border.Triggers>
                         <!-- BUG-60: Long-press wired in code-behind — iOS via OnCardBorderLoaded, Android via OnCardHeaderLoaded -->
@@ -552,28 +542,18 @@
                                         <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                                     </Image.Behaviors>
                                 </Image>
-                                <!-- Active prayer count badge (collapsed only) -->
-                                <Border
+                                <!-- Active prayer count — parenthetical muted text on collapsed cards (issue #33 P3).
+                                     HasAnyPrayer hides the Label entirely when count is zero or the card is expanded. -->
+                                <Label
                                     Grid.Column="3"
-                                    IsVisible="{Binding ShowBadge}"
-                                    BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
-                                    StrokeShape="RoundRectangle 10"
-                                    Stroke="Transparent"
-                                    Padding="6,2"
-                                    HeightRequest="20"
-                                    MinimumWidthRequest="20"
+                                    Style="{StaticResource MutedText}"
+                                    Text="{Binding ActivePrayerCount, StringFormat='({0})'}"
+                                    IsVisible="{Binding HasAnyPrayer}"
+                                    FontSize="14"
                                     VerticalOptions="Center"
                                     HorizontalOptions="End"
                                     Margin="0,0,8,0"
-                                    AutomationProperties.IsInAccessibleTree="false">
-                                    <Label
-                                        Text="{Binding ActivePrayerCount}"
-                                        FontSize="11"
-                                        FontAttributes="Bold"
-                                        TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center" />
-                                </Border>
+                                    AutomationProperties.IsInAccessibleTree="False" />
                                 <Label
                                     Grid.Column="4"
                                     Text="★"
@@ -606,6 +586,18 @@
 
                         </VerticalStackLayout>
                     </Border>
+                    <!-- Inter-cell separator at row 1; spans both Grid columns so the line crosses the
+                         multi-select gutter when collapsed. The Margin's left inset still pulls the visible
+                         line back from the cell edge to align with card content. -->
+                    <BoxView Grid.Row="1" Grid.ColumnSpan="2"
+                             Style="{StaticResource PickerInsetSeparator}"
+                             Margin="{StaticResource CardContentLeftInsetMargin}">
+                        <BoxView.Triggers>
+                            <DataTrigger TargetType="BoxView" Binding="{Binding IsExpanded}" Value="True">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </BoxView.Triggers>
+                    </BoxView>
                 </Grid>
 
             </DataTemplate>

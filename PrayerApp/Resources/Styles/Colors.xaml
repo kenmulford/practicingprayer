@@ -43,13 +43,9 @@
     <Color x:Key="CardBorderDark">#2a2e26</Color>
     <Color x:Key="SystemCardLight">#F0F3EC</Color>
     <Color x:Key="SystemCardDark">#1e201b</Color>
-    <!-- Inset background for prayer request rows within expanded cards.
-         Distinct from CardLight (not pure white) without washing out to PageLight. -->
-    <Color x:Key="PrayerListBgLight">#F0F3EC</Color>
-    <Color x:Key="PrayerListBgDark">#4D4F4A</Color>
     <!-- Expanded (active) prayer card — subtle "lifted paper" tint used with a soft Shadow -->
     <Color x:Key="CardExpandedLight">#FFFAF0</Color>
-    <Color x:Key="CardExpandedDark">#20221D</Color>
+    <Color x:Key="CardExpandedDark">#2A2820</Color>
 
     <!-- Action chip backgrounds -->
     <Color x:Key="ChipBgLight">#F0F0F0</Color>

@@ -117,8 +117,13 @@ namespace PrayerApp.ViewModels
         // card (expand). All derived projections re-raise here.
         internal void RaiseIsExpandedChanged()
         {
+            // INTENTIONAL — skip-3 design (PR #37 corrections, commit ac5afe2):
+            // PrayersHeader recomputes via the ActivePrayerCount setter's notify chain.
+            // Do NOT add OnPropertyChanged(nameof(PrayersHeader)) here — that defensive
+            // notify was the marginal no-op flagged by /simplify and removed by user
+            // override. Re-adding it would re-introduce dead code without fixing anything.
             OnPropertyChanged(nameof(IsExpanded));
-            OnPropertyChanged(nameof(ShowBadge));
+            OnPropertyChanged(nameof(HasAnyPrayer));
             OnPropertyChanged(nameof(ShowActionChips));
             OnPropertyChanged(nameof(AccessibleCardHeader));
         }
@@ -158,15 +163,34 @@ namespace PrayerApp.ViewModels
         public bool IsHighlighted
         {
             get => _isHighlighted;
-            set => SetProperty(ref _isHighlighted, value);
+            set
+            {
+                if (SetProperty(ref _isHighlighted, value))
+                    OnPropertyChanged(nameof(CardVisualState));
+            }
         }
 
         private bool _isMultiSelected;
         public bool IsMultiSelected
         {
             get => _isMultiSelected;
-            set => SetProperty(ref _isMultiSelected, value);
+            set
+            {
+                if (SetProperty(ref _isMultiSelected, value))
+                    OnPropertyChanged(nameof(CardVisualState));
+            }
         }
+
+        /// <summary>
+        /// Drives the <c>CardStates</c> <see cref="Microsoft.Maui.Controls.VisualStateGroup"/>
+        /// on the cell <c>Border</c> via <see cref="PrayerApp.Behaviors.VisualStateBindingBehavior"/>.
+        /// Precedence: <c>MultiSelected</c> &gt; <c>Highlighted</c> &gt; <c>Normal</c>
+        /// (matches the prior DataTrigger ordering on PrayerCardsPage).
+        /// </summary>
+        public string CardVisualState =>
+            IsMultiSelected ? "MultiSelected"
+            : IsHighlighted ? "Highlighted"
+            : "Normal";
 
         // Mirrored from PrayerCardsViewModel.IsMultiSelectMode so the card check slot
         // in the DataTemplate can bind directly (CollectionView DataTemplate NameScope
@@ -187,14 +211,30 @@ namespace PrayerApp.ViewModels
                 if (SetProperty(ref _activePrayerCount, value))
                 {
                     OnPropertyChanged(nameof(CanShare));
+                    OnPropertyChanged(nameof(HasAnyPrayer));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
+                    OnPropertyChanged(nameof(PrayersHeader));
                     ((IRelayCommand)ShareCommand).NotifyCanExecuteChanged();
                 }
             }
         }
 
-        /// <summary>Show the count badge when the card is collapsed.</summary>
-        public bool ShowBadge => !IsExpanded;
+        /// <summary>
+        /// Gates the parenthetical "(N)" prayer count Label on the collapsed card row
+        /// (issue #33 P3). Hidden when the card has no active prayers — keeps an empty
+        /// card's title row visually clean instead of trailing a "(0)". Also gated by
+        /// !IsExpanded since the count is a collapsed-row affordance only.
+        /// </summary>
+        public bool HasAnyPrayer => !IsExpanded && ActivePrayerCount > 0;
+
+        /// <summary>
+        /// Display string for the inner "Prayers" section header inside an expanded card
+        /// (issue #33 UAT-8). Returns "Prayers" when ActivePrayerCount is zero (clean
+        /// affordance on an empty card) and "Prayers (N)" when there are active prayers.
+        /// Mirrors ConfirmImportViewModel.PrayersHeader semantic for cross-page consistency.
+        /// </summary>
+        public string PrayersHeader =>
+            ActivePrayerCount > 0 ? $"Prayers ({ActivePrayerCount})" : "Prayers";
 
         /// <summary>
         /// Composed accessible label for the card header. VoiceOver reads:

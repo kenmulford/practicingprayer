@@ -356,4 +356,171 @@ public class PrayerCardViewModelTests
 
         await _cardService.Received(1).SaveCardAsync(Arg.Any<PrayerCard>());
     }
+
+    // ── CardVisualState (issue #33 P1A) ─────────────────────────────────
+    // Drives the CardStates VisualStateGroup on the cell Border.
+    // Precedence: MultiSelected > Highlighted > Normal.
+
+    [Fact]
+    public void CardVisualState_DefaultsToNormal()
+    {
+        var sut = CreateSut();
+        Assert.Equal("Normal", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_HighlightedOnly_IsHighlighted()
+    {
+        var sut = CreateSut();
+        sut.IsHighlighted = true;
+        Assert.Equal("Highlighted", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_MultiSelectedOnly_IsMultiSelected()
+    {
+        var sut = CreateSut();
+        sut.IsMultiSelected = true;
+        Assert.Equal("MultiSelected", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_BothFlags_MultiSelectedWins()
+    {
+        var sut = CreateSut();
+        sut.IsHighlighted = true;
+        sut.IsMultiSelected = true;
+        Assert.Equal("MultiSelected", sut.CardVisualState);
+    }
+
+    [Fact]
+    public void CardVisualState_IsHighlightedChange_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.IsHighlighted = true;
+
+        Assert.Contains(nameof(PrayerCardViewModel.CardVisualState), raised);
+    }
+
+    [Fact]
+    public void CardVisualState_IsMultiSelectedChange_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.IsMultiSelected = true;
+
+        Assert.Contains(nameof(PrayerCardViewModel.CardVisualState), raised);
+    }
+
+    // ── HasAnyPrayer (issue #33 P3) ────────────────────────────────────
+    // Gates the parenthetical "(N)" prayer count Label on the collapsed card row.
+    // Definition: !IsExpanded && ActivePrayerCount > 0. Without a Parent VM,
+    // IsExpanded resolves false (Parent?.ExpandedCardId == _prayerCard.Id is
+    // false on a null Parent), so the gate is purely count-driven in tests.
+
+    [Fact]
+    public void HasAnyPrayer_DefaultsToFalse()
+    {
+        var sut = CreateSut();
+        // ActivePrayerCount defaults to 0
+        Assert.False(sut.HasAnyPrayer);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_TrueWhenActiveCountAboveZero()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 3;
+
+        Assert.True(sut.HasAnyPrayer);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_FalseWhenActiveCountIsZero()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 5;
+        sut.ActivePrayerCount = 0;
+
+        Assert.False(sut.HasAnyPrayer);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_ActivePrayerCountChange_ZeroToNonZero_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.ActivePrayerCount = 4;
+
+        Assert.Contains(nameof(PrayerCardViewModel.HasAnyPrayer), raised);
+    }
+
+    [Fact]
+    public void HasAnyPrayer_ActivePrayerCountChange_NonZeroToZero_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 2;
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.ActivePrayerCount = 0;
+
+        Assert.Contains(nameof(PrayerCardViewModel.HasAnyPrayer), raised);
+    }
+
+    // ── PrayersHeader (issue #33 UAT-8) ────────────────────────────────
+    // Inner expanded-card "Prayers" header display string. Returns "Prayers"
+    // when ActivePrayerCount==0 (clean affordance on an empty card) and
+    // "Prayers (N)" when there are active prayers. PropertyChanged fires
+    // from the ActivePrayerCount setter (the real dependency edge).
+
+    [Fact]
+    public void PrayersHeader_DefaultsToPlainPrayers()
+    {
+        var sut = CreateSut();
+        // ActivePrayerCount defaults to 0
+        Assert.Equal("Prayers", sut.PrayersHeader);
+    }
+
+    [Fact]
+    public void PrayersHeader_WithCount_FormatsAsParenthetical()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 3;
+
+        Assert.Equal("Prayers (3)", sut.PrayersHeader);
+    }
+
+    [Fact]
+    public void PrayersHeader_CountChangeFromZero_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.ActivePrayerCount = 4;
+
+        Assert.Contains(nameof(PrayerCardViewModel.PrayersHeader), raised);
+    }
+
+    [Fact]
+    public void PrayersHeader_CountChangeBackToZero_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 5;
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.ActivePrayerCount = 0;
+
+        Assert.Contains(nameof(PrayerCardViewModel.PrayersHeader), raised);
+        Assert.Equal("Prayers", sut.PrayersHeader);
+    }
 }

@@ -87,6 +87,13 @@
                             AutomationId="AppSettings_Btn_StageSamplePayload"
                             Clicked="OnStageSamplePayloadClicked"
                             HorizontalOptions="Fill" />
+                    <Label Text="Stages the blank-line-separated Jim/Frank/John regression payload — should produce 3 prayers, not 6 (parser blank-line block fix, 2026-05-10)."
+                           Style="{StaticResource SectionDescription}" />
+                    <Button x:Name="BtnStageParserRegressionPayload"
+                            Text="Stage parser-regression payload"
+                            AutomationId="AppSettings_Btn_StageParserRegressionPayload"
+                            Clicked="OnStageParserRegressionPayloadClicked"
+                            HorizontalOptions="Fill" />
                 </VerticalStackLayout>
             </Border>
 
