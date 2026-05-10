@@ -50,6 +50,7 @@ Apple's docs and App Store Connect validation **disagree**. These are the valida
 | 2 | Prayer List (Active) | `dark/04-prayer-list.png` | |
 | 3 | Prayer Time | `dark/08-prayer-time.png` | iPhone: landscape (rotate with `sips -r 270`), iPad: portrait |
 | 4 | Manage Collections | `dark/10-manage-collections.png` | |
+| 11 | Confirm Import | `dark/11-confirm-import.png` | iPhone only |
 
 ---
 

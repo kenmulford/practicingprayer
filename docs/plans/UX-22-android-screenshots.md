@@ -59,18 +59,19 @@ If `screenshot_tablet` AVD does not yet exist, create it from Android Studio's A
 
 ### Dark Mode (high-impact only, both devices)
 
-| # | Screen | Filename |
-|---|--------|----------|
-| 2 | Prayer Cards (expanded) | `dark/02-prayer-cards.png` |
-| 4 | Prayer List (Active) | `dark/04-prayer-list.png` |
-| 8 | Prayer Time | `dark/08-prayer-time.png` |
-| 10 | Manage Collections | `dark/10-manage-collections.png` |
+| # | Screen | Filename | Notes |
+|---|--------|----------|-------|
+| 2 | Prayer Cards (expanded) | `dark/02-prayer-cards.png` | |
+| 4 | Prayer List (Active) | `dark/04-prayer-list.png` | |
+| 8 | Prayer Time | `dark/08-prayer-time.png` | |
+| 10 | Manage Collections | `dark/10-manage-collections.png` | |
+| 11 | Confirm Import | `dark/11-confirm-import.png` | Phone only |
 
 ### Android-only additions
 
 | # | Screen | Filename | Notes |
 |---|--------|----------|-------|
-| 12 | Home Dashboard | `12-home-dashboard.png` | **Android only — phone + tablet, light + dark.** Metrics grid showing active cards, unanswered prayers, last prayed, overdue count. Android Play Store users land on Home by default; this is the highest-impact "first impression" tile. iOS users land on Cards, so this screen is omitted from the iOS pass. |
+| 12 | Home Dashboard | `12-home-dashboard.png` | **Android only — phone + tablet, light only.** Metrics grid showing active cards, unanswered prayers, last prayed, overdue count. Android Play Store users land on Home by default; this is the highest-impact "first impression" tile. iOS users land on Cards, so this screen is omitted from the iOS pass. |
 
 ---
 
@@ -289,10 +290,10 @@ screenshots/
   android/
     phone/
       light/   01 through 12
-      dark/    02, 04, 08, 10, 11, 12
+      dark/    02, 04, 08, 10, 11
     tablet/
       light/   01 through 10, plus 12 (no 11 — phone-only)
-      dark/    02, 04, 08, 10, 12
+      dark/    02, 04, 08, 10
 ```
 
 ---
@@ -304,7 +305,7 @@ screenshots/
 | Pixel 9 native is 1080×2424, exceeds Play Store 2:1 max | Crop to 1080×1920 (centered) via ImageMagick or PIL — see runbook step 8 |
 | `adb shell input tap` is unreliable for fine-grained nav | Use Appium with `FindByAutomationId`; reserve `input tap` for top-level fallback only |
 | Tablet emulator AVD `screenshot_tablet` may not exist on a fresh machine | Create from Android Studio AVD Manager (Pixel Tablet profile) before starting |
-| Onboarding/banner flags live in shared_prefs XML, not NSUserDefaults | Push the verified `screenshots/android/prefs_override.xml` (file content confirmed, not just claimed) to `/data/data/com.multithreadedllc.prayercards/shared_prefs/com.multithreadedllc.prayercards_preferences.xml`; chown to the app's UID after push. Screenshot-relevant keys it sets: `AllowNotifications=false` (blocks runtime notification prompt mid-capture), `PrayerTimeLandscape=true` (forces landscape carousel for #08), `OnboardingComplete=true` + `OnboardingStep=Complete` (string, paired with the bool), `QuickAddTipDismissed=true`, `CollectionsBannerDismissed=true`. Also carries non-screenshot defaults (`FirstRun=false`, `DefaultNotifyHour=9`, `DefaultNotifyMinute=0`, `ArchivedFolderId=2`, `OverdueDayThreshold=30`) to keep the seeded state stable. |
+| Onboarding/banner flags live in shared_prefs XML, not NSUserDefaults | Push `screenshots/android/prefs_override.xml` (see **Prefs override file** subsection below for full key list) to `/data/data/com.multithreadedllc.prayercards/shared_prefs/com.multithreadedllc.prayercards_preferences.xml`; chown to the app's UID after push. |
 | File ownership after `adb push` may flip to `root:root` and prevent app reads | `adb shell chown` back to the app's UID:GID (use `stat -c '%U:%G'` on an existing file in the app's data dir) |
 | Tag Detail requires two taps | Tap the tag row to expand (Edit/Delete inline buttons), then tap Edit to reach the tag edit page with color picker swatches |
 | Keyboard on Quick Add | Quick Add modal auto-focuses the title field; soft keyboard shows. Either accept it in the screenshot or `adb shell input keyevent 111` (KEYCODE_ESCAPE) to dismiss. |
@@ -312,6 +313,28 @@ screenshots/
 | App must be built with `EmbedAssembliesIntoApk=true` | FastDev builds won't run standalone on the emulator without the dev host |
 | **No Android toolchain on maintainer's primary Mac** | Per `feedback_no_android_toolchain_local.md`: this entire plan runs on the secondary machine that has Android SDK + emulator. Don't attempt local execution from the primary Mac. |
 | Confirm Import (#11) requires a real share intent | Either build a tiny "send to PrayerApp" companion app, or use `adb shell am start -a android.intent.action.SEND -t application/json --es android.intent.extra.STREAM file:///sdcard/Download/sample-import.json -n com.multithreadedllc.prayercards/...` once the receiving activity is wired |
+
+### Prefs override file
+
+The contents of `screenshots/android/prefs_override.xml` were opened and verified empirically (not assumed). The file holds 11 keys total — 6 are screenshot-relevant, 5 are app defaults included to keep the seeded state stable.
+
+**Source:** `screenshots/android/prefs_override.xml`
+**Push destination:** `/data/data/com.multithreadedllc.prayercards/shared_prefs/com.multithreadedllc.prayercards_preferences.xml`
+
+**Screenshot-relevant keys:**
+
+| Key | Value | Why it matters for capture |
+|-----|-------|----------------------------|
+| `AllowNotifications` | `false` | Suppresses the Android 13+ runtime notification-permission prompt that would otherwise surface a system dialog mid-capture |
+| `PrayerTimeLandscape` | `true` | Forces the Prayer Time carousel into landscape; required for screen #08 |
+| `OnboardingComplete` | `true` | Short-circuits the welcome flow on app launch |
+| `OnboardingStep` | `"Complete"` | String paired with the bool above; some legacy code paths read this instead |
+| `QuickAddTipDismissed` | `true` | Hides the Quick Add coachmark on Home |
+| `CollectionsBannerDismissed` | `true` | Hides the Collections-feature banner |
+
+**App defaults (not screenshot-specific, included for state stability):** `FirstRun=false`, `DefaultNotifyHour=9`, `DefaultNotifyMinute=0`, `ArchivedFolderId=2`, `OverdueDayThreshold=30`.
+
+After pushing, re-chown the file to the app's UID:GID — see the chown command in runbook step 5.
 
 ---
 
