@@ -40,6 +40,7 @@ Apple's docs and App Store Connect validation **disagree**. These are the valida
 | 8 | Prayer Time | `08-prayer-time.png` | **iPhone: landscape** (rotate image with `sips -r 270`), **iPad: portrait** |
 | 9 | Quick Add | `09-quick-add.png` | Home → Quick Add button — shows modal with prayer title field |
 | 10 | Manage Collections | `10-manage-collections.png` | Cards tab → Collections toolbar — shows user + system collections with card counts |
+| 11 | Confirm Import | `11-confirm-import.png` | **iPhone only — light + dark.** Reached by triggering the share-extension import flow (tap a share-extension shortcut OR open a `.json` import payload from another app). Confirm Import page shows parsed prayer items + Import/Cancel buttons. **No iPad capture needed.** |
 
 ### Dark Mode (high-impact only, both devices)
 
@@ -232,8 +233,8 @@ iPad screenshots (2064×2752) need no resize.
 ```
 screenshots/
   iphone/
-    light/   02 through 10
-    dark/    02, 04, 08, 10
+    light/   02 through 11
+    dark/    02, 04, 08, 10, 11
   ipad/
     light/   01 through 10
     dark/    02, 04, 08, 10
