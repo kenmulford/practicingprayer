@@ -82,4 +82,32 @@ public partial class AppSettingsPage : ContentPage
         });
 #endif
     }
+
+    private void OnStageParserRegressionPayloadClicked(object? sender, EventArgs e)
+    {
+#if DEBUG
+        // Regression payload for the blank-line block-splitting fix
+        // (TextSelectionParser, 2026-05-10). Pre-fix: 6 prayers (one per
+        // non-empty line). Post-fix: 3 prayers (Jim/Frank/John each with a
+        // name title and folded details). The Appium test
+        // `ImportFlowTests.Import_BlankLineBlocks_StagedPayload_ProducesThreePrayers`
+        // taps this button and asserts the 3-prayer outcome.
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            var services = IPlatformApplication.Current!.Services;
+            services.GetRequiredService<IImportPayloadService>().StagePayload(
+                "Jim\n" +
+                "Looking for a new job, praying for interviews this week.\n" +
+                "\n" +
+                "Frank\n" +
+                "Wife is due this week with their third child. Praying for safe delivery!\n" +
+                "\n" +
+                "John\n" +
+                "Work has been so busy he hasn't been focused on his family. He needs strength to work toward better work/life balance.");
+            await services.GetRequiredService<INavigationService>()
+                .PushModalWithNavigationBarAsync(
+                    services.GetRequiredService<ConfirmImportPage>());
+        });
+#endif
+    }
 }

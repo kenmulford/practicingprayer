@@ -392,4 +392,140 @@ public class TextSelectionParserTests
         Assert.Equal("Quick prayer", result.Prayers[0].Title);
         Assert.Null(result.Prayers[0].Details);
     }
+
+    // ── Blank-line-separated blocks (2026-05-10, option d) ──────────────────────────
+    // When the imported text uses blank lines to separate prayer blocks, each block
+    // is treated as a single prayer if line 2 is "sentence-shaped" (has a clause
+    // delimiter or > 6 space-separated words after marker stripping). Otherwise, the
+    // block falls back to per-line behavior — preserving the ALL-CAPS list shape
+    // (MOM/DAD/SISTER) while folding name + details blocks (Frank / wife is due...).
+
+    [Fact]
+    public void Parse_BlankLineSeparatedNameAndDetails_ProducesOnePrayerPerBlock()
+    {
+        var input =
+            "Jim\nLooking for a new job, praying for interviews this week.\n\n" +
+            "Frank\nWife is due this week with their third child.\n\n" +
+            "John\nRecovering from surgery, please pray for healing.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("Jim", result.Prayers[0].Title);
+        Assert.Equal("Looking for a new job, praying for interviews this week.", result.Prayers[0].Details);
+        Assert.Equal("Frank", result.Prayers[1].Title);
+        Assert.Equal("Wife is due this week with their third child.", result.Prayers[1].Details);
+        Assert.Equal("John", result.Prayers[2].Title);
+        Assert.Equal("Recovering from surgery, please pray for healing.", result.Prayers[2].Details);
+    }
+
+    [Fact]
+    public void Parse_BlankLineBlocks_PreservesParagraphBreaksInDetails()
+    {
+        // 3-line block, line 2 is sentence-shaped (>6 words) → fold whole block.
+        // Lines 2 and 3 join with \n so the paragraph break survives in Details.
+        var input = "Frank\nWife is due this week with their third child.\nThey are nervous and tired.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Frank", result.Prayers[0].Title);
+        Assert.Equal(
+            "Wife is due this week with their third child.\nThey are nervous and tired.",
+            result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_AllCapsList_NoBlankLines_StillProducesOnePerLine()
+    {
+        // Regression: existing test (lines 202–215) — single block of three short lines,
+        // line 2 = "DAD" (1 word, no delimiter) → NOT sentence-shaped → per-line fallback.
+        var input = "MOM\nDAD\nSISTER";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("MOM", result.Prayers[0].Title);
+        Assert.Equal("DAD", result.Prayers[1].Title);
+        Assert.Equal("SISTER", result.Prayers[2].Title);
+    }
+
+    [Fact]
+    public void Parse_TwoLineBlock_ShortSecondLine_DoesNotFold()
+    {
+        // 2-line block, line 2 = "Dad" (1 word, no delimiter) → NOT sentence-shaped.
+        // Should split per-line, not fold into "Mom" + details="Dad".
+        var input = "Mom\nDad";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(2, result.Prayers.Count);
+        Assert.Equal("Mom", result.Prayers[0].Title);
+        Assert.Equal("Dad", result.Prayers[1].Title);
+    }
+
+    [Fact]
+    public void Parse_TwoLineBlock_LongSecondLine_Folds()
+    {
+        // Line 2 has 9 words, no delimiter — > 6 word threshold → sentence-shaped → fold.
+        var input = "Frank\nWife is due this week with their third child.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Frank", result.Prayers[0].Title);
+        Assert.Equal("Wife is due this week with their third child.", result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_TwoLineBlock_SecondLineWithClauseDelimiter_Folds()
+    {
+        // Line 2 has only 5 words but contains a comma → sentence-shaped → fold.
+        var input = "Frank\nWife is due, third child";
+
+        var result = _sut.Parse(input);
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Frank", result.Prayers[0].Title);
+        Assert.Equal("Wife is due, third child", result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_AllCapsHeaderInFirstBlock_StillExtractedToSuggestedCardTitle()
+    {
+        // Regression: header extraction must still run on the first block, even when
+        // the input uses blank-line block separation. "MISSIONS OUTREACH" → card title;
+        // remainder of first block ("Pray for staff.") is the only prayer.
+        var input = "MISSIONS OUTREACH\n\nPray for staff.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal("Missions Outreach", result.SuggestedCardTitle);
+        Assert.Single(result.Prayers);
+        Assert.Equal("Pray for staff.", result.Prayers[0].Title);
+    }
+
+    [Fact]
+    public void Parse_TrailingBlankLines_Ignored()
+    {
+        var input = "Jim\nDetails about Jim's situation, lots of words here.\n\n\n";
+
+        var result = _sut.Parse(input);
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Jim", result.Prayers[0].Title);
+        Assert.Equal("Details about Jim's situation, lots of words here.", result.Prayers[0].Details);
+    }
+
+    [Fact]
+    public void Parse_LeadingBlankLines_Ignored()
+    {
+        var input = "\n\nJim\nDetails about Jim's situation, lots of words here.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Jim", result.Prayers[0].Title);
+        Assert.Equal("Details about Jim's situation, lots of words here.", result.Prayers[0].Details);
+    }
 }

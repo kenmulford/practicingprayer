@@ -9,11 +9,26 @@ public class TextSelectionParser : ITextSelectionParser
     private static readonly Regex LineSplitter =
         new(@"\r\n|\r|\n", RegexOptions.Compiled);
 
+    // Splits on a run of one-or-more blank lines (any line-ending). A "blank
+    // line" here is a line-ending followed by optional whitespace and at
+    // least one more line-ending — i.e. an empty line between two content
+    // lines. Used to detect blank-line-separated prayer blocks (option d,
+    // 2026-05-10).
+    private static readonly Regex BlockSplitter =
+        new(@"(?:\r\n|\r|\n)[ \t]*(?:\r\n|\r|\n)+", RegexOptions.Compiled);
+
     private static readonly Regex MarkerStripper =
         new(@"^\s*(?:\d+[\.\)]|[-*•])\s*", RegexOptions.Compiled);
 
     private static readonly Regex InternalWhitespace =
         new(@"\s+", RegexOptions.Compiled);
+
+    // Threshold for the option-d line-2 sentence-shape heuristic. A line
+    // with > this many space-separated words (after marker stripping) is
+    // treated as "sentence-shaped" even without a clause delimiter. 6
+    // matches the BuildPrayer rule-6 threshold for long-line title
+    // synthesis.
+    private const int SentenceShapeWordThreshold = 6;
 
     private readonly Func<DateTime> _now;
 
@@ -28,17 +43,57 @@ public class TextSelectionParser : ITextSelectionParser
     {
         var defaultTitle = $"Imported {_now():MMM d}";
         var normalized = TextNormalization.NormalizeQuotes(rawText) ?? string.Empty;
-        var lines = LineSplitter.Split(normalized);
 
-        var (headerTitle, linesToSkip) = ExtractHeaderTitle(lines);
-        var suggestedTitle = headerTitle ?? defaultTitle;
+        // Split on blank-line runs into prayer blocks. Within a block, lines
+        // are still split by single line-endings. Header extraction runs
+        // on block 0 only; subsequent blocks each become one or more
+        // prayers per the sentence-shape heuristic (option d, 2026-05-10).
+        var blocks = BlockSplitter.Split(normalized);
 
-        var entries = new List<ParsedPrayer>(lines.Length);
-        for (int i = linesToSkip; i < lines.Length; i++)
+        string? headerTitle = null;
+        var entries = new List<ParsedPrayer>();
+
+        for (int b = 0; b < blocks.Length; b++)
         {
-            var content = CollapseLine(MarkerStripper.Replace(lines[i], string.Empty));
-            if (content.Length == 0) continue;
-            entries.Add(BuildPrayer(content));
+            var blockLines = LineSplitter.Split(blocks[b]);
+            int firstContentLine = 0;
+
+            if (b == 0)
+            {
+                // When subsequent blocks exist, content is guaranteed to follow
+                // even if block 0 is header-only ("MISSIONS OUTREACH\n\nPray for staff.").
+                var hasFollowingBlocks = blocks.Length > 1;
+                var (extracted, linesToSkip) = ExtractHeaderTitle(blockLines, hasFollowingBlocks);
+                headerTitle = extracted;
+                firstContentLine = linesToSkip;
+            }
+
+            // Strip markers, drop empties.
+            var contentLines = new List<string>(blockLines.Length);
+            for (int i = firstContentLine; i < blockLines.Length; i++)
+            {
+                var content = CollapseLine(MarkerStripper.Replace(blockLines[i], string.Empty));
+                if (content.Length == 0) continue;
+                contentLines.Add(content);
+            }
+
+            if (contentLines.Count == 0) continue;
+
+            // Option-d fold: when a block has ≥2 content lines and line 2
+            // is sentence-shaped (clause delimiter or > 6 words), the
+            // block becomes a single prayer with line 1 as title and
+            // lines 2..N joined with "\n" as details. Otherwise fall
+            // back to per-line BuildPrayer (existing behavior).
+            if (contentLines.Count >= 2 && IsSentenceShaped(contentLines[1]))
+            {
+                var details = string.Join('\n', contentLines.GetRange(1, contentLines.Count - 1));
+                entries.Add(new ParsedPrayer(CapTitle(contentLines[0]), details));
+            }
+            else
+            {
+                foreach (var line in contentLines)
+                    entries.Add(BuildPrayer(line));
+            }
         }
 
         if (entries.Count == 0 && !string.IsNullOrWhiteSpace(normalized))
@@ -46,7 +101,21 @@ public class TextSelectionParser : ITextSelectionParser
             entries.Add(BuildPrayer(CollapseLine(normalized)));
         }
 
-        return new ParseResult(entries.AsReadOnly(), suggestedTitle);
+        return new ParseResult(entries.AsReadOnly(), headerTitle ?? defaultTitle);
+    }
+
+    /// <summary>
+    /// A line is "sentence-shaped" when it contains a clause delimiter
+    /// (`,` `;` `:` `—` `-`) OR has more than <see cref="SentenceShapeWordThreshold"/>
+    /// space-separated words. Used by the option-d block fold (2026-05-10)
+    /// to decide whether a 2-line block reads as name + details (fold) or
+    /// as a flat list (per-line).
+    /// </summary>
+    private static bool IsSentenceShaped(string line)
+    {
+        if (line.IndexOfAny(ClauseDelimiters) >= 0) return true;
+        var wordCount = line.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        return wordCount > SentenceShapeWordThreshold;
     }
 
     // Header-detection thresholds. Tuned for the corporate-prayer-document
@@ -63,11 +132,15 @@ public class TextSelectionParser : ITextSelectionParser
     /// ("CORPORATE PRAYER" / "MUSSONS OUTREACH"), the topic line wins.
     /// A content line (non-blank, non-header) must follow the header
     /// candidate(s); without that signal an ALL-CAPS list
-    /// ("MOM\nDAD\nSISTER") would lose its first item. Returns the
-    /// title-cased header (or null) plus the count of leading lines to
-    /// skip during prayer extraction.
+    /// ("MOM\nDAD\nSISTER") would lose its first item. When
+    /// <paramref name="contentFollowsExternally"/> is true, the caller has
+    /// already verified that content exists outside this block (in a
+    /// later block), so the within-block content check is bypassed.
+    /// Returns the title-cased header (or null) plus the count of leading
+    /// lines to skip during prayer extraction.
     /// </summary>
-    private static (string? Title, int LinesToSkip) ExtractHeaderTitle(string[] lines)
+    private static (string? Title, int LinesToSkip) ExtractHeaderTitle(
+        string[] lines, bool contentFollowsExternally = false)
     {
         int headerEnd = -1;
         string? headerTrimmed = null;
@@ -90,7 +163,7 @@ public class TextSelectionParser : ITextSelectionParser
             }
         }
 
-        return headerEnd < 0 || !sawContent
+        return headerEnd < 0 || (!sawContent && !contentFollowsExternally)
             ? (null, 0)
             : (TitleCase(headerTrimmed!), headerEnd + 1);
     }

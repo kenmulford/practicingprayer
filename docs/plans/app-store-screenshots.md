@@ -141,20 +141,24 @@ Interactions populate the "Last prayed" timestamps.
 
 ## Step-by-Step Runbook
 
+> **Capture script.** Per-screen Appium navigation entry points live in [`scripts/screenshot_nav.py`](../../scripts/screenshot_nav.py) (pure-stdlib, no pip deps; one sim per invocation).
+
 ### 1. Build for Simulator
 
 ```bash
-dotnet build PrayerApp/PrayerApp.csproj -c Release -f net10.0-ios -r iossimulator-arm64
+dotnet build PrayerApp/PrayerApp.csproj -c Debug -f net10.0-ios -r iossimulator-arm64
 ```
 
-Output: `PrayerApp/bin/Release/net10.0-ios/iossimulator-arm64/PrayerApp.app`
+Output: `PrayerApp/bin/Debug/net10.0-ios/iossimulator-arm64/PrayerApp.app`
+
+> **Use Debug, not Release.** The Confirm Import capture path (#11) depends on the Developer-section "Stage sample payload" diagnostic, which is wrapped in `#if DEBUG` (`Views/Settings/AppSettingsPage.xaml.cs`) and does not exist in Release builds.
 
 ### 2. Boot & Install
 
 ```bash
 IPHONE=AD03FB0C-F5F3-49C3-AA7B-E06014F19594  # iPhone 17 Pro Max
 IPAD=9D882FAF-5ACF-474D-BC6C-5DCC96A74CF4    # iPad Pro 13" (M5)
-APP=PrayerApp/bin/Release/net10.0-ios/iossimulator-arm64/PrayerApp.app
+APP=PrayerApp/bin/Debug/net10.0-ios/iossimulator-arm64/PrayerApp.app
 
 xcrun simctl boot $IPHONE
 xcrun simctl boot $IPAD
@@ -182,13 +186,22 @@ Terminate the app, find the DB, insert data:
 
 ```bash
 xcrun simctl terminate $IPHONE com.multithreadedllc.prayercards
-DB=$(find ~/Library/Developer/CoreSimulator/Devices/$IPHONE/data/Containers/Data -name "prayer_app.db")
+# iOS-specific path: MAUI's FileSystem.AppDataDirectory resolves to Library/ on iOS,
+# NOT Documents/ (which is the Android pattern). Constrain the find pattern to Library/
+# so we don't accidentally pick up a stale seed in the wrong directory.
+DB=$(find ~/Library/Developer/CoreSimulator/Devices/$IPHONE/data/Containers/Data -path "*/Library/prayer_app.db")
+# Sanity-check before inserting — empty DB var means the app hasn't created the DB yet
+# (launch the app once, then terminate, then re-run the find).
+[ -z "$DB" ] && echo "ERROR: prayer_app.db not found under any Library/ directory" && return 1
+echo "Seeding into: $DB"
 # Run the INSERT statements from the Seed Data section above
 # Mark onboarding complete:
 xcrun simctl spawn $IPHONE defaults write com.multithreadedllc.prayercards OnboardingComplete -bool true
 xcrun simctl spawn $IPHONE defaults write com.multithreadedllc.prayercards QuickAddTipDismissed -bool true
 xcrun simctl spawn $IPHONE defaults write com.multithreadedllc.prayercards CollectionsBannerDismissed -bool true
 ```
+
+> **Why the `Library/` constraint matters.** On iOS, MAUI's `FileSystem.AppDataDirectory` resolves to `Library/`, not `Documents/`. The canonical path is constructed in `PrayerApp/MauiProgram.cs:35` (`Path.Combine(FileSystem.AppDataDirectory, "prayer_app.db")`) and re-used in `PrayerApp/Services/BackupService.cs:28`. Seed copies dropped into `Documents/` will be silently ignored by the running app.
 
 ### 5. Take Screenshots
 
@@ -202,6 +215,20 @@ For iPhone Prayer Time (landscape): capture in portrait, then rotate:
 ```bash
 sips -r 270 input.png --out output.png
 ```
+
+### 5b. Confirm Import (#11) — capture path
+
+Confirm Import has no end-user-driven entry point that's reliably reproducible inside an Appium-driven sim run (the share-extension flow requires another app holding share-able text). Use the **Debug-only diagnostic** instead:
+
+| Step | AutomationId / target |
+|------|-----------------------|
+| 1. Tap the Settings tab in the bottom tab bar | (tab bar — Settings) |
+| 2. Drill into App Settings | `Settings_Row_AppSettings` |
+| 3. Scroll to the Developer section, tap "Stage sample payload" | `AppSettings_Btn_StageSamplePayload` |
+
+Lands on the Confirm Import page populated with a sample payload (3 demo prayers, suggested card title `Imported {today's month + day}`). Capture light + dark, then back-out (or terminate + relaunch).
+
+> **Debug-only.** `AppSettings_Btn_StageSamplePayload` lives in the Developer section, which is wrapped in `#if DEBUG` (`Views/Settings/AppSettingsPage.xaml.cs`). It does not exist in Release builds — this is the reason step 1 builds Debug throughout.
 
 ### 6. Switch to Dark Mode
 
@@ -259,6 +286,7 @@ screenshots/
 | **Exiting Prayer Time via Appium unreliable** | Landscape orientation confuses Appium element finding — buttons like "I'm Done" can't be located. Workaround: `xcrun simctl terminate` + `xcrun simctl launch` to restart the app on Home. |
 | **Tag Detail requires two taps** | Tap the tag row to expand (shows Edit/Delete inline buttons), then tap Edit to navigate to the tag edit page with color picker swatches. |
 | **Keyboard on Quick Add / Tag Edit** | Quick Add modal auto-focuses the title field, showing keyboard. `mobile: hideKeyboard` fails on Quick Add. On iPad, `hideKeyboard` works. For iPhone Quick Add, accept the keyboard in the screenshot or tap an empty area to dismiss. |
+| **iOS notification-permission system alert blocks Settings flow on fresh install** | First tap into App Settings on a fresh-install session triggers iOS's "Prayer Would Like to Send You Notifications" system alert. The capture script must handle it via Appium `mobile: alert` `action=accept` (or dismiss) BEFORE proceeding to the `AppSettings_Btn_StageSamplePayload` row. Sometimes takes 1-2 attempts to register — wrap in a short retry. |
 
 ---
 
