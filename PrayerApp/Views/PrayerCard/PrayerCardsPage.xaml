@@ -6,6 +6,7 @@
              xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
              xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="PrayerApp.Views.PrayerCard.PrayerCardsPage"
              x:DataType="viewModels:PrayerCardsViewModel"
              SafeAreaEdges="Container">
@@ -170,12 +171,10 @@
                 <Label
                     Text="{Binding PrayersHeader}"
                     AutomationId="Card_PrayersHeader"
-                    FontSize="15"
-                    FontAttributes="Bold"
-                    TextColor="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}"
+                    Style="{StaticResource CardsSectionHeader}"
                     SemanticProperties.HeadingLevel="Level2"
                     IsVisible="{Binding IsExpanded}"
-                    Margin="4,8,0,4" />
+                    Margin="24,8,0,4" />
                 <!-- Issue #33 P2: prayer rows sit directly on the expanded card's
                      CardExpandedLight/Dark background; PickerInsetSeparator delineates
                      rows. 8pt horizontal margin keeps rows inset from the card edge. -->
@@ -248,9 +247,8 @@
                    Placeholder="Search cards..."
                    SearchButtonPressed="OnSearchButtonPressed"
                    SemanticProperties.Hint="Search prayer cards by name"
-                   BackgroundColor="{OnPlatform iOS=Transparent,
-                                                MacCatalyst=Transparent,
-                                                Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
+                   ios:SearchBar.SearchBarStyle="Minimal"
+                   BackgroundColor="{OnPlatform Default=Transparent, Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
         <!-- Tag filter chips -->
         <ScrollView Grid.Row="1"
@@ -362,7 +360,7 @@
                             <Setter Property="Opacity" Value="0.4" />
                         </DataTrigger>
                     </VerticalStackLayout.Triggers>
-                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,12">
+                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,8">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
                         </Grid.GestureRecognizers>
@@ -377,7 +375,7 @@
                                Style="{StaticResource CardsSectionHeader}"
                                AutomationProperties.IsInAccessibleTree="False" />
                     </Grid>
-                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0"
+                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0,4,8"
                              AutomationProperties.IsInAccessibleTree="False" />
                 </VerticalStackLayout>
             </DataTemplate>

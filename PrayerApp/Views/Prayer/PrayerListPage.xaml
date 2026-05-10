@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="PrayerApp.Views.Prayer.PrayerListPage"
              x:DataType="viewModels:PrayerListViewModel"
              Title="Prayers"
@@ -87,9 +88,8 @@
                        AutomationId="List_Search_Prayers"
                        Placeholder="Search prayers..."
                        SearchButtonPressed="OnSearchButtonPressed"
-                       BackgroundColor="{OnPlatform iOS=Transparent,
-                                                    MacCatalyst=Transparent,
-                                                    Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
+                       ios:SearchBar.SearchBarStyle="Minimal"
+                       BackgroundColor="{OnPlatform Default=Transparent, Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
             <!-- Tag chip row — only shown when tags exist -->
             <ScrollView Orientation="Horizontal"

@@ -117,6 +117,11 @@ namespace PrayerApp.ViewModels
         // card (expand). All derived projections re-raise here.
         internal void RaiseIsExpandedChanged()
         {
+            // INTENTIONAL — skip-3 design (PR #37 corrections, commit ac5afe2):
+            // PrayersHeader recomputes via the ActivePrayerCount setter's notify chain.
+            // Do NOT add OnPropertyChanged(nameof(PrayersHeader)) here — that defensive
+            // notify was the marginal no-op flagged by /simplify and removed by user
+            // override. Re-adding it would re-introduce dead code without fixing anything.
             OnPropertyChanged(nameof(IsExpanded));
             OnPropertyChanged(nameof(HasAnyPrayer));
             OnPropertyChanged(nameof(ShowActionChips));
