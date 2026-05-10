@@ -48,6 +48,9 @@
     OrientationService (platform-specific), and all ViewModels/Views (Shell/Application).
   -->
   <ItemGroup>
+    <!-- Behaviors -->
+    <Compile Include="../PrayerApp/Behaviors/KeyboardAvoidanceBehavior.cs" />
+
     <!-- Models -->
     <Compile Include="../PrayerApp/Models/Prayer.cs" />
     <Compile Include="../PrayerApp/Models/PrayerCard.cs" />

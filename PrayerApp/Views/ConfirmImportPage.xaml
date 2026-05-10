@@ -19,9 +19,11 @@
                      Command="{Binding SaveCommand}"
                      SemanticProperties.Hint="Save the imported card and prayers" />
     </ContentPage.ToolbarItems>
-    <Grid SafeAreaEdges="SoftInput">
-        <ScrollView>
-            <VerticalStackLayout Padding="16" Spacing="10">
+    <ScrollView x:Name="RootScroll">
+        <ScrollView.Behaviors>
+            <behaviors:KeyboardScrollPaddingBehavior />
+        </ScrollView.Behaviors>
+        <VerticalStackLayout Padding="16" Spacing="10">
 
             <Label Text="Collection and Card Selection"
                    Style="{StaticResource SectionHeading}"
@@ -120,6 +122,7 @@
                            HorizontalOptions="Fill">
                         <Entry.Behaviors>
                             <behaviors:SelectAllOnFocusBehavior />
+                            <behaviors:KeyboardAvoidanceBehavior />
                         </Entry.Behaviors>
                     </Entry>
 
@@ -234,6 +237,7 @@
                                            VerticalOptions="Center">
                                         <Entry.Behaviors>
                                             <behaviors:SelectAllOnFocusBehavior />
+                                            <behaviors:KeyboardAvoidanceBehavior />
                                         </Entry.Behaviors>
                                     </Entry>
                                     <Button Grid.Column="1"
@@ -254,7 +258,11 @@
                                         SemanticProperties.Description="Prayer details"
                                         AutoSize="TextChanges"
                                         MinimumHeightRequest="48"
-                                        HorizontalOptions="Fill" />
+                                        HorizontalOptions="Fill">
+                                    <Editor.Behaviors>
+                                        <behaviors:KeyboardAvoidanceBehavior />
+                                    </Editor.Behaviors>
+                                </Editor>
 
                             </VerticalStackLayout>
                         </Border>
@@ -273,7 +281,6 @@
                     BorderWidth="0"
                     HorizontalOptions="Center" />
 
-            </VerticalStackLayout>
-        </ScrollView>
-    </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>
