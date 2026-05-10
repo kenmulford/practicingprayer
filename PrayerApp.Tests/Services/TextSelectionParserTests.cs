@@ -528,4 +528,191 @@ public class TextSelectionParserTests
         Assert.Equal("Jim", result.Prayers[0].Title);
         Assert.Equal("Details about Jim's situation, lots of words here.", result.Prayers[0].Details);
     }
+
+    // ── Share-import list regression (fix/share-import-list-regression-1.4.1) ──────
+    // Two user-supplied scenarios that regressed when option-d landed:
+    //   (1) Title+details fold across 3 blank-line-separated blocks must still
+    //       produce 3 prayers, one per block.
+    //   (2) A contiguous numbered list whose items happen to be sentence-shaped
+    //       must produce one prayer per item — not collapse to a single prayer
+    //       via the option-d fold. The fold is now gated on "block has no list
+    //       marker," so any number/bullet in the raw block keeps per-line mode.
+
+    [Fact]
+    public void Parse_ShareImport_ThreeBlocks_TitlePlusDetails_ProducesThreePrayers()
+    {
+        var input =
+            "Jim\nLooking for a new job, praying for interviews this week.\n\n" +
+            "Frank\nWife is due this week with their third child. Praying for safe delivery!\n\n" +
+            "John\nWork has been so busy he hasn't been focused on his family. He needs strength to work toward better work/life balance.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("Jim", result.Prayers[0].Title);
+        Assert.Equal("Looking for a new job, praying for interviews this week.", result.Prayers[0].Details);
+        Assert.Equal("Frank", result.Prayers[1].Title);
+        Assert.Equal("Wife is due this week with their third child. Praying for safe delivery!", result.Prayers[1].Details);
+        Assert.Equal("John", result.Prayers[2].Title);
+        Assert.Equal(
+            "Work has been so busy he hasn't been focused on his family. He needs strength to work toward better work/life balance.",
+            result.Prayers[2].Details);
+    }
+
+    [Fact]
+    public void Parse_ShareImport_ContiguousNumberedList_SentenceShapedItems_ProducesOnePrayerPerItem()
+    {
+        // Leading blank lines deliberate — matches the user-supplied paste shape.
+        var input =
+            "\n\n" +
+            "1. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam pharetra ipsum in metus finibus pulvinar. Nunc ac elementum elit. Sed consequat lorem ante, eu gravida.\n" +
+            "2. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla quis arcu eleifend, accumsan felis vel, porta erat. Nulla molestie arcu eu nisl tristique, sed porta.";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(2, result.Prayers.Count);
+        // Each item is a long sentence-shaped line — rule 6 splits at the first
+        // clause delimiter (",") for the title and pushes the full line into details.
+        Assert.StartsWith("Lorem ipsum dolor sit amet", result.Prayers[0].Title);
+        Assert.StartsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", result.Prayers[0].Details);
+        Assert.DoesNotContain("1.", result.Prayers[0].Details);
+        Assert.StartsWith("Lorem ipsum dolor sit amet", result.Prayers[1].Title);
+        Assert.StartsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit.", result.Prayers[1].Details);
+        Assert.DoesNotContain("2.", result.Prayers[1].Details);
+    }
+
+    [Fact]
+    public void Parse_ShareImport_NumberedList_Line2OverSixWords_ProducesOnePerItem()
+    {
+        // T3 from prior plan: numbered list, line 2 > 6 words → sentence-shaped
+        // by the word-count heuristic, but the list marker must override the fold.
+        var input = "1. Mom\n2. James is interviewing on Tuesday this week\n3. Youth retreat";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("Mom", result.Prayers[0].Title);
+        // Line "James is interviewing on Tuesday this week" — 7 words, no clause
+        // delimiter, so rule 6 takes first 5 words as the title.
+        Assert.Equal("James is interviewing on Tuesday", result.Prayers[1].Title);
+        Assert.Equal("James is interviewing on Tuesday this week", result.Prayers[1].Details);
+        Assert.Equal("Youth retreat", result.Prayers[2].Title);
+    }
+
+    [Fact]
+    public void Parse_ShareImport_NumberedList_Line2HasComma_ProducesOnePerItem()
+    {
+        // T4 from prior plan: numbered list, line 2 has a comma → sentence-shaped
+        // via the clause-delimiter heuristic, but the list marker must override.
+        var input = "1. Aunt Mary, surgery\n2. James, job\n3. Retreat";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("Aunt Mary", result.Prayers[0].Title);
+        Assert.Equal("Aunt Mary, surgery", result.Prayers[0].Details);
+        Assert.Equal("James", result.Prayers[1].Title);
+        Assert.Equal("James, job", result.Prayers[1].Details);
+        Assert.Equal("Retreat", result.Prayers[2].Title);
+    }
+
+    [Fact]
+    public void Parse_ShareImport_MixedOrderedAndUnordered_ProducesOnePerItem()
+    {
+        // T5 from prior plan: mixing 1./2. and "-" markers in one block; the marker
+        // signal anywhere in the block forces per-line mode.
+        var input = "1. foo\n- bar\n2. baz";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("foo", result.Prayers[0].Title);
+        Assert.Equal("bar", result.Prayers[1].Title);
+        Assert.Equal("baz", result.Prayers[2].Title);
+    }
+
+    [Fact]
+    public void Parse_TwoLineBlock_Line1Marker_Line2SentenceShaped_ProducesPerLine()
+    {
+        // Canonical regression shape from build 117: line 1 is a list item ("1. Mom"),
+        // line 2 is sentence-shaped (>5 words). Pre-fix this folded to 1 prayer ("Mom"
+        // with line 2 as details). With the line-2-marker gate, line 2 has a marker
+        // ("2."), so the fold is correctly suppressed and we get 2 per-line prayers.
+        var input = "1. Mom\n2. James is interviewing on Tuesday this week";
+
+        var result = _sut.Parse(input);
+
+        Assert.Equal(2, result.Prayers.Count);
+        Assert.Equal("Mom", result.Prayers[0].Title);
+        // Rule 6 caps long titles at 5 words.
+        Assert.Equal("James is interviewing on Tuesday", result.Prayers[1].Title);
+    }
+
+    [Fact]
+    public void Parse_TitleDetailsFold_WithTrailingBullet_StillFolds()
+    {
+        // Name+details paste where a bullet appears on line 3 (sub-ask) should still
+        // fold into one prayer. With the prior "any marker in block" gate this would
+        // incorrectly split into 3 prayers. With the tightened "line 2 marker" gate,
+        // line 2 has no marker, so the fold proceeds correctly.
+        var input = "Frank\nWife is due this week with their third child.\n- praise for safe delivery";
+
+        var result = _sut.Parse(input);
+
+        Assert.Single(result.Prayers);
+        Assert.Equal("Frank", result.Prayers[0].Title);
+        // Details should include both the sentence and the bullet content (marker stripped).
+        Assert.Contains("Wife is due this week", result.Prayers[0].Details);
+        Assert.Contains("praise for safe delivery", result.Prayers[0].Details);
+    }
+
+    // ── Unicode line separators (NEL / LS / PS) ──────────────────────────
+    // Real-world shared text from Apple Notes, Word/Pages exports, and PDF
+    // copy-paste can use U+0085 (NEL), U+2028 (LS), or U+2029 (PS) instead
+    // of \n. The parser must split on these to apply per-line and per-block
+    // rules. fix/share-import-list-regression-1.4.1 follow-up #4.
+
+    [Fact]
+    public void Parse_NextLineSeparator_U0085_SplitsLines()
+    {
+        // NEL (U+0085) — sometimes emitted by Word/RTF tooling on copy-paste.
+        var input = "1. Mom\u00852. Dad\u00853. Sister";
+        var result = _sut.Parse(input);
+        Assert.Equal(3, result.Prayers.Count);
+        Assert.Equal("Mom", result.Prayers[0].Title);
+        Assert.Equal("Dad", result.Prayers[1].Title);
+        Assert.Equal("Sister", result.Prayers[2].Title);
+    }
+
+    [Fact]
+    public void Parse_LineSeparator_U2028_SplitsLines()
+    {
+        // LS (U+2028) — Apple Notes emits this between paragraphs on some shares.
+        var input = "1. Mom\u20282. Dad\u20283. Sister";
+        var result = _sut.Parse(input);
+        Assert.Equal(3, result.Prayers.Count);
+    }
+
+    [Fact]
+    public void Parse_ParagraphSeparator_U2029_SplitsLines()
+    {
+        // PS (U+2029) — PDF copy-paste and some RTF flows emit this.
+        var input = "1. Mom\u20292. Dad\u20293. Sister";
+        var result = _sut.Parse(input);
+        Assert.Equal(3, result.Prayers.Count);
+    }
+
+    [Fact]
+    public void Parse_TitleDetailsFold_AcrossUnicodeParagraphSeparator()
+    {
+        // PS (U+2029) as the paragraph break (blank-line equivalent in some flows).
+        // Should still fold each block to a title+details pair.
+        var input = "Jim\u2028Looking for a new job, praying for interviews this week.\u2029\u2029Frank\u2028Wife is due this week with their third child. Praying for safe delivery!";
+        var result = _sut.Parse(input);
+        Assert.Equal(2, result.Prayers.Count);
+        Assert.Equal("Jim", result.Prayers[0].Title);
+        Assert.Equal("Frank", result.Prayers[1].Title);
+        Assert.Contains("Looking for a new job", result.Prayers[0].Details);
+        Assert.Contains("Wife is due this week", result.Prayers[1].Details);
+    }
 }
