@@ -5,8 +5,7 @@
              xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              x:Class="PrayerApp.Views.ConfirmImportPage"
              x:DataType="viewModels:ConfirmImportViewModel"
-             Title="Confirm Import"
-             SafeAreaEdges="All">
+             Title="Confirm Import">
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Cancel"
                      AutomationId="ConfirmImport_Btn_Cancel"
@@ -20,8 +19,9 @@
                      Command="{Binding SaveCommand}"
                      SemanticProperties.Hint="Save the imported card and prayers" />
     </ContentPage.ToolbarItems>
-    <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="10">
+    <Grid SafeAreaEdges="SoftInput">
+        <ScrollView>
+            <VerticalStackLayout Padding="16" Spacing="10">
 
             <Label Text="Collection and Card Selection"
                    Style="{StaticResource SectionHeading}"
@@ -273,6 +273,7 @@
                     BorderWidth="0"
                     HorizontalOptions="Center" />
 
-        </VerticalStackLayout>
-    </ScrollView>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>
