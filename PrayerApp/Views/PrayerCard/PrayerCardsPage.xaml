@@ -171,9 +171,7 @@
                 <Label
                     Text="{Binding PrayersHeader}"
                     AutomationId="Card_PrayersHeader"
-                    FontSize="15"
-                    FontAttributes="Bold"
-                    TextColor="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}"
+                    Style="{StaticResource CardsSectionHeader}"
                     SemanticProperties.HeadingLevel="Level2"
                     IsVisible="{Binding IsExpanded}"
                     Margin="24,8,0,4" />
