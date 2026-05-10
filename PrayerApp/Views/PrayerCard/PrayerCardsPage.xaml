@@ -362,7 +362,7 @@
                             <Setter Property="Opacity" Value="0.4" />
                         </DataTrigger>
                     </VerticalStackLayout.Triggers>
-                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,12">
+                    <Grid ColumnDefinitions="Auto,*" Padding="4,14,4,8">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
                         </Grid.GestureRecognizers>
@@ -377,7 +377,7 @@
                                Style="{StaticResource CardsSectionHeader}"
                                AutomationProperties.IsInAccessibleTree="False" />
                     </Grid>
-                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0"
+                    <BoxView Style="{StaticResource DividerLine}" Margin="4,0,4,8"
                              AutomationProperties.IsInAccessibleTree="False" />
                 </VerticalStackLayout>
             </DataTemplate>
