@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.RegularExpressions;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
@@ -68,31 +69,33 @@ public class TextSelectionParser : ITextSelectionParser
                 firstContentLine = linesToSkip;
             }
 
-            // Strip markers, drop empties.
-            var contentLines = new List<string>(blockLines.Length);
+            // Strip markers, drop empties. Track per-line marker presence so the
+            // fold gate below can distinguish list lines from prose.
+            var contentLines = new List<(string Content, bool HadMarker)>(blockLines.Length);
             for (int i = firstContentLine; i < blockLines.Length; i++)
             {
-                var content = CollapseLine(MarkerStripper.Replace(blockLines[i], string.Empty));
+                var raw = blockLines[i];
+                var match = MarkerStripper.Match(raw);
+                var content = CollapseLine(match.Success ? raw[match.Length..] : raw);
                 if (content.Length == 0) continue;
-                contentLines.Add(content);
+                contentLines.Add((content, match.Success));
             }
 
             if (contentLines.Count == 0) continue;
 
-            // Option-d fold: when a block has ≥2 content lines and line 2
-            // is sentence-shaped (clause delimiter or > 6 words), the
-            // block becomes a single prayer with line 1 as title and
-            // lines 2..N joined with "\n" as details. Otherwise fall
-            // back to per-line BuildPrayer (existing behavior).
-            if (contentLines.Count >= 2 && IsSentenceShaped(contentLines[1]))
+            // Option-d fold (2026-05-10): line 2 sentence-shaped AND no marker
+            // on line 2 → fold to title + joined details. Marker on line 2
+            // forces per-line; markers on line 3+ are ambiguous (sub-asks
+            // under a title) and do NOT veto the fold.
+            if (contentLines.Count >= 2 && IsSentenceShaped(contentLines[1].Content) && !contentLines[1].HadMarker)
             {
-                var details = string.Join('\n', contentLines.GetRange(1, contentLines.Count - 1));
-                entries.Add(new ParsedPrayer(CapTitle(contentLines[0]), details));
+                var details = string.Join('\n', contentLines.GetRange(1, contentLines.Count - 1).Select(l => l.Content));
+                entries.Add(new ParsedPrayer(CapTitle(contentLines[0].Content), details));
             }
             else
             {
                 foreach (var line in contentLines)
-                    entries.Add(BuildPrayer(line));
+                    entries.Add(BuildPrayer(line.Content));
             }
         }
 
