@@ -7,6 +7,7 @@
              x:DataType="viewModels:PrayerRequestDetailViewModel"
              xmlns:models="clr-namespace:PrayerApp.Models"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
+             xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Name="page"
              Title="Prayer Request"
@@ -121,18 +122,12 @@
                     <!-- Prayer Card -->
                     <Label Text="Belongs to Card"
                            Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource PickerField}">
-                        <Grid ColumnDefinitions="*, Auto">
-                            <Picker Title="Select Card"
-                                    AutomationId="Detail_Picker_Card"
-                                    ItemsSource="{Binding AvailableCards}"
-                                    SelectedItem="{Binding SelectedCard}"
-                                    ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
-                                    SemanticProperties.Hint="Tap to change which card this prayer belongs to"
-                                    HorizontalOptions="Fill" />
-                            <Label Style="{StaticResource PickerIndicator}" />
-                        </Grid>
-                    </Border>
+                    <shared:StyledPicker Title="Select Card"
+                                         AutomationId="Detail_Picker_Card"
+                                         ItemsSource="{Binding AvailableCards}"
+                                         SelectedItem="{Binding SelectedCard}"
+                                         ItemDisplayBinding="{Binding Title, x:DataType=models:PrayerCard}"
+                                         SemanticHint="Tap to change which card this prayer belongs to" />
 
                     <!-- Title -->
                     <Label Text="Title"
@@ -176,22 +171,11 @@
                             <!-- Frequency (visible when notifications enabled) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowNotifyTime}">
                                 <Label Text="Frequency" Style="{StaticResource FormLabel}" />
-                                <Border Style="{StaticResource PickerField}">
-                                    <Grid ColumnDefinitions="*, Auto">
-                                        <Picker Title="Select Frequency"
-                                                AutomationId="Detail_Picker_Frequency"
-                                                ItemsSource="{Binding FrequencyOptions}"
-                                                SelectedItem="{Binding PrayerFrequency}"
-                                                SemanticProperties.Hint="How often to be reminded"
-                                                HorizontalOptions="Fill" />
-                                        <Label Grid.Column="1"
-                                               Text="▼"
-                                               FontSize="12"
-                                               VerticalOptions="Center"
-                                               AutomationProperties.IsInAccessibleTree="false"
-                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
-                                    </Grid>
-                                </Border>
+                                <shared:StyledPicker Title="Select Frequency"
+                                                     AutomationId="Detail_Picker_Frequency"
+                                                     ItemsSource="{Binding FrequencyOptions}"
+                                                     SelectedItem="{Binding PrayerFrequency}"
+                                                     SemanticHint="How often to be reminded" />
                             </VerticalStackLayout>
 
                             <!-- Reminder Time -->
@@ -203,41 +187,19 @@
                             <!-- Day of Week (Weekly only) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfWeek}">
                                 <Label Text="Day of Week" Style="{StaticResource FormLabel}" />
-                                <Border Style="{StaticResource PickerField}">
-                                    <Grid ColumnDefinitions="*, Auto">
-                                        <Picker AutomationId="Detail_Picker_DayOfWeek"
-                                                ItemsSource="{Binding DaysOfWeek}"
-                                                SelectedItem="{Binding SelectedDayOfWeek}"
-                                                Title="Select Day"
-                                                HorizontalOptions="Fill" />
-                                        <Label Grid.Column="1"
-                                               Text="▼"
-                                               FontSize="12"
-                                               VerticalOptions="Center"
-                                               AutomationProperties.IsInAccessibleTree="false"
-                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
-                                    </Grid>
-                                </Border>
+                                <shared:StyledPicker AutomationId="Detail_Picker_DayOfWeek"
+                                                     ItemsSource="{Binding DaysOfWeek}"
+                                                     SelectedItem="{Binding SelectedDayOfWeek}"
+                                                     Title="Select Day" />
                             </VerticalStackLayout>
 
                             <!-- Day of Month (Monthly only) -->
                             <VerticalStackLayout Spacing="4" IsVisible="{Binding ShowDayOfMonth}">
                                 <Label Text="Day of Month" Style="{StaticResource FormLabel}" />
-                                <Border Style="{StaticResource PickerField}">
-                                    <Grid ColumnDefinitions="*, Auto">
-                                        <Picker AutomationId="Detail_Picker_DayOfMonth"
-                                                ItemsSource="{Binding DaysOfMonth}"
-                                                SelectedItem="{Binding SelectedDayOfMonth}"
-                                                Title="Select Day"
-                                                HorizontalOptions="Fill" />
-                                        <Label Grid.Column="1"
-                                               Text="▼"
-                                               FontSize="12"
-                                               VerticalOptions="Center"
-                                               AutomationProperties.IsInAccessibleTree="false"
-                                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
-                                    </Grid>
-                                </Border>
+                                <shared:StyledPicker AutomationId="Detail_Picker_DayOfMonth"
+                                                     ItemsSource="{Binding DaysOfMonth}"
+                                                     SelectedItem="{Binding SelectedDayOfMonth}"
+                                                     Title="Select Day" />
                             </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>

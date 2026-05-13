@@ -4,10 +4,9 @@ namespace PrayerApp.Views.Shared;
 
 /// <summary>
 /// Reusable styled Picker with the app's inset-chrome convention.
-/// Wraps the inner Picker in a <see cref="Border"/> styled by
-/// <c>PickerField</c> and adds a decorative <c>PickerIndicator</c> chevron.
-/// Consumers set BindableProperty values on this component; they pass
-/// through to the encapsulated Picker via {x:Reference root} bindings
+/// Renders the inner Picker alongside a decorative <c>PickerIndicator</c>
+/// chevron. Consumers set BindableProperty values on this component; they
+/// pass through to the encapsulated Picker via {x:Reference root} bindings
 /// in StyledPicker.xaml.
 /// </summary>
 public partial class StyledPicker : ContentView

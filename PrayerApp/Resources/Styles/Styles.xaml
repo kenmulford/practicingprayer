@@ -527,20 +527,7 @@
 
     <!-- ── Picker styles (depend on LabelBase above) ──────────────────── -->
 
-    <!-- PickerField: outlined dropdown border for Picker controls. -->
-    <Style x:Key="PickerField" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="Padding" Value="12,0" />
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="8" />
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- PickerIndicator: decorative ▼ arrow inside a PickerField Grid column 1. -->
+    <!-- PickerIndicator: decorative ▼ arrow used by the shared StyledPicker chrome. -->
     <Style x:Key="PickerIndicator" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="Text" Value="▼" />
         <Setter Property="FontSize" Value="12" />
