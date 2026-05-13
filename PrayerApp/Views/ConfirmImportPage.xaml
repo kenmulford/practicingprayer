@@ -42,70 +42,68 @@
                                          SemanticHint="Choose which collection this imported card belongs to" />
 
                     <Label Text="Add to" Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource PickerField}" Padding="3">
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="2">
-                            <!-- New Card tab -->
-                            <Border Grid.Column="0"
-                                    AutomationId="ConfirmImport_Seg_NewCard"
-                                    Padding="8,6"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 5"
-                                    BackgroundColor="Transparent">
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border"
-                                                 Binding="{Binding IsNewCardMode}"
-                                                 Value="True">
-                                        <Setter Property="BackgroundColor"
-                                                Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                    <Grid Padding="3" ColumnDefinitions="*, *" ColumnSpacing="2">
+                        <!-- New Card tab -->
+                        <Border Grid.Column="0"
+                                AutomationId="ConfirmImport_Seg_NewCard"
+                                Padding="8,6"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 5"
+                                BackgroundColor="Transparent">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding IsNewCardMode}"
+                                             Value="True">
+                                    <Setter Property="BackgroundColor"
+                                            Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="New Card"
+                                   HorizontalTextAlignment="Center"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsNewCardMode}" Value="True">
+                                        <Setter Property="TextColor" Value="White" />
+                                        <Setter Property="FontAttributes" Value="Bold" />
                                     </DataTrigger>
-                                </Border.Triggers>
-                                <Label Text="New Card"
-                                       HorizontalTextAlignment="Center"
-                                       FontSize="13"
-                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
-                                    <Label.Triggers>
-                                        <DataTrigger TargetType="Label" Binding="{Binding IsNewCardMode}" Value="True">
-                                            <Setter Property="TextColor" Value="White" />
-                                            <Setter Property="FontAttributes" Value="Bold" />
-                                        </DataTrigger>
-                                    </Label.Triggers>
-                                </Label>
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding SetNewCardModeCommand}" />
-                                </Border.GestureRecognizers>
-                            </Border>
-                            <!-- Existing Card tab -->
-                            <Border Grid.Column="1"
-                                    AutomationId="ConfirmImport_Seg_ExistingCard"
-                                    Padding="8,6"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 5"
-                                    BackgroundColor="Transparent">
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border"
-                                                 Binding="{Binding IsExistingCardMode}"
-                                                 Value="True">
-                                        <Setter Property="BackgroundColor"
-                                                Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                </Label.Triggers>
+                            </Label>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetNewCardModeCommand}" />
+                            </Border.GestureRecognizers>
+                        </Border>
+                        <!-- Existing Card tab -->
+                        <Border Grid.Column="1"
+                                AutomationId="ConfirmImport_Seg_ExistingCard"
+                                Padding="8,6"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 5"
+                                BackgroundColor="Transparent">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding IsExistingCardMode}"
+                                             Value="True">
+                                    <Setter Property="BackgroundColor"
+                                            Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="Existing Card"
+                                   HorizontalTextAlignment="Center"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsExistingCardMode}" Value="True">
+                                        <Setter Property="TextColor" Value="White" />
+                                        <Setter Property="FontAttributes" Value="Bold" />
                                     </DataTrigger>
-                                </Border.Triggers>
-                                <Label Text="Existing Card"
-                                       HorizontalTextAlignment="Center"
-                                       FontSize="13"
-                                       TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
-                                    <Label.Triggers>
-                                        <DataTrigger TargetType="Label" Binding="{Binding IsExistingCardMode}" Value="True">
-                                            <Setter Property="TextColor" Value="White" />
-                                            <Setter Property="FontAttributes" Value="Bold" />
-                                        </DataTrigger>
-                                    </Label.Triggers>
-                                </Label>
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding SetExistingCardModeCommand}" />
-                                </Border.GestureRecognizers>
-                            </Border>
-                        </Grid>
-                    </Border>
+                                </Label.Triggers>
+                            </Label>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetExistingCardModeCommand}" />
+                            </Border.GestureRecognizers>
+                        </Border>
+                    </Grid>
 
                     <Label Text="Card Title"
                            Style="{StaticResource FormLabel}"

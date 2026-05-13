@@ -4,17 +4,15 @@
              xmlns:local="clr-namespace:PrayerApp.Views.Shared"
              x:Class="PrayerApp.Views.Shared.StyledPicker"
              x:Name="root">
-    <Border Style="{StaticResource PickerField}">
-        <Grid ColumnDefinitions="*,Auto">
-            <Picker Grid.Column="0"
-                    Title="{Binding Title, Source={x:Reference root}, x:DataType=local:StyledPicker}"
-                    ItemsSource="{Binding ItemsSource, Source={x:Reference root}, x:DataType=local:StyledPicker}"
-                    ItemDisplayBinding="{Binding ItemDisplayBinding, Source={x:Reference root}, x:DataType=local:StyledPicker}"
-                    SelectedItem="{Binding SelectedItem, Source={x:Reference root}, x:DataType=local:StyledPicker, Mode=TwoWay}"
-                    AutomationId="{Binding AutomationId, Source={x:Reference root}, x:DataType=local:StyledPicker}"
-                    SemanticProperties.Hint="{Binding SemanticHint, Source={x:Reference root}, x:DataType=local:StyledPicker}"
-                    HorizontalOptions="Fill" />
-            <Label Grid.Column="1" Style="{StaticResource PickerIndicator}" />
-        </Grid>
-    </Border>
+    <Grid ColumnDefinitions="*,Auto">
+        <Picker x:Name="InnerPicker"
+                Grid.Column="0"
+                Title="{Binding Title, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                ItemsSource="{Binding ItemsSource, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                SelectedItem="{Binding SelectedItem, Source={x:Reference root}, x:DataType=local:StyledPicker, Mode=TwoWay}"
+                AutomationId="{Binding AutomationId, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                SemanticProperties.Hint="{Binding SemanticHint, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                HorizontalOptions="Fill" />
+        <Label Grid.Column="1" Style="{StaticResource PickerIndicator}" />
+    </Grid>
 </ContentView>

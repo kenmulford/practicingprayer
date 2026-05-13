@@ -23,7 +23,8 @@ public partial class StyledPicker : ContentView
             defaultBindingMode: BindingMode.TwoWay);
 
     public static readonly BindableProperty ItemDisplayBindingProperty =
-        BindableProperty.Create(nameof(ItemDisplayBinding), typeof(BindingBase), typeof(StyledPicker));
+        BindableProperty.Create(nameof(ItemDisplayBinding), typeof(BindingBase), typeof(StyledPicker),
+            propertyChanged: OnItemDisplayBindingChanged);
 
     public static readonly BindableProperty SemanticHintProperty =
         BindableProperty.Create(nameof(SemanticHint), typeof(string), typeof(StyledPicker));
@@ -61,5 +62,17 @@ public partial class StyledPicker : ContentView
     public StyledPicker()
     {
         InitializeComponent();
+    }
+
+    // Forward ItemDisplayBinding to the inner Picker only when the consumer supplied one.
+    // Picker.ItemDisplayBinding is a plain CLR property (not a BindableProperty), so we
+    // assign directly. Forwarding it unconditionally via XAML caused empty rows whenever
+    // consumers (ConfirmImportPage, PrayerCardPage) left it null and relied on ToString().
+    static void OnItemDisplayBindingChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is not StyledPicker self || self.InnerPicker is null)
+            return;
+
+        self.InnerPicker.ItemDisplayBinding = newValue as BindingBase;
     }
 }
