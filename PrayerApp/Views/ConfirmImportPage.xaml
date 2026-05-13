@@ -27,7 +27,7 @@
         <VerticalStackLayout Padding="16" Spacing="10">
 
             <Label Text="Collection and Card Selection"
-                   Style="{StaticResource SectionHeading}"
+                   Style="{StaticResource FormSectionHeader}"
                    Margin="0,4,0,0" />
 
             <Border Style="{StaticResource PrayerCardBorder}"
@@ -120,6 +120,8 @@
                             <behaviors:KeyboardAvoidanceBehavior />
                         </Entry.Behaviors>
                     </Entry>
+                    <BoxView Style="{StaticResource PickerInsetSeparator}" Margin="0,4,0,0"
+                             IsVisible="{Binding IsNewCardMode}" />
 
                 </VerticalStackLayout>
             </Border>
@@ -212,7 +214,7 @@
                    TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
 
             <Label Text="{Binding PrayersHeader}"
-                   Style="{StaticResource SectionHeading}"
+                   Style="{StaticResource FormSectionHeader}"
                    Margin="0,4,0,0" />
 
             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Prayers}"

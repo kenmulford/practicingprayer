@@ -34,19 +34,22 @@
             </Border>
 
             <!-- Name field -->
-            <VerticalStackLayout Spacing="6">
-                <Label Text="Name" Style="{StaticResource FormLabel}" />
-                <Entry x:Name="NameEntry"
-                       Text="{Binding Name}"
-                       AutomationId="BoxDetail_Entry_Name"
-                       Placeholder="Collection name"
-                       IsReadOnly="{Binding IsSystem}"
-                       ReturnType="Done">
-                    <Entry.Behaviors>
-                        <behaviors:SelectAllOnFocusBehavior />
-                    </Entry.Behaviors>
-                </Entry>
-            </VerticalStackLayout>
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Name" Style="{StaticResource FormLabel}" />
+                    <Entry x:Name="NameEntry"
+                           Text="{Binding Name}"
+                           AutomationId="BoxDetail_Entry_Name"
+                           Placeholder="Collection name"
+                           IsReadOnly="{Binding IsSystem}"
+                           ReturnType="Done">
+                        <Entry.Behaviors>
+                            <behaviors:SelectAllOnFocusBehavior />
+                        </Entry.Behaviors>
+                    </Entry>
+                    <BoxView Style="{StaticResource PickerInsetSeparator}" Margin="0,4,0,0" />
+                </VerticalStackLayout>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

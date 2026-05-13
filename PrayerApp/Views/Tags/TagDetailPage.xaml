@@ -32,6 +32,10 @@
                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource TextSecondaryDark}}" />
             </Border>
 
+            <!-- Name + Color group (matches #47 chrome pattern) -->
+            <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="24">
+
             <!-- Name field -->
             <VerticalStackLayout Spacing="6">
                 <Label Text="Name" Style="{StaticResource FormLabel}" />
@@ -41,6 +45,7 @@
                     Placeholder="Tag name"
                     IsReadOnly="{Binding IsSystem}"
                     ReturnType="Done" />
+                <BoxView Style="{StaticResource PickerInsetSeparator}" Margin="0,4,0,0" />
             </VerticalStackLayout>
 
             <!-- Color picker -->
@@ -116,6 +121,9 @@
                            VerticalOptions="Center" />
                 </Grid>
             </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </Border>
 
             <!-- View prayers with this tag -->
             <Button Text="View Prayers with this Tag"

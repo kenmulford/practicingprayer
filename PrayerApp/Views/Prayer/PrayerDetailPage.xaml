@@ -142,6 +142,7 @@
                             <behaviors:SelectAllOnFocusBehavior />
                         </Entry.Behaviors>
                     </Entry>
+                    <BoxView Style="{StaticResource PickerInsetSeparator}" Margin="0,4,0,0" />
 
                     <!-- Details -->
                     <Label Text="Details"
@@ -153,13 +154,14 @@
                             SemanticProperties.Hint="Prayer request details or Scripture reference"
                             HeightRequest="100"
                             HorizontalOptions="Fill" />
+                    <BoxView Style="{StaticResource PickerInsetSeparator}" Margin="0,4,0,0" />
 
                     <!-- Scheduling group -->
                     <Border Style="{StaticResource PrayerCardBorder}" Padding="16" Margin="0,-4,0,0">
                         <VerticalStackLayout Spacing="10">
                             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
                                 <Label Text="Reminders"
-                                       Style="{StaticResource SectionHeading}"
+                                       Style="{StaticResource FormSectionHeader}"
                                        VerticalOptions="Center" />
                                 <Switch Grid.Column="1"
                                         AutomationId="Detail_Switch_Reminders"

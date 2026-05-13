@@ -34,6 +34,7 @@
                                HorizontalOptions="Fill"
                                Placeholder="Card title"
                                SemanticProperties.Hint="Name or topic for this prayer card" />
+                        <BoxView Style="{StaticResource PickerInsetSeparator}" Margin="0,4,0,0" />
 
                         <!-- Collection picker (hidden for system cards) -->
                         <VerticalStackLayout Spacing="4"

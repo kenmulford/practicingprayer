@@ -21,10 +21,6 @@ public partial class StyledPicker : ContentView
         BindableProperty.Create(nameof(SelectedItem), typeof(object), typeof(StyledPicker),
             defaultBindingMode: BindingMode.TwoWay);
 
-    public static readonly BindableProperty ItemDisplayBindingProperty =
-        BindableProperty.Create(nameof(ItemDisplayBinding), typeof(BindingBase), typeof(StyledPicker),
-            propertyChanged: OnItemDisplayBindingChanged);
-
     public static readonly BindableProperty SemanticHintProperty =
         BindableProperty.Create(nameof(SemanticHint), typeof(string), typeof(StyledPicker));
 
@@ -46,10 +42,32 @@ public partial class StyledPicker : ContentView
         set => SetValue(SelectedItemProperty, value);
     }
 
+    /// <summary>
+    /// Per-item display binding for the inner Picker. Mirrors
+    /// <see cref="Picker.ItemDisplayBinding"/>: a plain CLR property of type
+    /// <see cref="BindingBase"/>, NOT a BindableProperty.
+    ///
+    /// Why not a BindableProperty: when XAML markup <c>{Binding Title, x:DataType=...}</c>
+    /// targets a BindableProperty, the parser treats it as "wire a binding to this
+    /// property" — it sets up a binding from the consumer's BindingContext path
+    /// 'Title' INTO the property, instead of passing the Binding object as a literal
+    /// value. With no 'Title' on the consumer page's view-model, the inner Picker
+    /// receives null and falls back to <c>object.ToString()</c>, rendering type names
+    /// like "PrayerApp.Models.PrayerCard" in the dropdown.
+    ///
+    /// Picker.ItemDisplayBinding sidesteps this by being a plain CLR property: with no
+    /// BindableProperty machinery, the XAML parser passes the Binding instance literally.
+    /// This shim mirrors that exactly so consumers can use the same XAML shape they
+    /// would on a raw Picker.
+    /// </summary>
     public BindingBase? ItemDisplayBinding
     {
-        get => (BindingBase?)GetValue(ItemDisplayBindingProperty);
-        set => SetValue(ItemDisplayBindingProperty, value);
+        get => InnerPicker?.ItemDisplayBinding;
+        set
+        {
+            if (InnerPicker is not null)
+                InnerPicker.ItemDisplayBinding = value;
+        }
     }
 
     public string? SemanticHint
@@ -61,17 +79,5 @@ public partial class StyledPicker : ContentView
     public StyledPicker()
     {
         InitializeComponent();
-    }
-
-    // Forward ItemDisplayBinding to the inner Picker only when the consumer supplied one.
-    // Picker.ItemDisplayBinding is a plain CLR property (not a BindableProperty), so we
-    // assign directly. Forwarding it unconditionally via XAML caused empty rows whenever
-    // consumers (ConfirmImportPage, PrayerCardPage) left it null and relied on ToString().
-    static void OnItemDisplayBindingChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        if (bindable is not StyledPicker self || self.InnerPicker is null)
-            return;
-
-        self.InnerPicker.ItemDisplayBinding = newValue as BindingBase;
     }
 }

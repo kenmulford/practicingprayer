@@ -16,7 +16,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Notifications"
                            SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
+                           Style="{StaticResource FormSectionHeader}" />
                     <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12" HorizontalOptions="Fill">
                         <Label Text="Allow Notifications" VerticalOptions="Center" />
                         <Switch x:Name="chkAllowNotifications"
@@ -39,7 +39,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Prayer Reminders"
                            SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
+                           Style="{StaticResource FormSectionHeader}" />
                     <Label Text="Prayers not prayed within this many days appear in your overdue list on the home page."
                            Style="{StaticResource SectionDescription}" />
                     <VerticalStackLayout Spacing="4">
@@ -60,7 +60,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Prayer Time"
                            SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
+                           Style="{StaticResource FormSectionHeader}" />
                     <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12" HorizontalOptions="Fill">
                         <Label Text="Landscape Mode" VerticalOptions="Center" />
                         <Switch x:Name="chkLandscapeMode"
@@ -79,7 +79,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Developer"
                            SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
+                           Style="{StaticResource FormSectionHeader}" />
                     <Label Text="Stages a sample import payload and opens the confirmation modal. Used to smoke the context-menu import flow without invoking the OS share sheet."
                            Style="{StaticResource SectionDescription}" />
                     <Button x:Name="BtnStageSamplePayload"
