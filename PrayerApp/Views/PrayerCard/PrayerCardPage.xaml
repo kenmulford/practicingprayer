@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="PrayerApp.Views.PrayerCard.PrayerCardPage"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:onboarding="clr-namespace:PrayerApp.Views.Onboarding"
+             xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
+             x:Class="PrayerApp.Views.PrayerCard.PrayerCardPage"
              x:DataType="viewModels:PrayerCardViewModel"
              Title="Prayer Card"
              SafeAreaEdges="Container">
@@ -38,14 +39,10 @@
                         <VerticalStackLayout Spacing="4"
                                              IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}">
                             <Label Text="Collection" Style="{StaticResource FormLabel}" />
-                            <Grid ColumnDefinitions="*, Auto">
-                                <Picker ItemsSource="{Binding AvailableBoxes}"
-                                        SelectedItem="{Binding SelectedBox}"
-                                        AutomationId="Card_Picker_Box"
-                                        SemanticProperties.Hint="Choose which collection this card belongs to"
-                                        HorizontalOptions="Fill" />
-                                <Label Style="{StaticResource PickerIndicator}" />
-                            </Grid>
+                            <shared:StyledPicker ItemsSource="{Binding AvailableBoxes}"
+                                                 SelectedItem="{Binding SelectedBox}"
+                                                 AutomationId="Card_Picker_Box"
+                                                 SemanticHint="Choose which collection this card belongs to" />
                         </VerticalStackLayout>
 
                         <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
