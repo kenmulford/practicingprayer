@@ -143,6 +143,46 @@ public class PrayerListViewModelTests
         db.GetAllAsync<PrayerCardTag>().Returns(new List<PrayerCardTag>());
     }
 
+    // ── #49 — tag preselect survives empty AvailableTags ──────────────
+    // Lifecycle race: Shell's ApplyQueryAttributes fires the tagId preselect
+    // BEFORE OnAppearing → SyncAsync populates AvailableTags. The lookup
+    // against the empty collection finds nothing; before the fix, the
+    // unconditional `_preselectedTagId = 0` reset wiped the request, so the
+    // post-population re-call from SyncCoreAsync early-returned and the
+    // filter never applied. Repro: ApplyQueryAttributes → then SyncAsync.
+
+    [Fact]
+    public async Task ApplyQueryAttributes_TagId_BeforeSync_AppliesAfterPopulation()
+    {
+        // Arrange — only the targeted tag exists; no prayers needed (the
+        // chip-selection contract is what regresses, not the row filter).
+        var tag = new PrayerTag { Id = 42, Name = "Family" };
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag> { tag }.AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>().AsReadOnly());
+        _settings.OverdueDayThreshold.Returns(30);
+        _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>().AsReadOnly());
+        _db_Setup();
+
+        var sut = CreateSut();
+        Assert.Empty(sut.AvailableTags); // precondition: chips not yet populated
+
+        // Act 1 — Shell delivers the tagId before OnAppearing fires SyncAsync
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["tagId"] = "42" });
+
+        // Act 2 — OnAppearing fires SyncAsync, populating chips
+        await sut.SyncAsync();
+
+        // Assert — chip exists, is selected, and StatusFilter flipped to All
+        // (so a future row matching that tag wouldn't be hidden by the
+        // default Active-only filter).
+        var chip = Assert.Single(sut.AvailableTags);
+        Assert.Equal(42, chip.Tag.Id);
+        Assert.True(chip.IsSelected, "preselected tag chip should be selected after Sync populates AvailableTags");
+        Assert.Equal(FilterStatus.All, sut.StatusFilter);
+    }
+
     // ── Slice 6a — single-flight + coalesce-pending SyncAsync ─────────
 
     [Fact]
