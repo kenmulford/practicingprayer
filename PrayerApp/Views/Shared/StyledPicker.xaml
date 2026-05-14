@@ -4,7 +4,12 @@
              xmlns:local="clr-namespace:PrayerApp.Views.Shared"
              x:Class="PrayerApp.Views.Shared.StyledPicker"
              x:Name="root">
-    <Grid ColumnDefinitions="*,Auto">
+    <!-- ColumnSpacing="6" sits between the Picker's right edge and the chevron.
+         iOS HIG calls for ~8pt between disclosure value text and indicator;
+         6pt nets visually ~8pt because the native iOS UIPicker label adds
+         implicit horizontal padding inside its right edge. Without spacing,
+         right-aligned value text ("Loose Cards▼") jams the chevron flush. -->
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
         <Picker x:Name="InnerPicker"
                 Grid.Column="0"
                 Title="{Binding Title, Source={x:Reference root}, x:DataType=local:StyledPicker}"

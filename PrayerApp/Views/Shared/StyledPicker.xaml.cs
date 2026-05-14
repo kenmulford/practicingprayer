@@ -76,6 +76,26 @@ public partial class StyledPicker : ContentView
         set => SetValue(SemanticHintProperty, value);
     }
 
+    /// <summary>
+    /// Horizontal alignment of the inner Picker's selected-item text. Plain
+    /// CLR property (NOT a BindableProperty) so XAML literal values like
+    /// <c>HorizontalTextAlignment="End"</c> pass through as-is rather than
+    /// being interpreted as a binding source path. Defaults to
+    /// <see cref="TextAlignment.Start"/> to preserve label-above call sites
+    /// (e.g., PrayerDetailPage); inset-grouped disclosure rows
+    /// (ConfirmImportPage / PrayerCardPage) opt into <c>End</c> for the
+    /// iOS HIG Settings.app pattern.
+    /// </summary>
+    public TextAlignment HorizontalTextAlignment
+    {
+        get => InnerPicker?.HorizontalTextAlignment ?? TextAlignment.Start;
+        set
+        {
+            if (InnerPicker is not null)
+                InnerPicker.HorizontalTextAlignment = value;
+        }
+    }
+
     public StyledPicker()
     {
         InitializeComponent();

@@ -23,41 +23,53 @@
                     <TapGestureRecognizer Tapped="OnBackgroundTapped" />
                 </VerticalStackLayout.GestureRecognizers>
 
-                <Border Style="{StaticResource PrayerCardBorder}" Padding="16">
-                    <VerticalStackLayout Spacing="12">
+                <Border Style="{StaticResource PrayerCardBorder}" Padding="0">
+                    <VerticalStackLayout Spacing="0">
 
-                        <Label Text="Title" Style="{StaticResource FormLabel}" />
-                        <Entry x:Name="TitleEntry"
-                               Text="{Binding Title}"
-                               AutomationId="Card_Entry_Title"
-                               IsReadOnly="{Binding IsSystem}"
-                               HorizontalOptions="Fill"
-                               Placeholder="Card title"
-                               SemanticProperties.Hint="Name or topic for this prayer card" />
-                        <BoxView Style="{StaticResource PickerInsetSeparator}" Margin="0,4,0,0" />
-
-                        <!-- Collection picker (hidden for system cards) -->
-                        <VerticalStackLayout Spacing="4"
-                                             IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}">
-                            <Label Text="Collection" Style="{StaticResource FormLabel}" />
-                            <shared:StyledPicker ItemsSource="{Binding AvailableBoxes}"
-                                                 SelectedItem="{Binding SelectedBox}"
-                                                 AutomationId="Card_Picker_Box"
-                                                 SemanticHint="Choose which collection this card belongs to" />
+                        <!-- Row 1: Title (HIG label-above-field for free-text) -->
+                        <VerticalStackLayout Padding="16,11" Spacing="6">
+                            <Label Text="Title" Style="{StaticResource FormLabel}" />
+                            <Entry x:Name="TitleEntry"
+                                   Text="{Binding Title}"
+                                   AutomationId="Card_Entry_Title"
+                                   IsReadOnly="{Binding IsSystem}"
+                                   HorizontalOptions="Fill"
+                                   Placeholder="Card title"
+                                   SemanticProperties.Hint="Name or topic for this prayer card" />
                         </VerticalStackLayout>
 
-                        <BoxView Style="{StaticResource DividerLine}" Margin="0,8,0,0" />
-
-                        <!-- Delete Button — Save is in the navbar, Share is on the expanded card view -->
-                        <Button Text="Delete"
-                                AutomationId="Card_Btn_Delete"
-                                Style="{StaticResource DangerButton}"
-                                Command="{Binding DeleteCommand}"
-                                IsVisible="{Binding CanDelete}"
-                                HorizontalOptions="Fill" />
+                        <!-- Row 2 (non-system cards only): Collection picker (HIG disclosure-row).
+                             Wraps separator + row so the hairline collapses with the picker for system cards. -->
+                        <VerticalStackLayout Spacing="0"
+                                             IsVisible="{Binding IsSystem, Converter={StaticResource InverseBool}}">
+                            <BoxView Style="{StaticResource PickerInsetSeparator}" />
+                            <Grid Padding="16,11" ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                                <Label Grid.Column="0"
+                                       Text="Collection"
+                                       Style="{StaticResource FormLabel}"
+                                       VerticalOptions="Center" />
+                                <shared:StyledPicker Grid.Column="1"
+                                                     ItemsSource="{Binding AvailableBoxes}"
+                                                     SelectedItem="{Binding SelectedBox}"
+                                                     AutomationId="Card_Picker_Box"
+                                                     SemanticHint="Choose which collection this card belongs to"
+                                                     VerticalOptions="Center"
+                                                     HorizontalOptions="Fill"
+                                                     HorizontalTextAlignment="End" />
+                            </Grid>
+                        </VerticalStackLayout>
 
                     </VerticalStackLayout>
                 </Border>
+
+                <!-- Delete Button — Save is in the navbar, Share is on the expanded card view.
+                     Outside the section card (different state, not a row in the group). -->
+                <Button Text="Delete"
+                        AutomationId="Card_Btn_Delete"
+                        Style="{StaticResource DangerButton}"
+                        Command="{Binding DeleteCommand}"
+                        IsVisible="{Binding CanDelete}"
+                        HorizontalOptions="Fill" />
 
             </VerticalStackLayout>
         </ScrollView>
