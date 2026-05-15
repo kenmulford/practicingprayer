@@ -25,7 +25,7 @@ public interface INavigationService
     /// modal Page has nowhere to display ToolbarItems — bug observed on-device
     /// where the ConfirmImportPage Cancel/Save buttons were invisible until
     /// wrapped. The iOS PageSheet handler treats a NavigationPage whose root
-    /// is <see cref="IPageSheetModal"/> as the same target, so iPad PageSheet
+    /// is <see cref="Views.IPageSheetModal"/> as the same target, so iPad PageSheet
     /// presentation is preserved. Goes through the cold-start gate +
     /// UI-thread hop the same way <see cref="PushModalOnUiThreadAsync"/> does.
     /// </summary>

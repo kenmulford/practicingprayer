@@ -239,7 +239,7 @@ namespace PrayerApp.ViewModels
         private bool _pendingSavedIsMoveTarget;
 
         /// <summary>
-        /// Set by <see cref="ApplyQueryAttributes"/> when it handled an in-place
+        /// Set by <see cref="IQueryAttributable.ApplyQueryAttributes"/> when it handled an in-place
         /// single-row mutation (PrayerSaved → <see cref="PrayerCardViewModel.AddOrUpdatePrayerAsync"/>;
         /// PrayerDeleted → <see cref="PrayerCardViewModel.RemovePrayer"/>). Consumed
         /// (and cleared) by <c>PrayerCardsPage.OnAppearing</c> to skip the page-pop's
