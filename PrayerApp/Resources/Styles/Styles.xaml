@@ -108,9 +108,13 @@
                     <VisualState x:Name="Normal" />
                     <VisualState x:Name="Focused">
                         <VisualState.Setters>
+                            <!-- Focus tint: Secondary (#E8EDE3) light pops against CardLight white;
+                                 ChipFavoritedBgDark (#3A3420) dark provides ~34-unit lift over CardDark
+                                 (#181a16) plus a warm-gold hue cast, mirroring the light-side
+                                 "lift + hue" strategy and matching the warm journal palette. -->
                             <Setter Property="BackgroundColor"
                                     Value="{AppThemeBinding Light={StaticResource Secondary},
-                                                            Dark={StaticResource SurfaceDark}}" />
+                                                            Dark={StaticResource ChipFavoritedBgDark}}" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState x:Name="Disabled">
@@ -137,9 +141,10 @@
                     <VisualState x:Name="Normal" />
                     <VisualState x:Name="Focused">
                         <VisualState.Setters>
+                            <!-- Focus tint: see Editor style above for token rationale. -->
                             <Setter Property="BackgroundColor"
                                     Value="{AppThemeBinding Light={StaticResource Secondary},
-                                                            Dark={StaticResource SurfaceDark}}" />
+                                                            Dark={StaticResource ChipFavoritedBgDark}}" />
                         </VisualState.Setters>
                     </VisualState>
                     <VisualState x:Name="Disabled">
@@ -527,20 +532,7 @@
 
     <!-- ── Picker styles (depend on LabelBase above) ──────────────────── -->
 
-    <!-- PickerField: outlined dropdown border for Picker controls. -->
-    <Style x:Key="PickerField" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="Padding" Value="12,0" />
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="8" />
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- PickerIndicator: decorative ▼ arrow inside a PickerField Grid column 1. -->
+    <!-- PickerIndicator: decorative ▼ arrow used by the shared StyledPicker chrome. -->
     <Style x:Key="PickerIndicator" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="Text" Value="▼" />
         <Setter Property="FontSize" Value="12" />
@@ -603,10 +595,16 @@
         <Setter Property="FontSize" Value="10" />
     </Style>
 
-    <!-- FormLabel: field label above Entry/Editor/Picker -->
+    <!-- FormLabel: field label above Entry/Editor/Picker.
+         Issue #47 — light-mode token shifted from Tertiary (#3F4A34) to Gray500 (#6E6E6E)
+         so the field label reads as secondary text against the primary Entry/Editor text
+         (Gray900). Dark stays at PrimaryDark (the dark-mode secondary token used across
+         form chrome). Apple HIG / Material 3 both treat field labels as secondary text;
+         this brings the token in line with MutedText / PickerSectionHeader / SectionDescription
+         / CardsSectionHeader, which all use Gray500 light / TextSecondaryDark dark. -->
     <Style x:Key="FormLabel" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource PrimaryDark}}" />
     </Style>
 
     <!-- CardTitle: bold header inside a prayer card -->
@@ -715,6 +713,17 @@
                 </OnPlatform>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- FormSectionHeader: outer section title above a PrayerCardBorder section card on
+         edit forms and settings surfaces. Issue #47. Inherits iOS uppercase / 0.3 character
+         spacing / 13pt / Gray500-light treatment from CardsSectionHeader; overrides to Bold
+         on all platforms (differentiates the section header from in-card FormLabel, which
+         is also Gray500 13pt). Distinct from SectionHeading (18pt Bold) which remains a
+         page-level heading on TagPickerPage. Per-call-site SemanticProperties.HeadingLevel
+         remains the project convention; not baked into the style. -->
+    <Style x:Key="FormSectionHeader" TargetType="Label" BasedOn="{StaticResource CardsSectionHeader}">
+        <Setter Property="FontAttributes" Value="Bold" />
     </Style>
 
     <!-- PickerRow: transparent tap-target row inside a PickerGroupCard.

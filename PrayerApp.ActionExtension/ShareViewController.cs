@@ -303,7 +303,7 @@ public class ShareViewController : UIViewController
         _statusLabel = new UILabel
         {
             Text = SuccessCaption,
-            Font = UIFont.GetPreferredFontForTextStyle(UIFontTextStyle.Body),
+            Font = (UIFont.GetPreferredFontForTextStyle(UIFontTextStyle.Body) ?? UIFont.SystemFontOfSize(17))!,
             TextColor = UIColor.White,
             TextAlignment = UITextAlignment.Center,
             Lines = 0,

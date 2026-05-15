@@ -273,7 +273,7 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Single chokepoint for <see cref="HasNoAvailableCards"/> notification —
-    /// fires <see cref="ObservableObject.OnPropertyChanged"/> only on a real
+    /// fires <see cref="ObservableObject.OnPropertyChanged(string?)"/> only on a real
     /// transition. Called from the AvailableCardGroups CollectionChanged
     /// handler and from <see cref="ImportMode"/>'s setter.
     /// </summary>

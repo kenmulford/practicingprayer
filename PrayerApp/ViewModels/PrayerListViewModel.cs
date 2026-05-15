@@ -319,21 +319,27 @@ namespace PrayerApp.ViewModels
                 chip.IsSelected = false;
 
             var target = AvailableTags.FirstOrDefault(c => c.Tag.Id == _preselectedTagId);
-            if (target is not null)
+            if (target is null)
             {
-                target.IsSelected = true;
-                // Bypass setter to avoid premature ApplyFilter — caller runs it once
-                if (_statusFilter != FilterStatus.All)
-                {
-                    _statusFilter = FilterStatus.All;
-                    OnPropertyChanged(nameof(StatusFilter));
-                    OnPropertyChanged(nameof(IsActiveSelected));
-                    OnPropertyChanged(nameof(IsAnsweredSelected));
-                    OnPropertyChanged(nameof(IsAllSelected));
-                    OnPropertyChanged(nameof(IsOverdueSelected));
-                }
-                _accessibilityService.Announce($"Filtered by {target.Tag.Name}");
+                // Lifecycle race (#49): Shell's ApplyQueryAttributes can deliver
+                // tagId before OnAppearing → SyncAsync populates AvailableTags.
+                // Keep _preselectedTagId so SyncCoreAsync's post-population
+                // re-call lands on the (now-present) chip. Cleared on success.
+                return;
             }
+
+            target.IsSelected = true;
+            // Bypass setter to avoid premature ApplyFilter — caller runs it once
+            if (_statusFilter != FilterStatus.All)
+            {
+                _statusFilter = FilterStatus.All;
+                OnPropertyChanged(nameof(StatusFilter));
+                OnPropertyChanged(nameof(IsActiveSelected));
+                OnPropertyChanged(nameof(IsAnsweredSelected));
+                OnPropertyChanged(nameof(IsAllSelected));
+                OnPropertyChanged(nameof(IsOverdueSelected));
+            }
+            _accessibilityService.Announce($"Filtered by {target.Tag.Name}");
 
             _preselectedTagId = 0;
         }

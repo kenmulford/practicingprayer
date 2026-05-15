@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
+             xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
              x:Class="PrayerApp.Views.ConfirmImportPage"
              x:DataType="viewModels:ConfirmImportViewModel"
              Title="Confirm Import">
@@ -26,31 +27,56 @@
         <VerticalStackLayout Padding="16" Spacing="10">
 
             <Label Text="Collection and Card Selection"
-                   Style="{StaticResource SectionHeading}"
+                   Style="{StaticResource FormSectionHeader}"
                    Margin="0,4,0,0" />
 
             <Border Style="{StaticResource PrayerCardBorder}"
-                    Padding="12">
-                <VerticalStackLayout Spacing="8">
+                    Padding="0">
+                <VerticalStackLayout Spacing="0">
 
-                    <Label Text="Collection"
-                           Style="{StaticResource FormLabel}" />
-                    <Grid ColumnDefinitions="*, Auto">
-                        <Picker ItemsSource="{Binding AvailableBoxes}"
-                                SelectedItem="{Binding SelectedBox}"
-                                AutomationId="ConfirmImport_Picker_Box"
-                                SemanticProperties.Hint="Choose which collection this imported card belongs to"
-                                HorizontalOptions="Fill" />
-                        <Label Grid.Column="1" Style="{StaticResource PickerIndicator}" />
+                    <!-- Row 1: Collection picker (HIG disclosure-row: label intrinsic, value
+                         fills remaining width — Settings.app pattern). The earlier `*, Auto`
+                         shape sized the picker to its intrinsic min-width (44pt floor from the
+                         implicit Picker style) and truncated longer SelectedItem text like
+                         "All collections" to "All collecti...". -->
+                    <Grid Padding="16,11" ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                        <Label Grid.Column="0"
+                               Text="Collection"
+                               Style="{StaticResource FormLabel}"
+                               VerticalOptions="Center" />
+                        <shared:StyledPicker Grid.Column="1"
+                                             ItemsSource="{Binding AvailableBoxes}"
+                                             SelectedItem="{Binding SelectedBox}"
+                                             AutomationId="ConfirmImport_Picker_Box"
+                                             SemanticHint="Choose which collection this imported card belongs to"
+                                             VerticalOptions="Center"
+                                             HorizontalOptions="Fill"
+                                             HorizontalTextAlignment="End" />
                     </Grid>
 
-                    <Label Text="Add to" Style="{StaticResource FormLabel}" />
-                    <Border Style="{StaticResource PickerField}" Padding="3">
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="2">
-                            <!-- New Card tab -->
+                    <BoxView Style="{StaticResource PickerInsetSeparator}" />
+
+                    <!-- Row 2: Add-to segmented control (HIG disclosure-row: label left, control right) -->
+                    <Grid Padding="16,11" ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                        <Label Grid.Column="0"
+                               Text="Add to"
+                               Style="{StaticResource FormLabel}"
+                               VerticalOptions="Center" />
+                        <Grid Grid.Column="1"
+                              Padding="3"
+                              ColumnDefinitions="Auto, Auto"
+                              ColumnSpacing="2"
+                              VerticalOptions="Center"
+                              HorizontalOptions="End">
+                            <!-- New Card tab.
+                                 MinimumHeightRequest=44 brings the pill tap-target up to the
+                                 Apple HIG / WCAG 2.5.5 44pt floor; the visible 13pt label +
+                                 6pt vertical pill padding only reaches ~25pt on its own. -->
                             <Border Grid.Column="0"
                                     AutomationId="ConfirmImport_Seg_NewCard"
-                                    Padding="8,6"
+                                    Padding="10,6"
+                                    MinimumHeightRequest="44"
+                                    MinimumWidthRequest="108"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 5"
                                     BackgroundColor="Transparent">
@@ -62,8 +88,9 @@
                                                 Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
                                     </DataTrigger>
                                 </Border.Triggers>
-                                <Label Text="New Card"
+                                <Label Text="New"
                                        HorizontalTextAlignment="Center"
+                                       VerticalTextAlignment="Center"
                                        FontSize="13"
                                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
                                     <Label.Triggers>
@@ -77,10 +104,12 @@
                                     <TapGestureRecognizer Command="{Binding SetNewCardModeCommand}" />
                                 </Border.GestureRecognizers>
                             </Border>
-                            <!-- Existing Card tab -->
+                            <!-- Existing Card tab. Tap-target floor — see New Card tab above. -->
                             <Border Grid.Column="1"
                                     AutomationId="ConfirmImport_Seg_ExistingCard"
-                                    Padding="8,6"
+                                    Padding="10,6"
+                                    MinimumHeightRequest="44"
+                                    MinimumWidthRequest="44"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 5"
                                     BackgroundColor="Transparent">
@@ -92,8 +121,9 @@
                                                 Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
                                     </DataTrigger>
                                 </Border.Triggers>
-                                <Label Text="Existing Card"
+                                <Label Text="Existing"
                                        HorizontalTextAlignment="Center"
+                                       VerticalTextAlignment="Center"
                                        FontSize="13"
                                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
                                     <Label.Triggers>
@@ -108,23 +138,29 @@
                                 </Border.GestureRecognizers>
                             </Border>
                         </Grid>
-                    </Border>
+                    </Grid>
 
-                    <Label Text="Card Title"
-                           Style="{StaticResource FormLabel}"
-                           IsVisible="{Binding IsNewCardMode}" />
-                    <Entry x:Name="CardTitleEntry"
-                           Text="{Binding CardTitle}"
-                           AutomationId="ConfirmImport_Entry_CardTitle"
-                           Placeholder="Card title"
-                           SemanticProperties.Hint="Title for the imported prayer card"
-                           IsVisible="{Binding IsNewCardMode}"
-                           HorizontalOptions="Fill">
-                        <Entry.Behaviors>
-                            <behaviors:SelectAllOnFocusBehavior />
-                            <behaviors:KeyboardAvoidanceBehavior />
-                        </Entry.Behaviors>
-                    </Entry>
+                    <!-- Row 3 (NewCard mode only): Card Title (HIG label-above-field for free-text).
+                         Wraps separator + row so the hairline collapses with the field in
+                         ExistingCard mode. -->
+                    <VerticalStackLayout Spacing="0" IsVisible="{Binding IsNewCardMode}">
+                        <BoxView Style="{StaticResource PickerInsetSeparator}" />
+                        <VerticalStackLayout Padding="16,11" Spacing="6">
+                            <Label Text="Card Title"
+                                   Style="{StaticResource FormLabel}" />
+                            <Entry x:Name="CardTitleEntry"
+                                   Text="{Binding CardTitle}"
+                                   AutomationId="ConfirmImport_Entry_CardTitle"
+                                   Placeholder="Card title"
+                                   SemanticProperties.Hint="Title for the imported prayer card"
+                                   HorizontalOptions="Fill">
+                                <Entry.Behaviors>
+                                    <behaviors:SelectAllOnFocusBehavior />
+                                    <behaviors:KeyboardAvoidanceBehavior />
+                                </Entry.Behaviors>
+                            </Entry>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
 
                 </VerticalStackLayout>
             </Border>
@@ -217,7 +253,7 @@
                    TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
 
             <Label Text="{Binding PrayersHeader}"
-                   Style="{StaticResource SectionHeading}"
+                   Style="{StaticResource FormSectionHeader}"
                    Margin="0,4,0,0" />
 
             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Prayers}"

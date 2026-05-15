@@ -13,7 +13,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Backup"
                            SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
+                           Style="{StaticResource FormSectionHeader}" />
                     <Label Text="Export your prayer data to a file you can restore on another device."
                            Style="{StaticResource SectionDescription}" />
                     <Button x:Name="btnBackup"
@@ -31,7 +31,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Restore"
                            SemanticProperties.HeadingLevel="Level2"
-                           Style="{StaticResource SectionHeading}" />
+                           Style="{StaticResource FormSectionHeader}" />
                     <Label Text="Replace all current data with a previously exported backup. This cannot be undone."
                            Style="{StaticResource SectionDescription}" />
                     <Button x:Name="btnRestore"

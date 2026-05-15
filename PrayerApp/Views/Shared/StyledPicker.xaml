@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:PrayerApp.Views.Shared"
+             x:Class="PrayerApp.Views.Shared.StyledPicker"
+             x:Name="root">
+    <!-- ColumnSpacing="6" sits between the Picker's right edge and the chevron.
+         iOS HIG calls for ~8pt between disclosure value text and indicator;
+         6pt nets visually ~8pt because the native iOS UIPicker label adds
+         implicit horizontal padding inside its right edge. Without spacing,
+         right-aligned value text ("Loose Cards▼") jams the chevron flush. -->
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+        <Picker x:Name="InnerPicker"
+                Grid.Column="0"
+                Title="{Binding Title, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                ItemsSource="{Binding ItemsSource, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                SelectedItem="{Binding SelectedItem, Source={x:Reference root}, x:DataType=local:StyledPicker, Mode=TwoWay}"
+                AutomationId="{Binding AutomationId, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                SemanticProperties.Hint="{Binding SemanticHint, Source={x:Reference root}, x:DataType=local:StyledPicker}"
+                HorizontalOptions="Fill" />
+        <Label Grid.Column="1" Style="{StaticResource PickerIndicator}" />
+    </Grid>
+</ContentView>

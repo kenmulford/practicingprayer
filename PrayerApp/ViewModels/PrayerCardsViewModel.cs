@@ -26,7 +26,22 @@ namespace PrayerApp.ViewModels
         private readonly IMessenger _messenger;
         private Dictionary<int, HashSet<int>> _cardTagIds = new();
         public ObservableCollection<PrayerCardViewModel> AllPrayerCards { get; }
-        public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
+
+        private ObservableCollection<TagFilterChipViewModel> _availableTags = new();
+        /// <summary>
+        /// Chip-strip filter tags bound to the cards-page header BindableLayout.
+        /// Replaced (not mutated) on each rebuild to avoid an Add-storm of
+        /// CollectionChanged events into the HorizontalStackLayout each forcing
+        /// per-chip measure/arrange + XAML inflation. Mirrors the BoxSections
+        /// replace-vs-mutate pattern; reference-equality short-circuit in
+        /// <see cref="SyncCoreAsync"/> keeps messenger-driven syncs O(0) when
+        /// chip identity hasn't changed.
+        /// </summary>
+        public ObservableCollection<TagFilterChipViewModel> AvailableTags
+        {
+            get => _availableTags;
+            private set => SetProperty(ref _availableTags, value);
+        }
         public bool HasTags => AvailableTags.Count > 0;
 
         private ObservableCollection<BoxSectionViewModel> _boxSections = new();
@@ -224,7 +239,7 @@ namespace PrayerApp.ViewModels
         private bool _pendingSavedIsMoveTarget;
 
         /// <summary>
-        /// Set by <see cref="ApplyQueryAttributes"/> when it handled an in-place
+        /// Set by <see cref="IQueryAttributable.ApplyQueryAttributes"/> when it handled an in-place
         /// single-row mutation (PrayerSaved → <see cref="PrayerCardViewModel.AddOrUpdatePrayerAsync"/>;
         /// PrayerDeleted → <see cref="PrayerCardViewModel.RemovePrayer"/>). Consumed
         /// (and cleared) by <c>PrayerCardsPage.OnAppearing</c> to skip the page-pop's
@@ -317,6 +332,7 @@ namespace PrayerApp.ViewModels
         private async Task BuildCardTagLookupAsync()
         {
             var allJunctions = await PrayerCardTag.LoadAllAsync();
+            // PerfLog.Log($"BuildCardTagLookupAsync.afterLoadAllJunctions junctions={allJunctions.Count}");
             var allPrayers = await _prayerService.GetAllPrayersAsync();
 
             // Build set of unanswered prayer IDs
@@ -596,10 +612,18 @@ namespace PrayerApp.ViewModels
 
         private async Task SyncCoreAsync(ChangeKind? changeKind, bool skipExpandedPrayerReload)
         {
+            // PerfLog.Log("SyncCoreAsync.entry");
             // Service caches are auto-invalidated by their own mutation methods (Slice 2);
             // no defensive InvalidateCache call needed here.
-            var cards = await _cardService.GetCardsAsync();
-            _boxes = await _boxService.GetBoxesAsync();
+            // Cards + boxes are independent reads — parallelize to cut sequential await
+            // latency on cold launch (each is a SQLite + EF round-trip).
+            var cardsTask = _cardService.GetCardsAsync();
+            var boxesTask = _boxService.GetBoxesAsync();
+            await Task.WhenAll(cardsTask, boxesTask);
+            var cards = cardsTask.Result;
+            _boxes = boxesTask.Result;
+            // PerfLog.Log($"SyncCoreAsync.afterGetCards count={cards.Count}");
+            // PerfLog.Log($"SyncCoreAsync.afterGetBoxes count={_boxes.Count}");
             var freshIds = cards.Select(c => c.Id).ToHashSet();
             var currentIds = AllPrayerCards.Select(c => c.Id).ToHashSet();
 
@@ -621,6 +645,7 @@ namespace PrayerApp.ViewModels
                 AllPrayerCards.Add(vm);
                 // PerfLog.Log($"SyncCore.addNewCard id={vm.Id} title=\"{vm.Title}\" IsExpanded={vm.IsExpanded}");
             }
+            // PerfLog.Log("SyncCoreAsync.afterDiffLoop");
 
             // Per-card prayer-row reload is the realize-storm engine: a 50+ row
             // non-virtualized BindableLayout re-realized inside the foreach tips
@@ -657,26 +682,60 @@ namespace PrayerApp.ViewModels
             await BuildCardTagLookupAsync();
 
             var tags = await _tagService.GetTagsAsync();
-            var currentTagIds = AvailableTags.Select(c => c.Tag.Id).ToHashSet();
-            var freshTagIds = tags.Select(t => t.Id).ToHashSet();
+            // PerfLog.Log($"SyncCoreAsync.afterGetTagsAsync tags={tags.Count}");
 
-            var chipsToRemove = AvailableTags.Where(c => !freshTagIds.Contains(c.Tag.Id)).ToList();
-            foreach (var chip in chipsToRemove)
-                AvailableTags.Remove(chip);
-
-            var tagsAdded = false;
-            foreach (var tag in tags.Where(t => !currentTagIds.Contains(t.Id)))
+            // Build the proposed chip sequence in fresh-tags order, reusing existing
+            // chip instances by tag-id so user selection state (IsSelected) survives
+            // unchanged across a sync. Then ref-equality short-circuit: when the
+            // proposed sequence's tag-ids match the current sequence's tag-ids in
+            // order, take the early-out — no replace, no chip-strip re-inflation.
+            //
+            // Without this short-circuit, a single ObservableCollection assignment
+            // on every messenger-driven sync regresses Mark-Answered (#10) from its
+            // 63ms baseline: BindableLayout re-realizes every chip Border + nested
+            // template tree on the HorizontalStackLayout each cycle.
+            var existingChipsByTagId = AvailableTags.ToDictionary(c => c.Tag.Id);
+            var proposedChips = new List<TagFilterChipViewModel>(tags.Count);
+            var addedCount = 0;
+            foreach (var tag in tags)
             {
-                var chip = new TagFilterChipViewModel(tag, _ => ApplyFilter());
-                AvailableTags.Add(chip);
-                tagsAdded = true;
+                if (existingChipsByTagId.TryGetValue(tag.Id, out var existing))
+                    proposedChips.Add(existing);
+                else
+                {
+                    proposedChips.Add(new TagFilterChipViewModel(tag, _ => ApplyFilter()));
+                    addedCount++;
+                }
             }
-            // Skip the PropertyChanged when nothing changed — under messenger-driven
-            // sync this would otherwise fire on every CRUD anywhere, churning bindings.
-            if (chipsToRemove.Count > 0 || tagsAdded)
+            // existing.Count - reused-chip count = deleted-tag count.
+            var removedCount = AvailableTags.Count - (proposedChips.Count - addedCount);
+            // PerfLog.Log($"SyncCoreAsync.afterChipRemove removed={removedCount}");
+            // PerfLog.Log($"SyncCoreAsync.afterChipAddLoop added={addedCount}");
+
+            if (!IsSameTagSequence(AvailableTags, proposedChips))
+            {
+                AvailableTags = new ObservableCollection<TagFilterChipViewModel>(proposedChips);
                 OnPropertyChanged(nameof(HasTags));
+            }
+            // PerfLog.Log("SyncCoreAsync.afterChipDiff");
 
             RebuildSections();
+            // PerfLog.Log("SyncCoreAsync.exit");
+        }
+
+        /// <summary>
+        /// Returns true iff <paramref name="existing"/> and <paramref name="fresh"/> contain
+        /// the same tag IDs in the same order. Used as the messenger-driven-sync early-out
+        /// guard before replacing the <see cref="AvailableTags"/> collection.
+        /// </summary>
+        private static bool IsSameTagSequence(
+            IList<TagFilterChipViewModel> existing,
+            IReadOnlyList<TagFilterChipViewModel> fresh)
+        {
+            if (existing.Count != fresh.Count) return false;
+            for (int i = 0; i < existing.Count; i++)
+                if (existing[i].Tag.Id != fresh[i].Tag.Id) return false;
+            return true;
         }
 
         private static IOrderedEnumerable<PrayerCardViewModel> SortCards(IEnumerable<PrayerCardViewModel> cards) =>

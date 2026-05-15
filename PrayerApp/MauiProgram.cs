@@ -147,6 +147,18 @@ namespace PrayerApp
                 }
             });
 
+#if IOS || MACCATALYST
+            // Strip the native UITextField rounded border MauiPicker inherits by default.
+            // Pickers are wrapped in our shared StyledPicker chrome; the nested OS-native
+            // border was an unintended double-chrome artifact, exposed when StyledPicker's
+            // outer chrome was removed in #35. Matches our DatePicker/TimePicker styling
+            // which already renders flush against parents.
+            Microsoft.Maui.Handlers.PickerHandler.Mapper.AppendToMapping("FlatPickerNoBorder", (handler, view) =>
+            {
+                handler.PlatformView.BorderStyle = UIKit.UITextBorderStyle.None;
+            });
+#endif
+
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
