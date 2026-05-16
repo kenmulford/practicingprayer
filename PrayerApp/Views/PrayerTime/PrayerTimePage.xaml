@@ -17,7 +17,7 @@
                    HorizontalOptions="Center"
                    VerticalOptions="Center"
                    Style="{StaticResource MutedText}"
-                   FontSize="13" />
+                   FontSize="{StaticResource FontSmall}" />
             <!-- Pause/resume button — only visible while auto-mode is active -->
             <Button Grid.Column="1"
                     Text="{Binding PauseButtonText}"
@@ -28,7 +28,7 @@
                     VerticalOptions="Center"
                     TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                     BackgroundColor="Transparent"
-                    FontSize="16"
+                    FontSize="{StaticResource FontHeadline}"
                     Padding="4,0"
                     BorderWidth="0" />
             <!-- Countdown (auto-mode) or configured interval (manual mode); tap to cycle -->
@@ -40,7 +40,7 @@
                     VerticalOptions="Center"
                     TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                     BackgroundColor="Transparent"
-                    FontSize="13"
+                    FontSize="{StaticResource FontSmall}"
                     Padding="4,0"
                     BorderWidth="0" />
         </Grid>
@@ -61,7 +61,7 @@
                                  HorizontalOptions="Center"
                                  Spacing="16">
                 <Label Text="You've prayed through all your requests!"
-                       FontSize="20"
+                       FontSize="{StaticResource FontHeading}"
                        FontAttributes="Bold"
                        SemanticProperties.HeadingLevel="Level1"
                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
@@ -90,7 +90,7 @@
 
                             <!-- Card title (small muted header) -->
                             <Label Text="{Binding CardTitle}"
-                                   FontSize="16"
+                                   FontSize="{StaticResource FontHeadline}"
                                    FontAttributes="Bold"
                                    MaxLines="3"
                                    LineBreakMode="TailTruncation"
@@ -105,7 +105,7 @@
                             <!-- Prayer title -->
                             <Label Grid.Row="2"
                                    Text="{Binding PrayerTitle}"
-                                   FontSize="22"
+                                   FontSize="{StaticResource FontHeadingLg}"
                                    FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
 
@@ -113,7 +113,7 @@
                             <Grid Grid.Row="3" Margin="0,12,0,0">
                                 <ScrollView VerticalScrollBarVisibility="Never">
                                     <Label Text="{Binding Details}"
-                                           FontSize="17"
+                                           FontSize="{StaticResource FontTitle}"
                                            LineHeight="1.5"
                                            Padding="0,0,0,28"
                                            TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
@@ -187,7 +187,7 @@
                     BackgroundColor="{AppThemeBinding Light={StaticResource ButtonSecondaryLight}, Dark={StaticResource ButtonSecondaryDark}}"
                     TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                     Style="{StaticResource CircleNavButton}"
-                    FontSize="11" />
+                    FontSize="{StaticResource FontTiny}" />
 
         </Grid>
 

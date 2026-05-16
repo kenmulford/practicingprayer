@@ -65,7 +65,7 @@
                         <Label
                             Grid.Column="1"
                             Text="{Binding Name}"
-                            FontSize="16"
+                            FontSize="{StaticResource FontHeadline}"
                             AutomationProperties.IsInAccessibleTree="False"
                             LineBreakMode="TailTruncation"
                             VerticalOptions="Center" />
@@ -81,7 +81,7 @@
                             Padding="6,2"
                             VerticalOptions="Center">
                             <Label Text="System"
-                                   FontSize="11"
+                                   FontSize="{StaticResource FontTiny}"
                                    AutomationProperties.IsInAccessibleTree="False"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
                         </Border>
@@ -90,7 +90,7 @@
                         <Label
                             Grid.Column="3"
                             Text="{Binding IsSelected, Converter={StaticResource BoolToChevron}}"
-                            FontSize="18"
+                            FontSize="{StaticResource FontTitleLg}"
                             AutomationProperties.IsInAccessibleTree="false"
                             TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                             VerticalOptions="Center" />
@@ -120,7 +120,7 @@
                                             Dark={StaticResource PrimaryDark}}" />
                                     </Image.Behaviors>
                                 </Image>
-                                <Label Text="Edit" FontSize="12"
+                                <Label Text="Edit" FontSize="{StaticResource FontCaption}"
                                        AutomationProperties.IsInAccessibleTree="False"
                                        TextColor="{AppThemeBinding
                                            Light={StaticResource Tertiary},
@@ -151,7 +151,7 @@
                                             Dark={StaticResource DangerRedDark}}" />
                                     </Image.Behaviors>
                                 </Image>
-                                <Label Text="Delete" FontSize="12"
+                                <Label Text="Delete" FontSize="{StaticResource FontCaption}"
                                        AutomationProperties.IsInAccessibleTree="False"
                                        TextColor="{AppThemeBinding
                                            Light={StaticResource DangerRed},

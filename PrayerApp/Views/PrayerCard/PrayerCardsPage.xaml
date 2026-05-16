@@ -68,7 +68,7 @@
                                 </Image.Behaviors>
                             </Image>
                             <Label Text="{Binding FavoriteLabel}"
-                                   FontSize="12"
+                                   FontSize="{StaticResource FontCaption}"
                                    AutomationProperties.IsInAccessibleTree="False"
                                    TextColor="{AppThemeBinding
                                        Light={StaticResource Tertiary},
@@ -102,7 +102,7 @@
                                         Dark={StaticResource PrimaryDark}}" />
                                 </Image.Behaviors>
                             </Image>
-                            <Label Text="Share" FontSize="12"
+                            <Label Text="Share" FontSize="{StaticResource FontCaption}"
                                    AutomationProperties.IsInAccessibleTree="False"
                                    TextColor="{AppThemeBinding
                                        Light={StaticResource Tertiary},
@@ -128,7 +128,7 @@
                                         Dark={StaticResource PrimaryDark}}" />
                                 </Image.Behaviors>
                             </Image>
-                            <Label Text="Edit" FontSize="12"
+                            <Label Text="Edit" FontSize="{StaticResource FontCaption}"
                                    AutomationProperties.IsInAccessibleTree="False"
                                    TextColor="{AppThemeBinding
                                        Light={StaticResource Tertiary},
@@ -157,7 +157,7 @@
                                         Dark={StaticResource DangerRedDark}}" />
                                 </Image.Behaviors>
                             </Image>
-                            <Label Text="Delete" FontSize="12"
+                            <Label Text="Delete" FontSize="{StaticResource FontCaption}"
                                    AutomationProperties.IsInAccessibleTree="False"
                                    TextColor="{AppThemeBinding
                                        Light={StaticResource DangerRed},
@@ -195,7 +195,7 @@
                                         <Label
                                             Grid.Column="0"
                                             Text="{Binding Title}"
-                                            FontSize="16"
+                                            FontSize="{StaticResource FontHeadline}"
                                             AutomationProperties.IsInAccessibleTree="False"
                                             TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                             TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
@@ -223,7 +223,7 @@
                     IsVisible="{Binding IsExpanded}"
                     AutomationId="Cards_Btn_AddPrayer"
                     SemanticProperties.Hint="Add a new prayer request to this card"
-                    FontSize="17"
+                    FontSize="{StaticResource FontTitle}"
                     TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                     BackgroundColor="Transparent"
                     FontAttributes="Bold"
@@ -283,7 +283,7 @@
                                 </DataTrigger>
                             </Border.Triggers>
                             <Label Text="{Binding Tag.Name}"
-                                   FontSize="12"
+                                   FontSize="{StaticResource FontCaption}"
                                    VerticalOptions="Center"
                                    AutomationProperties.IsInAccessibleTree="False">
                                 <Label.Triggers>
@@ -314,7 +314,7 @@
             </Border.StrokeShape>
             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
                 <Label Text="We've added Collections to help you organize your cards. Tap 'Collections' above to get started."
-                       FontSize="13"
+                       FontSize="{StaticResource FontSmall}"
                        LineBreakMode="WordWrap"
                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
                        VerticalOptions="Center" />
@@ -325,7 +325,7 @@
                         SemanticProperties.Description="Dismiss collections tip"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
-                        FontSize="14"
+                        FontSize="{StaticResource FontBody}"
                         Padding="4"
                         BorderWidth="0"
                         WidthRequest="32"
@@ -365,7 +365,7 @@
                             <TapGestureRecognizer Tapped="OnSectionHeaderTapped" />
                         </Grid.GestureRecognizers>
                         <Label Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
-                               FontSize="11"
+                               FontSize="{StaticResource FontTiny}"
                                AutomationProperties.IsInAccessibleTree="False"
                                TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
                                VerticalOptions="Center"
@@ -399,7 +399,7 @@
                            HeightRequest="0"
                            Style="{StaticResource MutedText}"
                            Margin="0"
-                           FontSize="13">
+                           FontSize="{StaticResource FontSmall}">
                         <Label.Triggers>
                             <MultiTrigger TargetType="Label">
                                 <MultiTrigger.Conditions>
@@ -522,7 +522,7 @@
                                 <Label
                                     Grid.Column="1"
                                     Text="System"
-                                    FontSize="10"
+                                    FontSize="{StaticResource FontMicro}"
                                     IsVisible="{Binding IsSystem}"
                                     AutomationProperties.IsInAccessibleTree="False"
                                     TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextMutedDark}}"
@@ -549,7 +549,7 @@
                                     Style="{StaticResource MutedText}"
                                     Text="{Binding ActivePrayerCount, StringFormat='({0})'}"
                                     IsVisible="{Binding HasAnyPrayer}"
-                                    FontSize="14"
+                                    FontSize="{StaticResource FontBody}"
                                     VerticalOptions="Center"
                                     HorizontalOptions="End"
                                     Margin="0,0,8,0"
@@ -557,7 +557,7 @@
                                 <Label
                                     Grid.Column="4"
                                     Text="★"
-                                    FontSize="16"
+                                    FontSize="{StaticResource FontHeadline}"
                                     AutomationProperties.IsInAccessibleTree="False"
                                     TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
                                     IsVisible="{Binding IsFavorite}"
@@ -651,8 +651,8 @@
             <Grid ColumnDefinitions="*,Auto">
                 <Label Grid.Column="0"
                        Text="{Binding SelectedCountText}"
-                       TextColor="White"
-                       FontSize="14"
+                       TextColor="{StaticResource White}"
+                       FontSize="{StaticResource FontBody}"
                        FontAttributes="Bold"
                        HorizontalOptions="Center"
                        VerticalOptions="Center" />
@@ -661,9 +661,9 @@
                         AutomationId="Cards_Btn_MoveToBox"
                         Command="{Binding MoveSelectedCommand}"
                         SemanticProperties.Hint="Move selected cards to a collection"
-                        TextColor="White"
+                        TextColor="{StaticResource White}"
                         BackgroundColor="Transparent"
-                        FontSize="14"
+                        FontSize="{StaticResource FontBody}"
                         FontAttributes="Bold"
                         Padding="8,4" />
             </Grid>

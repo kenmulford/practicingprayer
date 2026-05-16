@@ -28,7 +28,7 @@
                     <!-- Title -->
                     <HorizontalStackLayout Spacing="8">
                         <Label Text="{Binding Title}"
-                               FontSize="22"
+                               FontSize="{StaticResource FontHeadingLg}"
                                FontAttributes="Bold"
                                SemanticProperties.HeadingLevel="Level1"
                                TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
@@ -48,12 +48,12 @@
 
                     <!-- Details -->
                     <Label Text="{Binding Details, FallbackValue='No details added.'}"
-                           FontSize="15"
+                           FontSize="{StaticResource FontBodyLg}"
                            TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
 
                     <!-- Answered Badge -->
                     <Label Text="{Binding AnsweredAtDisplay}"
-                           FontSize="13"
+                           FontSize="{StaticResource FontSmall}"
                            TextColor="{AppThemeBinding Light={StaticResource SuccessGreen}, Dark={StaticResource SuccessGreenDark}}"
                            FontAttributes="Bold"
                            IsVisible="{Binding IsAnswered}" />
@@ -61,11 +61,11 @@
                     <!-- Frequency -->
                     <HorizontalStackLayout Spacing="6">
                         <Label Text="Frequency:"
-                               FontSize="13"
+                               FontSize="{StaticResource FontSmall}"
                                Style="{StaticResource MutedText}"
                                VerticalOptions="Center" />
                         <Label Text="{Binding PrayerFrequencyDisplay}"
-                               FontSize="13"
+                               FontSize="{StaticResource FontSmall}"
                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
@@ -84,7 +84,7 @@
                                         Margin="2,2">
                                     <Label Text="{Binding Name}"
                                            TextColor="{StaticResource White}"
-                                           FontSize="12"
+                                           FontSize="{StaticResource FontCaption}"
                                            VerticalOptions="Center" />
                                 </Border>
                             </DataTemplate>
@@ -240,7 +240,7 @@
                                 <TapGestureRecognizer Command="{Binding OpenTagPickerCommand}" />
                             </Border.GestureRecognizers>
                             <Label Text="+"
-                                   FontSize="16"
+                                   FontSize="{StaticResource FontHeadline}"
                                    TextColor="{AppThemeBinding Light={StaticResource Primary},
                                                                Dark={StaticResource PrimaryDark}}"
                                    HorizontalOptions="Center"

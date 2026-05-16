@@ -16,7 +16,7 @@
         <VerticalStackLayout Padding="28,32" Spacing="16">
 
             <Label Text="You're all set!"
-                   FontSize="22"
+                   FontSize="{StaticResource FontHeadingLg}"
                    FontAttributes="Bold"
                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                    SemanticProperties.HeadingLevel="Level1"
@@ -24,7 +24,7 @@
                    HorizontalTextAlignment="Center" />
 
             <Label Text="Enjoy the app!"
-                   FontSize="15"
+                   FontSize="{StaticResource FontBodyLg}"
                    TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />

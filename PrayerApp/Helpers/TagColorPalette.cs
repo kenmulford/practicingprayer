@@ -28,7 +28,13 @@ namespace PrayerApp.Helpers
         public static Color Resolve(string? storedHex)
         {
             if (string.IsNullOrEmpty(storedHex))
+            {
+                // Route through the TagGray token so the literal here is a true fallback,
+                // not a load-bearing color. Keep hex in sync with Colors.xaml TagGray.
+                if (Application.Current?.Resources.TryGetValue("TagGray", out var res) == true && res is Color tagGray)
+                    return tagGray;
                 return Color.FromArgb("#505050");
+            }
 
             bool isDark = Application.Current?.RequestedTheme == AppTheme.Dark;
 

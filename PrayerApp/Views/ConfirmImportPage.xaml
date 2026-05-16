@@ -91,7 +91,7 @@
                                 <Label Text="New"
                                        HorizontalTextAlignment="Center"
                                        VerticalTextAlignment="Center"
-                                       FontSize="13"
+                                       FontSize="{StaticResource FontSmall}"
                                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsNewCardMode}" Value="True">
@@ -124,7 +124,7 @@
                                 <Label Text="Existing"
                                        HorizontalTextAlignment="Center"
                                        VerticalTextAlignment="Center"
-                                       FontSize="13"
+                                       FontSize="{StaticResource FontSmall}"
                                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsExistingCardMode}" Value="True">
@@ -232,7 +232,7 @@
                     <Label Grid.Column="1"
                            Text="Change"
                            VerticalOptions="Center"
-                           FontSize="14"
+                           FontSize="{StaticResource FontBody}"
                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
                 </Grid>
                 <Border.GestureRecognizers>
@@ -282,7 +282,7 @@
                                             SemanticProperties.Description="Remove prayer"
                                             BackgroundColor="Transparent"
                                             TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
-                                            FontSize="14"
+                                            FontSize="{StaticResource FontBody}"
                                             Padding="4"
                                             BorderWidth="0"
                                             WidthRequest="32"
@@ -309,7 +309,7 @@
             <Button Text="+ Add another prayer ›"
                     AutomationId="ConfirmImport_Btn_AddPrayer"
                     Command="{Binding AddPrayerCommand}"
-                    FontSize="17"
+                    FontSize="{StaticResource FontTitle}"
                     TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                     BackgroundColor="Transparent"
                     FontAttributes="Bold"

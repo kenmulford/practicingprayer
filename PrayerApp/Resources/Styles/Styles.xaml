@@ -1,8 +1,38 @@
 ﻿<?xml version="1.0" encoding="UTF-8" ?>
 <?xaml-comp compile="true" ?>
-<ResourceDictionary 
+<ResourceDictionary
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ── Accessibility tokens — touch-target floors (PS-06, issue #51) ────
+         iOS HIG floor = 44pt; Material 3 floor = 48dp. 44 is the stricter
+         cross-platform minimum that satisfies iOS without bloating Android.
+         Centralizing as a named token makes the floor reviewable in one
+         place; future interactive rows can reference the same key. -->
+    <x:Double x:Key="TouchTargetMinimum">44</x:Double>
+
+    <!-- ── Typography font-size tokens (PS-05, issue #51) ────────────────────
+         14-step ladder covering every FontSize literal used in PrayerApp
+         XAML. Names are semantic with the numeric size tied to a short
+         comment so the design intent is visible at the callsite AND the
+         rendered pixel size is unambiguous when grepping for a literal.
+         The ladder mirrors values already in use — no resize, pure
+         value-preserving refactor.
+         Out of scope for PS-05: LineHeight, LetterSpacing, FontFamily. -->
+    <x:Double x:Key="FontMicro">10</x:Double>
+    <x:Double x:Key="FontTiny">11</x:Double>
+    <x:Double x:Key="FontCaption">12</x:Double>
+    <x:Double x:Key="FontSmall">13</x:Double>
+    <x:Double x:Key="FontBody">14</x:Double>
+    <x:Double x:Key="FontBodyLg">15</x:Double>
+    <x:Double x:Key="FontHeadline">16</x:Double>
+    <x:Double x:Key="FontTitle">17</x:Double>
+    <x:Double x:Key="FontTitleLg">18</x:Double>
+    <x:Double x:Key="FontHeading">20</x:Double>
+    <x:Double x:Key="FontHeadingLg">22</x:Double>
+    <x:Double x:Key="FontDisplay">24</x:Double>
+    <x:Double x:Key="FontDisplayLg">28</x:Double>
+    <x:Double x:Key="FontHero">32</x:Double>
 
     <Style TargetType="ActivityIndicator">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
@@ -33,11 +63,11 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
-        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
         <Setter Property="BorderWidth" Value="0"/>
         <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Padding" Value="14,10"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -57,7 +87,7 @@
 
     <Style TargetType="CheckBox">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -77,8 +107,8 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <!-- No FontFamily — let iOS use system font so AM/PM glyphs render correctly -->
-        <Setter Property="FontSize" Value="14"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -98,9 +128,9 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -131,9 +161,9 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -162,7 +192,7 @@
         <Setter Property="BorderColor" Value="Transparent"/>
         <Setter Property="BorderWidth" Value="0"/>
         <Setter Property="CornerRadius" Value="0"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -183,7 +213,7 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
@@ -204,7 +234,7 @@
 
     <Style TargetType="Label" x:Key="Headline">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}" />
-        <Setter Property="FontSize" Value="32" />
+        <Setter Property="FontSize" Value="{StaticResource FontHero}" />
         <Setter Property="HorizontalOptions" Value="Center" />
         <Setter Property="HorizontalTextAlignment" Value="Center" />
         <Setter Property="SemanticProperties.HeadingLevel" Value="Level1" />
@@ -212,21 +242,21 @@
 
     <Style TargetType="Label" x:Key="SubHeadline">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}" />
-        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontSize" Value="{StaticResource FontDisplay}" />
         <Setter Property="HorizontalOptions" Value="Center" />
         <Setter Property="HorizontalTextAlignment" Value="Center" />
     </Style>
 
     <Style TargetType="Label" x:Key="SectionHeading">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource DeepEarth}, Dark={StaticResource TextPrimaryDark}}" />
-        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontSize" Value="{StaticResource FontTitleLg}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="SemanticProperties.HeadingLevel" Value="Level2" />
     </Style>
 
     <Style TargetType="Label" x:Key="SectionDescription">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSmall}" />
     </Style>
 
     <Style TargetType="ListView">
@@ -239,8 +269,8 @@
         <Setter Property="TitleColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextSecondaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -277,8 +307,8 @@
         <Setter Property="BackgroundColor" Value="Transparent"/>
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
-        <Setter Property="FontSize" Value="14"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -304,8 +334,8 @@
         <Setter Property="CancelButtonColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -327,7 +357,7 @@
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
@@ -411,8 +441,8 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent"/>
         <!-- No FontFamily — let iOS use system font so AM/PM glyphs render correctly -->
-        <Setter Property="FontSize" Value="14"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
@@ -427,30 +457,6 @@
             </VisualStateGroupList>
         </Setter>
     </Style>
-
-    <!--
-    <Style TargetType="TitleBar">
-        <Setter Property="MinimumHeightRequest" Value="32"/>
-        <Setter Property="VisualStateManager.VisualStateGroups">
-            <VisualStateGroupList>
-                <VisualStateGroup x:Name="TitleActiveStates">
-                    <VisualState x:Name="TitleBarTitleActive">
-                        <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="Transparent" />
-                            <Setter Property="ForegroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                        </VisualState.Setters>
-                    </VisualState>
-                    <VisualState x:Name="TitleBarTitleInactive">
-                        <VisualState.Setters>
-                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                            <Setter Property="ForegroundColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
-                        </VisualState.Setters>
-                    </VisualState>
-                </VisualStateGroup>
-            </VisualStateGroupList>
-        </Setter>
-    </Style>
-    -->
 
     <!-- Visual chrome strip-back (issue #33 P1 + P1A): no default Stroke/StrokeThickness;
          state cues (IsHighlighted, IsMultiSelected) flow through the CardStates VSM group
@@ -514,11 +520,11 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
         <Setter Property="FontFamily" Value="OpenSansRegular"/>
-        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontSize" Value="{StaticResource FontBody}"/>
         <Setter Property="BorderWidth" Value="0"/>
         <Setter Property="CornerRadius" Value="8"/>
         <Setter Property="Padding" Value="14,10"/>
-        <Setter Property="MinimumHeightRequest" Value="44"/>
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}"/>
         <Setter Property="MinimumWidthRequest" Value="44"/>
     </Style>
 
@@ -527,7 +533,7 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
         <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="FontFamily" Value="OpenSansRegular" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
     </Style>
 
     <!-- ── Picker styles (depend on LabelBase above) ──────────────────── -->
@@ -535,7 +541,7 @@
     <!-- PickerIndicator: decorative ▼ arrow used by the shared StyledPicker chrome. -->
     <Style x:Key="PickerIndicator" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="Text" Value="▼" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource FontCaption}" />
         <Setter Property="Grid.Column" Value="1" />
         <Setter Property="VerticalOptions" Value="Center" />
         <Setter Property="AutomationProperties.IsInAccessibleTree" Value="false" />
@@ -558,7 +564,7 @@
 
     <!-- SmallActionButton: compact in-card actions (Set Reminder, Edit) -->
     <Style x:Key="SmallActionButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSmall}" />
         <Setter Property="Padding" Value="8,6" />
     </Style>
 
@@ -577,7 +583,7 @@
         <Setter Property="HeightRequest" Value="60" />
         <Setter Property="CornerRadius" Value="30" />
         <Setter Property="Padding" Value="0" />
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontSize" Value="{StaticResource FontHeading}" />
     </Style>
 
     <!-- ── Label variants ────────────────────────────────────────────────── -->
@@ -592,7 +598,7 @@
     <!-- SuccessBadge: answered-date display (small, green) -->
     <Style x:Key="SuccessBadge" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource SuccessGreen}, Dark={StaticResource SuccessGreenDark}}" />
-        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontSize" Value="{StaticResource FontMicro}" />
     </Style>
 
     <!-- FormLabel: field label above Entry/Editor/Picker.
@@ -603,13 +609,13 @@
          this brings the token in line with MutedText / PickerSectionHeader / SectionDescription
          / CardsSectionHeader, which all use Gray500 light / TextSecondaryDark dark. -->
     <Style x:Key="FormLabel" TargetType="Label" BasedOn="{StaticResource LabelBase}">
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSmall}" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource PrimaryDark}}" />
     </Style>
 
     <!-- CardTitle: bold header inside a prayer card -->
     <Style x:Key="CardTitle" TargetType="Label" BasedOn="{StaticResource LabelBase}">
-        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontSize" Value="{StaticResource FontTitle}" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="MaxLines" Value="3" />
         <Setter Property="LineBreakMode" Value="TailTruncation" />
@@ -672,7 +678,7 @@
     <!-- PickerSectionHeader: small gray label above each PickerGroupCard.
          Approximates iOS section header — small, muted, no bold. -->
     <Style x:Key="PickerSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource FontCaption}" />
         <Setter Property="CharacterSpacing" Value="0.3" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
     </Style>
@@ -691,7 +697,7 @@
     <Style x:Key="CardsSectionHeader" TargetType="Label" BasedOn="{StaticResource LabelBase}">
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
         <Setter Property="VerticalOptions" Value="Center" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{StaticResource FontSmall}" />
         <Setter Property="CharacterSpacing">
             <Setter.Value>
                 <OnPlatform x:TypeArguments="x:Double" Default="0">
@@ -733,6 +739,86 @@
         <Setter Property="Stroke" Value="Transparent" />
         <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="Padding" Value="16,13" />
+    </Style>
+
+    <!-- ── SettingsHubPage row composites (PS-03, issue #51) ─────────────────
+         Five-element row template used 5x on SettingsHubPage. Per-row variance:
+         AutomationId, Tapped handler, Image.Source, title Text, subtitle Text.
+         IconTintColorBehavior stays inline on each Image (Behaviors cannot be
+         set as Style setter values). Font sizes route through PS-05 typography
+         tokens; touch-target floor via TouchTargetMinimum (PS-06). -->
+
+    <Style x:Key="SettingsRowGrid" TargetType="Grid">
+        <Setter Property="ColumnDefinitions" Value="Auto,*,Auto" />
+        <Setter Property="Padding" Value="16,14" />
+        <Setter Property="MinimumHeightRequest" Value="{StaticResource TouchTargetMinimum}" />
+    </Style>
+
+    <Style x:Key="SettingsRowIcon" TargetType="Image">
+        <Setter Property="HeightRequest" Value="22" />
+        <Setter Property="WidthRequest" Value="22" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="Margin" Value="0,0,14,0" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
+    </Style>
+
+    <Style x:Key="SettingsRowTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontHeadline}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="SettingsRowSubtitle" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSmall}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}" />
+    </Style>
+
+    <Style x:Key="SettingsRowChevron" TargetType="Label">
+        <Setter Property="Text" Value="›" />
+        <Setter Property="FontSize" Value="{StaticResource FontHeading}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
+    </Style>
+
+    <!-- ── MainPage metric-tile composites (PS-04, issue #51) ───────────────
+         4 base styles for the 2x2 metric grid on MainPage. Applied to the
+         Active Cards, Unanswered, Last Prayed, and Overdue tiles.
+         Per-tile divergences stay inline:
+           - LastPrayedDay uses FontSize=32 (not 28)
+           - Overdue count uses WarmGold (not Tertiary)
+           - Overdue empty-state is a checkmark VerticalStackLayout (not a Label)
+           - Overdue Border.Triggers (warm-gold highlight) stays on the Border
+         Font sizes route through PS-05 typography tokens. -->
+
+    <Style x:Key="MetricTileLabel" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontTiny}" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+    </Style>
+
+    <Style x:Key="MetricTileNumber" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontDisplayLg}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style x:Key="MetricTileEmpty" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontSmall}" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource TextMutedDark}}" />
+    </Style>
+
+    <Style x:Key="MetricTileTapHint" TargetType="Label">
+        <Setter Property="FontSize" Value="{StaticResource FontMicro}" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+        <Setter Property="AutomationProperties.IsInAccessibleTree" Value="False" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
     </Style>
 
     <Style TargetType="Page" ApplyToDerivedTypes="True">

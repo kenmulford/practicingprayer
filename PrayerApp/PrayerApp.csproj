@@ -68,6 +68,8 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
+		<!-- Color must be a literal hex — MSBuild item attributes don't resolve {StaticResource} XAML tokens.
+		     #6B7D5A is the Primary brand color; keep in sync with Resources/Styles/Colors.xaml Primary token. -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#6B7D5A" />
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\bolt_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -146,6 +148,8 @@
 		</MauiImage>
 
 		<!-- Splash Screen -->
+		<!-- Color must be a literal hex — MSBuild item attributes don't resolve {StaticResource} XAML tokens.
+		     #6B7D5A is the Primary brand color; keep in sync with Resources/Styles/Colors.xaml Primary token. -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#6B7D5A" BaseSize="512,512" />
 
 		<!-- Images -->

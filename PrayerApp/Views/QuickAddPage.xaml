@@ -19,7 +19,7 @@
                 </Border.StrokeShape>
                 <Grid ColumnDefinitions="*, Auto" ColumnSpacing="8">
                     <Label Text="Prayers saved here go to your Quick Add card. You can reorganize them later."
-                           FontSize="13"
+                           FontSize="{StaticResource FontSmall}"
                            LineBreakMode="WordWrap"
                            TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
                            VerticalOptions="Center" />
@@ -30,7 +30,7 @@
                             SemanticProperties.Description="Dismiss tip"
                             BackgroundColor="Transparent"
                             TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
-                            FontSize="14"
+                            FontSize="{StaticResource FontBody}"
                             Padding="4"
                             BorderWidth="0"
                             WidthRequest="32"

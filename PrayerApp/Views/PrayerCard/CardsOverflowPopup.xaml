@@ -53,7 +53,7 @@
                 </Image>
                 <Label Grid.Column="1"
                        Text="Add Card"
-                       FontSize="15"
+                       FontSize="{StaticResource FontBodyLg}"
                        VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                        AutomationProperties.IsInAccessibleTree="False" />
@@ -83,7 +83,7 @@
                 </Image>
                 <Label Grid.Column="1"
                        Text="Manage Collections"
-                       FontSize="15"
+                       FontSize="{StaticResource FontBodyLg}"
                        VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                        AutomationProperties.IsInAccessibleTree="False" />
@@ -113,7 +113,7 @@
                 </Image>
                 <Label Grid.Column="1"
                        Text="Select Cards"
-                       FontSize="15"
+                       FontSize="{StaticResource FontBodyLg}"
                        VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                        AutomationProperties.IsInAccessibleTree="False" />

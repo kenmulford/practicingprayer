@@ -21,7 +21,7 @@
                             <TapGestureRecognizer Command="{Binding ToggleCommand}" />
                         </Grid.GestureRecognizers>
                         <Label Text="{Binding Question}"
-                               FontSize="15"
+                               FontSize="{StaticResource FontBodyLg}"
                                FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
                                SemanticProperties.HeadingLevel="Level2"
@@ -34,7 +34,7 @@
                         </Label>
                         <Label Grid.Column="1"
                                Text="{Binding IsExpanded, Converter={StaticResource BoolToTriangle}}"
-                               FontSize="14"
+                               FontSize="{StaticResource FontBody}"
                                VerticalOptions="Center"
                                TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
                                AutomationProperties.IsInAccessibleTree="False" />
@@ -43,7 +43,7 @@
                     <!-- Answer (visible when expanded) -->
                     <Label Text="{Binding Answer}"
                            IsVisible="{Binding IsExpanded}"
-                           FontSize="14"
+                           FontSize="{StaticResource FontBody}"
                            Padding="16,0,16,14"
                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                            LineBreakMode="WordWrap" />

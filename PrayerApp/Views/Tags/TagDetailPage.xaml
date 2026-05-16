@@ -28,7 +28,7 @@
                     StrokeShape="RoundRectangle 8"
                     Padding="12,10">
                 <Label Text="This is a system-managed tag. You can change its color, but not its name."
-                       FontSize="13"
+                       FontSize="{StaticResource FontSmall}"
                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource TextSecondaryDark}}" />
             </Border>
 
@@ -113,7 +113,7 @@
                         VerticalOptions="Center"
                         AutomationProperties.IsInAccessibleTree="false" />
                     <Label Text="+"
-                           FontSize="20"
+                           FontSize="{StaticResource FontHeading}"
                            FontAttributes="Bold"
                            AutomationProperties.IsInAccessibleTree="false"
                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"

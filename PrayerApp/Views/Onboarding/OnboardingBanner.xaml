@@ -16,7 +16,7 @@
             <Label x:Name="StepLabel"
                    Grid.Row="0"
                    TextColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
-                   FontSize="11"
+                   FontSize="{StaticResource FontTiny}"
                    FontAttributes="Bold"
                    CharacterSpacing="1" />
 
@@ -24,7 +24,7 @@
             <Label x:Name="HeadlineLabel"
                    Grid.Row="1"
                    TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource TextPrimaryDark}}"
-                   FontSize="15"
+                   FontSize="{StaticResource FontBodyLg}"
                    FontAttributes="Bold"
                    LineBreakMode="WordWrap" />
 
@@ -34,7 +34,7 @@
                 <Label x:Name="SubLabel"
                        Grid.Column="0"
                        TextColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TextSecondaryDark}}"
-                       FontSize="13"
+                       FontSize="{StaticResource FontSmall}"
                        LineBreakMode="WordWrap" />
 
                 <Button x:Name="SkipButton"
@@ -43,7 +43,7 @@
                         AutomationId="Banner_Btn_Skip"
                         TextColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TextMutedDark}}"
                         BackgroundColor="Transparent"
-                        FontSize="12"
+                        FontSize="{StaticResource FontCaption}"
                         Padding="0"
                         BorderWidth="0"
                         VerticalOptions="End" />
@@ -57,7 +57,7 @@
                     IsVisible="False"
                     BackgroundColor="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}"
                     TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}"
-                    FontSize="14"
+                    FontSize="{StaticResource FontBody}"
                     FontAttributes="Bold"
                     CornerRadius="8"
                     HeightRequest="40"

@@ -31,7 +31,7 @@
                         AutomationId="List_Filter_Active"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="Active"
-                        FontSize="13">
+                        FontSize="{StaticResource FontSmall}">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsActiveSelected}" Value="True">
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
@@ -49,7 +49,7 @@
                         AutomationId="List_Filter_Answered"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="Answered"
-                        FontSize="13">
+                        FontSize="{StaticResource FontSmall}">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAnsweredSelected}" Value="True">
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
@@ -67,7 +67,7 @@
                         AutomationId="List_Filter_All"
                         Command="{Binding SetStatusCommand}"
                         CommandParameter="All"
-                        FontSize="13">
+                        FontSize="{StaticResource FontSmall}">
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding IsAllSelected}" Value="True">
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
@@ -122,7 +122,7 @@
                                     </DataTrigger>
                                 </Border.Triggers>
                                 <Label Text="{Binding Tag.Name}"
-                                       FontSize="12"
+                                       FontSize="{StaticResource FontCaption}"
                                        VerticalOptions="Center"
                                        AutomationProperties.IsInAccessibleTree="False">
                                     <Label.Triggers>
@@ -182,7 +182,7 @@
                         <!-- Card title (small muted) -->
                         <Label Grid.Row="0"
                                Text="{Binding CardTitle}"
-                               FontSize="11"
+                               FontSize="{StaticResource FontTiny}"
                                MaxLines="3"
                                LineBreakMode="TailTruncation"
                                AutomationProperties.IsInAccessibleTree="False"
@@ -194,7 +194,7 @@
                               AutomationProperties.IsInAccessibleTree="False">
                             <Label Grid.Column="0"
                                    Text="{Binding Title}"
-                                   FontSize="17"
+                                   FontSize="{StaticResource FontTitle}"
                                    TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
                                    TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
                                    VerticalOptions="Center" />

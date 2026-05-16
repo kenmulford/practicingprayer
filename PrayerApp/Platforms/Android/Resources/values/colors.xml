@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<!-- Mirror of Resources/Styles/Colors.xaml brand tokens.
+	     These resolve at the Android platform layer (themes, status bar tint,
+	     adaptive icon background). Keep in sync with the canonical XAML source. -->
 	<color name="colorPrimary">#6B7D5A</color>
 	<color name="colorPrimaryDark">#3F4A34</color>
 	<color name="colorAccent">#C4A052</color>

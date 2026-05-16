@@ -12,19 +12,19 @@
                 <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
 
                     <Label Text="Practicing Prayer"
-                           FontSize="24"
+                           FontSize="{StaticResource FontDisplay}"
                            FontAttributes="Bold"
                            SemanticProperties.HeadingLevel="Level1"
                            TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}"
                            HorizontalTextAlignment="Center" />
 
                     <Label x:Name="lblVersion"
-                           FontSize="14"
+                           FontSize="{StaticResource FontBody}"
                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource TextSecondaryDark}}"
                            HorizontalTextAlignment="Center" />
 
                     <Label Text="A personal worship tool for organizing your prayer life. Create prayer cards, track requests, set reminders, and spend focused time in prayer."
-                           FontSize="15"
+                           FontSize="{StaticResource FontBodyLg}"
                            TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource TextPrimaryDark}}"
                            HorizontalTextAlignment="Center"
                            Margin="0,8,0,0" />
@@ -39,7 +39,7 @@
                         SemanticProperties.Hint="Opens privacy policy in your browser"
                         TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                         BackgroundColor="Transparent"
-                        FontSize="15"
+                        FontSize="{StaticResource FontBodyLg}"
                         Padding="16,10"
                         BorderWidth="0"
                         Clicked="OnPrivacyClicked"
@@ -50,7 +50,7 @@
                         SemanticProperties.Hint="Opens app website in your browser"
                         TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                         BackgroundColor="Transparent"
-                        FontSize="15"
+                        FontSize="{StaticResource FontBodyLg}"
                         Padding="16,10"
                         BorderWidth="0"
                         Clicked="OnWebsiteClicked"
@@ -63,7 +63,7 @@
                         SemanticProperties.Hint="Send diagnostic log via the share sheet to help troubleshoot a bug"
                         TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                         BackgroundColor="Transparent"
-                        FontSize="15"
+                        FontSize="{StaticResource FontBodyLg}"
                         Padding="16,10"
                         BorderWidth="0"
                         IsVisible="False"

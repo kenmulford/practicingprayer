@@ -10,7 +10,7 @@
         <VerticalStackLayout Padding="24" Spacing="16">
 
             <Label Text="Pray by Collection"
-                   FontSize="20"
+                   FontSize="{StaticResource FontHeading}"
                    FontAttributes="Bold"
                    SemanticProperties.HeadingLevel="Level1"
                    TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />

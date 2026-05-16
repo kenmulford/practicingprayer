@@ -49,14 +49,14 @@
                         <HorizontalStackLayout Spacing="4">
                             <Label Text="{Binding Name}"
                                    TextColor="{StaticResource White}"
-                                   FontSize="12"
+                                   FontSize="{StaticResource FontCaption}"
                                    VerticalOptions="Center" />
                             <Button Text="&#x00D7;"
                                     SemanticProperties.Description="Remove tag"
                                     Command="{Binding RemoveCommand}"
                                     TextColor="{StaticResource White}"
                                     BackgroundColor="Transparent"
-                                    FontSize="14"
+                                    FontSize="{StaticResource FontBody}"
                                     Padding="2,0"
                                     BorderWidth="0"
                                     MinimumWidthRequest="24"
@@ -87,7 +87,7 @@
                             <TapGestureRecognizer Tapped="OnSuggestionTapped" />
                         </Grid.GestureRecognizers>
                         <Label Text="{Binding Name}"
-                               FontSize="15"
+                               FontSize="{StaticResource FontBodyLg}"
                                AutomationProperties.IsInAccessibleTree="False"
                                TextColor="{AppThemeBinding Light={StaticResource Tertiary},
                                                            Dark={StaticResource TextPrimaryDark}}" />

@@ -51,6 +51,9 @@
     <!-- Behaviors -->
     <Compile Include="../PrayerApp/Behaviors/KeyboardAvoidanceBehavior.cs" />
 
+    <!-- Converters -->
+    <Compile Include="../PrayerApp/Converters/BoolToMutedColorConverter.cs" />
+
     <!-- Models -->
     <Compile Include="../PrayerApp/Models/Prayer.cs" />
     <Compile Include="../PrayerApp/Models/PrayerCard.cs" />
