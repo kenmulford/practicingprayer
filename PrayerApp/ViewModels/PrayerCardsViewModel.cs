@@ -431,6 +431,7 @@ namespace PrayerApp.ViewModels
                         // prayer in context. The pre-refactor R-1 race (cascade
                         // collapsing unrelated cards) is structurally impossible under
                         // the ExpandedCardId design — only prev+next get signaled.
+                        matched.LoadPrayersAsync().SafeFireAndForget();
                         ExpandedCardId = matched.Id;
                         matched.AddOrUpdatePrayerAsync(prayerId).SafeFireAndForget();
                         matched.RefreshActivePrayerCount();
@@ -502,9 +503,10 @@ namespace PrayerApp.ViewModels
                 if (isMoveTarget)
                 {
                     // Move-prayer: scroll to the target so the user sees where their prayer
-                    // landed. No highlight — the card isn't new. AddOrUpdatePrayerAsync
-                    // (fire-and-forget in ApplyQueryAttributes) handles prayer-list refresh.
-                    // PerfLog.Log("ConsumePendingSavedAsync move-target (matched, was-in-list, isMoveTarget)");
+                    // landed. No highlight — the card isn't new. Eagerly load prayers so
+                    // system-card targets (often off-screen) realize their expanded subtree.
+                    await matched.LoadPrayersAsync();
+                    ExpandedCardId = matched.Id;
                     EnsureSectionExpandedFor(matched);
                     return matched;
                 }
