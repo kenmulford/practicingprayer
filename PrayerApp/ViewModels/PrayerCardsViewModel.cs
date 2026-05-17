@@ -503,11 +503,14 @@ namespace PrayerApp.ViewModels
                 if (isMoveTarget)
                 {
                     // Move-prayer: scroll to the target so the user sees where their prayer
-                    // landed. No highlight — the card isn't new. Eagerly load prayers so
-                    // system-card targets (often off-screen) realize their expanded subtree.
+                    // landed. No highlight — the card isn't new. Eagerly load prayers and
+                    // re-signal expand so off-screen targets (often system cards near the
+                    // bottom of the list) realize their subtree when ScrollTo runs — the
+                    // ExpandedCardId transition may have fired while Cards was off-screen.
                     await matched.LoadPrayersAsync();
                     ExpandedCardId = matched.Id;
                     EnsureSectionExpandedFor(matched);
+                    matched.RaiseIsExpandedChanged();
                     return matched;
                 }
                 // Edit case: just reload + rebuild; don't scroll (Galaxy Ultra adapter race).
