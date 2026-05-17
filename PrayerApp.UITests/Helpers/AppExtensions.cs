@@ -1,5 +1,7 @@
+using System.Text.RegularExpressions;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
+using OpenQA.Selenium.Appium.Android;
 using OpenQA.Selenium.Support.UI;
 using PrayerApp.UITests.Infrastructure;
 using System.IO;
@@ -1607,6 +1609,106 @@ public static class AppExtensions
         var filePath = Path.Combine(dir, $"{testName}_{timestamp}.xml");
         File.WriteAllText(filePath, driver.PageSource);
         return filePath;
+    }
+
+    // ── Android keyboard helpers ─────────────────────────────────
+
+    /// <summary>Whether the soft keyboard is visible (Android only).</summary>
+    public static bool IsAndroidKeyboardShown(this AppiumDriver driver)
+    {
+        if (!TestConfig.IsAndroid || driver is not AndroidDriver android)
+            return false;
+
+        try
+        {
+            return android.IsKeyboardShown();
+        }
+        catch (WebDriverException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Wait until the Android soft keyboard is shown, or time out.
+    /// </summary>
+    public static void WaitForAndroidKeyboard(this AppiumDriver driver, int timeoutSeconds = 5)
+    {
+        if (!TestConfig.IsAndroid)
+            return;
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+        wait.Until(_ => driver.IsAndroidKeyboardShown());
+    }
+
+    /// <summary>
+    /// Estimate on-screen keyboard height (px) from <c>dumpsys input_method</c>.
+    /// Falls back to 35% of the window height when parsing fails but the keyboard is shown.
+    /// </summary>
+    public static int EstimateAndroidKeyboardHeight(this AppiumDriver driver)
+    {
+        if (!TestConfig.IsAndroid)
+            return 0;
+
+        var screenHeight = driver.Manage().Window.Size.Height;
+
+        try
+        {
+            var raw = driver.ExecuteScript("mobile: shell", new Dictionary<string, object>
+            {
+                { "command", "dumpsys" },
+                { "args", new[] { "input_method" } }
+            })?.ToString() ?? "";
+
+            // mInputFrame=[0,1280][1080,2400] — bottom inset is screenHeight - topY
+            var match = Regex.Match(
+                raw,
+                @"m(?:Input|Cur)Frame=\[(\d+),(\d+)\]\[(\d+),(\d+)\]",
+                RegexOptions.CultureInvariant);
+            if (match.Success)
+            {
+                var top = int.Parse(match.Groups[2].Value);
+                var bottom = int.Parse(match.Groups[4].Value);
+                var height = bottom - top;
+                if (height > 0 && height < screenHeight)
+                    return height;
+            }
+        }
+        catch (WebDriverException)
+        {
+            // dumpsys unavailable — use fallback below
+        }
+
+        return driver.IsAndroidKeyboardShown()
+            ? (int)(screenHeight * 0.35)
+            : 0;
+    }
+
+    /// <summary>
+    /// Assert the element's bottom edge sits above the on-screen keyboard, not merely
+    /// above the layout viewport (which stays full-height under adjustResize).
+    /// </summary>
+    public static void AssertBottomEdgeAboveKeyboard(
+        this AppiumDriver driver,
+        AppiumElement element,
+        int paddingPx = 8)
+    {
+        if (!TestConfig.IsAndroid)
+            throw new InvalidOperationException("Keyboard occlusion checks are Android-only");
+
+        Assert.True(driver.IsAndroidKeyboardShown(), "Expected the soft keyboard to be visible");
+
+        var screenHeight = driver.Manage().Window.Size.Height;
+        var keyboardHeight = driver.EstimateAndroidKeyboardHeight();
+        Assert.True(keyboardHeight > 0, "Could not estimate keyboard height from dumpsys");
+
+        var entryBottom = element.Location.Y + element.Size.Height;
+        var visibleBottom = screenHeight - keyboardHeight - paddingPx;
+
+        Assert.True(
+            entryBottom <= visibleBottom,
+            $"Entry bottom ({entryBottom}px) should sit above the keyboard " +
+            $"(visible area ends at {visibleBottom}px; keyboard ~{keyboardHeight}px on {screenHeight}px screen)");
     }
 
     // ── Platform Intent Helpers ──────────────────────────────────
