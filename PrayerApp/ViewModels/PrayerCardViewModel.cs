@@ -509,21 +509,16 @@ namespace PrayerApp.ViewModels
 
         public async Task LoadBoxPickerAsync()
         {
-            var boxes = await _boxService.GetBoxesAsync();
+            var items = await _boxService.GetBoxPickerItemsAsync();
             AvailableBoxes.Clear();
-
-            // "Loose Cards" (no collection) always first
-            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
-            AvailableBoxes.Add(looseCards);
-
-            // User-created boxes only (no System/Archived)
-            foreach (var box in boxes.Where(b => !b.IsSystem))
-                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
+            foreach (var item in items)
+                AvailableBoxes.Add(item);
 
             // Set selection to match current card's BoxId — the card-edit
             // picker only contains RealBoxPickerItem rows (no All-collections
             // sentinel), so OfType<RealBoxPickerItem> is a no-op cast filter
             // that yields the right element type for the BoxId predicate.
+            var looseCards = items[0];
             SelectedBox = AvailableBoxes
                               .OfType<RealBoxPickerItem>()
                               .FirstOrDefault(b => b.BoxId == _prayerCard.BoxId)

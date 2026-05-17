@@ -338,15 +338,11 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         _boxesLoading = true;
         try
         {
-            var boxes = await _boxService.GetBoxesAsync();
+            var items = await _boxService.GetBoxPickerItemsAsync();
+            foreach (var item in items)
+                AvailableBoxes.Add(item);
 
-            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
-            AvailableBoxes.Add(looseCards);
-
-            foreach (var box in boxes.Where(b => !b.IsSystem))
-                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
-
-            SelectedBox = looseCards;
+            SelectedBox = items[0];
             _boxesLoaded = true;
         }
         finally
