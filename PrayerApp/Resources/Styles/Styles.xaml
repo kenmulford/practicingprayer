@@ -556,6 +556,19 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
     </Style>
 
+    <!-- CloseButton: dismiss (✕) affordance for tips, banners, and removable rows -->
+    <Style x:Key="CloseButton" TargetType="Button">
+        <Setter Property="Text" Value="✕" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="WidthRequest" Value="32" />
+        <Setter Property="HeightRequest" Value="32" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
     <!-- SmallActionButton: compact in-card actions (Set Reminder, Edit) -->
     <Style x:Key="SmallActionButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
         <Setter Property="FontSize" Value="13" />
