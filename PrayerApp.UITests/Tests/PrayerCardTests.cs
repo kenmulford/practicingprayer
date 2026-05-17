@@ -837,17 +837,13 @@ public class PrayerCardTests
         }
     }
 
-    // ── Move-prayer tests (TD-20) ── Commit 1 TDD anchors ─────────────────
-    // These three tests are RED until Commit 2 lands the declarative-margin +
-    // ExpandedCardId fix. Gate them with the FailingPreCommit2 trait so CI
-    // can exclude them via --filter 'Status!=FailingPreCommit2' until ready.
+    // ── Move-prayer tests (TD-20) ─────────────────────────────────────────
 
     /// <summary>
     /// X-06 / TD-20: Moving a prayer from "Move Source Card" to "Move Target Card"
     /// is reflected in both card headers — source count decreases, target count increases.
     /// </summary>
     [Fact]
-    [Trait("Status", "FailingPreCommit2")]
     public void Cards_MovePrayerBetweenCards_BothCardsReflect()
     {
         _setup.Driver.ResetAppUIState(_setup);
@@ -860,11 +856,10 @@ public class PrayerCardTests
         EnsureCardExpanded(driver, "Move Source Card");
 
         // 2. Tap "Prayer One" to open PrayerDetailPage (view mode).
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Prayer One", timeoutSeconds: 10);
-        else
-            driver.TapByText("Prayer One");
-        Thread.Sleep(TestConfig.DelayAfterTap);
+        driver.TapPrayerRowInExpandedCard("Move Source Card", "Prayer One");
+        Assert.False(
+            driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 1),
+            "Prayer row tap should open detail view, not multi-select mode");
 
         // 3. Enter edit mode.
         driver.TapToolbarItem("Edit");
@@ -920,7 +915,6 @@ public class PrayerCardTests
     /// This is the regression test for the Border.Margin bug fixed in Commit 2.
     /// </summary>
     [Fact]
-    [Trait("Status", "FailingPreCommit2")]
     public void Cards_MovePrayer_DoesNotLeaveSourceCardWithStaleExpandedMargin()
     {
         _setup.Driver.ResetAppUIState(_setup);
@@ -934,11 +928,10 @@ public class PrayerCardTests
 
         // 2. Open "Prayer Two" (using Prayer Two here to keep fixtures independent
         //    from Cards_MovePrayerBetweenCards_BothCardsReflect which uses Prayer One).
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Prayer Two", timeoutSeconds: 10);
-        else
-            driver.TapByText("Prayer Two");
-        Thread.Sleep(TestConfig.DelayAfterTap);
+        driver.TapPrayerRowInExpandedCard("Move Source Card", "Prayer Two");
+        Assert.False(
+            driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 1),
+            "Prayer row tap should open detail view, not multi-select mode");
 
         // 3. Edit mode.
         driver.TapToolbarItem("Edit");
@@ -988,7 +981,6 @@ public class PrayerCardTests
     /// auto-expands the target card and shows its new contents.
     /// </summary>
     [Fact]
-    [Trait("Status", "FailingPreCommit2")]
     public void Cards_MovePrayer_TargetCardExpandsAndShowsMovedPrayer()
     {
         _setup.Driver.ResetAppUIState(_setup);
@@ -1001,11 +993,10 @@ public class PrayerCardTests
         EnsureCardExpanded(driver, "Move Source Card");
 
         // 2. Open "Prayer Three" (keeps fixture independent from other move tests).
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Prayer Three", timeoutSeconds: 10);
-        else
-            driver.TapByText("Prayer Three");
-        Thread.Sleep(TestConfig.DelayAfterTap);
+        driver.TapPrayerRowInExpandedCard("Move Source Card", "Prayer Three");
+        Assert.False(
+            driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 1),
+            "Prayer row tap should open detail view, not multi-select mode");
 
         // 3. Edit mode.
         driver.TapToolbarItem("Edit");

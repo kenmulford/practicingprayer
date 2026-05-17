@@ -695,61 +695,76 @@ public static class AppExtensions
     // ── Onboarding ───────────────────────────────────────────────
 
     /// <summary>
-    /// Dismiss onboarding if currently showing. Idempotent — safe to call multiple times.
+    /// Dismiss onboarding if currently showing. Idempotent when fully dismissed.
     /// Taps "Skip tour" on the welcome popup, "Skip" on a mid-flow banner, or "Got it!"
     /// on the final PrayerTimeHighlight step, then "Done" on the completion popup.
-    /// Retries up to 3 times with increasing wait to handle slow popup rendering.
     /// </summary>
+    /// <remarks>
+    /// Does not mark <see cref="AppiumSetup.OnboardingHandled"/> until welcome/banner
+    /// controls are gone — the prior fast-path on tab-bar visibility alone caused
+    /// false success on iPad when the Shell rendered under a still-open MAUI popup.
+    /// </remarks>
     public static void DismissOnboardingIfPresent(this AppiumDriver driver, AppiumSetup setup)
     {
-        if (setup.OnboardingHandled) return;
-
-        // Fast path: if the tab bar is already rendered, no onboarding popup is
-        // blocking. Saves up to 3s on test #1 vs probing Welcome_Btn_Skip first.
-        if (driver.IsDisplayed("Home", timeoutSeconds: 1))
-        {
-            setup.OnboardingHandled = true;
+        if (setup.OnboardingHandled && IsOnboardingFullyDismissed(driver))
             return;
-        }
 
-        // Retry loop — the welcome popup renders asynchronously from OnAppearing
-        // and may not be visible immediately, especially on slow emulators.
-        for (int attempt = 0; attempt < 3; attempt++)
+        const int maxAttempts = 5;
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            // Check for dismissal buttons — welcome popup, mid-onboarding banner, or final "Got it!"
-            string? dismissButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 3) ? "Welcome_Btn_Skip"
-                : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 2) ? "Banner_Btn_Skip"
-                : driver.IsDisplayed("Banner_Btn_GotIt", timeoutSeconds: 2) ? "Banner_Btn_GotIt"
-                : null;
+            if (IsOnboardingFullyDismissed(driver))
+            {
+                setup.OnboardingHandled = true;
+                return;
+            }
+
+            string? dismissButton = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 2)
+                ? "Welcome_Btn_Skip"
+                : driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 1)
+                    ? "Banner_Btn_Skip"
+                    : driver.IsDisplayed("Banner_Btn_GotIt", timeoutSeconds: 1)
+                        ? "Banner_Btn_GotIt"
+                        : null;
 
             if (dismissButton != null)
             {
                 driver.Tap(dismissButton);
-                Thread.Sleep(1000);
+                Thread.Sleep(TestConfig.DelayModalAnimation);
 
-                if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 10))
+                if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 8))
                 {
                     driver.Tap("Complete_Btn_Done");
-                    Thread.Sleep(500);
+                    Thread.Sleep(TestConfig.DelayAfterDismiss);
                 }
 
-                setup.OnboardingHandled = true;
-                return;
+                continue;
             }
 
-            // If tab bar is already accessible, no popup is blocking — we're good
-            if (driver.IsDisplayed("Home", timeoutSeconds: 1))
+            // iOS: MAUI Popup buttons may not surface AutomationId — fall back to label.
+            if (TestConfig.IsIOS && driver.IsTextDisplayed("Skip tour", timeoutSeconds: 1))
             {
-                setup.OnboardingHandled = true;
-                return;
+                driver.TapByText("Skip tour");
+                Thread.Sleep(TestConfig.DelayModalAnimation);
+                continue;
             }
 
-            // Wait before retry to give the popup time to render
-            Thread.Sleep(1000);
+            Thread.Sleep(TestConfig.DelayModalAnimation);
         }
 
-        // After retries, mark handled to avoid infinite loops in future calls
-        setup.OnboardingHandled = true;
+        if (IsOnboardingFullyDismissed(driver))
+            setup.OnboardingHandled = true;
+    }
+
+    /// <summary>True when no onboarding popup/buttons block the main Shell UI.</summary>
+    private static bool IsOnboardingFullyDismissed(AppiumDriver driver)
+    {
+        if (driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 0)) return false;
+        if (driver.IsDisplayed("Welcome_Btn_GetStarted", timeoutSeconds: 0)) return false;
+        if (driver.IsDisplayed("Banner_Btn_Skip", timeoutSeconds: 0)) return false;
+        if (driver.IsDisplayed("Banner_Btn_GotIt", timeoutSeconds: 0)) return false;
+
+        return driver.IsDisplayed("Home", timeoutSeconds: 1)
+            || driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 1);
     }
 
     // ── Alerts/Dialogs ───────────────────────────────────────────
@@ -1028,6 +1043,40 @@ public static class AppExtensions
     {
         driver.FindByText(text, timeoutSeconds).Click();
         Thread.Sleep(300);
+    }
+
+    /// <summary>
+    /// Tap a prayer row inside an expanded card. Uses the row's composed accessibility
+    /// summary (<c>{cardName}, {prayerTitle}</c>) on iOS so a bare title tap does not
+    /// hit the card header or trigger a long-press multi-select entry.
+    /// </summary>
+    public static void TapPrayerRowInExpandedCard(
+        this AppiumDriver driver,
+        string cardName,
+        string prayerTitle,
+        int timeoutSeconds = 10)
+    {
+        driver.DismissKeyboardIfPresent();
+
+        if (TestConfig.IsIOS)
+        {
+            var summaryNeedle = $"{cardName}, {prayerTitle}";
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
+            var locator = By.XPath(
+                $"//*[contains(@label,'{summaryNeedle}') or contains(@name,'{summaryNeedle}')]");
+            var element = (AppiumElement)wait.Until(d => d.FindElement(locator));
+            var loc = element.Location;
+            var size = element.Size;
+            driver.ExecuteScript("mobile: tap", new Dictionary<string, object>
+            {
+                { "x", loc.X + size.Width / 2 },
+                { "y", loc.Y + size.Height / 2 },
+            });
+            Thread.Sleep(TestConfig.DelayAfterTap);
+            return;
+        }
+
+        driver.TapByText(prayerTitle, timeoutSeconds);
     }
 
     /// <summary>Find and tap any element whose text/label <em>contains</em> the given substring.</summary>
