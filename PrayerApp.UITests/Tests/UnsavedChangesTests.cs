@@ -53,14 +53,14 @@ public class UnsavedChangesTests
             catch { driver.DismissAlertIfPresent(); }
         }
         driver.DismissAlertIfPresent();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
         // Make sure we're back on the Prayers list (not stuck on detail)
         if (driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 2))
         {
             driver.GoBack();
             driver.DismissAlertIfPresent();
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
         }
     }
 
@@ -76,10 +76,10 @@ public class UnsavedChangesTests
 
         driver.EnterText("Detail_Entry_Title", "Tab Switch Dirty");
         driver.NavigateToTab("Home");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         driver.DismissAlertIfPresent();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
         Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 10)
                  || driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 3));
@@ -95,7 +95,7 @@ public class UnsavedChangesTests
 
         driver.EnterText("Detail_Entry_Title", "Saved Prayer NoPrompt");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1500);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Save already navigates back to prayer list via GoToAsync("..").
         // Verify we're on the list (no discard prompt intercepted the Save navigation).
@@ -113,7 +113,7 @@ public class UnsavedChangesTests
         var driver = _setup.Driver;
 
         driver.GoBack();
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
                  || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),

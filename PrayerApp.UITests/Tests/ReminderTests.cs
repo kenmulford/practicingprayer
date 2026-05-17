@@ -24,7 +24,7 @@ public class ReminderTests
         driver.EnterText("Detail_Entry_Title", title);
         driver.ScrollDownTo("Detail_Switch_Reminders");
         driver.Tap("Detail_Switch_Reminders");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
     }
 
     /// <summary>6.1: Enable reminders — toggle on shows frequency/time pickers.</summary>
@@ -55,7 +55,7 @@ public class ReminderTests
         if (driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 3))
         {
             driver.Tap("Detail_Picker_Frequency");
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
 
             if (TestConfig.IsIOS)
             {
@@ -104,7 +104,7 @@ public class ReminderTests
 
         // Toggle OFF
         driver.Tap("Detail_Switch_Reminders");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.False(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 2),
             "Frequency picker should be hidden when reminders are disabled");

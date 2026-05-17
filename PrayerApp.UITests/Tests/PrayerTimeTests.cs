@@ -90,7 +90,7 @@ public class PrayerTimeTests
                     driver.Tap("PrayerTime_Btn_Finish");
                 else
                     driver.TapByText("Finish");
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
                 continue;
             }
         }
@@ -151,7 +151,7 @@ public class PrayerTimeTests
                 driver.DumpPageSource("PrayerTime_ExitFailed");
             driver.GoBack();
         }
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         // Diagnostic: capture state after exit attempt
         if (TestConfig.IsIOS)
@@ -226,7 +226,7 @@ public class PrayerTimeTests
                     driver.TapByTextContains("Auto");
             }
             catch (WebDriverException) { /* button may have shifted */ }
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
 
             Assert.True(
                 driver.IsDisplayed("PrayerTime_Btn_Pause", timeoutSeconds: 3)

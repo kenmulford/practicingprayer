@@ -26,14 +26,14 @@ public class EdgeCaseTests
 
         // Search for something that won't match
         driver.EnterText("Cards_Search", "zzz_nothing_matches_this_ever");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         // Page should still be functional (empty result, no crash)
         Assert.True(driver.IsDisplayed("Cards_List_Cards") || driver.IsDisplayed("Cards_Search"));
 
         // Clear search
         driver.EnterText("Cards_Search", "");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
     }
 
     /// <summary>12.3: Very long prayer title — doesn't break layout.</summary>
@@ -50,7 +50,7 @@ public class EdgeCaseTests
         var longTitle = new string('A', 200) + " Long Prayer Title";
         driver.EnterText("QuickAdd_Entry_Title", longTitle);
         driver.WaitAndTap("QuickAdd_Btn_Add");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayModalAnimation);
 
         Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd"),
             "App should handle long prayer titles without crashing");
@@ -97,10 +97,10 @@ public class EdgeCaseTests
 
         // Rapidly tap Save twice
         driver.TapToolbarItem("Save");
-        Thread.Sleep(100);
+        Thread.Sleep(TestConfig.DelayBriefSettle);
         // Second tap should be ignored (guard prevents double-save)
         try { driver.TapToolbarItem("Save"); } catch (WebDriverException) { }
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayModalAnimation);
 
         // Should end up back on the prayers list (not stuck or crashed)
         driver.NavigateToTab("Prayers");
@@ -123,7 +123,7 @@ public class EdgeCaseTests
         driver.TapToolbarItem("Save");
 
         // Save triggers GoToAsync("..") after the DB write; manual repro showed the
-        // round-trip taking ~5s on emulator. A fixed Thread.Sleep(1000) raced the
+        // round-trip taking ~5s on emulator. A fixed Thread.Sleep(TestConfig.DelayModalAnimation) raced the
         // section rebuild, so the new card was absent when we nav'd away.
         driver.WaitForElement("Cards_List_Cards", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayCollectionRender);

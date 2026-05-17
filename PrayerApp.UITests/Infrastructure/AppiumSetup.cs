@@ -47,7 +47,7 @@ public class AppiumSetup : IAsyncLifetime
             if (appState < 3) // not running or background-suspended
             {
                 Driver.ActivateApp(appId);
-                Thread.Sleep(2000);
+                Thread.Sleep(TestConfig.DelayDriverRecovery);
             }
         }
         catch (WebDriverException)
@@ -65,7 +65,7 @@ public class AppiumSetup : IAsyncLifetime
         for (int attempt = 1; attempt <= 3; attempt++)
         {
             CreateDriver();
-            Thread.Sleep(5000);
+            Thread.Sleep(TestConfig.DelayAppRelaunch);
             OnboardingHandled = false;
 
             try

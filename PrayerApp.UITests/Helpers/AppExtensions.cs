@@ -125,7 +125,7 @@ public static class AppExtensions
             {
                 driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
                 driver.FindElement(MobileBy.AccessibilityId("Clear text")).Click();
-                Thread.Sleep(200);
+                Thread.Sleep(TestConfig.DelayInputSettle);
             }
             catch (WebDriverException) { /* field empty or unfocused */ }
             finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
@@ -399,7 +399,7 @@ public static class AppExtensions
                 return;
 
             // Tab not found — go back to clear the current page/modal
-            try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
+            try { driver.Navigate().Back(); Thread.Sleep(TestConfig.DelayAfterTap); } catch (WebDriverException) { }
         }
 
         // Stage 2: Try dismissing a known modal (Cancel/Skip buttons that block tab access)
@@ -410,7 +410,7 @@ public static class AppExtensions
                 driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
                 var btn = driver.FindElement(MobileBy.AccessibilityId(modalButton));
                 btn.Click();
-                Thread.Sleep(1000);
+                Thread.Sleep(TestConfig.DelayModalAnimation);
             }
             catch (WebDriverException) { }
             finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
@@ -423,7 +423,7 @@ public static class AppExtensions
         // Try tapping "I'm done" or "Finish" to exit back to Home.
         if (TryEscapePrayerTime(driver))
         {
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
             if (TryTapTab(driver, tabTitle))
                 return;
         }
@@ -433,7 +433,7 @@ public static class AppExtensions
         {
             var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
             driver.ActivateApp(appId);
-            Thread.Sleep(1000);
+            Thread.Sleep(TestConfig.DelayModalAnimation);
         }
         catch (WebDriverException) { }
 
@@ -443,7 +443,7 @@ public static class AppExtensions
         // Stage 5: final XPath text fallback
         var tab = driver.FindElement(TextContainsLocator(tabTitle));
         tab.Click();
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
     }
 
     /// <summary>Try to find and tap a tab by AccessibilityId. Returns true on success.</summary>
@@ -462,7 +462,7 @@ public static class AppExtensions
                 : MobileBy.AccessibilityId(tabTitle);
             var tab = driver.FindElement(locator);
             tab.Click();
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
             return true;
         }
         catch (WebDriverException) { return false; }
@@ -684,7 +684,7 @@ public static class AppExtensions
         {
             try { driver.DismissAlertIfPresent(); } catch { /* best effort */ }
             if (driver.IsDisplayed("Home", timeoutSeconds: 0)) break;
-            try { driver.Navigate().Back(); Thread.Sleep(200); } catch (WebDriverException) { break; }
+            try { driver.Navigate().Back(); Thread.Sleep(TestConfig.DelayInputSettle); } catch (WebDriverException) { break; }
         }
     }
 
@@ -725,12 +725,12 @@ public static class AppExtensions
             if (dismissButton != null)
             {
                 driver.Tap(dismissButton);
-                Thread.Sleep(1000);
+                Thread.Sleep(TestConfig.DelayModalAnimation);
 
                 if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 10))
                 {
                     driver.Tap("Complete_Btn_Done");
-                    Thread.Sleep(500);
+                    Thread.Sleep(TestConfig.DelayAfterNavigation);
                 }
 
                 setup.OnboardingHandled = true;
@@ -745,7 +745,7 @@ public static class AppExtensions
             }
 
             // Wait before retry to give the popup time to render
-            Thread.Sleep(1000);
+            Thread.Sleep(TestConfig.DelayModalAnimation);
         }
 
         // After retries, mark handled to avoid infinite loops in future calls
@@ -789,7 +789,7 @@ public static class AppExtensions
                 $"//*[@resource-id='android:id/button1' or @resource-id='android:id/button2' or @resource-id='android:id/button3'][contains(@text,'{buttonText}')]"));
             button.Click();
         }
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     // ── Toolbar / Text Finders ────────────────────────────────────
@@ -805,7 +805,7 @@ public static class AppExtensions
         int timeoutSeconds = 10)
     {
         driver.DismissKeyboardIfPresent();
-        if (TestConfig.IsIOS) Thread.Sleep(300);
+        if (TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterTap);
 
         var locator = AutomationIdLocator(automationId);
 
@@ -813,7 +813,7 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(locator).Click();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             return;
         }
         catch (WebDriverException) { }
@@ -867,13 +867,13 @@ public static class AppExtensions
         catch (WebDriverException) { return false; }
         finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
 
-        Thread.Sleep(400); // popup animation settle
+        Thread.Sleep(TestConfig.DelayPopupSettle); // popup animation settle
 
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(AutomationIdLocator(automationId)).Click();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             return true;
         }
         catch (WebDriverException)
@@ -895,7 +895,7 @@ public static class AppExtensions
         catch (WebDriverException) { return false; }
         finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
 
-        Thread.Sleep(400);
+        Thread.Sleep(TestConfig.DelayPopupSettle);
 
         bool found;
         try
@@ -927,7 +927,7 @@ public static class AppExtensions
                     { "x", 10 }, { "y", size.Height - 20 }
                 });
             }
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
         catch (WebDriverException) { /* best effort */ }
     }
@@ -940,7 +940,7 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(MobileBy.AccessibilityId("SecondaryToolbarMenuButton")).Click();
-            Thread.Sleep(1000);
+            Thread.Sleep(TestConfig.DelayModalAnimation);
             return true;
         }
         catch (WebDriverException) { return false; }
@@ -960,7 +960,7 @@ public static class AppExtensions
             {
                 { "x", size.Width / 2 }, { "y", size.Height / 2 }
             });
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
         catch (WebDriverException) { /* best effort */ }
     }
@@ -977,7 +977,7 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(IOSButtonByNameOrLabel(itemText)).Click();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             return true;
         }
         catch (WebDriverException)
@@ -998,7 +998,7 @@ public static class AppExtensions
     public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.DismissKeyboardIfPresent();
-        if (TestConfig.IsIOS) Thread.Sleep(300);
+        if (TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterTap);
 
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
 
@@ -1006,7 +1006,7 @@ public static class AppExtensions
 
         var element = wait.Until(d => d.FindElement(locator));
         element.Click();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Find an element by its visible text.</summary>
@@ -1027,14 +1027,14 @@ public static class AppExtensions
     public static void TapByText(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.FindByText(text, timeoutSeconds).Click();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Find and tap any element whose text/label <em>contains</em> the given substring.</summary>
     public static void TapByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.FindByTextContains(text, timeoutSeconds).Click();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Check if an element with the given text is displayed.</summary>
@@ -1101,7 +1101,7 @@ public static class AppExtensions
                 { "percent", 0.5 }
             });
         }
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Swipe left on an element (to reveal right swipe actions like Delete).</summary>
@@ -1193,7 +1193,7 @@ public static class AppExtensions
             if (driver.IsDisplayed(rootElementId, timeoutSeconds: 2))
                 return;
             driver.GoBack();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
     }
 
@@ -1322,7 +1322,7 @@ public static class AppExtensions
         // Wait for the Prayers list to render before tapping the toolbar — prevents
         // racing the "Add" tap against an un-rendered Shell action bar.
         driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
-        if (TestConfig.IsIOS) Thread.Sleep(500); // Let Shell finish rendering toolbar items
+        if (TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterNavigation); // Let Shell finish rendering toolbar items
         driver.TapToolbarItem("Add");
         driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 10);
     }
@@ -1411,7 +1411,7 @@ public static class AppExtensions
             { "x", loc.X + size.Width / 2 },
             { "y", loc.Y + size.Height / 2 }
         });
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     // ── iOS CollectionView helpers ─────────────────────────────

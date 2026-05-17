@@ -29,7 +29,7 @@ public class QuickAddTests
         driver.EnterText("QuickAdd_Entry_Title", "UI Test Prayer");
         driver.Tap("QuickAdd_Btn_Add");
 
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayModalAnimation);
         Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd"),
             "Should return to Home after Quick Add save");
     }
@@ -46,7 +46,7 @@ public class QuickAddTests
         driver.WaitForElement("QuickAdd_Entry_Title");
 
         driver.Tap("QuickAdd_Btn_Add");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         driver.DismissAlertIfPresent();
         Assert.True(driver.IsDisplayed("QuickAdd_Entry_Title"));
@@ -66,7 +66,7 @@ public class QuickAddTests
         driver.WaitForElement("QuickAdd_Entry_Title");
 
         driver.Tap("QuickAdd_Btn_Cancel");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd"),
             "Should return to Home after Quick Add cancel");
@@ -84,10 +84,10 @@ public class QuickAddTests
         driver.WaitForElement("QuickAdd_Entry_Title");
         driver.EnterText("QuickAdd_Entry_Title", "CrossTab Test Prayer");
         driver.Tap("QuickAdd_Btn_Add");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayModalAnimation);
 
         driver.NavigateToTab("Prayer Cards");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
             "Cards tab should show card list after Quick Add");

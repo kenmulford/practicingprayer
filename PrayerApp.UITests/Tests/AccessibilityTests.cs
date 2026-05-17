@@ -54,7 +54,7 @@ public class AccessibilityTests
         // Tap it using the "not selected" text
         Driver.TapByTextContains("not selected", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
-        Thread.Sleep(500); // Extra settle for content-desc binding update
+        Thread.Sleep(TestConfig.DelayAfterNavigation); // Extra settle for content-desc binding update
 
         // After selecting, at least one chip should now say "selected" (without "not").
         // HasAccessibleElement("selected") would also match "not selected" — use ", selected"

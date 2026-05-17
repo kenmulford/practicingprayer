@@ -39,6 +39,16 @@ public static class TestConfig
     public const int DelayCollectionRender = 1500;
     /// <summary>Modal/action sheet present or dismiss animation.</summary>
     public const int DelayModalAnimation = 1000;
+    /// <summary>Short keyboard or binding refresh settle.</summary>
+    public const int DelayBriefSettle = 100;
+    /// <summary>Micro settle for fast UI updates (e.g. highlight).</summary>
+    public const int DelayMicroSettle = 150;
+    /// <summary>Settle after text input or incremental UI change.</summary>
+    public const int DelayInputSettle = 200;
+    /// <summary>Popup or flyout animation settle.</summary>
+    public const int DelayPopupSettle = 400;
+    /// <summary>Appium driver recovery between session attempts.</summary>
+    public const int DelayDriverRecovery = 2000;
 
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
