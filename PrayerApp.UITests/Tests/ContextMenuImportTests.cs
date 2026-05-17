@@ -28,21 +28,19 @@ public class ContextMenuImportTests
         if (TestConfig.IsIOS)
             throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
 
-        _setup.Driver.ResetAppUIState(_setup);
+        var driver = _setup.Driver;
+        driver.ResetAppUIState(_setup);
 
-        _setup.Driver.LaunchProcessTextIntent("Pray for Mom");
-
-        // Modal-open detector: the Card Title entry — same probe used by
-        // _ImportFlowDiagnostic to confirm the modal actually rendered.
-        Assert.NotNull(_setup.Driver.WaitForElement(
-            "ConfirmImport_Entry_CardTitle", timeoutSeconds: 10));
+        // Retries absorb Appium startActivity flake; app reads CharSequence first,
+        // then String extra (am start --es) via ProcessTextIntentReader.
+        driver.OpenConfirmImportViaProcessText("Pray for Mom");
         Thread.Sleep(TestConfig.DelayModalAnimation);
 
-        Assert.True(_setup.Driver.IsDisplayed(
+        Assert.True(driver.IsDisplayed(
             "ConfirmImport_List_Prayers", timeoutSeconds: 5),
             "ConfirmImport modal should render the prayer list when opened via PROCESS_TEXT");
 
-        _setup.Driver.WaitAndTap("ConfirmImport_Btn_Cancel");
+        driver.WaitAndTap("ConfirmImport_Btn_Cancel");
         Thread.Sleep(TestConfig.DelayAfterDismiss);
     }
 }

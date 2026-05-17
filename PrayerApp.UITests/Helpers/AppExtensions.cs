@@ -1632,5 +1632,43 @@ public static class AppExtensions
             { "mimeType", "text/plain" },
             { "optionalIntentArguments", $"--es android.intent.extra.PROCESS_TEXT \"{text}\"" }
         });
+
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
+        try { driver.ActivateApp(TestConfig.AndroidPackage); }
+        catch (WebDriverException) { /* already foreground */ }
+        Thread.Sleep(TestConfig.DelayModalAnimation);
+    }
+
+    /// <summary>
+    /// Launch PROCESS_TEXT and wait for ConfirmImport, retrying when Appium's
+    /// <c>startActivity</c> races the modal push on a cold or backgrounded app.
+    /// </summary>
+    public static void OpenConfirmImportViaProcessText(
+        this AppiumDriver driver,
+        string text,
+        int maxAttempts = 3,
+        int modalTimeoutSeconds = 12)
+    {
+        Exception? lastError = null;
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                driver.LaunchProcessTextIntent(text);
+                driver.WaitForElement("ConfirmImport_Entry_CardTitle", timeoutSeconds: modalTimeoutSeconds);
+                return;
+            }
+            catch (Exception ex) when (ex is WebDriverException or Xunit.Sdk.XunitException)
+            {
+                lastError = ex;
+                if (attempt == maxAttempts - 1) break;
+                Thread.Sleep(TestConfig.DelayModalAnimation);
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException(
+            $"ConfirmImport modal did not open after {maxAttempts} PROCESS_TEXT attempts."
+            + (lastError is null ? "" : $" Last error: {lastError.Message}")
+            + driver.CaptureDiagnostics("ProcessTextImport"));
     }
 }
