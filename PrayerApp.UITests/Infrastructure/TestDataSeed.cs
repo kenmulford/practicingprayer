@@ -176,7 +176,7 @@ internal static class TestDataSeed
         // Lives at top level (BoxId = 0, "Loose Cards") so it's always visible —
         // user boxes render as collapsed accordion sections on first load and
         // would hide the card from the UI tree.
-        await SeedCardWithPrayersAsync(boxId: 0, "Delete Me Card", new[]
+        await SeedCardWithPrayersAsync(boxId: 0, "UITest Delete Target Card", new[]
         {
             ("Throwaway prayer", "Deleted by Cards_DeleteCard_RemovesFromList.", false),
         });

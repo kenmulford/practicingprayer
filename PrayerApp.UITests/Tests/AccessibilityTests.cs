@@ -93,7 +93,7 @@ public class AccessibilityTests
         // Find a specific card to tap — use the first non-system card visible
         // (existing test data includes "UITest Card", "Test Card", etc.)
         string? cardName = null;
-        foreach (var name in new[] { "UITest Card", "Test Card", "Delete Me Card" })
+        foreach (var name in new[] { "UITest Card", "Test Card", "UITest Delete Target Card" })
         {
             if (Driver.HasAccessibleElement(name, timeoutSeconds: 2))
             {
