@@ -269,7 +269,7 @@
                                 <Grid ColumnDefinitions="*, Auto" ColumnSpacing="4">
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
-                                           SemanticProperties.Description="Prayer title"
+                                           SemanticProperties.Description="{Binding TitleSemanticDescription}"
                                            VerticalOptions="Center">
                                         <Entry.Behaviors>
                                             <behaviors:SelectAllOnFocusBehavior />
@@ -279,7 +279,7 @@
                                     <Button Grid.Column="1"
                                             Text="✕"
                                             Clicked="OnRemovePrayerClicked"
-                                            SemanticProperties.Description="Remove prayer"
+                                            SemanticProperties.Description="{Binding RemoveSemanticDescription}"
                                             BackgroundColor="Transparent"
                                             TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
                                             FontSize="14"
@@ -291,7 +291,7 @@
 
                                 <Editor Text="{Binding Details}"
                                         Placeholder="Add details..."
-                                        SemanticProperties.Description="Prayer details"
+                                        SemanticProperties.Description="{Binding DetailsSemanticDescription}"
                                         AutoSize="TextChanges"
                                         MinimumHeightRequest="48"
                                         HorizontalOptions="Fill">

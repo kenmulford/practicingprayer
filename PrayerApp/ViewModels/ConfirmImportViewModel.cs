@@ -257,6 +257,7 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 
         Prayers.CollectionChanged += (_, _) =>
         {
+            RefreshPrayerRowPositions();
             NotifySaveCanExecute();
             OnPropertyChanged(nameof(PrayersHeader));
         };
@@ -412,6 +413,13 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         foreach (var grp in groups)
             AvailableCardGroups.Add(grp);
         SelectedCard = null;
+    }
+
+    private void RefreshPrayerRowPositions()
+    {
+        var count = Prayers.Count;
+        for (var i = 0; i < count; i++)
+            Prayers[i].UpdatePosition(i + 1, count);
     }
 
     private bool CanSave()
