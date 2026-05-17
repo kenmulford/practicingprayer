@@ -313,7 +313,7 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 
         CardTitle = result.SuggestedCardTitle;
         foreach (var p in result.Prayers)
-            Prayers.Add(new EditablePrayer { Title = p.Title, Details = p.Details });
+            Prayers.Add(EditablePrayer.FromParsed(p.Title, p.Details));
     }
 
     /// <summary>

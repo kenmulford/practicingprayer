@@ -284,7 +284,18 @@
                                             SemanticProperties.Description="Remove prayer" />
                                 </Grid>
 
+                                <Button Text="+ details"
+                                        IsVisible="{Binding ShowDetailsLink}"
+                                        Command="{Binding ExpandDetailsCommand}"
+                                        Style="{StaticResource GhostButton}"
+                                        SemanticProperties.Description="Show details field"
+                                        HorizontalOptions="Start"
+                                        Padding="0,4"
+                                        FontSize="14"
+                                        Margin="0,0,0,2" />
+
                                 <Editor Text="{Binding Details}"
+                                        IsVisible="{Binding IsDetailsExpanded}"
                                         Placeholder="Add details..."
                                         SemanticProperties.Description="Prayer details"
                                         AutoSize="TextChanges"
