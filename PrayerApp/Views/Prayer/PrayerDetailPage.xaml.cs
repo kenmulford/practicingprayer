@@ -41,10 +41,18 @@ public partial class PrayerDetailPage : ContentPage
         vm.SelectedTags.CollectionChanged += (_, _) => RebuildEditTagChips(vm);
     }
 
+    private static double ResolveThemeDouble(string resourceKey, double fallback)
+        => Application.Current?.Resources.TryGetValue(resourceKey, out var value) == true && value is double resolved
+            ? resolved
+            : fallback;
+
     /// <summary>Rebuild tag chips in the FlexLayout, keeping the + button last.</summary>
     private void RebuildEditTagChips(PrayerRequestDetailViewModel vm)
     {
         var chipTextColor = (Color)Application.Current!.Resources["White"];
+        var captionSize = ResolveThemeDouble("FontCaption", 12);
+        var bodySize = ResolveThemeDouble("FontBody", 14);
+        var swatchSize = ResolveThemeDouble("SwatchRowHeight", 24);
 
         editTagChips.Children.Clear();
         editTagChips.Children.Add(tagsLabel);
@@ -55,7 +63,7 @@ public partial class PrayerDetailPage : ContentPage
             {
                 Text = chip.Name,
                 TextColor = chipTextColor,
-                FontSize = 12,
+                FontSize = captionSize,
                 VerticalOptions = LayoutOptions.Center
             };
             var removeBtn = new Button
@@ -64,11 +72,11 @@ public partial class PrayerDetailPage : ContentPage
                 Command = chip.RemoveCommand,
                 TextColor = chipTextColor,
                 BackgroundColor = Colors.Transparent,
-                FontSize = 14,
+                FontSize = bodySize,
                 Padding = new Thickness(2, 0),
                 BorderWidth = 0,
-                MinimumWidthRequest = 24,
-                MinimumHeightRequest = 24,
+                MinimumWidthRequest = swatchSize,
+                MinimumHeightRequest = swatchSize,
                 VerticalOptions = LayoutOptions.Center
             };
             SemanticProperties.SetDescription(removeBtn, "Remove tag");

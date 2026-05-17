@@ -69,13 +69,13 @@
                               VerticalOptions="Center"
                               HorizontalOptions="End">
                             <!-- New Card tab.
-                                 MinimumHeightRequest=44 brings the pill tap-target up to the
-                                 Apple HIG / WCAG 2.5.5 44pt floor; the visible 13pt label +
-                                 6pt vertical pill padding only reaches ~25pt on its own. -->
+                                 MinimumHeightRequest uses TouchTargetMinimum (44pt HIG floor);
+                                 the visible 13pt label + 6pt vertical pill padding only reaches
+                                 ~25pt on its own. -->
                             <Border Grid.Column="0"
                                     AutomationId="ConfirmImport_Seg_NewCard"
                                     Padding="10,6"
-                                    MinimumHeightRequest="44"
+                                    MinimumHeightRequest="{StaticResource TouchTargetMinimum}"
                                     MinimumWidthRequest="108"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 5"
@@ -108,7 +108,7 @@
                             <Border Grid.Column="1"
                                     AutomationId="ConfirmImport_Seg_ExistingCard"
                                     Padding="10,6"
-                                    MinimumHeightRequest="44"
+                                    MinimumHeightRequest="{StaticResource TouchTargetMinimum}"
                                     MinimumWidthRequest="44"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 5"
@@ -293,7 +293,7 @@
                                         Placeholder="Add details..."
                                         SemanticProperties.Description="Prayer details"
                                         AutoSize="TextChanges"
-                                        MinimumHeightRequest="48"
+                                        MinimumHeightRequest="{StaticResource TouchTargetMaterial}"
                                         HorizontalOptions="Fill">
                                     <Editor.Behaviors>
                                         <behaviors:KeyboardAvoidanceBehavior />

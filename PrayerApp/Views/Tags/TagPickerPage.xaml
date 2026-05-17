@@ -59,8 +59,8 @@
                                     FontSize="14"
                                     Padding="2,0"
                                     BorderWidth="0"
-                                    MinimumWidthRequest="24"
-                                    MinimumHeightRequest="24"
+                                    MinimumWidthRequest="{StaticResource SwatchRowHeight}"
+                                    MinimumHeightRequest="{StaticResource SwatchRowHeight}"
                                     VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>

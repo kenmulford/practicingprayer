@@ -44,7 +44,7 @@
                         Padding="20,14"
                         ColumnDefinitions="14, *, Auto, Auto"
                         ColumnSpacing="12"
-                        MinimumHeightRequest="48"
+                        MinimumHeightRequest="{StaticResource TouchTargetMaterial}"
                         HorizontalOptions="Fill"
                         SemanticProperties.Description="{Binding Name}">
                         <Grid.GestureRecognizers>
