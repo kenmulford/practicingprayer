@@ -10,7 +10,12 @@ public interface ICardService
     Task<IReadOnlyList<PrayerCard>> GetCardsAsync();
     Task<PrayerCard> GetOrCreateQuickAddCardAsync();
     Task<PrayerCard> GetOrCreateSharedCardAsync();
-    Task<PrayerCard> SaveCardAsync(PrayerCard card);
+    /// <summary>
+    /// Saves a card. Set <paramref name="publishMessage"/> = false from bulk callers
+    /// (e.g. <see cref="ViewModels.ConfirmImportViewModel"/>) so per-entity messages
+    /// don't fan out alongside a single <c>BulkChangedMessage</c>.
+    /// </summary>
+    Task<PrayerCard> SaveCardAsync(PrayerCard card, bool publishMessage = true);
 
     /// <summary>
     /// Deletes a card. Set <paramref name="publishMessage"/> = false from cascade callers

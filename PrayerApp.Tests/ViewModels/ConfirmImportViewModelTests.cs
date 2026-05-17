@@ -10,7 +10,6 @@ namespace PrayerApp.Tests.ViewModels;
 
 public class ConfirmImportViewModelTests
 {
-    private readonly IDBService _db = Substitute.For<IDBService>();
     private readonly ICardService _cardService = Substitute.For<ICardService>();
     private readonly IPrayerService _prayerService = Substitute.For<IPrayerService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
@@ -25,10 +24,15 @@ public class ConfirmImportViewModelTests
 
     public ConfirmImportViewModelTests()
     {
-        PrayerCard.SetDBService(_db);
-        Prayer.SetDBService(_db);
-        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
-        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>()).Returns(callInfo =>
+        {
+            var card = callInfo.ArgAt<PrayerCard>(0);
+            if (card.Id == 0)
+                card.Id = 1;
+            return card;
+        });
+        _prayerService.SavePrayerAsync(Arg.Any<Prayer>(), Arg.Any<bool>())
+            .Returns(callInfo => callInfo.ArgAt<Prayer>(0));
         // Default to empty box list — picker tests override before calling
         // CreateSut. Default lives here (not in CreateSut) so per-test
         // .Returns() calls aren't clobbered when CreateSut runs.
@@ -184,8 +188,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c =>
-            c.Title == "Family" && c.IsImported == true));
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.Title == "Family" && c.IsImported == true),
+            false);
     }
 
     [Fact]
@@ -196,7 +201,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.Title == "Family"));
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.Title == "Family"),
+            false);
     }
 
     [Fact]
@@ -206,10 +213,13 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Mom" && p.Details == "Surgery" && p.IsImported == true && p.CanNotify == false));
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Dad" && p.Details == null));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p =>
+                p.Title == "Mom" && p.Details == "Surgery" && p.IsImported == true && p.CanNotify == false),
+            false);
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Dad" && p.Details == null),
+            false);
     }
 
     [Fact]
@@ -219,7 +229,7 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+        await _prayerService.Received(2).SavePrayerAsync(Arg.Any<Prayer>(), false);
     }
 
     [Fact]
@@ -229,8 +239,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Mom" && p.Details == "Surgery"));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Mom" && p.Details == "Surgery"),
+            false);
     }
 
     [Fact]
@@ -240,18 +251,22 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.Details == null));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Details == null),
+            false);
     }
 
     [Fact]
-    public async Task Save_InvalidatesBothCaches()
+    public async Task Save_RoutesThroughServicesWithoutManualCacheInvalidation()
     {
         var sut = SetupSutWithRows(("Mom", null));
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        _cardService.Received(1).InvalidateCache();
-        _prayerService.Received(1).InvalidateCache();
+        await _cardService.Received(1).SaveCardAsync(Arg.Any<PrayerCard>(), false);
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>(), false);
+        _cardService.DidNotReceive().InvalidateCache();
+        _prayerService.DidNotReceive().InvalidateCache();
     }
 
     [Fact]
@@ -282,10 +297,10 @@ public class ConfirmImportViewModelTests
         // Card id must flow through the route so PrayerCardsViewModel.ApplyQueryAttributes
         // stages PendingSavedIdentifier — without it the imported card and its containing
         // section never get auto-expanded and the user can't see the import landed.
-        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(callInfo =>
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), false).Returns(callInfo =>
         {
-            ((PrayerCard)callInfo[0]).Id = 42;
-            return Task.FromResult(1);
+            callInfo.ArgAt<PrayerCard>(0).Id = 42;
+            return callInfo.ArgAt<PrayerCard>(0);
         });
         var sut = SetupSutWithRows(("Mom", null));
 
@@ -532,7 +547,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 7));
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 7),
+            false);
     }
 
     [Fact]
@@ -546,7 +563,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0));
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 0),
+            false);
     }
 
     [Fact]
@@ -558,7 +577,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0));
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 0),
+            false);
     }
 
     // ── ImportMode switching ──────────────────────────────────────────────
@@ -1044,8 +1065,10 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.PrayerCardId == 42));
-        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.PrayerCardId == 42),
+            false);
+        await _cardService.DidNotReceive().SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>());
     }
 
     [Fact]
@@ -1058,8 +1081,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "\"Mom\"" && p.Details == "heal's concern"));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "\"Mom\"" && p.Details == "heal's concern"),
+            false);
     }
 
     [Fact]
@@ -1071,11 +1095,11 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+        await _prayerService.Received(2).SavePrayerAsync(Arg.Any<Prayer>(), false);
     }
 
     [Fact]
-    public async Task Save_ExistingCard_InvalidatesBothCaches()
+    public async Task Save_ExistingCard_RoutesThroughPrayerServiceWithoutManualCacheInvalidation()
     {
         var sut = SetupSutWithRows(("Mom", null));
         sut.SetExistingCardModeCommand.Execute(null);
@@ -1083,8 +1107,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        _cardService.Received(1).InvalidateCache();
-        _prayerService.Received(1).InvalidateCache();
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>(), false);
+        _cardService.DidNotReceive().InvalidateCache();
+        _prayerService.DidNotReceive().InvalidateCache();
     }
 
     [Fact]

@@ -15,7 +15,12 @@ public interface IPrayerService
     Task<IReadOnlyList<Prayer>> GetAnsweredOnThisDateAsync();
     /// <summary>Count of active (not answered) prayers on a specific card.</summary>
     Task<int> GetActivePrayerCountByCardAsync(int cardId);
-    Task<Prayer> SavePrayerAsync(Prayer prayer);
+    /// <summary>
+    /// Saves a prayer. Set <paramref name="publishMessage"/> = false from bulk
+    /// callers (e.g. <see cref="ViewModels.ConfirmImportViewModel"/>) so per-entity
+    /// messages don't fan out alongside a single <c>BulkChangedMessage</c>.
+    /// </summary>
+    Task<Prayer> SavePrayerAsync(Prayer prayer, bool publishMessage = true);
 
     /// <summary>
     /// Deletes a prayer. Set <paramref name="publishMessage"/> = false from cascade
