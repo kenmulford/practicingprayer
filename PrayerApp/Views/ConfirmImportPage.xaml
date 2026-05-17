@@ -191,17 +191,7 @@
                                                                VerticalOptions="Center"
                                                                TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                                                         <Label Grid.Column="1"
-                                                               Text="&#x2713;"
-                                                               IsVisible="False"
-                                                               VerticalOptions="Center"
-                                                               FontAttributes="Bold"
-                                                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
-                                                            <Label.Triggers>
-                                                                <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
-                                                                    <Setter Property="IsVisible" Value="True" />
-                                                                </DataTrigger>
-                                                            </Label.Triggers>
-                                                        </Label>
+                                                               Style="{StaticResource SelectableRowCheckmark}" />
                                                     </Grid>
                                                     <Border.GestureRecognizers>
                                                         <TapGestureRecognizer Tapped="OnCardItemTapped" />
