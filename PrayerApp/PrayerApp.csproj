@@ -18,7 +18,7 @@
 		<!-- App Identifier -->
 		<ApplicationId>com.multithreadedllc.prayercards</ApplicationId>
 
-		<!-- Versions -->
+		<!-- Versions: ApplicationVersion fallback when git is unavailable; see build/ApplicationVersion.targets -->
 		<ApplicationDisplayVersion>1.4.2</ApplicationDisplayVersion>
 		<ApplicationVersion>120</ApplicationVersion>
 
@@ -46,6 +46,7 @@
 	  Xcode automatic signing — fine for simulator, will fail for device/Release.
 	-->
 	<Import Project="iOS-signing.local.props" Condition="Exists('iOS-signing.local.props')" />
+	<Import Project="..\build\ApplicationVersion.targets" />
 
 	<!--
 	  Android signing — passwords loaded from environment variables.

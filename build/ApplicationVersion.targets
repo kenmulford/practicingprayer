@@ -1,0 +1,26 @@
+<Project>
+  <!--
+    Derives ApplicationVersion (iOS CFBundleVersion / Android versionCode) from git
+    commit count so each rebuild gets a distinct build number on device.
+
+    Override for reproducible release builds:
+      dotnet build -p:ApplicationVersionOverride=120
+  -->
+  <Target Name="_SetApplicationVersionFromGit"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(ApplicationVersionOverride)' == ''">
+    <Exec Command="git rev-list --count HEAD"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true"
+          StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitCommitCount" />
+    </Exec>
+    <PropertyGroup Condition="'$(_GitCommitCount)' != ''">
+      <ApplicationVersion>$(_GitCommitCount.Trim())</ApplicationVersion>
+    </PropertyGroup>
+  </Target>
+
+  <PropertyGroup Condition="'$(ApplicationVersionOverride)' != ''">
+    <ApplicationVersion>$(ApplicationVersionOverride)</ApplicationVersion>
+  </PropertyGroup>
+</Project>
