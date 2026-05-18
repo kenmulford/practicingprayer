@@ -260,4 +260,37 @@ public class AccessibilityTests
         foreach (var id in new[] { "Collections", "Select", "Add Card" })
             Assert.Equal(id, Driver.GetAccessibleDescription(id));
     }
+
+    /// <summary>15.9: Settings row meets the 44dp touch-target minimum (PS-06 / TouchTargetMinimum
+    /// guard). The Platform Styles Sprint introduced the TouchTargetMinimum=44 token
+    /// and applied it to SettingsRowGrid (commit e144476); this test catches a future
+    /// XAML override that would silently drop below the floor. Density is queried
+    /// from Appium so the test is portable across emulators of different DPI.
+    /// </summary>
+    [Fact]
+    [Trait("Platform", "Android")]
+    [Trait("Section", "9-Settings")]
+    public void Settings_AppSettingsRow_MeetsTouchTargetMinimum()
+    {
+        Driver.ResetAppUIState(_setup);
+        Driver.EnsureOnTab("Settings", _setup);
+        Driver.WaitForElement("Settings_Row_AppSettings", timeoutSeconds: 10);
+
+        var row = Driver.FindByAutomationId("Settings_Row_AppSettings");
+        var heightPx = row.Size.Height;
+
+        // Convert the 44dp accessibility floor to actual pixels for this device.
+        // UiAutomator2's mobile: deviceInfo exposes displayDensity (Android DPI, e.g. 440).
+        // px-per-dp = displayDensity / 160 (the Android baseline density).
+        var deviceInfo = (Dictionary<string, object>?)Driver.ExecuteScript("mobile: deviceInfo")
+            ?? throw new InvalidOperationException("mobile: deviceInfo returned null");
+        var displayDensity = Convert.ToDouble(deviceInfo["displayDensity"]);
+        var pxPerDp = displayDensity / 160.0;
+        var expectedMinPx = (int)Math.Floor(44 * pxPerDp);
+
+        Assert.True(heightPx >= expectedMinPx,
+            $"Settings_Row_AppSettings height {heightPx}px should meet the 44dp touch-target " +
+            $"minimum ({expectedMinPx}px at displayDensity {displayDensity}). PS-06 regression — " +
+            $"check whether MinimumHeightRequest on the SettingsRowGrid style was overridden.");
+    }
 }
