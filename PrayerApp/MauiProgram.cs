@@ -16,6 +16,9 @@ using PrayerApp.Views.PrayerTime;
 using PrayerApp.Views.Settings;
 using PrayerApp.Views.Tags;
 using System.Globalization;
+#if IOS
+using Microsoft.Maui.Platform;
+#endif
 
 namespace PrayerApp
 {
@@ -144,6 +147,29 @@ namespace PrayerApp
                 {
                     // Force the On VisualState so thumb color matches the style
                     VisualStateManager.GoToState(sw, "On");
+
+#if IOS
+                    // iOS dark-mode thumb-bug second-line defense (#52). The base ThumbColor
+                    // setter in Styles.xaml ensures Switch.ThumbColor is non-null at handler-init,
+                    // and MAUI's MapThumbColor synchronously pushes that through to
+                    // uiSwitch.ThumbTintColor. But per MAUI's own SwitchHandler.iOS.cs SwitchProxy
+                    // comment, "UIKit may re-apply default styles to internal views during certain
+                    // lifecycle events" — empirically including first paint in dark mode. The
+                    // synchronous set is clobbered; the deferred set survives. Mirrors MAUI's
+                    // own DispatchAsync + Task.Delay(10) pattern from UpdateTrackOffColor (which
+                    // patches the analogous OFF-track-color clobber).
+                    // Source: github.com/dotnet/maui/blob/43db9d77/src/Core/src/Handlers/Switch/SwitchHandler.iOS.cs
+                    var uiSwitch = handler.PlatformView as UIKit.UISwitch;
+                    var thumbTint = sw.ThumbColor?.ToPlatform();
+                    if (uiSwitch is not null && thumbTint is not null)
+                    {
+                        CoreFoundation.DispatchQueue.MainQueue.DispatchAsync(async () =>
+                        {
+                            await Task.Delay(10);
+                            uiSwitch.ThumbTintColor = thumbTint;
+                        });
+                    }
+#endif
                 }
             });
 

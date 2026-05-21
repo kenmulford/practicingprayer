@@ -406,6 +406,12 @@
 
     <Style TargetType="Switch">
         <Setter Property="OnColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <!-- Base ThumbColor setter ensures Switch.ThumbColor is non-null at handler-init time.
+             iOS SwitchHandler's UpdateThumbColor early-returns if ThumbColor is null
+             (see github.com/dotnet/maui src/Core/src/Platform/iOS/SwitchExtensions.cs), so
+             without this base setter the UISwitch falls back to the platform default
+             (white in dark mode) — Issue #52. VSM Setters below still override per state. -->
+        <Setter Property="ThumbColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
         <Setter Property="VisualStateManager.VisualStateGroups">
             <VisualStateGroupList>
                 <VisualStateGroup x:Name="CommonStates">
