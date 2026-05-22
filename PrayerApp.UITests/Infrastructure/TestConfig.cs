@@ -39,6 +39,10 @@ public static class TestConfig
     public const int DelayCollectionRender = 1500;
     /// <summary>Modal/action sheet present or dismiss animation.</summary>
     public const int DelayModalAnimation = 1000;
+    /// <summary>Short post-action settle that doesn't fit other categories.</summary>
+    public const int DelayShortSettle = 200;
+    /// <summary>Longer settle for heavyweight transitions.</summary>
+    public const int DelayLongSettle = 2000;
 
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
