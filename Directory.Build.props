@@ -1,0 +1,68 @@
+<Project>
+  <!--
+    Application version stamping for PracticingPrayer (#8).
+
+    Precedence (highest first):
+      1. Env var APPLICATION_VERSION_OVERRIDE      (CI integration boundary)
+      2. MSBuild property ApplicationVersionOverride via -p switch (one-off)
+      3. Commit count via "git rev-list count HEAD" (auto-bump default)
+
+    Shallow clone or missing .git: build FAILS LOUDLY with recovery hint.
+    Both csprojs (PrayerApp + PrayerApp.ActionExtension) inherit this stamp.
+    They MUST match — iOS refuses to load the extension if versions diverge.
+
+    Hook registration: the iOS SDK exposes MaciOSPrepareForBuildDependsOn as the
+    documented extension point that runs before _CompileAppManifest reads
+    $(ApplicationVersion). BeforeTargets="BeforeBuild" fires too late — the
+    manifest compile has already snapshotted ApplicationVersion=1.0 (the SDK
+    default), so the packaged Info.plist carries the default, not the stamp.
+    Reference: Microsoft.iOS.Sdk targets/Xamarin.Shared.Sdk.targets (line 302)
+    explicitly documents this hook for "extend the build process".
+  -->
+  <PropertyGroup>
+    <ApplicationDisplayVersion>1.4.4</ApplicationDisplayVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <MaciOSPrepareForBuildDependsOn>$(MaciOSPrepareForBuildDependsOn);_StampApplicationVersion</MaciOSPrepareForBuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_StampApplicationVersion"
+          Condition="'$(_ApplicationVersionStamped)' != 'true'">
+
+    <PropertyGroup Condition="'$(APPLICATION_VERSION_OVERRIDE)' != ''">
+      <ApplicationVersion>$(APPLICATION_VERSION_OVERRIDE)</ApplicationVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(ApplicationVersion)' == '' AND '$(ApplicationVersionOverride)' != ''">
+      <ApplicationVersion>$(ApplicationVersionOverride)</ApplicationVersion>
+    </PropertyGroup>
+
+    <Exec Command="git rev-parse --is-shallow-repository"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true"
+          Condition="'$(ApplicationVersion)' == ''">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_IsShallowRepo" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitRevParseExitCode" />
+    </Exec>
+
+    <Error Text="Cannot compute ApplicationVersion: shallow git clone detected. Run 'git fetch --unshallow', set APPLICATION_VERSION_OVERRIDE=NNN, or pass -p:ApplicationVersionOverride=NNN."
+           Condition="'$(ApplicationVersion)' == '' AND '$(_IsShallowRepo)' == 'true'" />
+
+    <Error Text="Cannot compute ApplicationVersion: not a git repository or git not found. Set APPLICATION_VERSION_OVERRIDE=NNN or pass -p:ApplicationVersionOverride=NNN."
+           Condition="'$(ApplicationVersion)' == '' AND '$(_GitRevParseExitCode)' != '0'" />
+
+    <Exec Command="git rev-list --count HEAD"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="false"
+          Condition="'$(ApplicationVersion)' == ''">
+      <Output TaskParameter="ConsoleOutput" PropertyName="ApplicationVersion" />
+    </Exec>
+
+    <PropertyGroup>
+      <_ApplicationVersionStamped>true</_ApplicationVersionStamped>
+    </PropertyGroup>
+
+    <Message Importance="high" Text="ApplicationVersion stamped: $(ApplicationVersion)" />
+  </Target>
+</Project>
