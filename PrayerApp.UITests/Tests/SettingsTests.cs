@@ -19,7 +19,7 @@ public class SettingsTests
     {
         _setup.Driver.NavigateToTabRoot("Settings", "Settings_Row_AppSettings", _setup);
         // Let Shell finish rendering all hub rows before interacting
-        if (TestConfig.IsIOS) Thread.Sleep(500);
+        if (TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterNavigation);
     }
 
     /// <summary>9.1: Hub page loads — 4 rows with chevrons.</summary>
@@ -120,7 +120,7 @@ public class SettingsTests
         var driver = _setup.Driver;
 
         driver.WaitAndTap("Settings_Row_Help");
-        Thread.Sleep(1500); // CollectionView needs time to render items on iOS
+        Thread.Sleep(TestConfig.DelayCollectionRender); // CollectionView needs time to render items on iOS
 
         // IsTextDisplayed uses exact match — use full question text from FAQ
         Assert.True(
@@ -150,11 +150,11 @@ public class SettingsTests
         driver.GoBack();
 
         driver.WaitAndTap("Settings_Row_About", timeoutSeconds: 10);
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
         driver.GoBack();
 
         driver.WaitAndTap("Settings_Row_Help", timeoutSeconds: 10);
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
         driver.GoBack();
 
         Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 10));

@@ -38,9 +38,9 @@ public class PrayerListTests
         if (driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3))
         {
             driver.EnterText("List_Search_Prayers", "nonexistent_prayer_xyz");
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayDirtyRegistration);
             driver.EnterText("List_Search_Prayers", "");
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayDirtyRegistration);
         }
 
         Assert.True(driver.IsDisplayed("List_Filter_Active")
@@ -58,19 +58,19 @@ public class PrayerListTests
         if (driver.IsDisplayed("List_Filter_Answered", timeoutSeconds: 3))
         {
             driver.Tap("List_Filter_Answered");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
 
         if (driver.IsDisplayed("List_Filter_All", timeoutSeconds: 3))
         {
             driver.Tap("List_Filter_All");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
 
         if (driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 3))
         {
             driver.Tap("List_Filter_Active");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
 
         Assert.True(driver.IsDisplayed("List_Filter_Active"));
@@ -86,7 +86,7 @@ public class PrayerListTests
 
         driver.EnterText("Detail_Entry_Title", "Prayer List UITest");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Save navigates back to list automatically
         Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
@@ -155,7 +155,7 @@ public class PrayerListTests
             driver.TapByText("UI Test Prayer");
 
             driver.TapToolbarItem("Edit");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
 
             Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
                 "Should show title entry in edit mode");
@@ -164,7 +164,7 @@ public class PrayerListTests
                 driver.EnterText("Detail_Entry_Details", "Updated by UITest");
 
             driver.TapToolbarItem("Save");
-            Thread.Sleep(1000);
+            Thread.Sleep(TestConfig.DelayAfterSave);
         }
 
         // Ensure we're back on the list
@@ -183,7 +183,7 @@ public class PrayerListTests
 
         driver.EnterText("Detail_Entry_Title", "Mark Answered UITest");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Find it and open it
         if (driver.IsTextDisplayed("Mark Answered UITest", timeoutSeconds: 10))
@@ -193,9 +193,9 @@ public class PrayerListTests
             if (driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 10))
             {
                 driver.Tap("Detail_Btn_MarkAnswered");
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
                 driver.DismissAlertIfPresent();
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
             }
 
             driver.GoBack();
@@ -236,16 +236,16 @@ public class PrayerListTests
             driver.TapByText("Delete Me Prayer");
 
             driver.TapToolbarItem("Edit");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
 
             // Scroll to Delete if needed
             if (!driver.IsDisplayed("Detail_Btn_Delete", timeoutSeconds: 3))
                 driver.ScrollDownTo("Detail_Btn_Delete");
 
             driver.Tap("Detail_Btn_Delete");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             driver.DismissAlertIfPresent();
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
         }
 
         // Should return to list
@@ -267,11 +267,11 @@ public class PrayerListTests
         driver.DismissOnboardingIfPresent(_setup);
 
         driver.NavigateToTab("Prayers");
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
         driver.NavigateToTab("Home");
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
         driver.NavigateToTab("Prayers");
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
         Assert.True(driver.IsDisplayed("List_Filter_Active")
                  || driver.IsDisplayed("List_Search_Prayers"));

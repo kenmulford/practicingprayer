@@ -27,7 +27,7 @@ public class AndroidTests
         driver.WaitForElement("AppSettings_Switch_Notifications", timeoutSeconds: 10);
 
         driver.GoBack();
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("Settings_Row_AppSettings", timeoutSeconds: 10),
             "Hardware back should return to Settings hub from sub-page");
@@ -42,7 +42,7 @@ public class AndroidTests
         var driver = _setup.Driver;
 
         driver.GoBack();
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
                  || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
@@ -61,9 +61,11 @@ public class AndroidTests
         var driver = _setup.Driver;
 
         driver.EnterText("Detail_Entry_Title", "Dirty Back Test");
-        Thread.Sleep(500); // Allow IsDirty to register the change
+        Thread.Sleep(TestConfig.DelayDirtyRegistration); // Allow IsDirty to register the change
 
         driver.GoBack();
+        // TODO(#11): map to TestConfig.Delay* — dialog-animation settle at 1500ms;
+        // value matches DelayCollectionRender but semantic doesn't. Deferred ambiguous site.
         Thread.Sleep(1500); // Allow dialog animation to complete
 
         // The discard dialog should appear — check native alert, MAUI dialog text, or still on page
@@ -78,11 +80,11 @@ public class AndroidTests
 
         // Clean up — dismiss dialog and navigate away
         driver.DismissAlertIfPresent();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterDismiss);
         if (driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 2))
         {
             driver.GoBack();
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
             driver.DismissAlertIfPresent();
         }
     }
