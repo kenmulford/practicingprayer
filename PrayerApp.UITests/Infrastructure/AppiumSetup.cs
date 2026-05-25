@@ -24,6 +24,12 @@ public class AppiumSetup : IAsyncLifetime
         // data dir, so every suite starts with known Collections/Cards/Prayers.
         await TestDataSeed.SeedAsync();
 
+        // Pre-seed OnboardingComplete=true in NSUserDefaults (iOS only) so the
+        // welcome popup never appears. Replaces the in-suite DismissOnboardingIfPresent
+        // flow, which depended on popup-render timing and was empirically flaky
+        // across iOS versions / simulator devices.
+        await TestDataSeed.PreSeedOnboardingCompleteAsync();
+
         CreateDriver();
         // Wait for the app to fully load (splash screen + initial page render).
         // Inline 3000ms — one-off post-driver-create splash settle, not part of

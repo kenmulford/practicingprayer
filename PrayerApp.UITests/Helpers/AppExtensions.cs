@@ -695,15 +695,27 @@ public static class AppExtensions
     // ── Onboarding ───────────────────────────────────────────────
 
     /// <summary>
-    /// Dismiss onboarding if currently showing. Idempotent — safe to call multiple times.
-    /// Taps "Skip tour" on the welcome popup, "Skip" on a mid-flow banner, or "Got it!"
-    /// on the final PrayerTimeHighlight step, then "Done" on the completion popup.
-    /// Retries up to 3 times with increasing wait to handle slow popup rendering.
+    /// iOS: no-op assertion — onboarding is suppressed at the harness level by
+    /// <see cref="TestDataSeed.PreSeedOnboardingCompleteAsync"/>, which writes
+    /// <c>OnboardingComplete=YES</c> to NSUserDefaults before Appium launches the
+    /// app. Reads the same key back via <c>simctl spawn defaults read</c> to catch
+    /// harness-config regressions early (throws if the pre-seed didn't run).
+    /// Android: keeps the legacy in-suite dismissal flow — taps "Skip tour" /
+    /// "Skip" / "Got it!" then "Done" on the completion popup, with retries to
+    /// handle slow popup rendering. Idempotent.
     /// </summary>
     public static void DismissOnboardingIfPresent(this AppiumDriver driver, AppiumSetup setup)
     {
         if (setup.OnboardingHandled) return;
 
+        if (TestConfig.IsIOS)
+        {
+            AssertOnboardingPreSeeded();
+            setup.OnboardingHandled = true;
+            return;
+        }
+
+        // Android — legacy in-suite dismissal until the Android toolchain returns.
         // Fast path: if the tab bar is already rendered, no onboarding popup is
         // blocking. Saves up to 3s on test #1 vs probing Welcome_Btn_Skip first.
         if (driver.IsDisplayed("Home", timeoutSeconds: 1))
@@ -750,6 +762,41 @@ public static class AppExtensions
 
         // After retries, mark handled to avoid infinite loops in future calls
         setup.OnboardingHandled = true;
+    }
+
+    /// <summary>
+    /// Reads OnboardingComplete from NSUserDefaults on the booted simulator.
+    /// Throws if the value isn't truthy, catching the failure mode where
+    /// <see cref="TestDataSeed.PreSeedOnboardingCompleteAsync"/> didn't run.
+    /// </summary>
+    private static void AssertOnboardingPreSeeded()
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo(
+            "xcrun",
+            $"simctl spawn booted defaults read {TestConfig.IOSBundleId} OnboardingComplete")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        using var proc = System.Diagnostics.Process.Start(psi)
+            ?? throw new InvalidOperationException("Failed to start xcrun simctl. Are Xcode CLI tools installed?");
+
+        var stdout = proc.StandardOutput.ReadToEnd();
+        var stderr = proc.StandardError.ReadToEnd();
+        proc.WaitForExit();
+
+        // `defaults read ... OnboardingComplete` prints `1` for true, `0` for false,
+        // or exits non-zero with "does not exist" on the stderr when unset.
+        if (proc.ExitCode != 0 || !stdout.Trim().StartsWith("1"))
+        {
+            throw new InvalidOperationException(
+                "OnboardingComplete is not pre-seeded; AppiumSetup.InitializeAsync should call " +
+                "TestDataSeed.PreSeedOnboardingCompleteAsync(). " +
+                $"defaults read exit={proc.ExitCode}, stdout='{stdout.Trim()}', stderr='{stderr.Trim()}'.");
+        }
     }
 
     // ── Alerts/Dialogs ───────────────────────────────────────────

@@ -25,6 +25,25 @@ internal static class TestDataSeed
             await SeedIOSAsync();
     }
 
+    /// <summary>
+    /// Pre-seed iOS NSUserDefaults so the app starts past onboarding. Bypasses the
+    /// welcome popup and the entire onboarding flow without depending on Appium to
+    /// dismiss it from the UI. Mirrors how Settings.OnboardingComplete is persisted
+    /// (Preferences.Set → NSUserDefaults on iOS) — value is read on the next app
+    /// launch, which happens when Appium activates the bundle after SeedAsync()
+    /// terminates it. No-op on Android (keeps the existing in-suite dismissal
+    /// flow until the Android toolchain returns).
+    /// </summary>
+    public static async Task PreSeedOnboardingCompleteAsync()
+    {
+        if (!TestConfig.IsIOS) return;
+
+        // Mirrors PrayerApp.Services.Settings: Preferences.Set(nameof(OnboardingComplete), true)
+        // — `defaults write -bool YES` is the NSUserDefaults equivalent of bool=true.
+        await RunSimctlAsync(
+            $"spawn booted defaults write {TestConfig.IOSBundleId} OnboardingComplete -bool YES");
+    }
+
     public static async Task SeedAndroidAsync()
     {
         if (!TestConfig.IsAndroid) return;

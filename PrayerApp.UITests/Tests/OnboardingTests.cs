@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using PrayerApp.UITests.Helpers;
 using PrayerApp.UITests.Infrastructure;
 using Xunit;
@@ -9,6 +10,13 @@ namespace PrayerApp.UITests.Tests;
 /// Note: Most onboarding tests require a fresh install (app data cleared).
 /// The shared fixture only launches once, so only the initial state and skip flow are testable.
 /// Post-dismissal tests verify that onboarding banners are properly hidden.
+///
+/// iOS: the shared <see cref="AppiumSetup"/> pre-seeds <c>OnboardingComplete=true</c>
+/// at suite start (see <see cref="TestDataSeed.PreSeedOnboardingCompleteAsync"/>),
+/// so popup-flow tests below explicitly invert that — write <c>NO</c>, terminate +
+/// relaunch the app to force the popup, then restore <c>YES</c> on teardown so
+/// later tests in the run continue to skip onboarding via the harness pre-seed.
+/// Android keeps the legacy in-suite dismissal flow until that toolchain returns.
 /// </summary>
 [Collection("Appium")]
 [Trait("Platform", "CrossPlatform")]
@@ -22,32 +30,120 @@ public class OnboardingTests
     [Fact]
     public void Onboarding_WelcomePopup_ShowsOnFirstLaunch()
     {
-        var driver = _setup.Driver;
+        if (TestConfig.IsIOS) ForceOnboardingPopup(_setup);
+        try
+        {
+            var driver = _setup.Driver;
+            if (!TestConfig.IsIOS && _setup.OnboardingHandled)
+                return;
 
-        if (_setup.OnboardingHandled)
-            return;
+            var hasGetStarted = driver.IsDisplayed("Welcome_Btn_GetStarted", timeoutSeconds: 10);
+            var hasSkip = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 2);
 
-        var hasGetStarted = driver.IsDisplayed("Welcome_Btn_GetStarted", timeoutSeconds: 10);
-        var hasSkip = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 2);
-
-        Assert.True(hasGetStarted || hasSkip,
-            "Expected welcome popup with 'Get Started' or 'Skip tour' buttons on first launch");
+            Assert.True(hasGetStarted || hasSkip,
+                "Expected welcome popup with 'Get Started' or 'Skip tour' buttons on first launch");
+        }
+        finally
+        {
+            if (TestConfig.IsIOS) RestoreOnboardingComplete(_setup);
+        }
     }
 
     /// <summary>1.7: Skip onboarding — tapping Skip dismisses the entire flow.</summary>
     [Fact]
     public void Onboarding_SkipButton_DismissesEntireFlow()
     {
-        var driver = _setup.Driver;
+        if (TestConfig.IsIOS) ForceOnboardingPopup(_setup);
+        try
+        {
+            var driver = _setup.Driver;
+            if (!TestConfig.IsIOS && _setup.OnboardingHandled)
+                return;
 
-        if (_setup.OnboardingHandled)
-            return;
+            if (TestConfig.IsIOS)
+            {
+                // On iOS the DismissOnboardingIfPresent helper is now a no-op
+                // assertion that requires OnboardingComplete=YES — but we just
+                // inverted to NO to force the popup. Dismiss via the popup UI
+                // directly (same flow Android takes inside the helper).
+                TapWelcomeSkipFlow(driver);
+            }
+            else
+            {
+                driver.DismissOnboardingIfPresent(_setup);
+            }
 
-        driver.DismissOnboardingIfPresent(_setup);
+            Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 10)
+                     || driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 3),
+                "After onboarding dismissal, Home page elements should be visible");
+        }
+        finally
+        {
+            if (TestConfig.IsIOS) RestoreOnboardingComplete(_setup);
+        }
+    }
 
-        Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd", timeoutSeconds: 10)
-                 || driver.IsDisplayed("Home_Btn_PrayerTime", timeoutSeconds: 3),
-            "After onboarding dismissal, Home page elements should be visible");
+    // ── iOS onboarding-state helpers ─────────────────────────────
+    // Used only by the two popup-flow tests above; for everything else, the
+    // suite-level pre-seed in AppiumSetup.InitializeAsync keeps onboarding off.
+
+    /// <summary>
+    /// iOS only: writes OnboardingComplete=NO, terminates the app, and relaunches
+    /// it so the popup renders on the next OnAppearing. Resets OnboardingHandled
+    /// so later helper calls don't short-circuit during this scenario.
+    /// </summary>
+    private static void ForceOnboardingPopup(AppiumSetup setup)
+    {
+        RunXcrun($"simctl spawn booted defaults write {TestConfig.IOSBundleId} OnboardingComplete -bool NO");
+        RunXcrun($"simctl terminate booted {TestConfig.IOSBundleId}", allowFailure: true);
+        setup.OnboardingHandled = false;
+        setup.Driver.ActivateApp(TestConfig.IOSBundleId);
+        Thread.Sleep(TestConfig.DelayAppRelaunch);
+    }
+
+    /// <summary>
+    /// iOS only: restore OnboardingComplete=YES so later tests resume the
+    /// harness-level pre-seed contract. Does not re-terminate — later
+    /// EnsureOnTab calls hit DismissOnboardingIfPresent's no-op assertion,
+    /// which reads the value fresh from NSUserDefaults.
+    /// </summary>
+    private static void RestoreOnboardingComplete(AppiumSetup setup)
+    {
+        RunXcrun($"simctl spawn booted defaults write {TestConfig.IOSBundleId} OnboardingComplete -bool YES");
+        setup.OnboardingHandled = true;
+    }
+
+    private static void TapWelcomeSkipFlow(OpenQA.Selenium.Appium.AppiumDriver driver)
+    {
+        if (driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 10))
+        {
+            driver.Tap("Welcome_Btn_Skip");
+            Thread.Sleep(TestConfig.DelayModalAnimation);
+            if (driver.IsDisplayed("Complete_Btn_Done", timeoutSeconds: 10))
+            {
+                driver.Tap("Complete_Btn_Done");
+                Thread.Sleep(TestConfig.DelayAfterDismiss);
+            }
+        }
+    }
+
+    private static void RunXcrun(string arguments, bool allowFailure = false)
+    {
+        var psi = new ProcessStartInfo("xcrun", arguments)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        using var proc = Process.Start(psi)
+            ?? throw new InvalidOperationException("Failed to start xcrun.");
+        var stdout = proc.StandardOutput.ReadToEnd();
+        var stderr = proc.StandardError.ReadToEnd();
+        proc.WaitForExit();
+        if (proc.ExitCode != 0 && !allowFailure)
+            throw new InvalidOperationException(
+                $"xcrun {arguments} failed (exit {proc.ExitCode}).\nstdout: {stdout}\nstderr: {stderr}");
     }
 
     // ── Post-dismissal: onboarding banners should be hidden ──────
