@@ -277,16 +277,11 @@
                                         </Entry.Behaviors>
                                     </Entry>
                                     <Button Grid.Column="1"
+                                            Style="{StaticResource CloseButton}"
                                             Text="✕"
+                                            AutomationId="ConfirmImport_Btn_RemovePrayer"
                                             Clicked="OnRemovePrayerClicked"
-                                            SemanticProperties.Description="Remove prayer"
-                                            BackgroundColor="Transparent"
-                                            TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
-                                            FontSize="{StaticResource FontBody}"
-                                            Padding="4"
-                                            BorderWidth="0"
-                                            WidthRequest="32"
-                                            HeightRequest="32" />
+                                            SemanticProperties.Description="Remove prayer" />
                                 </Grid>
 
                                 <Editor Text="{Binding Details}"
