@@ -95,7 +95,7 @@ public class TagTests
         var driver = _setup.Driver;
 
         // Unique-per-run to avoid collision with prior-run residue.
-        var tagName = $"Delete Me Tag {DateTime.UtcNow.Ticks}";
+        var tagName = $"{TestSeedFixtures.DeleteRuntimeTagPrefix} {DateTime.UtcNow.Ticks}";
         driver.TapToolbarItem("Add");
         driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 10);
         driver.EnterText("TagDetail_Entry_Name", tagName);

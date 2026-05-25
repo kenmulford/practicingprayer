@@ -380,7 +380,7 @@ public class PrayerCardTests
             driver.IsTextDisplayed("Recycle Big Prayer 4", timeoutSeconds: 3));
     }
 
-    /// <summary>3.12: Delete card — navigate to the pre-seeded "Delete Me Card",
+    /// <summary>3.12: Delete card — navigate to the pre-seeded "UITest Delete Target Card",
     /// expand it, delete via the inline Delete button, confirm. The target card
     /// is a throwaway from the seed; destroying it does not affect the shared
     /// UITest baseline.</summary>
@@ -393,9 +393,9 @@ public class PrayerCardTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Expand the card, tap inline Delete button
-        if (driver.IsTextDisplayed("Delete Me Card", timeoutSeconds: 10))
+        if (driver.IsTextDisplayed(TestSeedFixtures.DeleteCard, timeoutSeconds: 10))
         {
-            driver.TapByText("Delete Me Card");
+            driver.TapByText(TestSeedFixtures.DeleteCard);
             Thread.Sleep(TestConfig.DelayAfterTap);
             driver.WaitAndTap("Cards_Btn_Delete", timeoutSeconds: 10);
             driver.DismissAlertIfPresent();

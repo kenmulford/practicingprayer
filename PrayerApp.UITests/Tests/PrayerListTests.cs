@@ -224,16 +224,16 @@ public class PrayerListTests
         _setup.Driver.NavigateToNewPrayer(_setup);
         var driver = _setup.Driver;
 
-        driver.EnterText("Detail_Entry_Title", "Delete Me Prayer");
+        driver.EnterText("Detail_Entry_Title", TestSeedFixtures.DeleteRuntimePrayer);
         driver.TapToolbarItem("Save");
 
         // Save triggers GoToAsync("..") after the DB write; round-trip is ~5s on
         // emulator. Fixed Thread.Sleep(1000) raced the rebuild.
         driver.WaitForElement("List_Filter_Active", timeoutSeconds: 10);
 
-        if (driver.IsTextDisplayed("Delete Me Prayer", timeoutSeconds: 10))
+        if (driver.IsTextDisplayed(TestSeedFixtures.DeleteRuntimePrayer, timeoutSeconds: 10))
         {
-            driver.TapByText("Delete Me Prayer");
+            driver.TapByText(TestSeedFixtures.DeleteRuntimePrayer);
 
             driver.TapToolbarItem("Edit");
             Thread.Sleep(TestConfig.DelayAfterTap);
