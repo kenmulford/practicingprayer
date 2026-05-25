@@ -22,25 +22,82 @@ public class ContextMenuImportTests
     /// don't see a half-imported card. Multi-line parsing has unit-test coverage;
     /// this test covers the platform-layer wireup only.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Coverage scope:</b> this test uses <c>am start --es</c>, which puts a plain
+    /// <c>String</c> extra. It exercises the String boundary of <c>HandleAndroidIntent</c>
+    /// only. It does NOT defend the <c>SpannableString</c> boundary — a regression from
+    /// <c>GetCharSequenceExtra</c> to <c>GetStringExtra</c> would NOT be caught here
+    /// because <c>am start --es</c> never delivers a Spannable.
+    /// </para>
+    /// <para>
+    /// See <see cref="ContextMenu_RichTextSpannablePayload_StagesPlainText"/> for the
+    /// Spannable-boundary defense (uses a host-side debug broadcast receiver to inject
+    /// a real <c>SpannableString</c> through the production pipeline).
+    /// </para>
+    /// </remarks>
     [SkippableFact]
     public void ContextMenu_ProcessTextIntent_OpensConfirmImportModal()
     {
         if (TestConfig.IsIOS)
             throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
 
-        _setup.Driver.ResetAppUIState(_setup);
+        // Force-stop guarantees a fresh MainActivity OnCreate path. Without this, a prior
+        // test can leave MainActivity backgrounded, and LaunchMode.SingleTop reuse routes
+        // the new intent through OnNewIntent on the existing instance — a different timing
+        // surface than what manual emulator smoke / production hits. Eliminates a class
+        // of flakes observed on this test.
+        _setup.Driver.ForceStopApp();
+        _setup.Driver.DismissOnboardingIfPresent(_setup);
 
         _setup.Driver.LaunchProcessTextIntent("Pray for Mom");
 
         // Modal-open detector: the Card Title entry — same probe used by
-        // _ImportFlowDiagnostic to confirm the modal actually rendered.
+        // _ImportFlowDiagnostic to confirm the modal actually rendered. WaitForElement
+        // polls until found or timeout, replacing prior bare Thread.Sleep before the
+        // probe (was a source of flakes when modal animation ran long).
         Assert.NotNull(_setup.Driver.WaitForElement(
             "ConfirmImport_Entry_CardTitle", timeoutSeconds: 10));
-        Thread.Sleep(TestConfig.DelayModalAnimation);
 
         Assert.True(_setup.Driver.IsDisplayed(
             "ConfirmImport_List_Prayers", timeoutSeconds: 5),
             "ConfirmImport modal should render the prayer list when opened via PROCESS_TEXT");
+
+        _setup.Driver.WaitAndTap("ConfirmImport_Btn_Cancel");
+        Thread.Sleep(TestConfig.DelayAfterDismiss);
+    }
+
+    /// <summary>
+    /// Defends the <c>SpannableString</c> boundary of the PROCESS_TEXT pipeline.
+    /// Invokes the debug-build-only host-side <c>DebugProcessTextShim</c> broadcast
+    /// receiver, which constructs a real <c>SpannableString</c> (with a markup span
+    /// attached, mirroring Chrome / Gmail rich-text payloads) and re-dispatches via
+    /// the real <c>ACTION_PROCESS_TEXT</c> pipeline.
+    /// </summary>
+    /// <remarks>
+    /// Goes RED if <c>MauiProgram.HandleAndroidIntent</c> regresses from
+    /// <c>GetCharSequenceExtra</c> to <c>GetStringExtra</c>: <c>GetStringExtra</c>
+    /// returns <c>null</c> for a <c>SpannableString</c> extra, so the modal would
+    /// never open and <c>WaitForElement</c> would time out.
+    /// </remarks>
+    [SkippableFact]
+    public void ContextMenu_RichTextSpannablePayload_StagesPlainText()
+    {
+        if (TestConfig.IsIOS)
+            throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
+
+        _setup.Driver.ForceStopApp();
+        _setup.Driver.DismissOnboardingIfPresent(_setup);
+
+        _setup.Driver.LaunchProcessTextIntentSpannable("Pray for Mom");
+
+        var entry = _setup.Driver.WaitForElement(
+            "ConfirmImport_Entry_CardTitle", timeoutSeconds: 10);
+        Assert.NotNull(entry);
+
+        Assert.True(_setup.Driver.IsDisplayed(
+            "ConfirmImport_List_Prayers", timeoutSeconds: 5),
+            "ConfirmImport modal should render the prayer list when opened via PROCESS_TEXT with a SpannableString payload");
 
         _setup.Driver.WaitAndTap("ConfirmImport_Btn_Cancel");
         Thread.Sleep(TestConfig.DelayAfterDismiss);

@@ -1684,4 +1684,62 @@ public static class AppExtensions
             { "optionalIntentArguments", $"--es android.intent.extra.PROCESS_TEXT \"{text}\"" }
         });
     }
+
+    /// <summary>
+    /// Android-only: force-stop the app so the next intent launch starts a fresh
+    /// <c>MainActivity</c>. Eliminates a class of flakes where a prior test left
+    /// MainActivity backgrounded and the new PROCESS_TEXT intent is delivered to
+    /// the existing instance (subject to <c>LaunchMode.SingleTop</c> reuse) instead
+    /// of triggering an <c>OnCreate</c>/<c>OnNewIntent</c> path the test asserts on.
+    /// Wraps <c>mobile: shell am force-stop</c>; requires Appium server flag
+    /// <c>--allow-insecure=uiautomator2:adb_shell</c> (or <c>--relaxed-security</c>).
+    /// </summary>
+    public static void ForceStopApp(this AppiumDriver driver)
+    {
+        if (TestConfig.IsIOS)
+            throw new SkipException("Android-only: force-stop is an adb/am operation");
+
+        driver.ExecuteScript("mobile: shell", new Dictionary<string, object>
+        {
+            { "command", "am" },
+            { "args", new[] { "force-stop", TestConfig.AndroidPackage } }
+        });
+    }
+
+    /// <summary>
+    /// Android-only DEBUG-build helper: dispatch <c>ACTION_PROCESS_TEXT</c> with a
+    /// real <c>SpannableString</c> payload, mirroring how Chrome / Gmail deliver the
+    /// extra in production (the OS attaches markup spans to selected rich text).
+    /// Invokes the host-side <c>DebugProcessTextShim</c> broadcast receiver, which
+    /// constructs a <c>SpannableString</c> and re-dispatches via the real PROCESS_TEXT
+    /// pipeline — so production code (<c>GetCharSequenceExtra</c>) is exercised.
+    /// </summary>
+    /// <remarks>
+    /// The companion <see cref="LaunchProcessTextIntent"/> uses <c>am start --es</c>,
+    /// which only puts a plain <c>String</c> extra — it does NOT defend the
+    /// SpannableString boundary. Receiver is <c>#if DEBUG</c> only and must NOT
+    /// ship to Release. Requires Appium server flag
+    /// <c>--allow-insecure=uiautomator2:adb_shell</c> (or <c>--relaxed-security</c>).
+    /// </remarks>
+    public static void LaunchProcessTextIntentSpannable(this AppiumDriver driver, string text)
+    {
+        if (TestConfig.IsIOS)
+            throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
+
+        // `am broadcast` arg list. Wrapping the text value in single quotes guards against
+        // shell tokenisation of spaces. Newlines are still stripped by the adb tokeniser;
+        // multi-line payloads remain out of scope for this helper.
+        driver.ExecuteScript("mobile: shell", new Dictionary<string, object>
+        {
+            { "command", "am" },
+            { "args", new[]
+                {
+                    "broadcast",
+                    "-a", "com.multithreadedllc.prayercards.PRAYER_TEST_SPANNABLE",
+                    "-n", $"{TestConfig.AndroidPackage}/.DebugProcessTextShim",
+                    "--es", "text", text
+                }
+            }
+        });
+    }
 }
