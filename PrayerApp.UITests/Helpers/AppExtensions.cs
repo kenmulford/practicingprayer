@@ -2,6 +2,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Support.UI;
 using PrayerApp.UITests.Infrastructure;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -1670,19 +1671,59 @@ public static class AppExtensions
     /// is covered by <c>TextSelectionParser</c> unit tests; manual emulator smoke covers
     /// the real Gmail → toolbar → modal end-to-end path.
     /// </summary>
-    public static void LaunchProcessTextIntent(this AppiumDriver driver, string text)
+    public static void LaunchProcessTextIntent(this AppiumDriver driver, AppiumSetup setup, string text)
     {
         if (TestConfig.IsIOS)
             throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
 
-        driver.ExecuteScript("mobile: startActivity", new Dictionary<string, object>
-        {
-            { "appPackage", TestConfig.AndroidPackage },
-            { "appActivity", TestConfig.AndroidMainActivity },
-            { "intentAction", "android.intent.action.PROCESS_TEXT" },
-            { "mimeType", "text/plain" },
-            { "optionalIntentArguments", $"--es android.intent.extra.PROCESS_TEXT \"{text}\"" }
-        });
+        ValidateAmShellText(text, nameof(text));
+
+        // Two-stage foreground → dismiss-onboarding → dispatch, symmetric with
+        // `LaunchProcessTextIntentSpannable`. Doing PROCESS_TEXT in a single `am start`
+        // off a force-stopped app delivers the intent directly into HandleSelectionImport
+        // during cold-start — which opens the ConfirmImport modal before any onboarding
+        // popup is dismissed AND before DismissOnboardingIfPresent's fast-path
+        // (IsDisplayed("Home", 1s)) can find a visible tab bar.
+        //
+        // Stage 1 foreground via plain LAUNCHER `am start` so MainActivity displays the
+        // Home tab. DismissOnboarding then fast-paths in 1s when no popup is present, or
+        // dismisses cleanly when one is. Stage 2 re-`am start`s with `-a PROCESS_TEXT`,
+        // routing through OnNewIntent on the now-foregrounded SingleTop MainActivity.
+        //
+        // Explicit `-n pkg/activity` is required on both stages — `mobile: startActivity`
+        // with appPackage + appActivity + intentAction builds an implicit intent that
+        // Android's resolver routes to the system default PROCESS_TEXT handler
+        // (DocumentsUI / PickActivity on API 36+) rather than MainActivity.
+        //
+        // Requires Appium server flag `--allow-insecure=uiautomator2:adb_shell`.
+
+        // Invalidate the cached OnboardingHandled flag FIRST so any failure between
+        // here and the post-dismiss readiness check leaves the flag in the "needs
+        // re-check" state rather than a stale "true" from a prior test.
+        setup.OnboardingHandled = false;
+
+        // Stage 1: foreground MainActivity with LAUNCHER intent.
+        RunAmShellOrThrow(driver,
+            new[] { "start", "-n", $"{TestConfig.AndroidPackage}/{TestConfig.AndroidMainActivity}" },
+            nameof(LaunchProcessTextIntent));
+
+        WaitForAppReadyOrThrow(driver, nameof(LaunchProcessTextIntent));
+
+        driver.DismissOnboardingIfPresent(setup);
+
+        AssertHomeVisibleAfterDismiss(driver, setup, nameof(LaunchProcessTextIntent));
+
+        // Stage 2: dispatch PROCESS_TEXT — routes through OnNewIntent on SingleTop.
+        RunAmShellOrThrow(driver,
+            new[]
+            {
+                "start",
+                "-n", $"{TestConfig.AndroidPackage}/{TestConfig.AndroidMainActivity}",
+                "-a", "android.intent.action.PROCESS_TEXT",
+                "-t", "text/plain",
+                "--es", "android.intent.extra.PROCESS_TEXT", text
+            },
+            nameof(LaunchProcessTextIntent));
     }
 
     /// <summary>
@@ -1721,25 +1762,182 @@ public static class AppExtensions
     /// ship to Release. Requires Appium server flag
     /// <c>--allow-insecure=uiautomator2:adb_shell</c> (or <c>--relaxed-security</c>).
     /// </remarks>
-    public static void LaunchProcessTextIntentSpannable(this AppiumDriver driver, string text)
+    public static void LaunchProcessTextIntentSpannable(this AppiumDriver driver, AppiumSetup setup, string text)
     {
         if (TestConfig.IsIOS)
             throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
 
-        // `am broadcast` arg list. Wrapping the text value in single quotes guards against
-        // shell tokenisation of spaces. Newlines are still stripped by the adb tokeniser;
-        // multi-line payloads remain out of scope for this helper.
-        driver.ExecuteScript("mobile: shell", new Dictionary<string, object>
+        ValidateAmShellText(text, nameof(text));
+
+        // Foreground MainActivity FIRST. Android 14+ (API 34+) enforces Background
+        // Activity Launch (BAL) restrictions: when the broadcast receiver below
+        // fires inside a force-stopped or backgrounded app, its StartActivity call
+        // is blocked with BAL_BLOCK. Foregrounding MainActivity gives the receiver's
+        // process a visible-activity owner, which qualifies for BAL_ALLOW_VISIBLE_WINDOW.
+        // Companion `LaunchProcessTextIntent` foregrounds for a different reason
+        // (intent-resolution explicitness rather than BAL): both helpers share the
+        // foreground → poll → dismiss → dispatch structure for symmetry.
+
+        // Invalidate the cached OnboardingHandled flag FIRST (force-stop destroyed
+        // the underlying UI state but not the cache) so any failure between here
+        // and the post-dismiss readiness check leaves the flag in the "needs
+        // re-check" state.
+        setup.OnboardingHandled = false;
+
+        RunAmShellOrThrow(driver,
+            new[] { "start", "-n", $"{TestConfig.AndroidPackage}/{TestConfig.AndroidMainActivity}" },
+            nameof(LaunchProcessTextIntentSpannable));
+
+        WaitForAppReadyOrThrow(driver, nameof(LaunchProcessTextIntentSpannable));
+
+        driver.DismissOnboardingIfPresent(setup);
+
+        AssertHomeVisibleAfterDismiss(driver, setup, nameof(LaunchProcessTextIntentSpannable));
+
+        // `am broadcast` arg list. Appium's `mobile: shell` invocation passes the
+        // args array as separate argv tokens (not via `sh -c` string concatenation),
+        // so spaces inside `text` survive — `ValidateAmShellText` above rejects the
+        // shell metacharacters that would actually corrupt the payload. Newlines
+        // are still stripped by the adb tokeniser; multi-line payloads remain out
+        // of scope for this helper.
+        RunAmShellOrThrow(driver,
+            new[]
+            {
+                "broadcast",
+                "-a", "com.multithreadedllc.prayercards.PRAYER_TEST_SPANNABLE",
+                "-n", $"{TestConfig.AndroidPackage}/.DebugProcessTextShim",
+                "--es", "text", text
+            },
+            nameof(LaunchProcessTextIntentSpannable));
+    }
+
+    /// <summary>
+    /// Reject `text` values containing shell metacharacters that would corrupt
+    /// `am`-shell argument tokenisation. The args-array invocation style of
+    /// <c>mobile: shell</c> passes each element as a separate argv token, but
+    /// embedded metacharacters can still interact poorly with adb's parser on
+    /// some Appium driver versions. Whitelisting the safe set is cheaper than
+    /// guessing the actual tokenisation contract.
+    /// </summary>
+    private static void ValidateAmShellText(string text, string paramName)
+    {
+        if (text is null)
+            throw new ArgumentNullException(paramName);
+
+        foreach (var c in text)
+        {
+            if (c is '\'' or '"' or '`' or '$' or '\\' or '\n' or '\r')
+                throw new ArgumentException(
+                    $"`{paramName}` contains a shell metacharacter (quote, backtick, $, backslash, or newline). " +
+                    "These corrupt am-shell argument tokenisation across Appium driver versions. " +
+                    "Use plain alphanumeric + space text only — production multi-line / rich-text parsing " +
+                    "is covered by TextSelectionParser unit tests.",
+                    paramName);
+        }
+    }
+
+    /// <summary>
+    /// Poll up to 20s for the app to display either the Home tab (warm/onboarded
+    /// state) or the Welcome popup (fresh-emulator state). Throws on timeout so a
+    /// stale CRC, missing Appium insecure flag, or severely under-resourced
+    /// emulator surfaces as a clear error rather than a downstream
+    /// <c>WebDriverTimeoutException</c> at <c>WaitForElement</c>.
+    /// </summary>
+    /// <remarks>
+    /// Budget sized for cold-start: MAUI's <c>App.InitTask</c> + DB seed +
+    /// Shell render can easily take 10-15s on the first invocation after an
+    /// emulator restart or full force-stop, before the Home tab becomes visible
+    /// to UIAutomator2. Each iteration costs up to ~2.2s (two 1s IsDisplayed
+    /// probes plus a 200ms settle), so a 20s budget yields ~8-9 sampling
+    /// opportunities.
+    /// </remarks>
+    private static void WaitForAppReadyOrThrow(AppiumDriver driver, string callerName)
+    {
+        var pollStart = Stopwatch.GetTimestamp();
+        var pollBudget = TimeSpan.FromSeconds(20);
+
+        while (Stopwatch.GetElapsedTime(pollStart) < pollBudget)
+        {
+            if (driver.IsDisplayed("Home", timeoutSeconds: 1) ||
+                driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 1))
+            {
+                return;
+            }
+            Thread.Sleep(TestConfig.DelayShortSettle);
+        }
+
+        throw new InvalidOperationException(
+            $"{callerName}: app did not display Home tab or Welcome popup within 20s of `am start`. " +
+            "Common causes: stale `AndroidComponentNames.MainActivity` CRC hash (rebuild required after a " +
+            ".NET-for-Android toolchain bump), missing Appium server flag " +
+            "`--allow-insecure=uiautomator2:adb_shell`, or a severely under-resourced emulator.");
+    }
+
+    /// <summary>
+    /// Final readiness gate: after <see cref="DismissOnboardingIfPresent"/> returns,
+    /// the Home tab MUST be visible. The dismissal helper sets
+    /// <c>OnboardingHandled = true</c> on retry exhaustion even when no popup was
+    /// actually dismissed (a documented safety valve to prevent infinite loops in
+    /// long-running suites). Without this gate, a still-covered Home leaks downstream
+    /// as a confusing <c>WaitForElement</c> timeout on the modal probe.
+    /// </summary>
+    /// <remarks>
+    /// On throw, invalidates <see cref="AppiumSetup.OnboardingHandled"/> back to
+    /// <c>false</c> so the NEXT test that calls <see cref="DismissOnboardingIfPresent"/>
+    /// directly (e.g. via <c>EnsureOnTab</c>, <c>NavigateToTabRoot</c>,
+    /// <c>DarkModeRenderingTests</c>, <c>PrayerListTests</c>) does not short-circuit
+    /// via the stale <c>true</c> flag that <see cref="DismissOnboardingIfPresent"/>
+    /// set on its safety-valve path — which would mask a real popup blocking that
+    /// next test.
+    /// </remarks>
+    private static void AssertHomeVisibleAfterDismiss(AppiumDriver driver, AppiumSetup setup, string callerName)
+    {
+        if (!driver.IsDisplayed("Home", timeoutSeconds: 2))
+        {
+            // Cross-test state hygiene: roll back the cached flag before throwing.
+            setup.OnboardingHandled = false;
+
+            throw new InvalidOperationException(
+                $"{callerName}: Home tab not visible after `DismissOnboardingIfPresent`. " +
+                "An onboarding popup, modal, or stale UI is still covering the Home tab — " +
+                $"the `{nameof(DismissOnboardingIfPresent)}` retry-exhaustion safety valve " +
+                "(sets OnboardingHandled=true after 3 failed dismiss attempts) may have fired.");
+        }
+    }
+
+    /// <summary>
+    /// Invoke <c>am</c> via <c>mobile: shell</c> and inspect the output for the
+    /// failure markers Android prints (<c>Error type N:</c>, <c>Exception occurred</c>).
+    /// Raw <c>mobile: shell</c> does NOT throw on a non-zero <c>am</c> exit — it
+    /// returns stdout/stderr concatenated as a string. Without this check, a stale
+    /// component name or a missing Appium <c>--allow-insecure</c> flag surfaces as
+    /// a confusing <c>WaitForAppReadyOrThrow</c> timeout 10s later rather than at
+    /// the actual failure site.
+    /// </summary>
+    private static void RunAmShellOrThrow(AppiumDriver driver, IEnumerable<string> args, string callerName)
+    {
+        var result = driver.ExecuteScript("mobile: shell", new Dictionary<string, object>
         {
             { "command", "am" },
-            { "args", new[]
-                {
-                    "broadcast",
-                    "-a", "com.multithreadedllc.prayercards.PRAYER_TEST_SPANNABLE",
-                    "-n", $"{TestConfig.AndroidPackage}/.DebugProcessTextShim",
-                    "--es", "text", text
-                }
-            }
+            { "args", args }
         });
+
+        var output = result?.ToString() ?? string.Empty;
+        // SecurityException (one word) is Android's actual stderr marker when the
+        // shell uid can't run the requested am operation (e.g., missing Appium
+        // `--allow-insecure=uiautomator2:adb_shell` flag). The space-separated
+        // "Security exception" variant catches verbose-mode wrappers; both forms
+        // are checked to defend against driver-version output drift.
+        if (output.Contains("Error type", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("Exception occurred", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("SecurityException", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("Security exception", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"{callerName}: `am` shell command failed. Output:\n{output}\n" +
+                "Common causes: stale `AndroidComponentNames.MainActivity` CRC, " +
+                "missing Appium server flag `--allow-insecure=uiautomator2:adb_shell`, " +
+                "or a package/activity that is not installed or not exported.");
+        }
     }
 }

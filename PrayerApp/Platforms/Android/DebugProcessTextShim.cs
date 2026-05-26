@@ -5,6 +5,7 @@ using Android.Graphics;
 using Android.Text;
 using Android.Text.Style;
 using Java.Lang;
+using PrayerApp.Helpers;
 
 namespace PrayerApp.Platforms.Android;
 
@@ -67,10 +68,12 @@ public sealed class DebugProcessTextShim : BroadcastReceiver
 
         // Re-dispatch via the real PROCESS_TEXT pipeline so production code
         // (GetCharSequenceExtra in MauiProgram.HandleAndroidIntent) is exercised.
-        // SetClassName targets the JNI-registered MainActivity name; matches the
-        // value used by TestConfig.AndroidMainActivity on the UITest side.
+        // SetClassName targets the JNI-registered MainActivity name via the
+        // shared canonical constant (AndroidComponentNames.MainActivity); the
+        // same constant backs TestConfig.AndroidMainActivity on the UITest side
+        // so a toolchain-driven CRC change updates both sites in lockstep.
         var dispatch = new Intent(Intent.ActionProcessText)
-            .SetClassName(context.PackageName!, "crc6425c6d21f3599989c.MainActivity")
+            .SetClassName(context.PackageName!, AndroidComponentNames.MainActivity)
             .PutExtra(Intent.ExtraProcessText, (ICharSequence)spannable)
             .SetType("text/plain")
             .AddFlags(ActivityFlags.NewTask);

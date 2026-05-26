@@ -48,9 +48,13 @@ public class ContextMenuImportTests
         // surface than what manual emulator smoke / production hits. Eliminates a class
         // of flakes observed on this test.
         _setup.Driver.ForceStopApp();
-        _setup.Driver.DismissOnboardingIfPresent(_setup);
 
-        _setup.Driver.LaunchProcessTextIntent("Pray for Mom");
+        // LaunchProcessTextIntent foregrounds MainActivity (via `am start`) and runs
+        // its own onboarding-dismissal step after foregrounding — the cached
+        // OnboardingHandled flag is invalid after force-stop, so a direct test-level
+        // DismissOnboardingIfPresent call here would short-circuit against a dead app
+        // and leave the post-launch popup undismissed.
+        _setup.Driver.LaunchProcessTextIntent(_setup, "Pray for Mom");
 
         // Modal-open detector: the Card Title entry — same probe used by
         // _ImportFlowDiagnostic to confirm the modal actually rendered. WaitForElement
@@ -87,9 +91,11 @@ public class ContextMenuImportTests
             throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
 
         _setup.Driver.ForceStopApp();
-        _setup.Driver.DismissOnboardingIfPresent(_setup);
 
-        _setup.Driver.LaunchProcessTextIntentSpannable("Pray for Mom");
+        // LaunchProcessTextIntentSpannable foregrounds MainActivity (via `am start`)
+        // and runs its own onboarding-dismissal step between the foreground call and
+        // the broadcast — the cached OnboardingHandled flag is invalid after force-stop.
+        _setup.Driver.LaunchProcessTextIntentSpannable(_setup, "Pray for Mom");
 
         var entry = _setup.Driver.WaitForElement(
             "ConfirmImport_Entry_CardTitle", timeoutSeconds: 10);

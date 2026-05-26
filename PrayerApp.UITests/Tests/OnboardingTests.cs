@@ -27,7 +27,7 @@ public class OnboardingTests
     public OnboardingTests(AppiumSetup setup) => _setup = setup;
 
     /// <summary>1.1 + 1.2: Fresh install — welcome popup appears with expected buttons.</summary>
-    [Fact]
+    [SkippableFact]
     public void Onboarding_WelcomePopup_ShowsOnFirstLaunch()
     {
         if (TestConfig.IsIOS) ForceOnboardingPopup(_setup);
@@ -35,7 +35,10 @@ public class OnboardingTests
         {
             var driver = _setup.Driver;
             if (!TestConfig.IsIOS && _setup.OnboardingHandled)
-                return;
+                throw new SkipException(
+                    "Android: onboarding already handled by a prior test in this collection. " +
+                    "There is no Android equivalent of `ForceOnboardingPopup` yet (would require " +
+                    "`adb shell pm clear` + relaunch). Run this test in isolation to exercise the assertion.");
 
             var hasGetStarted = driver.IsDisplayed("Welcome_Btn_GetStarted", timeoutSeconds: 10);
             var hasSkip = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 2);
@@ -50,7 +53,7 @@ public class OnboardingTests
     }
 
     /// <summary>1.7: Skip onboarding — tapping Skip dismisses the entire flow.</summary>
-    [Fact]
+    [SkippableFact]
     public void Onboarding_SkipButton_DismissesEntireFlow()
     {
         if (TestConfig.IsIOS) ForceOnboardingPopup(_setup);
@@ -58,7 +61,10 @@ public class OnboardingTests
         {
             var driver = _setup.Driver;
             if (!TestConfig.IsIOS && _setup.OnboardingHandled)
-                return;
+                throw new SkipException(
+                    "Android: onboarding already handled by a prior test in this collection. " +
+                    "There is no Android equivalent of `ForceOnboardingPopup` yet (would require " +
+                    "`adb shell pm clear` + relaunch). Run this test in isolation to exercise the assertion.");
 
             if (TestConfig.IsIOS)
             {

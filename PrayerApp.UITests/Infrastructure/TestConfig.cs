@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using OpenQA.Selenium.Appium;
+using PrayerApp.Helpers;
 
 namespace PrayerApp.UITests.Infrastructure;
 
@@ -47,8 +48,10 @@ public static class TestConfig
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
 
-    /// <summary>The Android MainActivity class name (MAUI emits a CRC-prefixed Java class).</summary>
-    public const string AndroidMainActivity = "crc6425c6d21f3599989c.MainActivity";
+    /// <summary>The Android MainActivity class name (MAUI emits a CRC-prefixed Java class).
+    /// Sourced from <see cref="AndroidComponentNames.MainActivity"/> so the production-side
+    /// DebugProcessTextShim and this test-side constant cannot drift apart.</summary>
+    public const string AndroidMainActivity = AndroidComponentNames.MainActivity;
 
     /// <summary>App-data-relative path to the SQLite DB on Android. Used by TestDataSeed.</summary>
     public const string AndroidAppDbRelativePath = "files/prayer_app.db";
