@@ -11,13 +11,34 @@
     Both csprojs (PrayerApp + PrayerApp.ActionExtension) inherit this stamp.
     They MUST match — iOS refuses to load the extension if versions diverge.
 
-    Hook registration: the iOS SDK exposes MaciOSPrepareForBuildDependsOn as the
-    documented extension point that runs before _CompileAppManifest reads
-    $(ApplicationVersion). BeforeTargets="BeforeBuild" fires too late — the
-    manifest compile has already snapshotted ApplicationVersion=1.0 (the SDK
-    default), so the packaged Info.plist carries the default, not the stamp.
-    Reference: Microsoft.iOS.Sdk targets/Xamarin.Shared.Sdk.targets (line 302)
-    explicitly documents this hook for "extend the build process".
+    Hook registration is per-platform because each SDK snapshots
+    $(ApplicationVersion) at a different point, and each defaults it differently
+    when empty. The stamp resolves into $(_ResolvedApplicationVersion) (which is
+    independent of the SDK default) and only then assigns $(ApplicationVersion),
+    so a non-empty SDK default does NOT suppress the git auto-bump.
+
+    iOS: hook via MaciOSPrepareForBuildDependsOn — the documented extension point
+    that runs before _CompileAppManifest reads $(ApplicationVersion).
+    BeforeTargets="BeforeBuild" fires too late (the manifest compile has already
+    snapshotted ApplicationVersion=1.0, the SDK default).
+    Reference: Microsoft.iOS.Sdk targets/Xamarin.Shared.Sdk.targets (line 302).
+
+    Android: hook via BeforeTargets="_GetAndroidPackageName" — that internal target
+    copies $(ApplicationVersion) into $(_AndroidVersionCode)
+    (Xamarin.Android.Common.targets:618), which GenerateMainAndroidManifest bakes
+    into android:versionCode (same file, line 1657). The documented PUBLIC hooks
+    ($(AndroidPrepareForBuildDependsOn), $(BeforeGenerateAndroidManifest)) fire too
+    late: verified that AndroidPrepareForBuildDependsOn DID run and stamped
+    ApplicationVersion=752, yet the manifest still carried versionCode=1 because
+    _GetAndroidPackageName had already snapshotted _AndroidVersionCode. So we must
+    hook the target that actually reads the value. Two further notes:
+    Microsoft.Android.Sdk.DefaultProperties.targets:168 sets ApplicationVersion=1 at
+    evaluation time when empty (so the "ApplicationVersion == ''" gate never fires on
+    Android — hence the $(_ResolvedApplicationVersion) indirection); and #8 only
+    registered the iOS hook, so Android shipped versionCode=1. A BeforeTargets naming
+    a target absent on iOS is silently ignored, so it is harmless on the iOS build.
+    This internal-target coupling is defended by scripts/check-android-version-code.ps1.
+    Ref: https://learn.microsoft.com/dotnet/android/building-apps/build-process#build-extension-points
   -->
   <PropertyGroup>
     <ApplicationDisplayVersion>1.4.4</ApplicationDisplayVersion>
@@ -28,41 +49,42 @@
   </PropertyGroup>
 
   <Target Name="_StampApplicationVersion"
+          BeforeTargets="_GetAndroidPackageName"
           Condition="'$(_ApplicationVersionStamped)' != 'true'">
 
-    <PropertyGroup Condition="'$(APPLICATION_VERSION_OVERRIDE)' != ''">
-      <ApplicationVersion>$(APPLICATION_VERSION_OVERRIDE)</ApplicationVersion>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(ApplicationVersion)' == '' AND '$(ApplicationVersionOverride)' != ''">
-      <ApplicationVersion>$(ApplicationVersionOverride)</ApplicationVersion>
+    <!-- Resolve into a private property so the SDK's eval-time default
+         (ApplicationVersion=1 on Android) cannot short-circuit the git path. -->
+    <PropertyGroup>
+      <_ResolvedApplicationVersion Condition="'$(APPLICATION_VERSION_OVERRIDE)' != ''">$(APPLICATION_VERSION_OVERRIDE)</_ResolvedApplicationVersion>
+      <_ResolvedApplicationVersion Condition="'$(_ResolvedApplicationVersion)' == '' AND '$(ApplicationVersionOverride)' != ''">$(ApplicationVersionOverride)</_ResolvedApplicationVersion>
     </PropertyGroup>
 
     <Exec Command="git rev-parse --is-shallow-repository"
           ConsoleToMSBuild="true"
           IgnoreExitCode="true"
-          Condition="'$(ApplicationVersion)' == ''">
+          Condition="'$(_ResolvedApplicationVersion)' == ''">
       <Output TaskParameter="ConsoleOutput" PropertyName="_IsShallowRepo" />
       <Output TaskParameter="ExitCode" PropertyName="_GitRevParseExitCode" />
     </Exec>
 
     <Error Text="Cannot compute ApplicationVersion: shallow git clone detected. Run 'git fetch --unshallow', set APPLICATION_VERSION_OVERRIDE=NNN, or pass -p:ApplicationVersionOverride=NNN."
-           Condition="'$(ApplicationVersion)' == '' AND '$(_IsShallowRepo)' == 'true'" />
+           Condition="'$(_ResolvedApplicationVersion)' == '' AND '$(_IsShallowRepo)' == 'true'" />
 
     <Error Text="Cannot compute ApplicationVersion: not a git repository or git not found. Set APPLICATION_VERSION_OVERRIDE=NNN or pass -p:ApplicationVersionOverride=NNN."
-           Condition="'$(ApplicationVersion)' == '' AND '$(_GitRevParseExitCode)' != '0'" />
+           Condition="'$(_ResolvedApplicationVersion)' == '' AND '$(_GitRevParseExitCode)' != '0'" />
 
     <Exec Command="git rev-list --count HEAD"
           ConsoleToMSBuild="true"
           IgnoreExitCode="false"
-          Condition="'$(ApplicationVersion)' == ''">
-      <Output TaskParameter="ConsoleOutput" PropertyName="ApplicationVersion" />
+          Condition="'$(_ResolvedApplicationVersion)' == ''">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_ResolvedApplicationVersion" />
     </Exec>
 
     <PropertyGroup>
+      <ApplicationVersion>$(_ResolvedApplicationVersion)</ApplicationVersion>
       <_ApplicationVersionStamped>true</_ApplicationVersionStamped>
     </PropertyGroup>
 
-    <Message Importance="high" Text="ApplicationVersion stamped: $(ApplicationVersion)" />
+    <Message Importance="high" Text="ApplicationVersion stamped: $(ApplicationVersion) [$(TargetFramework)]" />
   </Target>
 </Project>
