@@ -85,7 +85,7 @@ public class PrayerListTests
         var driver = _setup.Driver;
 
         driver.EnterText("Detail_Entry_Title", "Prayer List UITest");
-        driver.TapToolbarItem("Save");
+        driver.TapToolbarItemById("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Save navigates back to list automatically
@@ -123,11 +123,12 @@ public class PrayerListTests
 
         // #72a: was wrapped in if (IsTextDisplayed) which silently skipped the edit-mode
         // assertion when the seeded prayer was off-screen/absent (false green). Scroll-tap
-        // unconditionally so a missing prayer fails loud — and so the #72b
-        // TapToolbarItem("Edit") publish race surfaces as a real red for PR 7 to close.
+        // unconditionally so a missing prayer fails loud — exposing the Edit-toolbar red
+        // (Android uppercases action-bar text → "Edit" text lookup missed), closed in #72b
+        // via AutomationId + TapToolbarItemById.
         driver.ScrollToPrayerAndTap("UI Test Prayer");
 
-        driver.TapToolbarItem("Edit");
+        driver.TapToolbarItemById("Edit");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
@@ -136,7 +137,7 @@ public class PrayerListTests
         if (driver.IsDisplayed("Detail_Entry_Details", timeoutSeconds: 3))
             driver.EnterText("Detail_Entry_Details", "Updated by UITest");
 
-        driver.TapToolbarItem("Save");
+        driver.TapToolbarItemById("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Ensure we're back on the list
@@ -154,7 +155,7 @@ public class PrayerListTests
         var driver = _setup.Driver;
 
         driver.EnterText("Detail_Entry_Title", "Mark Answered UITest");
-        driver.TapToolbarItem("Save");
+        driver.TapToolbarItemById("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Find it and open it. #72a: was an if (IsTextDisplayed) guard that skipped the
@@ -199,7 +200,7 @@ public class PrayerListTests
         var driver = _setup.Driver;
 
         driver.EnterText("Detail_Entry_Title", TestSeedFixtures.DeleteRuntimePrayer);
-        driver.TapToolbarItem("Save");
+        driver.TapToolbarItemById("Save");
 
         // Save triggers GoToAsync("..") after the DB write; round-trip is ~5s on
         // emulator. Fixed Thread.Sleep(1000) raced the rebuild.
@@ -207,10 +208,10 @@ public class PrayerListTests
 
         // #72a: was an if (IsTextDisplayed) guard that silently skipped the delete flow
         // when the just-created prayer wasn't visible (false green). Scroll-tap loud;
-        // also exercises the #72b TapToolbarItem("Edit") race.
+        // also exercises the Edit-toolbar tap fixed in #72b (TapToolbarItemById).
         driver.ScrollToPrayerAndTap(TestSeedFixtures.DeleteRuntimePrayer);
 
-        driver.TapToolbarItem("Edit");
+        driver.TapToolbarItemById("Edit");
         Thread.Sleep(TestConfig.DelayAfterTap);
 
         // Scroll to Delete if needed

@@ -1412,8 +1412,21 @@ public static class AppExtensions
         // Wait for the Prayers list to render before tapping the toolbar — prevents
         // racing the "Add" tap against an un-rendered Shell action bar.
         driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
-        if (TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterNavigation); // Let Shell finish rendering toolbar items
-        driver.TapToolbarItem("Add");
+        // Wait for the Shell top-bar to actually render the "Add" item — it lags the page
+        // content, and tapping before it exists (or before its Command="{Binding
+        // NewCommand}" binding goes live) is a no-op: the click can return HTTP 200 yet
+        // route nothing, so the detail page never opens. ById, not text: Android
+        // uppercases the label to "ADD" and exposes no content-desc for a text match;
+        // AutomationId maps to content-desc (case-exact), matching the cards/boxes pattern.
+        // Settle so the binding is live, then retry the tap until the title entry appears.
+        driver.WaitForElement("Add", timeoutSeconds: 10);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            if (!driver.IsDisplayed("Add", timeoutSeconds: 2)) break; // navigated away — Add gone
+            driver.TapToolbarItemById("Add");
+            if (driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5)) break;
+        }
         driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 10);
     }
 
