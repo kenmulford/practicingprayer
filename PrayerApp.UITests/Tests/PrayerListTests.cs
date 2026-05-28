@@ -99,41 +99,12 @@ public class PrayerListTests
     {
         _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
-        driver.EnsureUITestPrayerExists(_setup);
-        driver.EnsureOnTab("Prayers", _setup);
+        driver.EnsureOnPrayersTab(_setup);
 
-        // Wait for CollectionView cells to materialize in the accessibility tree
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // On iOS, SemanticProperties.Description composes cell labels (e.g. "Quick Add, UI Test Prayer").
-        // Use CONTAINS predicate to match partial text, then tap with contains-based locator.
-        bool scrolledToItem = false;
-        if (TestConfig.IsIOS)
-        {
-            scrolledToItem = driver.IOSScrollToPredicateInContainer(
-                "List_List_Prayers", "label CONTAINS 'UI Test Prayer'");
-        }
-
-        try
-        {
-            if (scrolledToItem)
-            {
-                // iOS: cell label is composed — use contains-based tap
-                driver.TapByTextContains("UI Test Prayer", timeoutSeconds: 10);
-            }
-            else
-            {
-                // Android or iOS fallback: standard scroll + click
-                driver.ScrollDownToText("UI Test Prayer", maxScrolls: 3,
-                    scrollableAutomationId: "List_List_Prayers").Click();
-            }
-        }
-        catch (Exception ex) when (ex is NoSuchElementException or WebDriverException)
-        {
-            var dumpPath = driver.DumpPageSource("Prayers_TapPrayer_ShowsViewMode");
-            Assert.Fail($"Could not find 'UI Test Prayer' after scrolling. {ex.GetType().Name}: {ex.Message}. Page source dumped to: {dumpPath}");
-        }
-        Thread.Sleep(TestConfig.DelayAfterTap);
+        // Scroll to the seeded prayer and open it. Shared helper handles the iOS
+        // composed-label vs Android scroll split and fails loud if the row is absent
+        // (replaced the inline copy this helper was extracted from).
+        driver.ScrollToPrayerAndTap("UI Test Prayer");
 
         Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 10)
                  || driver.IsDisplayed("Detail_Btn_Share", timeoutSeconds: 3),
@@ -147,25 +118,26 @@ public class PrayerListTests
     public void Prayers_EditPrayer()
     {
         _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayers", _setup);
+        _setup.Driver.EnsureOnPrayersTab(_setup); // lands on Prayers + waits for List_List_Prayers to render
         var driver = _setup.Driver;
 
-        if (driver.IsTextDisplayed("UI Test Prayer", timeoutSeconds: 3))
-        {
-            driver.TapByText("UI Test Prayer");
+        // #72a: was wrapped in if (IsTextDisplayed) which silently skipped the edit-mode
+        // assertion when the seeded prayer was off-screen/absent (false green). Scroll-tap
+        // unconditionally so a missing prayer fails loud — and so the #72b
+        // TapToolbarItem("Edit") publish race surfaces as a real red for PR 7 to close.
+        driver.ScrollToPrayerAndTap("UI Test Prayer");
 
-            driver.TapToolbarItem("Edit");
-            Thread.Sleep(TestConfig.DelayAfterTap);
+        driver.TapToolbarItem("Edit");
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
-            Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
-                "Should show title entry in edit mode");
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
+            "Should show title entry in edit mode");
 
-            if (driver.IsDisplayed("Detail_Entry_Details", timeoutSeconds: 3))
-                driver.EnterText("Detail_Entry_Details", "Updated by UITest");
+        if (driver.IsDisplayed("Detail_Entry_Details", timeoutSeconds: 3))
+            driver.EnterText("Detail_Entry_Details", "Updated by UITest");
 
-            driver.TapToolbarItem("Save");
-            Thread.Sleep(TestConfig.DelayAfterSave);
-        }
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
 
         // Ensure we're back on the list
         driver.NavigateToTab("Prayers");
@@ -185,21 +157,23 @@ public class PrayerListTests
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
-        // Find it and open it
-        if (driver.IsTextDisplayed("Mark Answered UITest", timeoutSeconds: 10))
-        {
-            driver.TapByText("Mark Answered UITest");
+        // Find it and open it. #72a: was an if (IsTextDisplayed) guard that skipped the
+        // mark-answered flow when the just-created prayer wasn't visible (false green).
+        // Wait for the list to rebuild after Save's GoToAsync("..") round-trip before
+        // scrolling — the removed guard's timeoutSeconds:10 used to absorb that latency.
+        driver.WaitForElement("List_Filter_Active", timeoutSeconds: 10);
+        driver.ScrollToPrayerAndTap("Mark Answered UITest");
 
-            if (driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 10))
-            {
-                driver.Tap("Detail_Btn_MarkAnswered");
-                Thread.Sleep(TestConfig.DelayAfterNavigation);
-                driver.DismissAlertIfPresent();
-                Thread.Sleep(TestConfig.DelayAfterNavigation);
-            }
+        // #72a fail-loud: the seeded-then-saved prayer is unanswered, so the Mark Answered
+        // button must be present in view mode — assert rather than silently skip.
+        Assert.True(driver.IsDisplayed("Detail_Btn_MarkAnswered", timeoutSeconds: 10),
+            "Mark Answered button should be present in view mode for an unanswered prayer");
+        driver.Tap("Detail_Btn_MarkAnswered");
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
+        driver.DismissAlertIfPresent();
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
-            driver.GoBack();
-        }
+        driver.GoBack();
 
         // Ensure we're back on the Prayers list
         driver.NavigateToTab("Prayers");
@@ -231,22 +205,22 @@ public class PrayerListTests
         // emulator. Fixed Thread.Sleep(1000) raced the rebuild.
         driver.WaitForElement("List_Filter_Active", timeoutSeconds: 10);
 
-        if (driver.IsTextDisplayed(TestSeedFixtures.DeleteRuntimePrayer, timeoutSeconds: 10))
-        {
-            driver.TapByText(TestSeedFixtures.DeleteRuntimePrayer);
+        // #72a: was an if (IsTextDisplayed) guard that silently skipped the delete flow
+        // when the just-created prayer wasn't visible (false green). Scroll-tap loud;
+        // also exercises the #72b TapToolbarItem("Edit") race.
+        driver.ScrollToPrayerAndTap(TestSeedFixtures.DeleteRuntimePrayer);
 
-            driver.TapToolbarItem("Edit");
-            Thread.Sleep(TestConfig.DelayAfterTap);
+        driver.TapToolbarItem("Edit");
+        Thread.Sleep(TestConfig.DelayAfterTap);
 
-            // Scroll to Delete if needed
-            if (!driver.IsDisplayed("Detail_Btn_Delete", timeoutSeconds: 3))
-                driver.ScrollDownTo("Detail_Btn_Delete");
+        // Scroll to Delete if needed
+        if (!driver.IsDisplayed("Detail_Btn_Delete", timeoutSeconds: 3))
+            driver.ScrollDownTo("Detail_Btn_Delete");
 
-            driver.Tap("Detail_Btn_Delete");
-            Thread.Sleep(TestConfig.DelayAfterTap);
-            driver.DismissAlertIfPresent();
-            Thread.Sleep(TestConfig.DelayAfterNavigation);
-        }
+        driver.Tap("Detail_Btn_Delete");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        driver.DismissAlertIfPresent();
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         // Should return to list
         driver.NavigateToTab("Prayers");

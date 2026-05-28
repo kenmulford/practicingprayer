@@ -175,8 +175,7 @@ public class OnboardingTests
     {
         _setup.Driver.ResetAppUIState(_setup);
         var driver = _setup.Driver;
-        driver.EnsureUITestPrayerExists(_setup);
-        driver.EnsureOnTab("Prayers", _setup);
+        driver.EnsureOnPrayersTab(_setup); // already navigates to Prayers + waits for the list
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Open a prayer in view mode

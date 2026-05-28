@@ -132,7 +132,7 @@ public class FeatureGapTests
         var driver = _setup.Driver;
 
         // Ensure preconditions: prayers and a collection must exist
-        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureOnPrayersTab(_setup);
         driver.EnsureUITestCollectionExists(_setup);
 
         driver.EnsureOnTab("Home", _setup);

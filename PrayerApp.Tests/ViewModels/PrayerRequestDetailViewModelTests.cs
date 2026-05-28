@@ -402,4 +402,26 @@ public class PrayerRequestDetailViewModelTests
 
         await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>());
     }
+
+    // ── EditPrayerCommand ─────────────────────────────────────────────
+    // Contract pin for #72a: PrayerListTests' Prayers_EditPrayer drives the view
+    // out of read-only via Edit, then asserts the editable surface. This locks the
+    // VM-side contract that UITest depends on, so a regression shows up as a fast
+    // unit failure instead of a flaky UITest red.
+
+    [Fact]
+    public void EditPrayerCommand_FlipsToEditMode_RaisesPropertyChanged()
+    {
+        var sut = CreateSut();
+        sut.IsReadOnly = true; // opened view-only (load + viewOnly)
+        var raised = new List<string>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+
+        sut.EditPrayerCommand.Execute(null);
+
+        Assert.False(sut.IsReadOnly);
+        Assert.True(sut.IsEditable);
+        Assert.Contains(nameof(PrayerRequestDetailViewModel.IsReadOnly), raised);
+        Assert.Contains(nameof(PrayerRequestDetailViewModel.IsEditable), raised);
+    }
 }

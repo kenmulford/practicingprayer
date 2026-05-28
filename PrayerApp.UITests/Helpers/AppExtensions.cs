@@ -197,6 +197,44 @@ public static class AppExtensions
             $"Text containing '{text}'", maxScrolls, scrollableAutomationId);
 
     /// <summary>
+    /// Scrolls the prayer list to <paramref name="text"/> and taps it, failing the test
+    /// loudly (with a page-source dump) if the row can't be found after scrolling.
+    /// Use instead of an <c>if (IsTextDisplayed(...)) { ... }</c> guard, which silently
+    /// skips the enclosed assertions when a row is off-screen or missing (a false green).
+    /// </summary>
+    public static void ScrollToPrayerAndTap(this AppiumDriver driver, string text,
+        string scrollableAutomationId = "List_List_Prayers")
+    {
+        bool scrolledOnIOS = false;
+        if (TestConfig.IsIOS)
+            scrolledOnIOS = driver.IOSScrollToPredicateInContainer(
+                scrollableAutomationId, $"label CONTAINS '{text}'");
+
+        try
+        {
+            if (scrolledOnIOS)
+            {
+                driver.TapByTextContains(text, timeoutSeconds: 10);
+            }
+            else
+            {
+                driver.ScrollDownToText(text, maxScrolls: 3,
+                    scrollableAutomationId: scrollableAutomationId).Click();
+                // Parity with TapByText: a raw .Click() has no post-tap settle, so the
+                // caller's next TapToolbarItem would race the navigation animation.
+                Thread.Sleep(TestConfig.DelayAfterTap);
+            }
+        }
+        catch (Exception ex) when (ex is NoSuchElementException or WebDriverException)
+        {
+            var dumpPath = driver.DumpPageSource($"ScrollToPrayerAndTap_{text.Replace(" ", "")}");
+            Assert.Fail($"Expected prayer '{text}' on the list but couldn't find it after " +
+                $"scrolling (silently-skipped if-guard before #72a). " +
+                $"{ex.GetType().Name}: {ex.Message}. Page source: {dumpPath}");
+        }
+    }
+
+    /// <summary>
     /// Ensure a card on the Prayer Cards page is scrolled into view. No-op if the card
     /// text is already visible. Safe to call before any <c>TapByText</c> / <c>TapByTextContains</c>
     /// on a card name — protects tests from position-in-list variance as the Loose Cards
@@ -1258,7 +1296,7 @@ public static class AppExtensions
     /// TestDataSeed is the single source of truth for the seeded prayer; callers that need
     /// the prayer to be user-visible should drive to it explicitly (search, scroll, or card-expand).
     /// </summary>
-    public static void EnsureUITestPrayerExists(this AppiumDriver driver, AppiumSetup setup)
+    public static void EnsureOnPrayersTab(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayers", setup);
         driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
@@ -1356,7 +1394,7 @@ public static class AppExtensions
 
     /// <summary>
     /// Lands on the Prayer Cards tab with the list rendered. Trusts the seed DB — does NOT
-    /// verify visibility of "UITest Card" (see EnsureUITestPrayerExists for rationale: visibility
+    /// verify visibility of "UITest Card" (see EnsureOnPrayersTab for rationale: visibility
     /// is not a reliable existence proof under CollectionView virtualization, and silent
     /// fallback-create was creating duplicate fixtures on every run).
     /// </summary>

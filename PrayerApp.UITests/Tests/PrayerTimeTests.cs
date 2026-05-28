@@ -32,7 +32,7 @@ public class PrayerTimeTests
         var driver = _setup.Driver;
 
         // Ensure prayer data exists — without prayers, the guard shows an alert instead
-        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureOnPrayersTab(_setup);
 
         for (int attempt = 0; attempt < 3; attempt++)
         {
@@ -268,7 +268,7 @@ public class PrayerTimeTests
         var driver = _setup.Driver;
 
         // Both prayers and tags must exist for the action sheet to appear
-        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureOnPrayersTab(_setup);
         driver.EnsureUITestTagExists(_setup);
 
         driver.EnsureOnTab("Home", _setup);

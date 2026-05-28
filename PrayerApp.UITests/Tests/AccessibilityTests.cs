@@ -125,11 +125,11 @@ public class AccessibilityTests
     {
         Driver.ResetAppUIState(_setup);
         // Ensure a prayer exists in the Quick Add card
-        Driver.EnsureUITestPrayerExists(_setup);
+        Driver.EnsureOnPrayersTab(_setup);
         Driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Expand a card that has prayers — "UITest Card" is created by EnsureUITestPrayerExists.
+        // Expand a card that has prayers — "UITest Card" comes from the seed DB (TestDataSeed).
         // It may have content-desc like "UITest Card, 1 prayer, Collapsed".
         // Need to find it first — may require scrolling.
         bool cardFound = Driver.HasAccessibleElement("UITest Card", timeoutSeconds: 3);
