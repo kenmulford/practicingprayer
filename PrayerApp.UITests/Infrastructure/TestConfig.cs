@@ -104,6 +104,15 @@ public static class TestConfig
         options.AddAdditionalAppiumOption("appWaitActivity", "crc*");
         options.AddAdditionalAppiumOption("autoGrantPermissions", true);
         options.AddAdditionalAppiumOption("newCommandTimeout", 300);
+        // Debug .NET MAUI cold start (un-AOT'd assemblies) runs ~17-23s on the
+        // emulator and Appium force-stops (-S) before each launch, so the default
+        // 20s adbExecTimeout on `am start-activity -W` flakes at the boundary.
+        // 45s is ~2x the measured max cold-start and sits below the 60s SessionTimeout,
+        // so the adb-level timeout fires first (clean, retryable error) rather than
+        // racing the HTTP session timeout (session-killing WebDriverTimeoutException).
+        // Release AOT launches fast, but Release strips the #if DEBUG shim these
+        // tests need, so Debug is mandatory here.
+        options.AddAdditionalAppiumOption("adbExecTimeout", 45000);
 
         return options;
     }
