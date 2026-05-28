@@ -54,15 +54,28 @@ for ($i = 1; $i -le $Runs; $i++) {
 }
 $sw.Stop()
 
-# Tally: one "Test summary: total: N, failed: N" line per invocation.
-$m    = Select-String -Path $log -Pattern 'Test summary:\s+total:\s+(\d+),\s+failed:\s+(\d+)'
-if (-not $m) {
-    Write-Host "No 'Test summary:' lines found across $Runs runs in $log - every invocation likely crashed before reporting; inspect the log." -ForegroundColor Red
+# Tally one summary per invocation. `dotnet test ... --logger "console;..."` routes
+# through the classic xUnit VSTest adapter, which prints "Total tests: N" + a
+# "Failed: N" line (only when not fully green) - NOT the Microsoft.Testing.Platform
+# "Test summary: total: N, failed: N" line. Parse VSTest first, fall back to MTP, so
+# the gate is correct regardless of which runner dotnet test selects.
+$vsTot = Select-String -Path $log -Pattern '^\s*Total tests:\s+(\d+)'
+$mtp   = Select-String -Path $log -Pattern 'Test summary:\s+total:\s+(\d+),\s+failed:\s+(\d+)'
+if ($vsTot) {
+    $done = $vsTot.Count
+    $tot  = ($vsTot | ForEach-Object { [int]$_.Matches[0].Groups[1].Value } | Measure-Object -Sum).Sum
+    $fail = [int]((Select-String -Path $log -Pattern '^\s*Failed:\s+(\d+)' |
+             ForEach-Object { [int]$_.Matches[0].Groups[1].Value } | Measure-Object -Sum).Sum)
+}
+elseif ($mtp) {
+    $done = $mtp.Count
+    $tot  = ($mtp | ForEach-Object { [int]$_.Matches[0].Groups[1].Value } | Measure-Object -Sum).Sum
+    $fail = ($mtp | ForEach-Object { [int]$_.Matches[0].Groups[2].Value } | Measure-Object -Sum).Sum
+}
+else {
+    Write-Host "No test summary found (neither VSTest 'Total tests:' nor MTP 'Test summary:') across $Runs runs in $log - every invocation likely crashed before reporting; inspect the log." -ForegroundColor Red
     return
 }
-$done = $m.Count
-$tot  = ($m | ForEach-Object { [int]$_.Matches[0].Groups[1].Value } | Measure-Object -Sum).Sum
-$fail = ($m | ForEach-Object { [int]$_.Matches[0].Groups[2].Value } | Measure-Object -Sum).Sum
 $thresh = [math]::Floor($tot * 0.10)
 
 ""
