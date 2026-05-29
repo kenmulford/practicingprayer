@@ -109,7 +109,7 @@ public class TagsViewModelTests
         _tagService.GetTagsAsync().Returns(new List<PrayerTag>
         {
             MakeTag(1, "Keep"),
-            MakeTag(2, "Delete Me")
+            MakeTag(2, "Tag To Delete")
         }.AsReadOnly());
         var sut = CreateSut();
         await sut.SyncAsync();
