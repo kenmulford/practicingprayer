@@ -115,7 +115,7 @@ public class BoxesViewModelTests
     {
         SetupBoxes(
             new CardBox { Id = 1, Name = "Keep" },
-            new CardBox { Id = 2, Name = "Delete Me" });
+            new CardBox { Id = 2, Name = "Box To Delete" });
         var sut = CreateSut();
         await sut.SyncAsync();
 

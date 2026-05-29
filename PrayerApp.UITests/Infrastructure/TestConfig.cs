@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using OpenQA.Selenium.Appium;
+using PrayerApp.Helpers;
 
 namespace PrayerApp.UITests.Infrastructure;
 
@@ -39,12 +40,18 @@ public static class TestConfig
     public const int DelayCollectionRender = 1500;
     /// <summary>Modal/action sheet present or dismiss animation.</summary>
     public const int DelayModalAnimation = 1000;
+    /// <summary>Short post-action settle that doesn't fit other categories.</summary>
+    public const int DelayShortSettle = 200;
+    /// <summary>Longer settle for heavyweight transitions.</summary>
+    public const int DelayLongSettle = 2000;
 
     /// <summary>The Android app package name (from csproj ApplicationId).</summary>
     public const string AndroidPackage = "com.multithreadedllc.prayercards";
 
-    /// <summary>The Android MainActivity class name (MAUI emits a CRC-prefixed Java class).</summary>
-    public const string AndroidMainActivity = "crc6425c6d21f3599989c.MainActivity";
+    /// <summary>The Android MainActivity class name (MAUI emits a CRC-prefixed Java class).
+    /// Sourced from <see cref="AndroidComponentNames.MainActivity"/> so the production-side
+    /// DebugProcessTextShim and this test-side constant cannot drift apart.</summary>
+    public const string AndroidMainActivity = AndroidComponentNames.MainActivity;
 
     /// <summary>App-data-relative path to the SQLite DB on Android. Used by TestDataSeed.</summary>
     public const string AndroidAppDbRelativePath = "files/prayer_app.db";
@@ -97,6 +104,15 @@ public static class TestConfig
         options.AddAdditionalAppiumOption("appWaitActivity", "crc*");
         options.AddAdditionalAppiumOption("autoGrantPermissions", true);
         options.AddAdditionalAppiumOption("newCommandTimeout", 300);
+        // Debug .NET MAUI cold start (un-AOT'd assemblies) runs ~17-23s on the
+        // emulator and Appium force-stops (-S) before each launch, so the default
+        // 20s adbExecTimeout on `am start-activity -W` flakes at the boundary.
+        // 45s is ~2x the measured max cold-start and sits below the 60s SessionTimeout,
+        // so the adb-level timeout fires first (clean, retryable error) rather than
+        // racing the HTTP session timeout (session-killing WebDriverTimeoutException).
+        // Release AOT launches fast, but Release strips the #if DEBUG shim these
+        // tests need, so Debug is mandatory here.
+        options.AddAdditionalAppiumOption("adbExecTimeout", 45000);
 
         return options;
     }

@@ -91,7 +91,7 @@ public class FeatureGapTests
 
         // Tap the question to expand
         driver.TapByText(faqQuestion, timeoutSeconds: 10);
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         // Verify the answer IS visible after tapping
         Assert.True(driver.IsTextContainsDisplayed(faqAnswerFragment, timeoutSeconds: 10),
@@ -99,7 +99,7 @@ public class FeatureGapTests
 
         // Tap the question again to collapse
         driver.TapByText(faqQuestion, timeoutSeconds: 10);
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         // Verify the answer is hidden after collapsing.
         // On iOS, CollectionView re-render may be slower — allow brief wait.
@@ -132,7 +132,7 @@ public class FeatureGapTests
         var driver = _setup.Driver;
 
         // Ensure preconditions: prayers and a collection must exist
-        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureOnPrayersTab(_setup);
         driver.EnsureUITestCollectionExists(_setup);
 
         driver.EnsureOnTab("Home", _setup);
@@ -143,7 +143,7 @@ public class FeatureGapTests
         // The action sheet should appear with "By Collection" option.
         // On iOS, autoDismissAlerts may auto-tap the last option — try to tap explicitly.
         // On Android, wait briefly for the action sheet to render.
-        if (!TestConfig.IsIOS) Thread.Sleep(500);
+        if (!TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         bool reachedScopePage = false;
 
@@ -199,7 +199,7 @@ public class FeatureGapTests
                     driver.TapByText("I'm done");
                 else
                     driver.GoBack();
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
             }
 
             // If on tag scope page, cancel out

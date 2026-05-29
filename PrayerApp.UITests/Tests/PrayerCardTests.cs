@@ -33,7 +33,7 @@ public class PrayerCardTests
             if (driver.IsTextContainsDisplayed("Quick Add", timeoutSeconds: 3))
             {
                 driver.TapByTextContains("Quick Add", timeoutSeconds: 10);
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
             }
         }
         else
@@ -45,7 +45,7 @@ public class PrayerCardTests
             if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
             {
                 driver.TapByText("Quick Add");
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
             }
         }
     }
@@ -69,10 +69,10 @@ public class PrayerCardTests
         var driver = _setup.Driver;
 
         driver.EnterText("Cards_Search", "zzz_nonexistent");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayDirtyRegistration);
 
         driver.EnterText("Cards_Search", "");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayDirtyRegistration);
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
     }
@@ -90,15 +90,15 @@ public class PrayerCardTests
             // iOS with hardware keyboard: on-screen keyboard doesn't appear,
             // so test that tapping search and going back doesn't break navigation.
             driver.Tap("Cards_Search");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             driver.NavigateToTab("Prayer Cards");
         }
         else
         {
             driver.Tap("Cards_Search");
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             driver.GoBack();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
@@ -235,7 +235,7 @@ public class PrayerCardTests
         driver.EnterText("Card_Entry_Title", "New Card UITest");
         driver.DismissKeyboardIfPresent();
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayAfterSave);
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
             "Should return to card list after saving new card");
@@ -277,14 +277,14 @@ public class PrayerCardTests
             driver.TapByTextContains("Add prayer", timeoutSeconds: 10);
         else
             driver.WaitAndTap("Cards_Btn_AddPrayer", timeoutSeconds: 10);
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
             "Should navigate to prayer detail page");
 
         driver.EnterText("Detail_Entry_Title", "Card Prayer UITest");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1000);
+        Thread.Sleep(TestConfig.DelayAfterSave);
 
         driver.NavigateToTab("Prayer Cards");
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
@@ -380,7 +380,7 @@ public class PrayerCardTests
             driver.IsTextDisplayed("Recycle Big Prayer 4", timeoutSeconds: 3));
     }
 
-    /// <summary>3.12: Delete card — navigate to the pre-seeded "Delete Me Card",
+    /// <summary>3.12: Delete card — navigate to the pre-seeded "UITest Delete Target Card",
     /// expand it, delete via the inline Delete button, confirm. The target card
     /// is a throwaway from the seed; destroying it does not affect the shared
     /// UITest baseline.</summary>
@@ -393,13 +393,13 @@ public class PrayerCardTests
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // Expand the card, tap inline Delete button
-        if (driver.IsTextDisplayed("Delete Me Card", timeoutSeconds: 10))
+        if (driver.IsTextDisplayed(TestSeedFixtures.DeleteCard, timeoutSeconds: 10))
         {
-            driver.TapByText("Delete Me Card");
+            driver.TapByText(TestSeedFixtures.DeleteCard);
             Thread.Sleep(TestConfig.DelayAfterTap);
             driver.WaitAndTap("Cards_Btn_Delete", timeoutSeconds: 10);
             driver.DismissAlertIfPresent();
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
         }
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
@@ -736,6 +736,8 @@ public class PrayerCardTests
                         { "percent", 0.8 }
                     }
                     : new Dictionary<string, object> { { "direction", "up" } });
+            // TODO(#11): map to TestConfig.Delay* — inter-gesture pause (150ms),
+            // no current constant matches; deferred ambiguous site.
             Thread.Sleep(150);
         }
 

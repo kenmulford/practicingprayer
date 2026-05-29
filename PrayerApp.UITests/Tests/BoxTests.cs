@@ -204,7 +204,7 @@ public class BoxTests
     }
 
     /// <summary>8.8: Delete collection — select, tap Delete chip, choose Unassign.
-    /// Targets the "Delete Me Collection B" throwaway entry from the seed so this
+    /// Targets the "UITest Delete Target Collection B" throwaway entry from the seed so this
     /// destructive test doesn't wipe the shared UITest Collection baseline.</summary>
     [Fact]
     public void Boxes_DeleteCollection_UnassignCards()
@@ -216,9 +216,9 @@ public class BoxTests
         driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
-        if (driver.IsTextDisplayed("Delete Me Collection B", timeoutSeconds: 3))
+        if (driver.IsTextDisplayed(TestSeedFixtures.DeleteCollectionB, timeoutSeconds: 3))
         {
-            driver.TapByText("Delete Me Collection B");
+            driver.TapByText(TestSeedFixtures.DeleteCollectionB);
             Thread.Sleep(TestConfig.DelayAfterTap);
 
             if (driver.IsDisplayed("Boxes_Btn_Delete", timeoutSeconds: 3))
@@ -336,7 +336,7 @@ public class BoxTests
     }
 
     /// <summary>8.11: Delete collection — choose "Delete All Cards &amp; Requests" option.
-    /// Targets the "Delete Me Collection A" throwaway entry from the seed so this
+    /// Targets the "UITest Delete Target Collection A" throwaway entry from the seed so this
     /// destructive test doesn't wipe the shared UITest Collection baseline.</summary>
     [Fact]
     public void Boxes_DeleteCollection_DeleteAllCards()
@@ -348,9 +348,9 @@ public class BoxTests
         driver.TapToolbarItemById("Collections");
         driver.WaitForElement("Boxes_List_Boxes", timeoutSeconds: 10);
 
-        if (driver.IsTextDisplayed("Delete Me Collection A", timeoutSeconds: 3))
+        if (driver.IsTextDisplayed(TestSeedFixtures.DeleteCollectionA, timeoutSeconds: 3))
         {
-            driver.TapByText("Delete Me Collection A");
+            driver.TapByText(TestSeedFixtures.DeleteCollectionA);
             Thread.Sleep(TestConfig.DelayAfterTap);
 
             if (driver.IsDisplayed("Boxes_Btn_Delete", timeoutSeconds: 3))

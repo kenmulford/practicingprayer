@@ -9,7 +9,7 @@
              Title="Prayers"
              SafeAreaEdges="Container">
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Add" Command="{Binding NewCommand}"
+        <ToolbarItem Text="Add" AutomationId="Add" Command="{Binding NewCommand}"
                      SemanticProperties.Hint="Add a new prayer request" />
     </ContentPage.ToolbarItems>
 

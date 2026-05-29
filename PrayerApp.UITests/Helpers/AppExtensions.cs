@@ -2,6 +2,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Support.UI;
 using PrayerApp.UITests.Infrastructure;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -125,7 +126,7 @@ public static class AppExtensions
             {
                 driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
                 driver.FindElement(MobileBy.AccessibilityId("Clear text")).Click();
-                Thread.Sleep(200);
+                Thread.Sleep(TestConfig.DelayShortSettle);
             }
             catch (WebDriverException) { /* field empty or unfocused */ }
             finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
@@ -194,6 +195,44 @@ public static class AppExtensions
         int maxScrolls = 5, string? scrollableAutomationId = null)
         => ScrollDownUntil(driver, TextContainsLocator(text),
             $"Text containing '{text}'", maxScrolls, scrollableAutomationId);
+
+    /// <summary>
+    /// Scrolls the prayer list to <paramref name="text"/> and taps it, failing the test
+    /// loudly (with a page-source dump) if the row can't be found after scrolling.
+    /// Use instead of an <c>if (IsTextDisplayed(...)) { ... }</c> guard, which silently
+    /// skips the enclosed assertions when a row is off-screen or missing (a false green).
+    /// </summary>
+    public static void ScrollToPrayerAndTap(this AppiumDriver driver, string text,
+        string scrollableAutomationId = "List_List_Prayers")
+    {
+        bool scrolledOnIOS = false;
+        if (TestConfig.IsIOS)
+            scrolledOnIOS = driver.IOSScrollToPredicateInContainer(
+                scrollableAutomationId, $"label CONTAINS '{text}'");
+
+        try
+        {
+            if (scrolledOnIOS)
+            {
+                driver.TapByTextContains(text, timeoutSeconds: 10);
+            }
+            else
+            {
+                driver.ScrollDownToText(text, maxScrolls: 3,
+                    scrollableAutomationId: scrollableAutomationId).Click();
+                // Parity with TapByText: a raw .Click() has no post-tap settle, so the
+                // caller's next TapToolbarItem would race the navigation animation.
+                Thread.Sleep(TestConfig.DelayAfterTap);
+            }
+        }
+        catch (Exception ex) when (ex is NoSuchElementException or WebDriverException)
+        {
+            var dumpPath = driver.DumpPageSource($"ScrollToPrayerAndTap_{text.Replace(" ", "")}");
+            Assert.Fail($"Expected prayer '{text}' on the list but couldn't find it after " +
+                $"scrolling (silently-skipped if-guard before #72a). " +
+                $"{ex.GetType().Name}: {ex.Message}. Page source: {dumpPath}");
+        }
+    }
 
     /// <summary>
     /// Ensure a card on the Prayer Cards page is scrolled into view. No-op if the card
@@ -399,7 +438,7 @@ public static class AppExtensions
                 return;
 
             // Tab not found — go back to clear the current page/modal
-            try { driver.Navigate().Back(); Thread.Sleep(300); } catch (WebDriverException) { }
+            try { driver.Navigate().Back(); Thread.Sleep(TestConfig.DelayAfterTap); } catch (WebDriverException) { }
         }
 
         // Stage 2: Try dismissing a known modal (Cancel/Skip buttons that block tab access)
@@ -410,7 +449,7 @@ public static class AppExtensions
                 driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
                 var btn = driver.FindElement(MobileBy.AccessibilityId(modalButton));
                 btn.Click();
-                Thread.Sleep(1000);
+                Thread.Sleep(TestConfig.DelayModalAnimation);
             }
             catch (WebDriverException) { }
             finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
@@ -423,7 +462,7 @@ public static class AppExtensions
         // Try tapping "I'm done" or "Finish" to exit back to Home.
         if (TryEscapePrayerTime(driver))
         {
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
             if (TryTapTab(driver, tabTitle))
                 return;
         }
@@ -433,7 +472,7 @@ public static class AppExtensions
         {
             var appId = TestConfig.IsIOS ? TestConfig.IOSBundleId : TestConfig.AndroidPackage;
             driver.ActivateApp(appId);
-            Thread.Sleep(1000);
+            Thread.Sleep(TestConfig.DelayModalAnimation);
         }
         catch (WebDriverException) { }
 
@@ -443,7 +482,7 @@ public static class AppExtensions
         // Stage 5: final XPath text fallback
         var tab = driver.FindElement(TextContainsLocator(tabTitle));
         tab.Click();
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
     }
 
     /// <summary>Try to find and tap a tab by AccessibilityId. Returns true on success.</summary>
@@ -462,7 +501,7 @@ public static class AppExtensions
                 : MobileBy.AccessibilityId(tabTitle);
             var tab = driver.FindElement(locator);
             tab.Click();
-            Thread.Sleep(500);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
             return true;
         }
         catch (WebDriverException) { return false; }
@@ -684,7 +723,7 @@ public static class AppExtensions
         {
             try { driver.DismissAlertIfPresent(); } catch { /* best effort */ }
             if (driver.IsDisplayed("Home", timeoutSeconds: 0)) break;
-            try { driver.Navigate().Back(); Thread.Sleep(200); } catch (WebDriverException) { break; }
+            try { driver.Navigate().Back(); Thread.Sleep(TestConfig.DelayShortSettle); } catch (WebDriverException) { break; }
         }
     }
 
@@ -695,15 +734,27 @@ public static class AppExtensions
     // ── Onboarding ───────────────────────────────────────────────
 
     /// <summary>
-    /// Dismiss onboarding if currently showing. Idempotent — safe to call multiple times.
-    /// Taps "Skip tour" on the welcome popup, "Skip" on a mid-flow banner, or "Got it!"
-    /// on the final PrayerTimeHighlight step, then "Done" on the completion popup.
-    /// Retries up to 3 times with increasing wait to handle slow popup rendering.
+    /// iOS: no-op assertion — onboarding is suppressed at the harness level by
+    /// <see cref="TestDataSeed.PreSeedOnboardingCompleteAsync"/>, which writes
+    /// <c>OnboardingComplete=YES</c> to NSUserDefaults before Appium launches the
+    /// app. Reads the same key back via <c>simctl spawn defaults read</c> to catch
+    /// harness-config regressions early (throws if the pre-seed didn't run).
+    /// Android: keeps the legacy in-suite dismissal flow — taps "Skip tour" /
+    /// "Skip" / "Got it!" then "Done" on the completion popup, with retries to
+    /// handle slow popup rendering. Idempotent.
     /// </summary>
     public static void DismissOnboardingIfPresent(this AppiumDriver driver, AppiumSetup setup)
     {
         if (setup.OnboardingHandled) return;
 
+        if (TestConfig.IsIOS)
+        {
+            AssertOnboardingPreSeeded();
+            setup.OnboardingHandled = true;
+            return;
+        }
+
+        // Android — legacy in-suite dismissal until the Android toolchain returns.
         // Fast path: if the tab bar is already rendered, no onboarding popup is
         // blocking. Saves up to 3s on test #1 vs probing Welcome_Btn_Skip first.
         if (driver.IsDisplayed("Home", timeoutSeconds: 1))
@@ -752,6 +803,41 @@ public static class AppExtensions
         setup.OnboardingHandled = true;
     }
 
+    /// <summary>
+    /// Reads OnboardingComplete from NSUserDefaults on the booted simulator.
+    /// Throws if the value isn't truthy, catching the failure mode where
+    /// <see cref="TestDataSeed.PreSeedOnboardingCompleteAsync"/> didn't run.
+    /// </summary>
+    private static void AssertOnboardingPreSeeded()
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo(
+            "xcrun",
+            $"simctl spawn booted defaults read {TestConfig.IOSBundleId} OnboardingComplete")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        using var proc = System.Diagnostics.Process.Start(psi)
+            ?? throw new InvalidOperationException("Failed to start xcrun simctl. Are Xcode CLI tools installed?");
+
+        var stdout = proc.StandardOutput.ReadToEnd();
+        var stderr = proc.StandardError.ReadToEnd();
+        proc.WaitForExit();
+
+        // `defaults read ... OnboardingComplete` prints `1` for true, `0` for false,
+        // or exits non-zero with "does not exist" on the stderr when unset.
+        if (proc.ExitCode != 0 || !stdout.Trim().StartsWith("1"))
+        {
+            throw new InvalidOperationException(
+                "OnboardingComplete is not pre-seeded; AppiumSetup.InitializeAsync should call " +
+                "TestDataSeed.PreSeedOnboardingCompleteAsync(). " +
+                $"defaults read exit={proc.ExitCode}, stdout='{stdout.Trim()}', stderr='{stderr.Trim()}'.");
+        }
+    }
+
     // ── Alerts/Dialogs ───────────────────────────────────────────
 
     /// <summary>Check if an alert dialog is displayed and get its text.</summary>
@@ -789,7 +875,7 @@ public static class AppExtensions
                 $"//*[@resource-id='android:id/button1' or @resource-id='android:id/button2' or @resource-id='android:id/button3'][contains(@text,'{buttonText}')]"));
             button.Click();
         }
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterDismiss);
     }
 
     // ── Toolbar / Text Finders ────────────────────────────────────
@@ -805,7 +891,7 @@ public static class AppExtensions
         int timeoutSeconds = 10)
     {
         driver.DismissKeyboardIfPresent();
-        if (TestConfig.IsIOS) Thread.Sleep(300);
+        if (TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterTap);
 
         var locator = AutomationIdLocator(automationId);
 
@@ -813,7 +899,7 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(locator).Click();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             return;
         }
         catch (WebDriverException) { }
@@ -867,13 +953,15 @@ public static class AppExtensions
         catch (WebDriverException) { return false; }
         finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
 
+        // TODO(#11): map to TestConfig.Delay* — 400ms popup-animation settle,
+        // between DelayAfterTap (300) and DelayAfterNavigation (500). Deferred ambiguous site.
         Thread.Sleep(400); // popup animation settle
 
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(AutomationIdLocator(automationId)).Click();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             return true;
         }
         catch (WebDriverException)
@@ -895,6 +983,8 @@ public static class AppExtensions
         catch (WebDriverException) { return false; }
         finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
 
+        // TODO(#11): map to TestConfig.Delay* — 400ms popup-animation settle (mirror of line ~870).
+        // Deferred ambiguous site.
         Thread.Sleep(400);
 
         bool found;
@@ -927,7 +1017,7 @@ public static class AppExtensions
                     { "x", 10 }, { "y", size.Height - 20 }
                 });
             }
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterDismiss);
         }
         catch (WebDriverException) { /* best effort */ }
     }
@@ -940,7 +1030,7 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(MobileBy.AccessibilityId("SecondaryToolbarMenuButton")).Click();
-            Thread.Sleep(1000);
+            Thread.Sleep(TestConfig.DelayModalAnimation);
             return true;
         }
         catch (WebDriverException) { return false; }
@@ -960,7 +1050,7 @@ public static class AppExtensions
             {
                 { "x", size.Width / 2 }, { "y", size.Height / 2 }
             });
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterDismiss);
         }
         catch (WebDriverException) { /* best effort */ }
     }
@@ -977,7 +1067,7 @@ public static class AppExtensions
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
             driver.FindElement(IOSButtonByNameOrLabel(itemText)).Click();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
             return true;
         }
         catch (WebDriverException)
@@ -998,7 +1088,7 @@ public static class AppExtensions
     public static void TapToolbarItem(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.DismissKeyboardIfPresent();
-        if (TestConfig.IsIOS) Thread.Sleep(300);
+        if (TestConfig.IsIOS) Thread.Sleep(TestConfig.DelayAfterTap);
 
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(timeoutSeconds));
 
@@ -1006,7 +1096,7 @@ public static class AppExtensions
 
         var element = wait.Until(d => d.FindElement(locator));
         element.Click();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Find an element by its visible text.</summary>
@@ -1027,14 +1117,14 @@ public static class AppExtensions
     public static void TapByText(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.FindByText(text, timeoutSeconds).Click();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Find and tap any element whose text/label <em>contains</em> the given substring.</summary>
     public static void TapByTextContains(this AppiumDriver driver, string text, int timeoutSeconds = 10)
     {
         driver.FindByTextContains(text, timeoutSeconds).Click();
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Check if an element with the given text is displayed.</summary>
@@ -1101,7 +1191,7 @@ public static class AppExtensions
                 { "percent", 0.5 }
             });
         }
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     /// <summary>Swipe left on an element (to reveal right swipe actions like Delete).</summary>
@@ -1193,7 +1283,7 @@ public static class AppExtensions
             if (driver.IsDisplayed(rootElementId, timeoutSeconds: 2))
                 return;
             driver.GoBack();
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
         }
     }
 
@@ -1206,7 +1296,7 @@ public static class AppExtensions
     /// TestDataSeed is the single source of truth for the seeded prayer; callers that need
     /// the prayer to be user-visible should drive to it explicitly (search, scroll, or card-expand).
     /// </summary>
-    public static void EnsureUITestPrayerExists(this AppiumDriver driver, AppiumSetup setup)
+    public static void EnsureOnPrayersTab(this AppiumDriver driver, AppiumSetup setup)
     {
         driver.EnsureOnTab("Prayers", setup);
         driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
@@ -1304,7 +1394,7 @@ public static class AppExtensions
 
     /// <summary>
     /// Lands on the Prayer Cards tab with the list rendered. Trusts the seed DB — does NOT
-    /// verify visibility of "UITest Card" (see EnsureUITestPrayerExists for rationale: visibility
+    /// verify visibility of "UITest Card" (see EnsureOnPrayersTab for rationale: visibility
     /// is not a reliable existence proof under CollectionView virtualization, and silent
     /// fallback-create was creating duplicate fixtures on every run).
     /// </summary>
@@ -1322,8 +1412,21 @@ public static class AppExtensions
         // Wait for the Prayers list to render before tapping the toolbar — prevents
         // racing the "Add" tap against an un-rendered Shell action bar.
         driver.WaitForElement("List_List_Prayers", timeoutSeconds: 10);
-        if (TestConfig.IsIOS) Thread.Sleep(500); // Let Shell finish rendering toolbar items
-        driver.TapToolbarItem("Add");
+        // Wait for the Shell top-bar to actually render the "Add" item — it lags the page
+        // content, and tapping before it exists (or before its Command="{Binding
+        // NewCommand}" binding goes live) is a no-op: the click can return HTTP 200 yet
+        // route nothing, so the detail page never opens. ById, not text: Android
+        // uppercases the label to "ADD" and exposes no content-desc for a text match;
+        // AutomationId maps to content-desc (case-exact), matching the cards/boxes pattern.
+        // Settle so the binding is live, then retry the tap until the title entry appears.
+        driver.WaitForElement("Add", timeoutSeconds: 10);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            if (!driver.IsDisplayed("Add", timeoutSeconds: 2)) break; // navigated away — Add gone
+            driver.TapToolbarItemById("Add");
+            if (driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 5)) break;
+        }
         driver.WaitForElement("Detail_Entry_Title", timeoutSeconds: 10);
     }
 
@@ -1411,7 +1514,7 @@ public static class AppExtensions
             { "x", loc.X + size.Width / 2 },
             { "y", loc.Y + size.Height / 2 }
         });
-        Thread.Sleep(300);
+        Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
     // ── iOS CollectionView helpers ─────────────────────────────
@@ -1619,18 +1722,273 @@ public static class AppExtensions
     /// is covered by <c>TextSelectionParser</c> unit tests; manual emulator smoke covers
     /// the real Gmail → toolbar → modal end-to-end path.
     /// </summary>
-    public static void LaunchProcessTextIntent(this AppiumDriver driver, string text)
+    public static void LaunchProcessTextIntent(this AppiumDriver driver, AppiumSetup setup, string text)
     {
         if (TestConfig.IsIOS)
             throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
 
-        driver.ExecuteScript("mobile: startActivity", new Dictionary<string, object>
+        ValidateAmShellText(text, nameof(text));
+
+        // Two-stage foreground → dismiss-onboarding → dispatch, symmetric with
+        // `LaunchProcessTextIntentSpannable`. Doing PROCESS_TEXT in a single `am start`
+        // off a force-stopped app delivers the intent directly into HandleSelectionImport
+        // during cold-start — which opens the ConfirmImport modal before any onboarding
+        // popup is dismissed AND before DismissOnboardingIfPresent's fast-path
+        // (IsDisplayed("Home", 1s)) can find a visible tab bar.
+        //
+        // Stage 1 foreground via plain LAUNCHER `am start` so MainActivity displays the
+        // Home tab. DismissOnboarding then fast-paths in 1s when no popup is present, or
+        // dismisses cleanly when one is. Stage 2 re-`am start`s with `-a PROCESS_TEXT`,
+        // routing through OnNewIntent on the now-foregrounded SingleTop MainActivity.
+        //
+        // Explicit `-n pkg/activity` is required on both stages — `mobile: startActivity`
+        // with appPackage + appActivity + intentAction builds an implicit intent that
+        // Android's resolver routes to the system default PROCESS_TEXT handler
+        // (DocumentsUI / PickActivity on API 36+) rather than MainActivity.
+        //
+        // Requires Appium server flag `--allow-insecure=uiautomator2:adb_shell`.
+
+        // Invalidate the cached OnboardingHandled flag FIRST so any failure between
+        // here and the post-dismiss readiness check leaves the flag in the "needs
+        // re-check" state rather than a stale "true" from a prior test.
+        setup.OnboardingHandled = false;
+
+        // Stage 1: foreground MainActivity with LAUNCHER intent.
+        RunAmShellOrThrow(driver,
+            new[] { "start", "-n", $"{TestConfig.AndroidPackage}/{TestConfig.AndroidMainActivity}" },
+            nameof(LaunchProcessTextIntent));
+
+        WaitForAppReadyOrThrow(driver, nameof(LaunchProcessTextIntent));
+
+        driver.DismissOnboardingIfPresent(setup);
+
+        AssertHomeVisibleAfterDismiss(driver, setup, nameof(LaunchProcessTextIntent));
+
+        // Stage 2: dispatch PROCESS_TEXT — routes through OnNewIntent on SingleTop.
+        RunAmShellOrThrow(driver,
+            new[]
+            {
+                "start",
+                "-n", $"{TestConfig.AndroidPackage}/{TestConfig.AndroidMainActivity}",
+                "-a", "android.intent.action.PROCESS_TEXT",
+                "-t", "text/plain",
+                "--es", "android.intent.extra.PROCESS_TEXT", text
+            },
+            nameof(LaunchProcessTextIntent));
+    }
+
+    /// <summary>
+    /// Android-only: force-stop the app so the next intent launch starts a fresh
+    /// <c>MainActivity</c>. Eliminates a class of flakes where a prior test left
+    /// MainActivity backgrounded and the new PROCESS_TEXT intent is delivered to
+    /// the existing instance (subject to <c>LaunchMode.SingleTop</c> reuse) instead
+    /// of triggering an <c>OnCreate</c>/<c>OnNewIntent</c> path the test asserts on.
+    /// Wraps <c>mobile: shell am force-stop</c>; requires Appium server flag
+    /// <c>--allow-insecure=uiautomator2:adb_shell</c> (or <c>--relaxed-security</c>).
+    /// </summary>
+    public static void ForceStopApp(this AppiumDriver driver)
+    {
+        if (TestConfig.IsIOS)
+            throw new SkipException("Android-only: force-stop is an adb/am operation");
+
+        driver.ExecuteScript("mobile: shell", new Dictionary<string, object>
         {
-            { "appPackage", TestConfig.AndroidPackage },
-            { "appActivity", TestConfig.AndroidMainActivity },
-            { "intentAction", "android.intent.action.PROCESS_TEXT" },
-            { "mimeType", "text/plain" },
-            { "optionalIntentArguments", $"--es android.intent.extra.PROCESS_TEXT \"{text}\"" }
+            { "command", "am" },
+            { "args", new[] { "force-stop", TestConfig.AndroidPackage } }
         });
+    }
+
+    /// <summary>
+    /// Android-only DEBUG-build helper: dispatch <c>ACTION_PROCESS_TEXT</c> with a
+    /// real <c>SpannableString</c> payload, mirroring how Chrome / Gmail deliver the
+    /// extra in production (the OS attaches markup spans to selected rich text).
+    /// Invokes the host-side <c>DebugProcessTextShim</c> broadcast receiver, which
+    /// constructs a <c>SpannableString</c> and re-dispatches via the real PROCESS_TEXT
+    /// pipeline — so production code (<c>GetCharSequenceExtra</c>) is exercised.
+    /// </summary>
+    /// <remarks>
+    /// The companion <see cref="LaunchProcessTextIntent"/> uses <c>am start --es</c>,
+    /// which only puts a plain <c>String</c> extra — it does NOT defend the
+    /// SpannableString boundary. Receiver is <c>#if DEBUG</c> only and must NOT
+    /// ship to Release. Requires Appium server flag
+    /// <c>--allow-insecure=uiautomator2:adb_shell</c> (or <c>--relaxed-security</c>).
+    /// </remarks>
+    public static void LaunchProcessTextIntentSpannable(this AppiumDriver driver, AppiumSetup setup, string text)
+    {
+        if (TestConfig.IsIOS)
+            throw new SkipException("Android-only: PROCESS_TEXT is the Android selection-toolbar entry point");
+
+        ValidateAmShellText(text, nameof(text));
+
+        // Foreground MainActivity FIRST. Android 14+ (API 34+) enforces Background
+        // Activity Launch (BAL) restrictions: when the broadcast receiver below
+        // fires inside a force-stopped or backgrounded app, its StartActivity call
+        // is blocked with BAL_BLOCK. Foregrounding MainActivity gives the receiver's
+        // process a visible-activity owner, which qualifies for BAL_ALLOW_VISIBLE_WINDOW.
+        // Companion `LaunchProcessTextIntent` foregrounds for a different reason
+        // (intent-resolution explicitness rather than BAL): both helpers share the
+        // foreground → poll → dismiss → dispatch structure for symmetry.
+
+        // Invalidate the cached OnboardingHandled flag FIRST (force-stop destroyed
+        // the underlying UI state but not the cache) so any failure between here
+        // and the post-dismiss readiness check leaves the flag in the "needs
+        // re-check" state.
+        setup.OnboardingHandled = false;
+
+        RunAmShellOrThrow(driver,
+            new[] { "start", "-n", $"{TestConfig.AndroidPackage}/{TestConfig.AndroidMainActivity}" },
+            nameof(LaunchProcessTextIntentSpannable));
+
+        WaitForAppReadyOrThrow(driver, nameof(LaunchProcessTextIntentSpannable));
+
+        driver.DismissOnboardingIfPresent(setup);
+
+        AssertHomeVisibleAfterDismiss(driver, setup, nameof(LaunchProcessTextIntentSpannable));
+
+        // `am broadcast` arg list. Appium's `mobile: shell` invocation passes the
+        // args array as separate argv tokens (not via `sh -c` string concatenation),
+        // so spaces inside `text` survive — `ValidateAmShellText` above rejects the
+        // shell metacharacters that would actually corrupt the payload. Newlines
+        // are still stripped by the adb tokeniser; multi-line payloads remain out
+        // of scope for this helper.
+        RunAmShellOrThrow(driver,
+            new[]
+            {
+                "broadcast",
+                "-a", "com.multithreadedllc.prayercards.PRAYER_TEST_SPANNABLE",
+                "-n", $"{TestConfig.AndroidPackage}/.DebugProcessTextShim",
+                "--es", "text", text
+            },
+            nameof(LaunchProcessTextIntentSpannable));
+    }
+
+    /// <summary>
+    /// Reject `text` values containing shell metacharacters that would corrupt
+    /// `am`-shell argument tokenisation. The args-array invocation style of
+    /// <c>mobile: shell</c> passes each element as a separate argv token, but
+    /// embedded metacharacters can still interact poorly with adb's parser on
+    /// some Appium driver versions. Whitelisting the safe set is cheaper than
+    /// guessing the actual tokenisation contract.
+    /// </summary>
+    private static void ValidateAmShellText(string text, string paramName)
+    {
+        if (text is null)
+            throw new ArgumentNullException(paramName);
+
+        foreach (var c in text)
+        {
+            if (c is '\'' or '"' or '`' or '$' or '\\' or '\n' or '\r')
+                throw new ArgumentException(
+                    $"`{paramName}` contains a shell metacharacter (quote, backtick, $, backslash, or newline). " +
+                    "These corrupt am-shell argument tokenisation across Appium driver versions. " +
+                    "Use plain alphanumeric + space text only — production multi-line / rich-text parsing " +
+                    "is covered by TextSelectionParser unit tests.",
+                    paramName);
+        }
+    }
+
+    /// <summary>
+    /// Poll up to 20s for the app to display either the Home tab (warm/onboarded
+    /// state) or the Welcome popup (fresh-emulator state). Throws on timeout so a
+    /// stale CRC, missing Appium insecure flag, or severely under-resourced
+    /// emulator surfaces as a clear error rather than a downstream
+    /// <c>WebDriverTimeoutException</c> at <c>WaitForElement</c>.
+    /// </summary>
+    /// <remarks>
+    /// Budget sized for cold-start: MAUI's <c>App.InitTask</c> + DB seed +
+    /// Shell render can easily take 10-15s on the first invocation after an
+    /// emulator restart or full force-stop, before the Home tab becomes visible
+    /// to UIAutomator2. Each iteration costs up to ~2.2s (two 1s IsDisplayed
+    /// probes plus a 200ms settle), so a 20s budget yields ~8-9 sampling
+    /// opportunities.
+    /// </remarks>
+    private static void WaitForAppReadyOrThrow(AppiumDriver driver, string callerName)
+    {
+        var pollStart = Stopwatch.GetTimestamp();
+        var pollBudget = TimeSpan.FromSeconds(20);
+
+        while (Stopwatch.GetElapsedTime(pollStart) < pollBudget)
+        {
+            if (driver.IsDisplayed("Home", timeoutSeconds: 1) ||
+                driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 1))
+            {
+                return;
+            }
+            Thread.Sleep(TestConfig.DelayShortSettle);
+        }
+
+        throw new InvalidOperationException(
+            $"{callerName}: app did not display Home tab or Welcome popup within 20s of `am start`. " +
+            "Common causes: stale `AndroidComponentNames.MainActivity` CRC hash (rebuild required after a " +
+            ".NET-for-Android toolchain bump), missing Appium server flag " +
+            "`--allow-insecure=uiautomator2:adb_shell`, or a severely under-resourced emulator.");
+    }
+
+    /// <summary>
+    /// Final readiness gate: after <see cref="DismissOnboardingIfPresent"/> returns,
+    /// the Home tab MUST be visible. The dismissal helper sets
+    /// <c>OnboardingHandled = true</c> on retry exhaustion even when no popup was
+    /// actually dismissed (a documented safety valve to prevent infinite loops in
+    /// long-running suites). Without this gate, a still-covered Home leaks downstream
+    /// as a confusing <c>WaitForElement</c> timeout on the modal probe.
+    /// </summary>
+    /// <remarks>
+    /// On throw, invalidates <see cref="AppiumSetup.OnboardingHandled"/> back to
+    /// <c>false</c> so the NEXT test that calls <see cref="DismissOnboardingIfPresent"/>
+    /// directly (e.g. via <c>EnsureOnTab</c>, <c>NavigateToTabRoot</c>,
+    /// <c>DarkModeRenderingTests</c>, <c>PrayerListTests</c>) does not short-circuit
+    /// via the stale <c>true</c> flag that <see cref="DismissOnboardingIfPresent"/>
+    /// set on its safety-valve path — which would mask a real popup blocking that
+    /// next test.
+    /// </remarks>
+    private static void AssertHomeVisibleAfterDismiss(AppiumDriver driver, AppiumSetup setup, string callerName)
+    {
+        if (!driver.IsDisplayed("Home", timeoutSeconds: 2))
+        {
+            // Cross-test state hygiene: roll back the cached flag before throwing.
+            setup.OnboardingHandled = false;
+
+            throw new InvalidOperationException(
+                $"{callerName}: Home tab not visible after `DismissOnboardingIfPresent`. " +
+                "An onboarding popup, modal, or stale UI is still covering the Home tab — " +
+                $"the `{nameof(DismissOnboardingIfPresent)}` retry-exhaustion safety valve " +
+                "(sets OnboardingHandled=true after 3 failed dismiss attempts) may have fired.");
+        }
+    }
+
+    /// <summary>
+    /// Invoke <c>am</c> via <c>mobile: shell</c> and inspect the output for the
+    /// failure markers Android prints (<c>Error type N:</c>, <c>Exception occurred</c>).
+    /// Raw <c>mobile: shell</c> does NOT throw on a non-zero <c>am</c> exit — it
+    /// returns stdout/stderr concatenated as a string. Without this check, a stale
+    /// component name or a missing Appium <c>--allow-insecure</c> flag surfaces as
+    /// a confusing <c>WaitForAppReadyOrThrow</c> timeout 10s later rather than at
+    /// the actual failure site.
+    /// </summary>
+    private static void RunAmShellOrThrow(AppiumDriver driver, IEnumerable<string> args, string callerName)
+    {
+        var result = driver.ExecuteScript("mobile: shell", new Dictionary<string, object>
+        {
+            { "command", "am" },
+            { "args", args }
+        });
+
+        var output = result?.ToString() ?? string.Empty;
+        // SecurityException (one word) is Android's actual stderr marker when the
+        // shell uid can't run the requested am operation (e.g., missing Appium
+        // `--allow-insecure=uiautomator2:adb_shell` flag). The space-separated
+        // "Security exception" variant catches verbose-mode wrappers; both forms
+        // are checked to defend against driver-version output drift.
+        if (output.Contains("Error type", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("Exception occurred", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("SecurityException", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("Security exception", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"{callerName}: `am` shell command failed. Output:\n{output}\n" +
+                "Common causes: stale `AndroidComponentNames.MainActivity` CRC, " +
+                "missing Appium server flag `--allow-insecure=uiautomator2:adb_shell`, " +
+                "or a package/activity that is not installed or not exported.");
+        }
     }
 }

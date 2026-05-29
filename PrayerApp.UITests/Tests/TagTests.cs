@@ -39,7 +39,7 @@ public class TagTests
         // Unique-per-run to avoid colliding with the seed "UITest Tag".
         driver.EnterText("TagDetail_Entry_Name", $"UITest Tag {DateTime.UtcNow.Ticks}");
         driver.TapToolbarItem("Save");
-        Thread.Sleep(1500);
+        Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // GoToAsync("..") should navigate back to tag list after save.
         // Known iOS bug: navigation sometimes fails. See ios-uat-bugs-found.md Bug #3
@@ -95,7 +95,7 @@ public class TagTests
         var driver = _setup.Driver;
 
         // Unique-per-run to avoid collision with prior-run residue.
-        var tagName = $"Delete Me Tag {DateTime.UtcNow.Ticks}";
+        var tagName = $"{TestSeedFixtures.DeleteRuntimeTagPrefix} {DateTime.UtcNow.Ticks}";
         driver.TapToolbarItem("Add");
         driver.WaitForElement("TagDetail_Entry_Name", timeoutSeconds: 10);
         driver.EnterText("TagDetail_Entry_Name", tagName);
@@ -143,7 +143,7 @@ public class TagTests
             "Tag picker modal should open with search entry");
 
         driver.EnterText("TagPicker_Entry_Search", "UITest");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayDirtyRegistration);
 
         // Tap Done to close modal
         driver.Tap("TagPicker_Btn_Done");
@@ -175,7 +175,7 @@ public class TagTests
 
         // Type two comma-separated tags
         driver.EnterText("TagPicker_Entry_Search", "CommaTagA, CommaTagB,");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayDirtyRegistration);
 
         // Verify chips appeared in the picker
         Assert.True(driver.IsDisplayed("TagPicker_Chips_Selected", timeoutSeconds: 3),
@@ -206,7 +206,7 @@ public class TagTests
 
         // Create a tag via comma
         driver.EnterText("TagPicker_Entry_Search", "RemoveMeTag,");
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayDirtyRegistration);
 
         // Verify chip appeared
         Assert.True(driver.IsDisplayed("TagPicker_Chips_Selected", timeoutSeconds: 3),

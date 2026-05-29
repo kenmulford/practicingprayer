@@ -24,17 +24,11 @@
                            TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextSecondaryDark}}"
                            VerticalOptions="Center" />
                     <Button Grid.Column="1"
+                            Style="{StaticResource CloseButton}"
                             Text="✕"
                             AutomationId="QuickAdd_Btn_DismissTip"
                             Command="{Binding DismissTipCommand}"
                             SemanticProperties.Description="Dismiss tip"
-                            BackgroundColor="Transparent"
-                            TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}"
-                            FontSize="{StaticResource FontBody}"
-                            Padding="4"
-                            BorderWidth="0"
-                            WidthRequest="32"
-                            HeightRequest="32"
                             VerticalOptions="Center" />
                 </Grid>
             </Border>

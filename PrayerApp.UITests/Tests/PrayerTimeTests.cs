@@ -32,7 +32,7 @@ public class PrayerTimeTests
         var driver = _setup.Driver;
 
         // Ensure prayer data exists — without prayers, the guard shows an alert instead
-        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureOnPrayersTab(_setup);
 
         for (int attempt = 0; attempt < 3; attempt++)
         {
@@ -90,7 +90,7 @@ public class PrayerTimeTests
                     driver.Tap("PrayerTime_Btn_Finish");
                 else
                     driver.TapByText("Finish");
-                Thread.Sleep(500);
+                Thread.Sleep(TestConfig.DelayAfterNavigation);
                 continue;
             }
         }
@@ -151,7 +151,7 @@ public class PrayerTimeTests
                 driver.DumpPageSource("PrayerTime_ExitFailed");
             driver.GoBack();
         }
-        Thread.Sleep(500);
+        Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         // Diagnostic: capture state after exit attempt
         if (TestConfig.IsIOS)
@@ -226,7 +226,7 @@ public class PrayerTimeTests
                     driver.TapByTextContains("Auto");
             }
             catch (WebDriverException) { /* button may have shifted */ }
-            Thread.Sleep(300);
+            Thread.Sleep(TestConfig.DelayAfterTap);
 
             Assert.True(
                 driver.IsDisplayed("PrayerTime_Btn_Pause", timeoutSeconds: 3)
@@ -268,7 +268,7 @@ public class PrayerTimeTests
         var driver = _setup.Driver;
 
         // Both prayers and tags must exist for the action sheet to appear
-        driver.EnsureUITestPrayerExists(_setup);
+        driver.EnsureOnPrayersTab(_setup);
         driver.EnsureUITestTagExists(_setup);
 
         driver.EnsureOnTab("Home", _setup);

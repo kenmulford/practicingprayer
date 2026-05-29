@@ -54,7 +54,7 @@ public class AccessibilityTests
         // Tap it using the "not selected" text
         Driver.TapByTextContains("not selected", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
-        Thread.Sleep(500); // Extra settle for content-desc binding update
+        Thread.Sleep(TestConfig.DelayDirtyRegistration); // Extra settle for content-desc binding update
 
         // After selecting, at least one chip should now say "selected" (without "not").
         // HasAccessibleElement("selected") would also match "not selected" — use ", selected"
@@ -93,7 +93,7 @@ public class AccessibilityTests
         // Find a specific card to tap — use the first non-system card visible
         // (existing test data includes "UITest Card", "Test Card", etc.)
         string? cardName = null;
-        foreach (var name in new[] { "UITest Card", "Test Card", "Delete Me Card" })
+        foreach (var name in new[] { "UITest Card", "Test Card", TestSeedFixtures.DeleteCard })
         {
             if (Driver.HasAccessibleElement(name, timeoutSeconds: 2))
             {
@@ -125,11 +125,11 @@ public class AccessibilityTests
     {
         Driver.ResetAppUIState(_setup);
         // Ensure a prayer exists in the Quick Add card
-        Driver.EnsureUITestPrayerExists(_setup);
+        Driver.EnsureOnPrayersTab(_setup);
         Driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Expand a card that has prayers — "UITest Card" is created by EnsureUITestPrayerExists.
+        // Expand a card that has prayers — "UITest Card" comes from the seed DB (TestDataSeed).
         // It may have content-desc like "UITest Card, 1 prayer, Collapsed".
         // Need to find it first — may require scrolling.
         bool cardFound = Driver.HasAccessibleElement("UITest Card", timeoutSeconds: 3);

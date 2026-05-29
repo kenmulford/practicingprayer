@@ -24,8 +24,17 @@ public class AppiumSetup : IAsyncLifetime
         // data dir, so every suite starts with known Collections/Cards/Prayers.
         await TestDataSeed.SeedAsync();
 
+        // Pre-seed OnboardingComplete=true in NSUserDefaults (iOS only) so the
+        // welcome popup never appears. Replaces the in-suite DismissOnboardingIfPresent
+        // flow, which depended on popup-render timing and was empirically flaky
+        // across iOS versions / simulator devices.
+        await TestDataSeed.PreSeedOnboardingCompleteAsync();
+
         CreateDriver();
-        // Wait for the app to fully load (splash screen + initial page render)
+        // Wait for the app to fully load (splash screen + initial page render).
+        // Inline 3000ms — one-off post-driver-create splash settle, not part of
+        // the TestConfig.Delay* per-test sweep (#11). Tuning this number is a
+        // session-level concern, not a per-action concern.
         await Task.Delay(3000);
     }
 
@@ -47,7 +56,7 @@ public class AppiumSetup : IAsyncLifetime
             if (appState < 3) // not running or background-suspended
             {
                 Driver.ActivateApp(appId);
-                Thread.Sleep(2000);
+                Thread.Sleep(TestConfig.DelayLongSettle);
             }
         }
         catch (WebDriverException)
@@ -65,7 +74,7 @@ public class AppiumSetup : IAsyncLifetime
         for (int attempt = 1; attempt <= 3; attempt++)
         {
             CreateDriver();
-            Thread.Sleep(5000);
+            Thread.Sleep(TestConfig.DelayAppRelaunch);
             OnboardingHandled = false;
 
             try

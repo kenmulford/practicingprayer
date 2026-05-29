@@ -568,6 +568,20 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
     </Style>
 
+    <!-- CloseButton: shared ✕ dismiss button for banners, modals, and per-row removal.
+         Does NOT set WidthRequest/HeightRequest — the inherited MinimumWidthRequest=44 /
+         MinimumHeightRequest=44 from ButtonBase governs render size (empirically verified
+         on .NET MAUI 10 / iOS — Minimum* floors the natural content size).
+         Call sites supply Text="✕", AutomationId, Command/Clicked, SemanticProperties.Description,
+         and any layout placement (Grid.Column, VerticalOptions). -->
+    <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource TextMutedDark}}" />
+        <Setter Property="FontSize" Value="{StaticResource FontBody}" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="BorderWidth" Value="0" />
+    </Style>
+
     <!-- SmallActionButton: compact in-card actions (Set Reminder, Edit) -->
     <Style x:Key="SmallActionButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
         <Setter Property="FontSize" Value="{StaticResource FontSmall}" />

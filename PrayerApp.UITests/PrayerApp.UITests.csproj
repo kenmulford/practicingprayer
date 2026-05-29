@@ -54,6 +54,12 @@
     <!-- BoxStrings holds canonical section names referenced by UITests
          (e.g. BoxStrings.Unorganized for the "Loose Cards" Unboxed section). -->
     <Compile Include="../PrayerApp/Helpers/BoxStrings.cs" />
+
+    <!-- AndroidComponentNames holds the JNI-mangled MainActivity class name.
+         Same const is referenced by DebugProcessTextShim.cs (production) and
+         TestConfig.AndroidMainActivity (test) — a toolchain CRC bump updates
+         both sites by editing one file. -->
+    <Compile Include="../PrayerApp/Helpers/AndroidComponentNames.cs" />
   </ItemGroup>
 
 </Project>

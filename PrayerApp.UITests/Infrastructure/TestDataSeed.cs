@@ -25,6 +25,25 @@ internal static class TestDataSeed
             await SeedIOSAsync();
     }
 
+    /// <summary>
+    /// Pre-seed iOS NSUserDefaults so the app starts past onboarding. Bypasses the
+    /// welcome popup and the entire onboarding flow without depending on Appium to
+    /// dismiss it from the UI. Mirrors how Settings.OnboardingComplete is persisted
+    /// (Preferences.Set → NSUserDefaults on iOS) — value is read on the next app
+    /// launch, which happens when Appium activates the bundle after SeedAsync()
+    /// terminates it. No-op on Android (keeps the existing in-suite dismissal
+    /// flow until the Android toolchain returns).
+    /// </summary>
+    public static async Task PreSeedOnboardingCompleteAsync()
+    {
+        if (!TestConfig.IsIOS) return;
+
+        // Mirrors PrayerApp.Services.Settings: Preferences.Set(nameof(OnboardingComplete), true)
+        // — `defaults write -bool YES` is the NSUserDefaults equivalent of bool=true.
+        await RunSimctlAsync(
+            $"spawn booted defaults write {TestConfig.IOSBundleId} OnboardingComplete -bool YES");
+    }
+
     public static async Task SeedAndroidAsync()
     {
         if (!TestConfig.IsAndroid) return;
@@ -155,19 +174,19 @@ internal static class TestDataSeed
         });
 
         // Dedicated throwaway targets for destructive tests. Each delete test
-        // targets its own "Delete Me" entry instead of the shared UITest
-        // baseline — so UITest Collection / UITest Card remain stable for
+        // targets its own "UITest Delete Target" entry instead of the shared
+        // UITest baseline — so UITest Collection / UITest Card remain stable for
         // downstream non-destructive tests regardless of run order.
-        var deleteColA = new CardBox { Name = "Delete Me Collection A", IsSystem = false, SortOrder = 0, CreatedAt = now, UpdatedAt = now };
+        var deleteColA = new CardBox { Name = TestSeedFixtures.DeleteCollectionA, IsSystem = false, SortOrder = 0, CreatedAt = now, UpdatedAt = now };
         await deleteColA.SaveAsync();
-        await SeedCardWithPrayersAsync(deleteColA.Id, "Delete Me Card A", new[]
+        await SeedCardWithPrayersAsync(deleteColA.Id, TestSeedFixtures.DeleteCardA, new[]
         {
             ("Throwaway prayer A", "Deleted by Boxes_DeleteCollection_DeleteAllCards.", false),
         });
 
-        var deleteColB = new CardBox { Name = "Delete Me Collection B", IsSystem = false, SortOrder = 0, CreatedAt = now, UpdatedAt = now };
+        var deleteColB = new CardBox { Name = TestSeedFixtures.DeleteCollectionB, IsSystem = false, SortOrder = 0, CreatedAt = now, UpdatedAt = now };
         await deleteColB.SaveAsync();
-        await SeedCardWithPrayersAsync(deleteColB.Id, "Delete Me Card B", new[]
+        await SeedCardWithPrayersAsync(deleteColB.Id, TestSeedFixtures.DeleteCardB, new[]
         {
             ("Throwaway prayer B", "Deleted by Boxes_DeleteCollection_UnassignCards.", false),
         });
@@ -176,7 +195,7 @@ internal static class TestDataSeed
         // Lives at top level (BoxId = 0, "Loose Cards") so it's always visible —
         // user boxes render as collapsed accordion sections on first load and
         // would hide the card from the UI tree.
-        await SeedCardWithPrayersAsync(boxId: 0, "Delete Me Card", new[]
+        await SeedCardWithPrayersAsync(boxId: 0, TestSeedFixtures.DeleteCard, new[]
         {
             ("Throwaway prayer", "Deleted by Cards_DeleteCard_RemovesFromList.", false),
         });

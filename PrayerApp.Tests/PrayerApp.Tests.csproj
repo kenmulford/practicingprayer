@@ -139,6 +139,11 @@
     <Compile Include="../PrayerApp/Services/IBoxService.cs" />
     <Compile Include="../PrayerApp/Services/BoxService.cs" />
 
+    <!-- TestSeedFixtures: linked from PrayerApp.UITests so the consistency
+         test in this project can reference the same canonical constants
+         the UI tests use. -->
+    <Compile Include="../PrayerApp.UITests/Infrastructure/TestSeedFixtures.cs" />
+
     <!-- Service implementations (no MAUI dependencies) -->
     <Compile Include="../PrayerApp/Services/DiagnosticLog.cs" />
     <Compile Include="../PrayerApp/Services/CardService.cs" />
