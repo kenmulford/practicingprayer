@@ -14,6 +14,7 @@ The full branch model and contribution process are in [CONTRIBUTING.md](CONTRIBU
 - **One concern per branch.** If a new concern surfaces mid-branch, branch separately off the appropriate base.
 - **PR flow:** push the branch → `gh pr create --base <dev|master> --fill` → wait for CI green → `gh pr merge --squash --delete-branch`.
 - **`release/*` and `hotfix/*` merge twice:** into `master` (then tag the release) **and** back into `dev`, so the fix isn't lost in the next release.
+- **`release/*` is optional ceremony:** cut one only when `dev` must keep moving while a build is frozen for stabilization / App Store review; otherwise `dev → master` directly is equivalent.
 - **Commits are squashed**, so the PR title/description become the landed commit message — write them release-quality.
 
 ## Working in this codebase
