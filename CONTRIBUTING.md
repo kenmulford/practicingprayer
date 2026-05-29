@@ -19,17 +19,30 @@ Personal questions and prayer stories are best handled privately by email at [pr
 
 If a screenshot shows personal prayer content, names, or notes, blur or crop those before posting. The bug-report template only asks for screenshots — diagnostic logs are not requested through the issue tracker. If a developer needs a log to diagnose your bug, they'll ask you to email it.
 
+## Branch model
+
+This project follows a Gitflow-style model. **`master` and `dev` are protected** — every change reaches them through a pull request that passes the `Unit Tests` CI check, and history is **squash-merged** (one commit per PR; the branch auto-deletes on merge).
+
+| Branch | Branch from | PR into | For |
+|---|---|---|---|
+| `feature/*` | `dev` | `dev` | New behavior |
+| `fix/*` | `dev` | `dev` | Bug fixes |
+| `release/*` | `dev` | `master`, then `dev` | Release stabilization — maintainer only |
+| `hotfix/*` | `master` | `master`, then `dev` | Urgent production fixes — maintainer only |
+
+- `dev` is the integration branch; `master` reflects released (app-store) builds and is tagged per release.
+- Contributors work on `feature/*` or `fix/*` off `dev`. `release/*` and `hotfix/*` are maintainer-driven, and merge **twice** — into `master` (tagged) and back into `dev` so the fix carries forward.
+- **When to cut a `release/*`:** only when `dev` needs to keep taking new work while a build is frozen for stabilization or App Store review. For a straightforward release with nothing queued behind it, `dev → master` directly is equivalent.
+
 ## Submitting a pull request
 
-This repo's working branch is **`dev`**. Releases land on `master`.
-
 1. Fork the repo on GitHub.
-2. Create a branch from `dev` (not `master`).
-3. Make your changes; keep commits focused and reviewable.
+2. Branch from `dev` — name it `feature/<short-desc>` or `fix/<short-desc>`.
+3. Make your changes; keep commits focused and reviewable. One concern per branch.
 4. Run the test suite locally — see [Build and run](README.md#build-and-run) and the test layout below.
-5. Open the PR against `dev`. Link the issue with `Closes #<n>` if one exists.
+5. Open the PR against `dev`. Link the issue with `Closes #<n>` if one exists. The `Unit Tests` check must pass before merge.
 
-I squash-merge PRs into `dev`, so your commit history within the branch is for review readability — final history is one squashed commit per PR.
+PRs are squash-merged into `dev`, so your in-branch commit history is for review readability — the final history is one squashed commit per PR.
 
 ### What to test before opening a PR
 
