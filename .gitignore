@@ -378,7 +378,7 @@ BACKLOG.md
 **/DerivedData/
 
 # Private working files (not part of the public repo)
-CLAUDE.md
+CLAUDE.local.md
 docs/tester-feedback/
 _inspector-capture/
 diagnostics/

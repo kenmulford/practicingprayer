@@ -19,17 +19,30 @@ Personal questions and prayer stories are best handled privately by email at [pr
 
 If a screenshot shows personal prayer content, names, or notes, blur or crop those before posting. The bug-report template only asks for screenshots — diagnostic logs are not requested through the issue tracker. If a developer needs a log to diagnose your bug, they'll ask you to email it.
 
+## Branch model
+
+This project follows a Gitflow-style model. **`master` and `dev` are protected** — every change reaches them through a pull request that passes the `Unit Tests` CI check, and history is **squash-merged** (one commit per PR; the branch auto-deletes on merge).
+
+| Branch | Branch from | PR into | For |
+|---|---|---|---|
+| `feature/*` | `dev` | `dev` | New behavior |
+| `fix/*` | `dev` | `dev` | Bug fixes |
+| `release/*` | `dev` | `master`, then `dev` | Release stabilization — maintainer only |
+| `hotfix/*` | `master` | `master`, then `dev` | Urgent production fixes — maintainer only |
+
+- `dev` is the integration branch; `master` reflects released (app-store) builds and is tagged per release.
+- Contributors work on `feature/*` or `fix/*` off `dev`. `release/*` and `hotfix/*` are maintainer-driven, and merge **twice** — into `master` (tagged) and back into `dev` so the fix carries forward.
+
 ## Submitting a pull request
 
-This repo's working branch is **`dev`**. Releases land on `master`.
-
 1. Fork the repo on GitHub.
-2. Create a branch from `dev` (not `master`).
-3. Make your changes; keep commits focused and reviewable.
+2. Branch from `dev` — name it `feature/<short-desc>` or `fix/<short-desc>`.
+3. Make your changes; keep commits focused and reviewable. One concern per branch.
 4. Run the test suite locally — see [Build and run](README.md#build-and-run) and the test layout below.
-5. Open the PR against `dev`. Link the issue with `Closes #<n>` if one exists.
+5. Sign the CLA (see [Contributor License Agreement](#contributor-license-agreement)) by adding your name to the signatures file in the same PR.
+6. Open the PR against `dev`. Link the issue with `Closes #<n>` if one exists. The `Unit Tests` check must pass before merge.
 
-I squash-merge PRs into `dev`, so your commit history within the branch is for review readability — final history is one squashed commit per PR.
+PRs are squash-merged into `dev`, so your in-branch commit history is for review readability — the final history is one squashed commit per PR.
 
 ### What to test before opening a PR
 
@@ -58,6 +71,14 @@ I squash-merge PRs into `dev`, so your commit history within the branch is for r
 | `good first issue` | Smaller scope, suitable for a first PR. |
 | `closed-retroactively` | Created post-fix for `git log` archaeology only. Already closed. |
 
+## Contributor License Agreement
+
+Practicing Prayer is licensed under GPL-3.0, but the app is also distributed through application stores (e.g. Apple's App Store) whose terms can conflict with the GPL for code the project does not solely own. To keep **both** kinds of distribution lawful, every contributor signs a one-time **Individual Contributor License Agreement** ([CLA.md](CLA.md)) before their first contribution is merged.
+
+You keep the copyright to your contribution. The CLA grants Multithreaded LLC the right to distribute your contribution under GPL-3.0 **and** under the additional terms required for app-store distribution.
+
+**How to sign (manual):** in the same PR as your first contribution, add a row to [`signatures/individual-cla-signatures.md`](signatures/individual-cla-signatures.md) with your GitHub username, full name, and the date. Adding that row constitutes your agreement to the CLA; the maintainer verifies it before merging.
+
 ## License
 
-By contributing, you agree your contributions will be licensed under [GPL-3.0](LICENSE.txt).
+The project is licensed under [GPL-3.0](LICENSE.txt). By signing the CLA above, you agree your contributions are provided under the terms of that agreement.
