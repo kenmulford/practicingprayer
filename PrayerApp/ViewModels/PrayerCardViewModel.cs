@@ -626,10 +626,11 @@ namespace PrayerApp.ViewModels
                     return;
                 }
 
-                var viewModel = new PrayerRequestDetailViewModel(prayer)
-                {
-                    ReturnToCards = true
-                };
+                // Route through PrayerRowFactory (same seam LoadPrayersAsync uses) so the
+                // in-place insert honors test-injected row VMs; the production default
+                // factory is `new PrayerRequestDetailViewModel(p) { ReturnToCards = true }`,
+                // so prod behavior is unchanged.
+                var viewModel = PrayerRowFactory(prayer);
                 var insertIndex = Prayers
                     .TakeWhile(p => string.Compare(p.Title, prayer.Title, StringComparison.OrdinalIgnoreCase) < 0)
                     .Count();
