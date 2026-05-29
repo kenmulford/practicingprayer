@@ -33,6 +33,11 @@ public class PrayerCardsViewModelTests
 
         // Default: no boxes (sections will be empty)
         _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
+
+        // Reset the Prayer Active-Record static per test so a stub set by one test
+        // (e.g. the #82 in-place-insert test) can't leak into the next. Matches the
+        // constructor-init pattern in PrayerCardViewModelTests / PrayerRequestDetailViewModelTests.
+        Prayer.SetDBService(Substitute.For<IDBService>());
     }
 
     private PrayerCardsViewModel CreateSut() =>
@@ -1475,6 +1480,58 @@ public class PrayerCardsViewModelTests
         Assert.NotNull(result);
         Assert.True(result.IsExpanded);
         Assert.Equal(3, result.Prayers.Count);
+    }
+
+    // ── #82: "Save & Add Another" — Created broadcast patches the expanded card ──
+    // Repro: from an expanded card, Save & Add Another saves a prayer but does NOT
+    // navigate, so ApplyQueryAttributes never runs. The PrayerChangedMessage(Created)
+    // broadcast is the only signal the cards page gets — it must insert the new row
+    // in place. Before the fix the Created broadcast hit SyncCoreAsync's skipReload
+    // guard (changeKind != null) and the new prayer never entered the expanded card's
+    // Prayers collection until a later full sync (the second nav-away/back).
+    [Fact]
+    public async Task PrayerChangedMessage_Created_OnExpandedCard_InsertsPrayerInPlace()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        // Card 1 starts with one prayer; the just-created Save+ prayer (id 200) is not in it.
+        var existing = new Prayer { Id = 100, PrayerCardId = 1, Title = "Existing" };
+        _prayerService.GetPrayersByCardAsync(1).Returns(new List<Prayer> { existing }.AsReadOnly());
+        // Active-Record load for the newly-created prayer (AddOrUpdatePrayerAsync → Prayer.LoadAsync).
+        var created = new Prayer { Id = 200, PrayerCardId = 1, Title = "Brand New" };
+        var prayerDb = Substitute.For<IDBService>();
+        Prayer.SetDBService(prayerDb);
+        prayerDb.GetByIdAsync<Prayer>(200).Returns(created);
+
+        // Inject the stub row factory so the in-place insert avoids the DI-bound ctor.
+        var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
+            cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
+                _onboardingService, _navigationService, _accessibilityService, _boxService)
+            {
+                PrayerRowFactory = BuildStubPrayerRowVm
+            });
+        await sut.SyncAsync();
+        var cardVm = sut.AllPrayerCards.Single(c => c.Id == 1);
+        sut.ExpandedCardId = 1;            // user has the card expanded behind the detail page
+        await cardVm.LoadPrayersAsync();   // expanded card's rows are realized
+        Assert.Single(cardVm.Prayers);
+
+        // Act — Save & Add Another fires this without navigating.
+        _messenger.Send(new PrayerChangedMessage(200, 1, ChangeKind.Created));
+        // The handler is fire-and-forget with a deeper chain than the file's
+        // 2x-Task.Yield convention (AddOrUpdatePrayerAsync → Prayer.LoadAsync, then
+        // SyncAsync), so poll the observable condition with a bounded yield loop.
+        for (int i = 0; i < 100 && cardVm.Prayers.All(p => p.Id != 200); i++)
+            await Task.Yield();
+
+        // Assert — the new prayer is now live in the expanded card (was dropped before the fix).
+        Assert.Contains(cardVm.Prayers, p => p.Id == 200);
+        Assert.Equal(2, cardVm.Prayers.Count);
     }
 
     [Fact]
