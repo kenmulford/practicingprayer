@@ -120,6 +120,11 @@ public class PrayerService : IPrayerService
         return await _dbService.GetMaxInteractionDateAsync();
     }
 
+    public async Task<int> GetInteractionCountByPrayerAsync(int prayerId)
+    {
+        return await _dbService.CountInteractionsByPrayerIdAsync(prayerId);
+    }
+
     public async Task<IReadOnlyList<Prayer>> GetAnsweredOnThisDateAsync()
     {
         var today = DateTime.Now;
