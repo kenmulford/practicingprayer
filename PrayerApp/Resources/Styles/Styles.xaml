@@ -568,6 +568,39 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
     </Style>
 
+    <!-- SelectableRowBorder / SelectableRowLabel: shared IsSelected highlight for tag filter chips. Issue #29. -->
+    <Style x:Key="SelectableRowBorder" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+        <Style.Triggers>
+            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SelectableRowLabel" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+        <Style.Triggers>
+            <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- SelectableRowCheckmark: picker row selection indicator. Issue #29. -->
+    <Style x:Key="SelectableRowCheckmark" TargetType="Label">
+        <Setter Property="IsVisible" Value="False" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Style.Triggers>
+            <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                <Setter Property="IsVisible" Value="True" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- CloseButton: shared ✕ dismiss button for banners, modals, and per-row removal.
          Does NOT set WidthRequest/HeightRequest — the inherited MinimumWidthRequest=44 /
          MinimumHeightRequest=44 from ButtonBase governs render size (empirically verified
