@@ -595,6 +595,18 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}" />
     </Style>
 
+    <!-- AddPrayerAffordanceButton: the inline "+ Add (another) prayer ›" affordance,
+         shared by PrayerCardsPage and ConfirmImportPage. Call sites supply Text,
+         AutomationId, Command, IsVisible, SemanticProperties.Hint. -->
+    <Style x:Key="AddPrayerAffordanceButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="FontSize" Value="{StaticResource FontTitle}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Padding" Value="16,8,12,10" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+    </Style>
+
     <!-- CircleNavButton: Prayer Time previous/next arrows.
          Padding="0" overrides the default 14,10 — circle buttons need no internal padding.
          BackgroundColor and TextColor are left inline at each usage site (Prev vs. Next differ). -->
