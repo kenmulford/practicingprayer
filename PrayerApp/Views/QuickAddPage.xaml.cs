@@ -10,9 +10,19 @@ public partial class QuickAddPage : ContentPage, IPageSheetModal
         BindingContext = vm;
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (BindingContext is QuickAddViewModel vm)
+            await vm.LoadDestinationAsync();
+
         Dispatcher.DispatchAsync(() => TitleEntry.Focus());
+    }
+
+    private void OnCardItemTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Border { BindingContext: CardPickerItem item } &&
+            BindingContext is QuickAddViewModel vm)
+            vm.SelectCardCommand.Execute(item);
     }
 }

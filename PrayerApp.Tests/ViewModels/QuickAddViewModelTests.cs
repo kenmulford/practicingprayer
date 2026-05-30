@@ -13,9 +13,38 @@ public class QuickAddViewModelTests
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
+    private readonly IBoxService _boxService = Substitute.For<IBoxService>();
 
     private QuickAddViewModel CreateSut() =>
-        new(_cardService, _prayerService, _navigationService, _accessibilityService, _settings);
+        new(_cardService, _prayerService, _navigationService, _accessibilityService, _settings, _boxService);
+
+    [Fact]
+    public void Constructor_DefaultsToExistingCardMode()
+    {
+        var sut = CreateSut();
+
+        Assert.True(sut.IsExistingCardMode);
+        Assert.False(sut.IsNewCardMode);
+    }
+
+    [Fact]
+    public async Task LoadDestinationAsync_SelectsQuickAddCardByDefault()
+    {
+        var quickAdd = new PrayerCard { Id = 5, Title = PrayerCard.TitleQuickAdd, IsSystem = true, BoxId = 10 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(quickAdd);
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { quickAdd }.AsReadOnly());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem },
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.LoadDestinationAsync();
+
+        Assert.NotNull(sut.SelectedCard);
+        Assert.Equal(5, sut.SelectedCard!.CardId);
+        Assert.True(sut.SelectedCard.IsSelected);
+    }
 
     [Fact]
     public void Constructor_SetsDefaultTitle()
@@ -37,11 +66,11 @@ public class QuickAddViewModelTests
     }
 
     [Fact]
-    public async Task SaveCommand_ValidTitle_SavesAndPopsModal()
+    public async Task SaveCommand_ValidTitle_SavesToQuickAddAndPopsModal()
     {
         var sut = CreateSut();
         sut.Title = "Test prayer";
-        _cardService.GetOrCreateQuickAddCardAsync().Returns(new PrayerCard { Id = 1 });
+        sut.SelectCardCommand.Execute(new CardPickerItem { CardId = 1, Title = "Quick Add" });
 
         await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
 
@@ -52,11 +81,59 @@ public class QuickAddViewModelTests
     }
 
     [Fact]
+    public async Task SaveCommand_ExistingMode_NonDefaultDestination_SavesToSelectedCard()
+    {
+        var sut = CreateSut();
+        sut.Title = "Family prayer";
+        sut.SelectCardCommand.Execute(new CardPickerItem { CardId = 42, Title = "Family" });
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Is<Prayer>(p => p.PrayerCardId == 42));
+    }
+
+    [Fact]
+    public async Task SaveCommand_NewCardMode_CreatesCardAndSavesPrayer()
+    {
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>()).Returns(call =>
+        {
+            var card = call.Arg<PrayerCard>();
+            card.Id = 99;
+            return card;
+        });
+
+        var sut = CreateSut();
+        sut.SetNewCardModeCommand.Execute(null);
+        sut.Title = "Morning prayer";
+        sut.CardTitle = "New card";
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).SaveCardAsync(Arg.Is<PrayerCard>(c => c.Title == "New card" && c.BoxId == 0));
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Is<Prayer>(p => p.PrayerCardId == 99));
+    }
+
+    [Fact]
+    public async Task SaveCommand_NewCardMode_EmptyCardTitle_ShowsAlert()
+    {
+        var sut = CreateSut();
+        sut.SetNewCardModeCommand.Execute(null);
+        sut.Title = "Test";
+        sut.CardTitle = "  ";
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        await _navigationService.Received(1).DisplayAlertAsync("Required", "Please enter a card title.", "OK");
+        await _cardService.DidNotReceive().SaveCardAsync(Arg.Any<PrayerCard>());
+    }
+
+    [Fact]
     public async Task SaveCommand_ServiceThrows_ShowsError()
     {
         var sut = CreateSut();
         sut.Title = "Test";
-        _cardService.GetOrCreateQuickAddCardAsync().Returns<PrayerCard>(_ => throw new Exception("DB error"));
+        sut.SelectCardCommand.Execute(new CardPickerItem { CardId = 1, Title = "Quick Add" });
+        _prayerService.SavePrayerAsync(Arg.Any<Prayer>()).Returns(_ => throw new Exception("DB error"));
 
         await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
 
