@@ -442,11 +442,9 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
                         IsImported = true,
                         CanNotify = false
                     };
-                    await prayer.SaveAsync();
+                    await _prayerService.SavePrayerAsync(prayer, publishMessage: false);
                     existingSavedCount++;
                 }
-                _cardService.InvalidateCache();
-                _prayerService.InvalidateCache();
                 _messenger.Send(new BulkChangedMessage());
                 _accessibilityService.Announce($"Imported {existingSavedCount} prayers to {SelectedCard.Title}");
                 await _navigationService.GoToAsync(Routes.PrayerCardsTabImportedToExisting(SelectedCard.CardId));
@@ -462,7 +460,7 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
                 BoxId = SelectedBox is RealBoxPickerItem real ? real.BoxId : 0,
                 IsImported = true
             };
-            await card.SaveAsync();
+            await _cardService.SaveCardAsync(card, publishMessage: false);
 
             var savedCount = 0;
             foreach (var row in Prayers.Where(r => !string.IsNullOrWhiteSpace(r.Title)))
@@ -475,12 +473,10 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
                     IsImported = true,
                     CanNotify = false
                 };
-                await prayer.SaveAsync();
+                await _prayerService.SavePrayerAsync(prayer, publishMessage: false);
                 savedCount++;
             }
 
-            _cardService.InvalidateCache();
-            _prayerService.InvalidateCache();
             _messenger.Send(new BulkChangedMessage());
             _accessibilityService.Announce($"Imported {savedCount} prayers to {card.Title}");
             await _navigationService.GoToAsync(Routes.PrayerCardsTabImported(card.Id));

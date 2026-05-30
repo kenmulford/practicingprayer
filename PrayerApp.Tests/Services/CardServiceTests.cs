@@ -394,4 +394,50 @@ public class CardServiceTests
         Assert.Equal(11, _cardMessages[0].CardId);
         Assert.Equal(ChangeKind.Deleted, _cardMessages[0].Kind);
     }
+
+    // ── SaveCardAsync publishMessage=false ────────────────────────────────────
+
+    [Fact]
+    public async Task SaveCardAsync_PublishMessageFalse_DoesNotSendMessage()
+    {
+        // Bulk-import path: caller suppresses per-entity messages and sends
+        // a single BulkChangedMessage after all rows are persisted.
+        var card = new PrayerCard { Title = "Family" };
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.SaveCardAsync(card, publishMessage: false);
+
+        Assert.Empty(_cardMessages);
+    }
+
+    [Fact]
+    public async Task SaveCardAsync_PublishMessageFalse_StillInvalidatesCache()
+    {
+        // Cache must still be busted even when the message is suppressed —
+        // the import batch mutates the DB; the next GetCardsAsync must see
+        // fresh data.
+        _db.GetAllAsync<PrayerCard>().Returns(Task.FromResult(new List<PrayerCard>()));
+        await _service.GetCardsAsync(); // populate cache
+
+        var card = new PrayerCard { Title = "New" };
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        await _service.SaveCardAsync(card, publishMessage: false);
+
+        // Next call must re-query, not return stale cache.
+        await _service.GetCardsAsync();
+        await _db.Received(2).GetAllAsync<PrayerCard>();
+    }
+
+    [Fact]
+    public async Task SaveCardAsync_DefaultPublishMessage_StillSendsMessage()
+    {
+        // Guard: adding the optional param must not silently break the default
+        // (publishMessage = true) path used by every other caller.
+        var card = new PrayerCard { Title = "Family" };
+        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.SaveCardAsync(card);
+
+        Assert.Single(_cardMessages);
+    }
 }
