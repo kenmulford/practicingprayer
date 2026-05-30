@@ -60,7 +60,7 @@
                                     Padding="2,0"
                                     BorderWidth="0"
                                     MinimumWidthRequest="24"
-                                    MinimumHeightRequest="24"
+                                    MinimumHeightRequest="{StaticResource SwatchRowHeight}"
                                     VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
