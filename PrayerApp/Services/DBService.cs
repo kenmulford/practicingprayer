@@ -349,6 +349,14 @@ namespace PrayerApp.Services
                 "DELETE FROM PrayerInteraction WHERE PrayerId = ?", prayerId);
         }
 
+        public async Task<int> CountInteractionsByPrayerIdAsync(int prayerId)
+        {
+            await EnsureInitializedAsync();
+            if (_db == null) throw new InvalidOperationException("Database is not available.");
+            return await _db.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*) FROM PrayerInteraction WHERE PrayerId = ?", prayerId);
+        }
+
         public async Task UnassignBoxFromCardsAsync(int boxId)
         {
             await EnsureInitializedAsync();

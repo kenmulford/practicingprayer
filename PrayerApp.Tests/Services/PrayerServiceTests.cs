@@ -491,4 +491,27 @@ public class PrayerServiceTests
 
         Assert.Single(_prayerMessages);
     }
+
+    // ── GetInteractionCountByPrayerAsync ─────────────────────────────────────
+
+    [Fact]
+    public async Task GetInteractionCountByPrayerAsync_DelegatesToDb()
+    {
+        _db.CountInteractionsByPrayerIdAsync(7).Returns(Task.FromResult(12));
+
+        var result = await _service.GetInteractionCountByPrayerAsync(7);
+
+        Assert.Equal(12, result);
+        await _db.Received(1).CountInteractionsByPrayerIdAsync(7);
+    }
+
+    [Fact]
+    public async Task GetInteractionCountByPrayerAsync_NoPrayers_ReturnsZero()
+    {
+        _db.CountInteractionsByPrayerIdAsync(99).Returns(Task.FromResult(0));
+
+        var result = await _service.GetInteractionCountByPrayerAsync(99);
+
+        Assert.Equal(0, result);
+    }
 }
