@@ -23,3 +23,16 @@ The full branch model and contribution process are in [CONTRIBUTING.md](CONTRIBU
 - New behavior lands with tests; pure refactors are fine under existing green coverage.
 - Run `dotnet test PrayerApp.Tests/PrayerApp.Tests.csproj` before opening a PR.
 - Architecture and naming conventions: [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Solving a GitHub issue (milestone-driver)
+
+This repo is a [milestone-driver](https://github.com/kenmulford/milestone-driver) consumer; its profile is `milestone-driver.json` (repo root). Drive one issue with `/solve-issue <n>`, or a whole milestone in dependency order with `/solve-milestone <name>` (order comes from the milestone description's Wave list).
+
+Per issue the orchestrator — never authoring code itself — reads the issue → finds the root cause or **STOPs and comments** → dispatches the `implementer` subagent (TDD red→green, least-code, citations posted on the issue) → runs `dotnet test PrayerApp.Tests/…` → runs the E2E gate (`run-uitests.ps1`) for UI-touching changes → `/code-review` → opens a PR `--base dev` → auto-merges on the `Unit Tests` check green → closes the issue. Architecture is locked at plan-approval time; one-way-door decisions STOP and ask rather than drift.
+
+**Mechanical gates** (active once the plugin is installed and Claude Code is restarted):
+- `force-subagent` — main-thread edits to `PrayerApp/**`, `PrayerApp.Tests/**`, `PrayerApp.UITests/**` are blocked; dispatch the implementer instead (escape: `CLAUDE_HOOK_DISABLE_FORCE_SUBAGENT=1`).
+- `tests-green` — source commits run the unit suite; red blocks the commit.
+- `no-push` / `no-pr-to-protected` — pushing or opening a PR to `master` is blocked locally; GitHub branch protection is the server-side backstop.
+
+Non-negotiables: MAUI .NET 10 + Community Toolkit; iOS 26.5 / Android API 36.

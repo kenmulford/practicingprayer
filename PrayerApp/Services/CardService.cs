@@ -63,12 +63,13 @@ public class CardService : ICardService
         return card;
     }
 
-    public async Task<PrayerCard> SaveCardAsync(PrayerCard card)
+    public async Task<PrayerCard> SaveCardAsync(PrayerCard card, bool publishMessage = true)
     {
         var isNew = card.Id == 0;
         await card.SaveAsync();
         _cache = null;
-        _messenger.Send(new PrayerCardChangedMessage(card.Id, isNew ? ChangeKind.Created : ChangeKind.Updated));
+        if (publishMessage)
+            _messenger.Send(new PrayerCardChangedMessage(card.Id, isNew ? ChangeKind.Created : ChangeKind.Updated));
         return card;
     }
 
