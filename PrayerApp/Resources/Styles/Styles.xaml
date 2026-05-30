@@ -683,14 +683,31 @@
     <!-- ── Picker group styles (iOS inset-grouped section pattern) ───────── -->
 
     <!-- PickerGroupCard: rounded section card containing picker rows.
-         Matches iOS UITableView insetGrouped appearance. -->
+         Matches iOS UITableView insetGrouped appearance.
+         Android uses elevation shadow instead of a hairline stroke (issue #30). -->
     <Style x:Key="PickerGroupCard" TargetType="Border">
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardLight}, Dark={StaticResource CardDark}}" />
         <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource CardBorderDark}}" />
-        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeThickness">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="x:Double">
+                    <On Platform="iOS, MacCatalyst" Value="1" />
+                    <On Platform="Android" Value="0" />
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="10" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="Shadow">
+                    <On Platform="Android">
+                        <Shadow Brush="Black" Opacity="0.12" Radius="8" Offset="0,2" />
+                    </On>
+                </OnPlatform>
             </Setter.Value>
         </Setter>
     </Style>
