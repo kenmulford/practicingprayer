@@ -568,6 +568,17 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
     </Style>
 
+    <!-- AddPrayerAffordanceButton: inline "+ Add prayer ›" affordances on cards and import flows. Issue #36. -->
+    <Style x:Key="AddPrayerAffordanceButton" TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+        <Setter Property="FontSize" Value="{StaticResource FontTitle}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Padding" Value="16,8,12,10" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+    </Style>
+
     <!-- CloseButton: shared ✕ dismiss button for banners, modals, and per-row removal.
          Does NOT set WidthRequest/HeightRequest — the inherited MinimumWidthRequest=44 /
          MinimumHeightRequest=44 from ButtonBase governs render size (empirically verified

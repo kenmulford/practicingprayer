@@ -223,13 +223,7 @@
                     IsVisible="{Binding IsExpanded}"
                     AutomationId="Cards_Btn_AddPrayer"
                     SemanticProperties.Hint="Add a new prayer request to this card"
-                    FontSize="{StaticResource FontTitle}"
-                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                    BackgroundColor="Transparent"
-                    FontAttributes="Bold"
-                    Padding="16,8,12,10"
-                    BorderWidth="0"
-                    HorizontalOptions="Center" />
+                    Style="{StaticResource AddPrayerAffordanceButton}" />
 
             </VerticalStackLayout>
         </DataTemplate>
