@@ -161,4 +161,37 @@ public class PrayerTimeViewModelTests
         Assert.Equal("Zebra", realEntries[3].CardTitle);
         Assert.Equal("C Prayer", realEntries[3].PrayerTitle);
     }
+
+    // ── scope=list filtering ─────────────────────────────────────────
+
+    [Fact]
+    public async Task ApplyQueryAttributes_ListScope_FiltersToPrayerIds()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Family" },
+            new() { Id = 2, Title = "Work" }
+        }.AsReadOnly());
+
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "Prayer A", PrayerCardId = 1, IsAnswered = false },
+            new() { Id = 200, Title = "Prayer B", PrayerCardId = 2, IsAnswered = false },
+            new() { Id = 300, Title = "Prayer C", PrayerCardId = 1, IsAnswered = true }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object>
+        {
+            { "scope", "list" },
+            { "prayerIds", "100,300" }
+        });
+
+        await Task.Delay(200);
+
+        var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
+        Assert.Equal(2, realEntries.Count);
+        Assert.Contains(realEntries, e => e.PrayerId == 100);
+        Assert.Contains(realEntries, e => e.PrayerId == 300);
+    }
 }
