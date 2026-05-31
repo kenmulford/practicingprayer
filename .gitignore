@@ -364,7 +364,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/.claude
+# Ignore machine-local .claude contents, but commit the project-scoped domain skills
+/.claude/*
+!/.claude/skills/
 *.keystore
 .DS_Store
 PrayerApp/Resources/AppIcon/app icon rvsd.pen
