@@ -364,9 +364,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-# Ignore machine-local .claude contents, but commit the project-scoped domain skills
-/.claude/*
-!/.claude/skills/
+# Commit .claude/ (shared project config + domain skills); keep only machine-local bits out
+/.claude/settings.local.json
+/.claude/worktrees/
 *.keystore
 .DS_Store
 PrayerApp/Resources/AppIcon/app icon rvsd.pen
