@@ -422,9 +422,10 @@ namespace PrayerApp.ViewModels
             // is enforced structurally instead of via a cascade handler.
             if (Parent is null) return;
             var nowExpanded = Parent.ExpandedCardId == _prayerCard.Id;
-            if (!nowExpanded && !_prayersLoaded)
+            if (!nowExpanded)
             {
-                // Load first, then reveal — avoids empty flash
+                // Always refresh when opening the accordion so prayers added while
+                // the card was collapsed (or via a missed navigation query) appear.
                 await LoadPrayersAsync();
             }
             Parent.ExpandedCardId = nowExpanded ? null : _prayerCard.Id;

@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
@@ -523,4 +524,46 @@ public class PrayerCardViewModelTests
         Assert.Contains(nameof(PrayerCardViewModel.PrayersHeader), raised);
         Assert.Equal("Prayers", sut.PrayersHeader);
     }
+    // ── Issue #24: stale prayer list after collapse/re-expand ─────────
+
+    [Fact]
+    public async Task ToggleExpandedAsync_ReExpand_RefetchesPrayers()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Family" };
+        _prayerService.GetPrayersByCardAsync(1).Returns(
+            Task.FromResult(new List<Prayer>().AsReadOnly()),
+            Task.FromResult(new List<Prayer>
+            {
+                new() { Id = 9, PrayerCardId = 1, Title = "New prayer" }
+            }.AsReadOnly()));
+
+        var settings = Substitute.For<ISettings>();
+        var notificationService = Substitute.For<INotificationService>();
+        var tagService = Substitute.For<ITagService>();
+
+        var parent = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, tagService, settings, _boxService,
+            new WeakReferenceMessenger());
+
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, _boxService)
+        {
+            Parent = parent,
+            PrayerRowFactory = p => new PrayerRequestDetailViewModel(p, _prayerService, tagService,
+                _cardService, _onboardingService, notificationService, _navigationService,
+                _accessibilityService, settings) { ReturnToCards = true }
+        };
+
+        parent.ExpandedCardId = 1;
+        await sut.LoadPrayersAsync();
+        Assert.Empty(sut.Prayers);
+
+        parent.ExpandedCardId = null;
+        await ((IAsyncRelayCommand)sut.ToggleExpandedCommand).ExecuteAsync(null);
+
+        await _prayerService.Received(2).GetPrayersByCardAsync(1);
+        Assert.Single(sut.Prayers);
+        Assert.Equal(9, sut.Prayers[0].Id);
+    }
+
 }
