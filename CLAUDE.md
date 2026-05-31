@@ -13,6 +13,7 @@ The full branch model and contribution process are in [CONTRIBUTING.md](CONTRIBU
   - `hotfix/*` → branch from `master`
 - **One concern per branch.** If a new concern surfaces mid-branch, branch separately off the appropriate base.
 - **PR flow:** push the branch → `gh pr create --base <dev|master> --fill` → wait for CI green → `gh pr merge --squash --delete-branch`.
+- **Closing issues:** `Closes #N` only auto-closes when a PR merges into the **default** branch (`master`). Work merges into `dev`, so the keyword never fires — close the issue manually after merge with `gh issue close <n>`.
 - **`release/*` and `hotfix/*` merge twice:** into `master` (then tag the release) **and** back into `dev`, so the fix isn't lost in the next release.
 - **`release/*` is optional ceremony:** cut one only when `dev` must keep moving while a build is frozen for stabilization / App Store review; otherwise `dev → master` directly is equivalent.
 - **Commits are squashed**, so the PR title/description become the landed commit message — write them release-quality.
@@ -23,6 +24,8 @@ The full branch model and contribution process are in [CONTRIBUTING.md](CONTRIBU
 - New behavior lands with tests; pure refactors are fine under existing green coverage.
 - Run `dotnet test PrayerApp.Tests/PrayerApp.Tests.csproj` before opening a PR.
 - Architecture and naming conventions: [ARCHITECTURE.md](ARCHITECTURE.md).
+- Domain knowledge lives in **project skills** under [`.claude/skills/`](.claude/skills/) (`prayer-app-*`: database, viewmodels, views, services, navigation, theming, accessibility, ui-testing, unit-testing, platform, models). They auto-discover in Claude Code — consult the relevant one before working in that area.
+- Source files are UTF-8 **without a BOM**. Some agent/editor file-write tooling injects a UTF-8 BOM into `.cs` files — byte-check changed files and strip any leading BOM before committing (the build and tests pass with a stray BOM, so nothing else catches it).
 
 ## Solving a GitHub issue (milestone-driver)
 
