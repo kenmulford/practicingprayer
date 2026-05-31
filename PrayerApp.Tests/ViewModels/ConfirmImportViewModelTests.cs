@@ -1262,6 +1262,26 @@ public class ConfirmImportViewModelTests
         Assert.Null(ex);
     }
 
+    [Fact]
+    public void PrayerCollectionChanges_RefreshRowSemanticPositions()
+    {
+        var sut = SetupSutWithRows(("First", null), ("Second", null));
+
+        Assert.Equal("Prayer title, item 1 of 2", sut.Prayers[0].TitleSemanticDescription);
+        Assert.Equal("Prayer title, item 2 of 2", sut.Prayers[1].TitleSemanticDescription);
+
+        sut.AddPrayerCommand.Execute(null);
+
+        Assert.Equal("Prayer title, item 1 of 3", sut.Prayers[0].TitleSemanticDescription);
+        Assert.Equal("Prayer title, item 3 of 3", sut.Prayers[2].TitleSemanticDescription);
+
+        sut.RemovePrayerCommand.Execute(sut.Prayers[1]);
+
+        Assert.Equal(2, sut.Prayers.Count);
+        Assert.Equal("Prayer title, item 1 of 2", sut.Prayers[0].TitleSemanticDescription);
+        Assert.Equal("Prayer title, item 2 of 2", sut.Prayers[1].TitleSemanticDescription);
+    }
+
     // ── Helpers ──────────────────────────
 
     private ConfirmImportViewModel SetupSutWithRows(params (string Title, string? Details)[] rows)

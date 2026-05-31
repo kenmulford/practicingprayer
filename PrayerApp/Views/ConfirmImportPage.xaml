@@ -269,7 +269,7 @@
                                 <Grid ColumnDefinitions="*, Auto" ColumnSpacing="4">
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
-                                           SemanticProperties.Description="Prayer title"
+                                           SemanticProperties.Description="{Binding TitleSemanticDescription}"
                                            VerticalOptions="Center">
                                         <Entry.Behaviors>
                                             <behaviors:SelectAllOnFocusBehavior />
@@ -281,12 +281,12 @@
                                             Text="✕"
                                             AutomationId="ConfirmImport_Btn_RemovePrayer"
                                             Clicked="OnRemovePrayerClicked"
-                                            SemanticProperties.Description="Remove prayer" />
+                                            SemanticProperties.Description="{Binding RemoveSemanticDescription}" />
                                 </Grid>
 
                                 <Editor Text="{Binding Details}"
                                         Placeholder="Add details..."
-                                        SemanticProperties.Description="Prayer details"
+                                        SemanticProperties.Description="{Binding DetailsSemanticDescription}"
                                         AutoSize="TextChanges"
                                         MinimumHeightRequest="48"
                                         HorizontalOptions="Fill">
