@@ -31,5 +31,11 @@ public interface ICardService
     /// </summary>
     Task AssignBoxAsync(PrayerCard card, int boxId);
 
+    /// <summary>Moves a user card into the Archived system box. Prayer request status is unchanged.</summary>
+    Task ArchiveCardAsync(PrayerCard card);
+
+    /// <summary>Restores an archived card to its pre-archive box, or Unboxed if that box no longer exists.</summary>
+    Task UnarchiveCardAsync(PrayerCard card);
+
     void InvalidateCache();
 }

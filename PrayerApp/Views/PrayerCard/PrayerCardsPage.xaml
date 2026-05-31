@@ -137,6 +137,60 @@
                         </HorizontalStackLayout>
                     </Border>
 
+                    <!-- Archive -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Archive"
+                            IsVisible="{Binding ShowArchiveChip}"
+                            SemanticProperties.Description="Archive card">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ArchiveCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="folder_regular_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="Archive" FontSize="{StaticResource FontCaption}"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!-- Restore (unarchive) -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Unarchive"
+                            IsVisible="{Binding ShowUnarchiveChip}"
+                            SemanticProperties.Description="Restore card from archive">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding UnarchiveCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="circle_check_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="Restore" FontSize="{StaticResource FontCaption}"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
                     <!-- Delete (danger styling) -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Delete"
@@ -218,12 +272,18 @@
                 </VerticalStackLayout>
 
                 <Button
-                    Style="{StaticResource AddPrayerAffordanceButton}"
                     Text="+ Add prayer ›"
                     Command="{Binding AddPrayerCommand}"
                     IsVisible="{Binding IsExpanded}"
                     AutomationId="Cards_Btn_AddPrayer"
-                    SemanticProperties.Hint="Add a new prayer request to this card" />
+                    SemanticProperties.Hint="Add a new prayer request to this card"
+                    FontSize="{StaticResource FontTitle}"
+                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                    BackgroundColor="Transparent"
+                    FontAttributes="Bold"
+                    Padding="16,8,12,10"
+                    BorderWidth="0"
+                    HorizontalOptions="Center" />
 
             </VerticalStackLayout>
         </DataTemplate>

@@ -45,6 +45,10 @@ namespace PrayerApp.Models
         [Column("BoxId")]
         public int BoxId { get; set; }
 
+        /// <summary>BoxId before the card was archived. Used to restore on unarchive; 0 = Unboxed.</summary>
+        [Column("PreArchiveBoxId")]
+        public int PreArchiveBoxId { get; set; }
+
         // Well-known SystemKey values for system cards.
         public const string SystemKeyQuickAdd = "quick_add";
         public const string SystemKeySharedWithMe = "shared_with_me";

@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
@@ -15,6 +16,7 @@ public class PrayerCardViewModelTests
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly IBoxService _boxService = Substitute.For<IBoxService>();
+    private readonly ISettings _settings = Substitute.For<ISettings>();
     private readonly IDBService _db = Substitute.For<IDBService>();
 
     public PrayerCardViewModelTests()
@@ -23,11 +25,12 @@ public class PrayerCardViewModelTests
         Prayer.SetDBService(_db);
         CardBox.SetDBService(_db);
         _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
     }
 
     private PrayerCardViewModel CreateSut() =>
         new(_cardService, _prayerService, _onboardingService, _navigationService,
-            _accessibilityService, _boxService);
+            _accessibilityService, _boxService, _settings);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -238,7 +241,7 @@ public class PrayerCardViewModelTests
 
         var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 5 };
         var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService);
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
         await sut.LoadBoxPickerAsync();
 
         var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
@@ -522,5 +525,49 @@ public class PrayerCardViewModelTests
 
         Assert.Contains(nameof(PrayerCardViewModel.PrayersHeader), raised);
         Assert.Equal("Prayers", sut.PrayersHeader);
+    }
+
+    // ── Archive / Unarchive ───────────────────────────────────────────
+
+    [Fact]
+    public void IsArchived_TrueWhenBoxIdMatchesArchivedFolder()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Done", BoxId = 20 };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        Assert.True(sut.IsArchived);
+        Assert.False(sut.ShowArchiveChip);
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_AssignsToArchivedFolderAndAnnounces()
+    {
+        var card = new PrayerCard { Id = 3, Title = "Season", BoxId = 5 };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
+        { Parent = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, Substitute.For<ITagService>(), _settings,
+            _boxService, new WeakReferenceMessenger()) };
+        sut.Parent!.ExpandedCardId = 3;
+
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).ArchiveCardAsync(Arg.Is<PrayerCard>(c => c.Id == 3));
+        _accessibilityService.Received(1).Announce("Card archived");
+        Assert.Null(sut.Parent.ExpandedCardId);
+    }
+
+    [Fact]
+    public async Task UnarchiveCommand_RestoresCardAndAnnounces()
+    {
+        var card = new PrayerCard { Id = 4, Title = "Archived card", BoxId = 20, PreArchiveBoxId = 5 };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.UnarchiveCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).UnarchiveCardAsync(Arg.Is<PrayerCard>(c => c.Id == 4));
+        _accessibilityService.Received(1).Announce("Card restored");
     }
 }

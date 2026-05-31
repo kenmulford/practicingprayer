@@ -363,7 +363,7 @@ namespace PrayerApp.ViewModels
         {
             var vm = _cardVmFactory?.Invoke(pc)
                 ?? new PrayerCardViewModel(pc, _cardService, _prayerService, _onboardingService,
-                    _navigationService, _accessibilityService, _boxService);
+                    _navigationService, _accessibilityService, _boxService, _settings);
             // Wire the back-reference so per-card IsExpanded can project over
             // ExpandedCardId, and ToggleExpandedAsync can write back through.
             vm.Parent = this;

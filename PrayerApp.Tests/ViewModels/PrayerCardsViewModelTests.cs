@@ -396,7 +396,7 @@ public class PrayerCardsViewModelTests
         // Simulate SyncAsync's diff loop having added the new card
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
@@ -1298,7 +1298,7 @@ public class PrayerCardsViewModelTests
         // and ConsumePendingSavedAsync (the order Shell + OnAppearing produce).
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
@@ -1468,7 +1468,7 @@ public class PrayerCardsViewModelTests
         // and ConsumePendingSavedAsync (the new-via-sync branch).
         var newCard = new PrayerCard { Id = 42, Title = "Imported May 2", BoxId = 0, IsImported = true };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         {
             PrayerRowFactory = BuildStubPrayerRowVm,
             Parent = sut
@@ -1511,7 +1511,7 @@ public class PrayerCardsViewModelTests
         var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
             _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
             cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
-                _onboardingService, _navigationService, _accessibilityService, _boxService)
+                _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
             {
                 PrayerRowFactory = BuildStubPrayerRowVm
             });
@@ -1547,7 +1547,7 @@ public class PrayerCardsViewModelTests
         var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
             _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
             cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
-                _onboardingService, _navigationService, _accessibilityService, _boxService)
+                _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
             {
                 PrayerRowFactory = BuildStubPrayerRowVm
             });

@@ -15,6 +15,7 @@ public class CardServiceTests
     private readonly IMessenger _messenger = new WeakReferenceMessenger();
     private readonly object _recipient = new();
     private readonly List<PrayerCardChangedMessage> _cardMessages = new();
+    private readonly ISettings _settings = Substitute.For<ISettings>();
     private readonly CardService _service;
 
     public CardServiceTests()
@@ -23,8 +24,9 @@ public class CardServiceTests
         PrayerCard.SetDBService(_db);
         CardBox.SetDBService(_db);
         _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>()));
+        _settings.ArchivedFolderId.Returns(20);
         _messenger.Register<object, PrayerCardChangedMessage>(_recipient, (_, m) => _cardMessages.Add(m));
-        _service = new CardService(_messenger);
+        _service = new CardService(_messenger, _settings);
     }
 
     // ── GetCardsAsync ─────────────────────────────────────────────────────────
@@ -439,5 +441,70 @@ public class CardServiceTests
         await _service.SaveCardAsync(card);
 
         Assert.Single(_cardMessages);
+    }
+
+    // ── ArchiveCardAsync / UnarchiveCardAsync ────────────────────────────────
+
+    [Fact]
+    public async Task AssignBoxAsync_ToArchived_SavesPreArchiveBoxId()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Family", BoxId = 5 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.AssignBoxAsync(card, boxId: 20);
+
+        Assert.Equal(20, card.BoxId);
+        Assert.Equal(5, card.PreArchiveBoxId);
+    }
+
+    [Fact]
+    public async Task AssignBoxAsync_FromArchived_ClearsPreArchiveBoxId()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Family", BoxId = 20, PreArchiveBoxId = 5 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+
+        await _service.AssignBoxAsync(card, boxId: 7);
+
+        Assert.Equal(7, card.BoxId);
+        Assert.Equal(0, card.PreArchiveBoxId);
+    }
+
+    [Fact]
+    public async Task ArchiveCardAsync_SystemCard_NoOp()
+    {
+        var card = new PrayerCard { Id = 1, Title = "Quick Add", IsSystem = true, SystemKey = PrayerCard.SystemKeyQuickAdd, BoxId = 10 };
+
+        await _service.ArchiveCardAsync(card);
+
+        await _db.DidNotReceive().UpdateAsync(Arg.Any<PrayerCard>());
+    }
+
+    [Fact]
+    public async Task UnarchiveCardAsync_RestoresPreviousBoxWhenItExists()
+    {
+        var card = new PrayerCard { Id = 2, Title = "Season", BoxId = 20, PreArchiveBoxId = 5 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" }
+        }));
+
+        await _service.UnarchiveCardAsync(card);
+
+        Assert.Equal(5, card.BoxId);
+        Assert.Equal(0, card.PreArchiveBoxId);
+    }
+
+    [Fact]
+    public async Task UnarchiveCardAsync_FallsBackToUnboxedWhenPreviousBoxMissing()
+    {
+        var card = new PrayerCard { Id = 3, Title = "Old", BoxId = 20, PreArchiveBoxId = 99 };
+        _db.UpdateAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
+        _db.GetAllAsync<CardBox>().Returns(Task.FromResult(new List<CardBox>()));
+
+        await _service.UnarchiveCardAsync(card);
+
+        Assert.Equal(0, card.BoxId);
+        Assert.Equal(0, card.PreArchiveBoxId);
     }
 }

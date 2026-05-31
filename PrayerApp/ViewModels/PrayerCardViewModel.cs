@@ -23,6 +23,7 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly IBoxService _boxService;
+        private readonly ISettings _settings;
 
         // Single-expand invariant lives on PrayerCardsViewModel.ExpandedCardId.
         // Per-card IsExpanded is a read-only projection over that — see the
@@ -56,6 +57,8 @@ namespace PrayerApp.ViewModels
         public ICommand ToggleFavoriteCommand { get; }
         public ICommand AddPrayerCommand { get; }
         public ICommand ShareCommand { get; }
+        public ICommand ArchiveCommand { get; }
+        public ICommand UnarchiveCommand { get; }
 
         #region Properties
 
@@ -135,6 +138,10 @@ namespace PrayerApp.ViewModels
         public bool CanDelete => !IsSystem && !IsNew;
         public bool CanShare => !IsSystem && ActivePrayerCount > 0;
         public bool ShowActionChips => IsExpanded && !IsSystem;
+        public bool IsArchived =>
+            _settings.ArchivedFolderId > 0 && _prayerCard.BoxId == _settings.ArchivedFolderId;
+        public bool ShowArchiveChip => ShowActionChips && !IsArchived;
+        public bool ShowUnarchiveChip => ShowActionChips && IsArchived;
         public string FavoriteLabel => IsFavorite ? "Favorited" : "Favorite";
 
         public bool IsDirty => Title != _originalTitle;
@@ -283,7 +290,7 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, IBoxService boxService)
+            IAccessibilityService accessibilityService, IBoxService boxService, ISettings settings)
         {
             _prayerCard = new PrayerCard();
             _cardService = cardService;
@@ -292,6 +299,7 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _boxService = boxService;
+            _settings = settings;
             SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsSystem);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync, () => !IsSystem);
@@ -299,6 +307,8 @@ namespace PrayerApp.ViewModels
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync, () => !IsSystem);
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
             ShareCommand = new AsyncRelayCommand(ShareAsync, () => CanShare);
+            ArchiveCommand = new AsyncRelayCommand(ArchiveAsync, () => !IsSystem && !IsArchived);
+            UnarchiveCommand = new AsyncRelayCommand(UnarchiveAsync, () => !IsSystem && IsArchived);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
@@ -309,7 +319,8 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
         { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
@@ -324,8 +335,8 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public PrayerCardViewModel(PrayerCard pc, ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, IBoxService boxService)
-            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService, boxService)
+            IAccessibilityService accessibilityService, IBoxService boxService, ISettings settings)
+            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService, boxService, settings)
         {
             _prayerCard = pc;
             LoadActivePrayerCountAsync().SafeFireAndForget();
@@ -465,6 +476,36 @@ namespace PrayerApp.ViewModels
             _onboardingService.Advance();
         }
 
+        private async Task ArchiveAsync()
+        {
+            if (_prayerCard.IsSystem || IsArchived) return;
+            await _cardService.ArchiveCardAsync(_prayerCard);
+            RaiseArchiveStateChanged();
+            _accessibilityService.Announce("Card archived");
+            if (Parent is not null)
+                Parent.ExpandedCardId = null;
+        }
+
+        private async Task UnarchiveAsync()
+        {
+            if (_prayerCard.IsSystem || !IsArchived) return;
+            await _cardService.UnarchiveCardAsync(_prayerCard);
+            RaiseArchiveStateChanged();
+            _accessibilityService.Announce("Card restored");
+            if (Parent is not null)
+                Parent.ExpandedCardId = null;
+        }
+
+        internal void RaiseArchiveStateChanged()
+        {
+            OnPropertyChanged(nameof(BoxId));
+            OnPropertyChanged(nameof(IsArchived));
+            OnPropertyChanged(nameof(ShowArchiveChip));
+            OnPropertyChanged(nameof(ShowUnarchiveChip));
+            (ArchiveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+            (UnarchiveCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+        }
+
         #endregion
 
         #region Implemented Contract Methods
@@ -549,6 +590,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(HasPrayers));
             OnPropertyChanged(nameof(IsAnswered));
             OnPropertyChanged(nameof(AccessibleCardHeader));
+            RaiseArchiveStateChanged();
         }
 
         private static IOrderedEnumerable<T> SortPrayers<T>(IEnumerable<T> source, Func<T, bool> isAnswered, Func<T, DateTime?> answeredAt, Func<T, string> title) =>

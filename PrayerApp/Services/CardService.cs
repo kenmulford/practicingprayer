@@ -15,10 +15,12 @@ public class CardService : ICardService
 
     private IReadOnlyList<PrayerCard>? _cache;
     private readonly IMessenger _messenger;
+    private readonly ISettings _settings;
 
-    public CardService(IMessenger messenger)
+    public CardService(IMessenger messenger, ISettings settings)
     {
         _messenger = messenger;
+        _settings = settings;
     }
 
     public async Task<IReadOnlyList<PrayerCard>> GetCardsAsync()
@@ -75,10 +77,49 @@ public class CardService : ICardService
 
     public async Task AssignBoxAsync(PrayerCard card, int boxId)
     {
+        var archivedId = _settings.ArchivedFolderId;
+        if (archivedId > 0)
+        {
+            if (boxId == archivedId && card.BoxId != archivedId)
+                card.PreArchiveBoxId = card.BoxId;
+            else if (card.BoxId == archivedId && boxId != archivedId)
+                card.PreArchiveBoxId = 0;
+        }
+
         card.BoxId = boxId;
         await card.SaveAsync();
         _cache = null;
         _messenger.Send(new PrayerCardChangedMessage(card.Id, ChangeKind.Updated));
+    }
+
+    public Task ArchiveCardAsync(PrayerCard card)
+    {
+        if (card.IsSystem || !string.IsNullOrEmpty(card.SystemKey))
+            return Task.CompletedTask;
+
+        var archivedId = _settings.ArchivedFolderId;
+        if (archivedId <= 0 || card.BoxId == archivedId)
+            return Task.CompletedTask;
+
+        return AssignBoxAsync(card, archivedId);
+    }
+
+    public async Task UnarchiveCardAsync(PrayerCard card)
+    {
+        var archivedId = _settings.ArchivedFolderId;
+        if (archivedId <= 0 || card.BoxId != archivedId)
+            return;
+
+        var targetBoxId = card.PreArchiveBoxId;
+        if (targetBoxId > 0)
+        {
+            var boxes = await CardBox.LoadAllAsync();
+            if (boxes.All(b => b.Id != targetBoxId))
+                targetBoxId = 0;
+        }
+
+        card.PreArchiveBoxId = 0;
+        await AssignBoxAsync(card, targetBoxId);
     }
 
     public async Task DeleteCardAsync(PrayerCard card, bool publishMessage = true)
