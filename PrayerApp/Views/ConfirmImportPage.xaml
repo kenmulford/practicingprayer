@@ -269,7 +269,7 @@
                                 <Grid ColumnDefinitions="*, Auto" ColumnSpacing="4">
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
-                                           SemanticProperties.Description="Prayer title"
+                                           SemanticProperties.Description="{Binding TitleSemanticDescription}"
                                            VerticalOptions="Center">
                                         <Entry.Behaviors>
                                             <behaviors:SelectAllOnFocusBehavior />
@@ -281,12 +281,23 @@
                                             Text="✕"
                                             AutomationId="ConfirmImport_Btn_RemovePrayer"
                                             Clicked="OnRemovePrayerClicked"
-                                            SemanticProperties.Description="Remove prayer" />
+                                            SemanticProperties.Description="{Binding RemoveSemanticDescription}" />
                                 </Grid>
 
+                                <Button Text="+ details"
+                                        IsVisible="{Binding ShowDetailsLink}"
+                                        Command="{Binding ExpandDetailsCommand}"
+                                        Style="{StaticResource GhostButton}"
+                                        SemanticProperties.Description="Show details field"
+                                        HorizontalOptions="Start"
+                                        Padding="0,4"
+                                        FontSize="14"
+                                        Margin="0,0,0,2" />
+
                                 <Editor Text="{Binding Details}"
+                                        IsVisible="{Binding IsDetailsExpanded}"
                                         Placeholder="Add details..."
-                                        SemanticProperties.Description="Prayer details"
+                                        SemanticProperties.Description="{Binding DetailsSemanticDescription}"
                                         AutoSize="TextChanges"
                                         MinimumHeightRequest="48"
                                         HorizontalOptions="Fill">

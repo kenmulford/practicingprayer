@@ -116,8 +116,41 @@ public class ConfirmImportViewModelTests
         Assert.Equal(2, sut.Prayers.Count);
         Assert.Equal("Mom", sut.Prayers[0].Title);
         Assert.Equal("chemo starts Tuesday; pray for nausea relief", sut.Prayers[0].Details);
+        Assert.True(sut.Prayers[0].IsDetailsExpanded);
         Assert.Equal("Dad", sut.Prayers[1].Title);
+        Assert.False(sut.Prayers[1].IsDetailsExpanded);
         _parser.DidNotReceive().Parse(Arg.Any<string>());
+    }
+
+    [Fact]
+    public void ConsumePending_EmptyDetailsRows_StartWithDetailsCollapsed()
+    {
+        _payloadService.ConsumePayload().Returns("1. Pray for Mom\n2. Pray for Dad");
+        _parser.Parse(Arg.Any<string>()).Returns(Result("Imported",
+            ("Pray for Mom", null), ("Pray for Dad", null)));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.False(sut.Prayers[0].IsDetailsExpanded);
+        Assert.True(sut.Prayers[0].ShowDetailsLink);
+        Assert.False(sut.Prayers[1].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ConsumePending_RowWithDetails_StartsWithDetailsExpanded()
+    {
+        _payloadService.ConsumePayload().Returns("import");
+        _parser.Parse(Arg.Any<string>()).Returns(Result("Imported",
+            ("Sis is graduating from college this weekend, please pray", "ceremony travel"),
+            ("Pray for Dad", null)));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.True(sut.Prayers[0].IsDetailsExpanded);
+        Assert.False(sut.Prayers[0].ShowDetailsLink);
+        Assert.False(sut.Prayers[1].IsDetailsExpanded);
     }
 
     [Fact]
