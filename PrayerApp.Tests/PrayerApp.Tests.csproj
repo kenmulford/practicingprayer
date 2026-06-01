@@ -85,7 +85,6 @@
     <Compile Include="../PrayerApp/Routes.cs" />
 
     <!-- ViewModels -->
-    <Compile Include="../PrayerApp/ViewModels/QuickAddViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/FaqItemViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/HelpViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/HomeViewModel.cs" />

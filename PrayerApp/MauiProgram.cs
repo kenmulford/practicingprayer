@@ -264,7 +264,6 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerCardViewModel>();
             builder.Services.AddTransient<PrayerListViewModel>();
             builder.Services.AddTransient<PrayerRequestDetailViewModel>();
-            builder.Services.AddTransient<QuickAddViewModel>();
             builder.Services.AddTransient<ConfirmImportViewModel>();
             builder.Services.AddTransient<PrayerTimeViewModel>();
             builder.Services.AddTransient<PrayerTimeScopeViewModel>();
@@ -280,7 +279,6 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerCardPage>();
             builder.Services.AddTransient<PrayerListPage>();
             builder.Services.AddTransient<PrayerDetailPage>();
-            builder.Services.AddTransient<QuickAddPage>();
             builder.Services.AddTransient<ConfirmImportPage>();
             builder.Services.AddTransient<PrayerTimePage>();
             builder.Services.AddTransient<PrayerTimeScopePage>();
