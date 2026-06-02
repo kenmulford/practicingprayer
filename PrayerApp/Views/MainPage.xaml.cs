@@ -29,8 +29,12 @@ public partial class MainPage : ContentPage
         _services = services;
 
         BtnQuickAdd.Clicked += async (s, e) =>
-            await Shell.Current.Navigation.PushModalAsync(
-                _services.GetRequiredService<QuickAddPage>());
+        {
+            var page = _services.GetRequiredService<ConfirmImportPage>();
+            if (page.BindingContext is ConfirmImportViewModel vm)
+                vm.InitializeManualEntry();
+            await _services.GetRequiredService<INavigationService>().PushModalWithNavigationBarAsync(page);
+        };
 
         BtnPrayerTime.Clicked += async (s, e) => await LaunchPrayerTimeAsync();
 

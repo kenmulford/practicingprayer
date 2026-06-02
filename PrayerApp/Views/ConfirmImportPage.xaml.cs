@@ -18,21 +18,38 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
         base.OnAppearing();
         if (BindingContext is not ConfirmImportViewModel vm) return;
 
-        // Sync work first so card title + prayer rows paint on the first
-        // frame; the Collection picker populates a tick later. The other
-        // order (await boxes, then consume) introduced a perceptible
-        // cold-cache delay before primary content rendered. Both calls
-        // are idempotent — modal OnAppearing fires on initial show AND
-        // on resume from background; ConsumePending guards via _consumed
-        // and LoadBoxesAsync via _boxesLoaded so the user's mid-flow
-        // Collection pick survives backgrounding.
-        vm.ConsumePending();
-        await vm.LoadBoxesAsync();
+        if (vm.EntryMode == EntryMode.Manual)
+        {
+            // Manual (Quick Add) path — runs on the UI thread so ObservableCollection
+            // mutations in LoadManualCardGroupsAsync are safe. ConsumePending is a
+            // no-op (InitializeManualEntry already set _consumed = true). Load is
+            // done here, not fire-and-forget in the caller, so SelectedCard is set
+            // before the collapse-to-summary check below runs.
+            Title = "Quick Add";
+            // _consumed is already true from InitializeManualEntry — no-op.
+            await vm.LoadBoxesAsync();
+            await vm.LoadManualCardGroupsAsync();
+        }
+        else
+        {
+            // Import path — unchanged behavior.
+            // Sync work first so card title + prayer rows paint on the first
+            // frame; the Collection picker populates a tick later. Both calls
+            // are idempotent — modal OnAppearing fires on initial show AND on
+            // resume from background; ConsumePending guards via _consumed and
+            // LoadBoxesAsync via _boxesLoaded so the user's mid-flow Collection
+            // pick survives backgrounding.
+            Title = "Confirm Import";
+            vm.ConsumePending();
+            await vm.LoadBoxesAsync();
+        }
+
         vm.PropertyChanged -= OnVmPropertyChanged;
         vm.PropertyChanged += OnVmPropertyChanged;
 
         // Restore collapsed state when resuming with an existing selection
-        // (e.g. backgrounded mid-flow). No animation — page is just appearing.
+        // (e.g. backgrounded mid-flow, or Quick Add with Quick Add card preselected).
+        // No animation — page is just appearing.
         if (vm.IsExistingCardMode && vm.SelectedCard is not null)
         {
             cardGroupsList.IsVisible = false;
