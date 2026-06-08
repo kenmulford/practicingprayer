@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
+using PrayerApp;
 using PrayerApp.Messages;
 using PrayerApp.Models;
 using PrayerApp.Services;
@@ -207,5 +208,30 @@ public class PrayerListViewModelTests
         await Task.WhenAll(t1, t2, t3);
 
         await _cardService.Received(2).GetCardsAsync();
+    }
+
+    // ── LaunchPrayerTimeCommand ───────────────────────────────────────
+
+    [Fact]
+    public async Task LaunchPrayerTimeCommand_NavigatesWithFilteredPrayerIds()
+    {
+        var sut = CreateSut();
+        sut.AllPrayers.Add(new PrayerRequestDetailViewModel { Id = 10, Title = "Alpha" });
+        sut.AllPrayers.Add(new PrayerRequestDetailViewModel { Id = 20, Title = "Beta" });
+
+        await ((IAsyncRelayCommand)sut.LaunchPrayerTimeCommand).ExecuteAsync(null);
+
+        await _navigationService.Received(1).GoToAsync(
+            Arg.Is<string>(s =>
+                s.Contains(Routes.PrayerTimePage) &&
+                s.Contains($"scope={Routes.ScopeList}") &&
+                s.Contains("prayerIds=10,20")));
+    }
+
+    [Fact]
+    public void CanLaunchPrayerTime_FalseWhenFilterEmpty()
+    {
+        var sut = CreateSut();
+        Assert.False(sut.CanLaunchPrayerTime);
     }
 }

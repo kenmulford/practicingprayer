@@ -1,3 +1,4 @@
+using PrayerApp;
 using PrayerApp.Helpers;
 using PrayerApp.Messages;
 using PrayerApp.Models;
@@ -105,6 +106,10 @@ namespace PrayerApp.ViewModels
 
         public ICommand NewCommand { get; }
         public ICommand SetStatusCommand { get; }
+        public ICommand LaunchPrayerTimeCommand { get; }
+
+        /// <summary>True when the current filter yields at least one prayer to pray through.</summary>
+        public bool CanLaunchPrayerTime => FilteredPrayers.Count > 0;
 
         public PrayerListViewModel(IPrayerService prayerService, ICardService cardService, ITagService tagService,
             INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings,
@@ -133,6 +138,7 @@ namespace PrayerApp.ViewModels
                     _          => FilterStatus.Active
                 };
             });
+            LaunchPrayerTimeCommand = new AsyncRelayCommand(LaunchPrayerTimeAsync, () => CanLaunchPrayerTime);
 
             // Prayers list reflects prayer + card title + tag chip state. Any of those
             // changing elsewhere should trigger a sync.
@@ -408,6 +414,9 @@ namespace PrayerApp.ViewModels
 
             FilteredPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(sorted);
 
+            OnPropertyChanged(nameof(CanLaunchPrayerTime));
+            (LaunchPrayerTimeCommand as IAsyncRelayCommand)?.NotifyCanExecuteChanged();
+
             if (!_suppressAnnounce)
             {
                 _accessibilityService.NotifyLayoutChanged();
@@ -446,6 +455,16 @@ namespace PrayerApp.ViewModels
         private async Task NewPrayerAsync()
         {
             await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?new=true");
+        }
+
+        private async Task LaunchPrayerTimeAsync()
+        {
+            var ids = FilteredPrayers.Select(p => p.Id).Where(id => id > 0).ToList();
+            if (ids.Count == 0) return;
+
+            var prayerIdsParam = string.Join(',', ids);
+            await _navigationService.GoToAsync(
+                $"{Routes.PrayerTimePage}?scope={Routes.ScopeList}&prayerIds={prayerIdsParam}");
         }
 
         private void SubscribeToPropertyChanges(PrayerRequestDetailViewModel prayer)

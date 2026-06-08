@@ -237,6 +237,16 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             return;
         }
 
+        if (scope == Routes.ScopeList && query.TryGetValue("prayerIds", out var pObj)
+            && pObj is string pStr && !string.IsNullOrWhiteSpace(pStr))
+        {
+            var prayerIds = pStr.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => int.TryParse(x, out var id) ? id : -1)
+                .Where(id => id > 0);
+            LoadEntriesAsync(tagIds: null, boxId: null, prayerIds: prayerIds).SafeFireAndForget();
+            return;
+        }
+
         var tagIdsStr = query.TryGetValue("tagIds", out var t) ? t?.ToString() : null;
 
         IEnumerable<int> tagIds = tagIdsStr is not null
@@ -248,7 +258,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         LoadEntriesAsync(scope == Routes.ScopeTags ? tagIds : null, boxId: null).SafeFireAndForget();
     }
 
-    private async Task LoadEntriesAsync(IEnumerable<int>? tagIds, int? boxId = null)
+    private async Task LoadEntriesAsync(IEnumerable<int>? tagIds, int? boxId = null, IEnumerable<int>? prayerIds = null)
     {
         _loadCts.Cancel();
         _loadCts.Dispose();
@@ -263,27 +273,37 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             var systemTag = await _tagService.GetSystemTagAsync(TagService.RecentlyNotifiedTagName);
             _recentlyNotifiedTagId = systemTag?.Id;
 
-            var allActive = await _prayerService.GetAllActivePrayersAsync();
-            token.ThrowIfCancellationRequested();
-
             var cards = await _cardService.GetCardsAsync();
             token.ThrowIfCancellationRequested();
 
             IEnumerable<Prayer> filtered;
-            if (tagIds is not null)
+            if (prayerIds is not null)
             {
-                var requestIdSet = (await _tagService.GetRequestIdsByTagIdsAsync(tagIds)).ToHashSet();
+                var idSet = prayerIds.ToHashSet();
+                var allPrayers = await _prayerService.GetAllPrayersAsync();
                 token.ThrowIfCancellationRequested();
-                filtered = allActive.Where(p => requestIdSet.Contains(p.Id));
-            }
-            else if (boxId is not null)
-            {
-                var cardIdsInBox = cards.Where(c => c.BoxId == boxId.Value).Select(c => c.Id).ToHashSet();
-                filtered = allActive.Where(p => cardIdsInBox.Contains(p.PrayerCardId));
+                filtered = allPrayers.Where(p => idSet.Contains(p.Id));
             }
             else
             {
-                filtered = allActive;
+                var allActive = await _prayerService.GetAllActivePrayersAsync();
+                token.ThrowIfCancellationRequested();
+
+                if (tagIds is not null)
+                {
+                    var requestIdSet = (await _tagService.GetRequestIdsByTagIdsAsync(tagIds)).ToHashSet();
+                    token.ThrowIfCancellationRequested();
+                    filtered = allActive.Where(p => requestIdSet.Contains(p.Id));
+                }
+                else if (boxId is not null)
+                {
+                    var cardIdsInBox = cards.Where(c => c.BoxId == boxId.Value).Select(c => c.Id).ToHashSet();
+                    filtered = allActive.Where(p => cardIdsInBox.Contains(p.PrayerCardId));
+                }
+                else
+                {
+                    filtered = allActive;
+                }
             }
 
             var cardLookup = cards.ToDictionary(c => c.Id, c => c.Title);

@@ -36,6 +36,8 @@ public static class Routes
     public const string ScopeAll = "all";
     public const string ScopeTags = "tags";
     public const string ScopeBox = "box";
+    /// <summary>Prayer list filter results — <c>prayerIds</c> query param (comma-separated).</summary>
+    public const string ScopeList = "list";
 
     /// <summary>
     /// Query-string keys used in Shell navigation URLs and read by ApplyQueryAttributes
