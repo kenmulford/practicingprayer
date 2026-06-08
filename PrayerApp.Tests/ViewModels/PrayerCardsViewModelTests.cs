@@ -1794,6 +1794,34 @@ public class PrayerCardsViewModelTests
         Assert.False(vmBeta.IsHighlighted);
     }
 
+    [Fact]
+    public async Task ConsumePendingSavedAsync_MoveTarget_ToSystemCard_ExpandsCollapsedSystemSection()
+    {
+        SetupDefaultSyncMocks();
+        var source = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        var shared = new PrayerCard { Id = 2, Title = "Shared with me", BoxId = 10, IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { source, shared }.AsReadOnly());
+        _prayerService.GetPrayersByCardAsync(Arg.Any<int>()).Returns(new List<Prayer>().AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        var systemSection = sut.BoxSections.First(s => s.BoxId == 10);
+        systemSection.IsExpanded = false;
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object>
+            {
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
+            });
+
+        await sut.ConsumePendingSavedAsync();
+
+        Assert.True(systemSection.IsExpanded);
+        Assert.True(sut.AllPrayerCards.First(c => c.Id == 2).IsExpanded);
+    }
+
     // ── ApplyQueryAttributes ImportedToExisting ───────────────────────────
 
     [Fact]
