@@ -184,17 +184,25 @@
                                         <DataTemplate x:DataType="viewModels:CardPickerItem">
                                             <VerticalStackLayout Spacing="0">
                                                 <Border Style="{StaticResource PickerRow}"
-                                                        AutomationId="{Binding CardId, StringFormat='ConfirmImport_Item_{0}'}">
+                                                        AutomationId="{Binding CardId, StringFormat='ConfirmImport_Item_{0}'}"
+                                                        SemanticProperties.Description="{Binding Title}"
+                                                        SemanticProperties.Hint="Double tap to select this card">
+                                                    <Border.Behaviors>
+                                                        <behaviors:AndroidRippleBehavior />
+                                                    </Border.Behaviors>
                                                     <Grid ColumnDefinitions="*, Auto">
                                                         <Label Grid.Column="0"
                                                                Text="{Binding Title}"
                                                                VerticalOptions="Center"
+                                                               AutomationProperties.IsInAccessibleTree="False"
                                                                TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
                                                         <Label Grid.Column="1"
                                                                Text="&#x2713;"
                                                                IsVisible="False"
                                                                VerticalOptions="Center"
                                                                FontAttributes="Bold"
+                                                               AutomationProperties.IsInAccessibleTree="True"
+                                                               SemanticProperties.Description="Selected"
                                                                TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}">
                                                             <Label.Triggers>
                                                                 <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
