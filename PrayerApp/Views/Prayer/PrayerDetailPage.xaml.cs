@@ -55,7 +55,9 @@ public partial class PrayerDetailPage : ContentPage
             {
                 Text = chip.Name,
                 TextColor = chipTextColor,
-                FontSize = 12,
+                FontSize = Application.Current?.Resources.TryGetValue("FontCaption", out var captionSize) == true && captionSize is double captionFont
+                    ? captionFont
+                    : 12.0,
                 VerticalOptions = LayoutOptions.Center
             };
             var removeBtn = new Button
@@ -64,7 +66,9 @@ public partial class PrayerDetailPage : ContentPage
                 Command = chip.RemoveCommand,
                 TextColor = chipTextColor,
                 BackgroundColor = Colors.Transparent,
-                FontSize = 14,
+                FontSize = Application.Current?.Resources.TryGetValue("FontBody", out var bodySize) == true && bodySize is double bodyFont
+                    ? bodyFont
+                    : 14.0,
                 Padding = new Thickness(2, 0),
                 BorderWidth = 0,
                 MinimumWidthRequest = 24,

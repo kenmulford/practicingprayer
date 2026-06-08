@@ -10,6 +10,11 @@
          Centralizing as a named token makes the floor reviewable in one
          place; future interactive rows can reference the same key. -->
     <x:Double x:Key="TouchTargetMinimum">44</x:Double>
+    <!-- Material 3 list-row floor = 48dp. Use where Android Material row spec
+         intentionally exceeds the cross-platform 44pt iOS HIG minimum. -->
+    <x:Double x:Key="TouchTargetMaterial">48</x:Double>
+    <!-- Compact chip dismiss control — intentionally below TouchTargetMinimum. -->
+    <x:Double x:Key="SwatchRowHeight">24</x:Double>
 
     <!-- ── Typography font-size tokens (PS-05, issue #51) ────────────────────
          14-step ladder covering every FontSize literal used in PrayerApp
