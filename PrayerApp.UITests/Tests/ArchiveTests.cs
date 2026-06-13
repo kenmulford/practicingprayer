@@ -121,13 +121,12 @@ public class ArchiveTests
     /// <summary>
     /// 9.1: Tapping the Archive chip on an expanded user card moves it to the Archived section.
     ///
-    /// Primary assertion: the "Card archived" snackbar (CommunityToolkit, ~4 s) appears
-    /// immediately after the tap — this is the most reliable signal because it is shown
-    /// synchronously by the ViewModel before any CollectionView reflow.
+    /// Flow: tapping Archive raises an "Archive Card?" confirm dialog (06-01 design — the
+    /// Undo snackbar was dropped). Accept it via TapAlertButton("Archive").
     ///
-    /// Secondary assertion: after the snackbar, expand the Archived section and confirm the
-    /// card title is visible there. Search bar is NOT used as a fallback (it may not surface
-    /// archived cards); section-expand + scroll is the reliable path.
+    /// Primary assertion: after accepting the confirm, expand the Archived section and confirm
+    /// the card title is visible there. Search bar is NOT used as a fallback (it may not
+    /// surface archived cards); section-expand + scroll is the reliable path.
     /// </summary>
     [Fact]
     public void Cards_ArchiveChip_MovesCardToArchivedSection()
@@ -146,22 +145,18 @@ public class ArchiveTests
             //    EnsureCardExpanded now waits internally for Cards_Btn_Archive.
             EnsureCardExpanded(cardName);
 
-            // 3. Tap the Archive chip. The chip is confirmed present by EnsureCardExpanded.
+            // 3. Tap the Archive chip — a confirm dialog now intercepts.
             driver.Tap("Cards_Btn_Archive");
 
-            // 4. PRIMARY: assert the "Card archived" snackbar is displayed.
-            //    The snackbar fires synchronously in the ViewModel (before RebuildSections),
-            //    lasts 4 s — so 5 s timeout is generous while staying short enough to fail fast.
-            //    We check BEFORE the DelayAfterSave sleep so we hit the snackbar while it is live.
-            Assert.True(
-                driver.IsTextDisplayed("Card archived", timeoutSeconds: 5),
-                "After tapping Archive, the 'Card archived' snackbar should be visible. " +
-                "If absent, the ArchiveCommand may not have fired or the snackbar was never shown.");
+            // 4. Accept the "Archive Card?" confirm dialog.
+            Assert.True(driver.IsAlertPresent(),
+                "Tapping Archive should raise the 'Archive Card?' confirm dialog.");
+            driver.TapAlertButton("Archive");
 
             // Give RebuildSections time to complete and the CollectionView to reflow.
             Thread.Sleep(TestConfig.DelayAfterSave);
 
-            // 5. SECONDARY: expand the Archived section and confirm the card has landed there.
+            // 5. PRIMARY: expand the Archived section and confirm the card has landed there.
             //    Do NOT use the Cards search bar — it may not surface archived cards.
             EnsureArchivedSectionExpanded();
 
@@ -204,9 +199,10 @@ public class ArchiveTests
     /// 9.2: Tapping the Archive chip a second time ("Unarchive") on an archived card
     /// moves it back to Unboxed (BoxId 0 / Loose Cards) and removes it from Archived.
     ///
-    /// Sequence: create card → archive (assert snackbar) → verify in Archived section →
-    /// expand archived card (wait for chip) → unarchive → verify absent from Archived →
-    /// verify visible in normal list. Self-contained; does not depend on test 9.1's state.
+    /// Sequence: create card → archive (accept "Archive Card?" confirm) → verify in Archived
+    /// section → expand archived card (wait for chip) → unarchive (immediate, no dialog) →
+    /// verify absent from Archived → verify visible in normal list. Self-contained; does not
+    /// depend on test 9.1's state.
     ///
     /// Precondition reliability: EnsureCardExpanded now waits internally for
     /// Cards_Btn_Archive via WaitForElement, eliminating the flaky IsDisplayed-based
@@ -224,18 +220,14 @@ public class ArchiveTests
 
         try
         {
-            // 1. Archive the card (prerequisite for unarchive test).
+            // 1. Archive the card (prerequisite). Confirm dialog now intercepts.
             //    EnsureCardExpanded waits for Cards_Btn_Archive internally — no separate
             //    IsDisplayed assertion needed; WaitForElement throws on timeout.
             EnsureCardExpanded(cardName);
             driver.Tap("Cards_Btn_Archive");
-
-            // Confirm the archive fired via the snackbar before sleeping.
-            Assert.True(
-                driver.IsTextDisplayed("Card archived", timeoutSeconds: 5),
-                "Precondition: 'Card archived' snackbar should appear after tapping Archive. " +
-                "If absent, the ArchiveCommand may not have fired.");
-
+            Assert.True(driver.IsAlertPresent(),
+                "Precondition: archiving should raise the 'Archive Card?' confirm dialog.");
+            driver.TapAlertButton("Archive");
             Thread.Sleep(TestConfig.DelayAfterSave);
 
             // 2. Expand Archived section and confirm card is there.
