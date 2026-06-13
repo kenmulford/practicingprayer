@@ -1086,6 +1086,13 @@ namespace PrayerApp.ViewModels
                 // System cards cannot be archived
                 selected = selected.Where(c => !c.IsSystem).ToList();
                 if (selected.Count == 0) return;
+
+                var confirmed = await _navigationService.DisplayConfirmAsync(
+                    "Archive Cards?",
+                    $"Archive {selected.Count} card{(selected.Count == 1 ? "" : "s")}? You can find them in your Archived Cards collection.",
+                    "Archive",
+                    "Cancel");
+                if (!confirmed) return;
             }
             else
             {

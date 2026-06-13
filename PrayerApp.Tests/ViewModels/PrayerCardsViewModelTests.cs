@@ -1926,6 +1926,9 @@ public class PrayerCardsViewModelTests
         _navigationService.DisplayActionSheetAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
             .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
 
         var sut = CreateSut();
         await sut.SyncAsync();
@@ -1934,6 +1937,36 @@ public class PrayerCardsViewModelTests
         await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
 
         await _cardService.Received(1).AssignBoxAsync(Arg.Any<PrayerCard>(), 20);
+    }
+
+    [Fact]
+    public async Task MoveSelectedCommand_Archive_Cancelled_DoesNotAssignBox()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(false);   // user cancels the "Archive Cards?" dialog
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        await _cardService.DidNotReceive().AssignBoxAsync(Arg.Any<PrayerCard>(), Arg.Any<int>());
     }
 
     [Fact]
@@ -1955,6 +1988,9 @@ public class PrayerCardsViewModelTests
         _navigationService.DisplayActionSheetAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
             .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
 
         var sut = CreateSut();
         await sut.SyncAsync();
