@@ -27,6 +27,12 @@ public class PrayerCardViewModelTests
         CardBox.SetDBService(_db);
         _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
         _settings.ArchivedFolderId.Returns(ArchivedBoxId);
+
+        // Archive shows a confirm dialog; default the accept so existing archive-path
+        // tests exercise the post-confirm behavior. Cancel-path test overrides this.
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
     }
 
     private PrayerCardViewModel CreateSut() =>
@@ -531,7 +537,7 @@ public class PrayerCardViewModelTests
     // ── ArchiveCommand ───────────────────────────────────────────────────
 
     [Fact]
-    public async Task ArchiveCommand_NonArchivedCard_CallsAssignBoxWithArchivedFolderId()
+    public async Task ArchiveCommand_NonArchived_Confirmed_CallsAssignBoxWithArchivedFolderId()
     {
         var card = new PrayerCard { Id = 7, Title = "Test", BoxId = 0 };
         var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
@@ -539,7 +545,38 @@ public class PrayerCardViewModelTests
 
         await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
 
+        await _navigationService.Received(1).DisplayConfirmAsync(
+            "Archive Card?", Arg.Any<string>(), "Archive", "Cancel");
         await _cardService.Received(1).AssignBoxAsync(card, ArchivedBoxId);
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_NonArchived_Cancelled_DoesNotAssignBox()
+    {
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(false);
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = 0 };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+
+        await _cardService.DidNotReceive().AssignBoxAsync(Arg.Any<PrayerCard>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_Archived_Unarchive_NoConfirmDialog_AssignsZero()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = ArchivedBoxId };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+
+        await _navigationService.DidNotReceive().DisplayConfirmAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+        await _cardService.Received(1).AssignBoxAsync(card, 0);
     }
 
     [Fact]

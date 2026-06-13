@@ -1,4 +1,3 @@
-using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
@@ -460,29 +459,31 @@ namespace PrayerApp.ViewModels
         {
             if (_prayerCard.IsSystem) return;
             if (_isArchiveSaving) return;
+
+            var archiving = !IsArchived;
+            if (archiving)
+            {
+                var confirmed = await _navigationService.DisplayConfirmAsync(
+                    "Archive Card?",
+                    "Are you sure you want to Archive this card? You can find it in your Archived Cards collection.",
+                    "Archive",
+                    "Cancel");
+                if (!confirmed) return;
+            }
+
             _isArchiveSaving = true;
             try
             {
-                var priorBoxId = _prayerCard.BoxId;
-                var target = IsArchived ? 0 : _settings.ArchivedFolderId;
+                var target = archiving ? _settings.ArchivedFolderId : 0;
                 await _cardService.AssignBoxAsync(_prayerCard, target);
                 OnPropertyChanged(nameof(IsArchived));
                 OnPropertyChanged(nameof(ArchiveLabel));
 
-                if (target == _settings.ArchivedFolderId)
-                {
-                    _accessibilityService.Announce("Card archived");
-                    var snackbar = CommunityToolkit.Maui.Alerts.Snackbar.Make(
-                        "Card archived",
-                        async () => await _cardService.AssignBoxAsync(_prayerCard, priorBoxId),
-                        "Undo",
-                        TimeSpan.FromSeconds(4));
-                    snackbar.Show().SafeFireAndForget();
-                }
-                else
-                {
-                    _accessibilityService.Announce("Card unarchived");
-                }
+                _accessibilityService.Announce(archiving ? "Card archived" : "Card unarchived");
+
+                // Collapse the expanded card after archiving — it leaves this section.
+                if (archiving && Parent is not null)
+                    Parent.ExpandedCardId = null;
             }
             finally
             {
