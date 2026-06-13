@@ -196,11 +196,37 @@ public class PrayerTimeViewModelTests
     }
 
     [Fact]
+    public async Task ScopeAll_PreservesOrphanPrayersWhoseCardIsMissing()
+    {
+        // scope=all uses denylist semantics: only prayers whose card is in the
+        // Archived box are excluded. A card-less/orphan active prayer (its card
+        // absent from GetCardsAsync) must still appear — the cardLookup "Unknown"
+        // fallback handles its missing title.
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Active Card", BoxId = 0 }
+        }.AsReadOnly());
+
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "Normal Prayer", PrayerCardId = 1 },
+            new() { Id = 300, Title = "Orphan Prayer", PrayerCardId = 42 } // card 42 not in GetCardsAsync
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "all" } });
+
+        await Task.Delay(200);
+
+        var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
+        Assert.Equal(2, realEntries.Count);
+        Assert.Contains(realEntries, e => e.PrayerId == 300 && e.CardTitle == "Unknown");
+    }
+
+    [Fact]
     public async Task ScopeBox_DoesNotExcludeArchivedCardsByArchiveFilter()
     {
         // scope=box should remain unmodified — only scope=all gets the archive filter
-        const int archivedBoxId = 999; // matches fixture default
-
         _cardService.GetCardsAsync().Returns(new List<PrayerCard>
         {
             new() { Id = 1, Title = "Card In Box 5", BoxId = 5 }

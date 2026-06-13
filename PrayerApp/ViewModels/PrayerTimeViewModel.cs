@@ -283,12 +283,13 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             }
             else
             {
-                // scope=all: exclude prayers whose card is in the Archived box
-                var nonArchivedCardIds = cards
-                    .Where(c => c.BoxId != _settings.ArchivedFolderId)
+                // scope=all: exclude only prayers whose card is in the Archived box.
+                // (Card-less/orphan prayers are preserved — the cardLookup "Unknown" fallback handles them.)
+                var archivedCardIds = cards
+                    .Where(c => c.BoxId == _settings.ArchivedFolderId)
                     .Select(c => c.Id)
                     .ToHashSet();
-                filtered = allActive.Where(p => nonArchivedCardIds.Contains(p.PrayerCardId));
+                filtered = allActive.Where(p => !archivedCardIds.Contains(p.PrayerCardId));
             }
 
             var cardLookup = cards.ToDictionary(c => c.Id, c => c.Title);
