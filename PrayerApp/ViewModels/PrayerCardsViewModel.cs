@@ -363,7 +363,7 @@ namespace PrayerApp.ViewModels
         {
             var vm = _cardVmFactory?.Invoke(pc)
                 ?? new PrayerCardViewModel(pc, _cardService, _prayerService, _onboardingService,
-                    _navigationService, _accessibilityService, _boxService);
+                    _navigationService, _accessibilityService, _boxService, _settings);
             // Wire the back-reference so per-card IsExpanded can project over
             // ExpandedCardId, and ToggleExpandedAsync can write back through.
             vm.Parent = this;
@@ -1054,16 +1054,19 @@ namespace PrayerApp.ViewModels
             _accessibilityService.Announce("Selection cancelled");
         }
 
+        private const string _archiveOptionLabel = "Archive";
+
         private async Task MoveSelectedAsync()
         {
             var selected = AllPrayerCards.Where(c => c.IsMultiSelected).ToList();
             if (selected.Count == 0) return;
 
-            // Build picker options: user boxes + "Loose Cards"
+            // Build picker options: user boxes + "Loose Cards" + "Archive"
             var boxes = await _boxService.GetBoxesAsync();
             var options = new List<string> { BoxStrings.Unorganized };
             var userBoxes = boxes.Where(b => !b.IsSystem).OrderBy(b => b.Name).ToList();
             options.AddRange(userBoxes.Select(b => b.Name));
+            options.Add(_archiveOptionLabel);
 
             var result = await _navigationService.DisplayActionSheetAsync(
                 $"Move {selected.Count} card{(selected.Count == 1 ? "" : "s")} to…",
@@ -1077,6 +1080,13 @@ namespace PrayerApp.ViewModels
             {
                 targetBoxId = 0;
             }
+            else if (result == _archiveOptionLabel)
+            {
+                targetBoxId = _settings.ArchivedFolderId;
+                // System cards cannot be archived
+                selected = selected.Where(c => !c.IsSystem).ToList();
+                if (selected.Count == 0) return;
+            }
             else
             {
                 var targetBox = userBoxes.FirstOrDefault(b => b.Name == result);
@@ -1088,8 +1098,12 @@ namespace PrayerApp.ViewModels
             foreach (var card in selected)
                 await _cardService.AssignBoxAsync(card.Card, targetBoxId);
 
-            _accessibilityService.Announce(
-                $"Moved {selected.Count} card{(selected.Count == 1 ? "" : "s")} to {result}");
+            if (result == _archiveOptionLabel)
+                _accessibilityService.Announce(
+                    $"Archived {selected.Count} card{(selected.Count == 1 ? "" : "s")}");
+            else
+                _accessibilityService.Announce(
+                    $"Moved {selected.Count} card{(selected.Count == 1 ? "" : "s")} to {result}");
 
             ExitMultiSelectMode();
             RebuildSections();

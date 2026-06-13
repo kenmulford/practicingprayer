@@ -36,15 +36,20 @@
         <DataTemplate x:Key="CardExpandedSubtreeTemplate" x:DataType="viewModels:PrayerCardViewModel">
             <VerticalStackLayout Spacing="0">
 
-                <HorizontalStackLayout
+                <FlexLayout
                     AutomationId="Cards_ActionChips"
                     IsVisible="{Binding ShowActionChips}"
-                    Spacing="8"
+                    Wrap="Wrap"
+                    Direction="Row"
+                    JustifyContent="Start"
+                    AlignItems="Center"
+                    AlignContent="Start"
                     Padding="12,4,12,8">
 
                     <!-- ★ Favorite — gold background when active, default when not -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Favorite"
+                            Margin="0,0,8,0"
                             SemanticProperties.Description="Toggle favorite">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
@@ -80,6 +85,7 @@
                     <!-- Share (disabled when card has 0 active prayers) -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Share"
+                            Margin="0,0,8,0"
                             SemanticProperties.Description="Share card">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
@@ -114,6 +120,7 @@
                     <!-- Edit -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Edit"
+                            Margin="0,0,8,0"
                             SemanticProperties.Description="Edit card">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding SelectCardCommand}" />
@@ -140,6 +147,7 @@
                     <!-- Delete (danger styling) -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Delete"
+                            Margin="0,0,8,0"
                             SemanticProperties.Description="Delete card"
                             BackgroundColor="{AppThemeBinding
                                 Light={StaticResource ChipDangerBgLight},
@@ -165,7 +173,23 @@
                                    VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
-                </HorizontalStackLayout>
+
+                    <!-- Archive / Unarchive — neutral styling, label toggles by box -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Archive"
+                            SemanticProperties.Description="{Binding ArchiveLabel}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ArchiveCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding ArchiveLabel}"
+                               FontSize="{StaticResource FontCaption}"
+                               AutomationProperties.IsInAccessibleTree="False"
+                               TextColor="{AppThemeBinding
+                                   Light={StaticResource Tertiary},
+                                   Dark={StaticResource TextPrimaryDark}}"
+                               VerticalOptions="Center" />
+                    </Border>
+                </FlexLayout>
 
                 <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
                 <Label

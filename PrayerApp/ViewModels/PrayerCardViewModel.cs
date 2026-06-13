@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PrayerApp.Helpers;
@@ -23,6 +24,7 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly IBoxService _boxService;
+        private readonly ISettings _settings;
 
         // Single-expand invariant lives on PrayerCardsViewModel.ExpandedCardId.
         // Per-card IsExpanded is a read-only projection over that — see the
@@ -51,6 +53,7 @@ namespace PrayerApp.ViewModels
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
+        public ICommand ArchiveCommand { get; }
         public ICommand SelectCardCommand { get; }
         public ICommand ToggleExpandedCommand { get; }
         public ICommand ToggleFavoriteCommand { get; }
@@ -136,6 +139,8 @@ namespace PrayerApp.ViewModels
         public bool CanShare => !IsSystem && ActivePrayerCount > 0;
         public bool ShowActionChips => IsExpanded && !IsSystem;
         public string FavoriteLabel => IsFavorite ? "Favorited" : "Favorite";
+        public bool IsArchived => _prayerCard.BoxId == _settings.ArchivedFolderId;
+        public string ArchiveLabel => IsArchived ? "Unarchive" : "Archive";
 
         public bool IsDirty => Title != _originalTitle;
 
@@ -283,7 +288,7 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, IBoxService boxService)
+            IAccessibilityService accessibilityService, IBoxService boxService, ISettings settings)
         {
             _prayerCard = new PrayerCard();
             _cardService = cardService;
@@ -292,8 +297,10 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _boxService = boxService;
+            _settings = settings;
             SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsSystem);
+            ArchiveCommand = new AsyncRelayCommand(ArchiveAsync, () => !IsSystem);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync, () => !IsSystem);
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync, () => !IsSystem);
@@ -309,7 +316,8 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
         { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
@@ -324,8 +332,8 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public PrayerCardViewModel(PrayerCard pc, ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, IBoxService boxService)
-            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService, boxService)
+            IAccessibilityService accessibilityService, IBoxService boxService, ISettings settings)
+            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService, boxService, settings)
         {
             _prayerCard = pc;
             LoadActivePrayerCountAsync().SafeFireAndForget();
@@ -444,6 +452,41 @@ namespace PrayerApp.ViewModels
             finally
             {
                 _isFavoriteSaving = false;
+            }
+        }
+
+        private bool _isArchiveSaving;
+        private async Task ArchiveAsync()
+        {
+            if (_prayerCard.IsSystem) return;
+            if (_isArchiveSaving) return;
+            _isArchiveSaving = true;
+            try
+            {
+                var priorBoxId = _prayerCard.BoxId;
+                var target = IsArchived ? 0 : _settings.ArchivedFolderId;
+                await _cardService.AssignBoxAsync(_prayerCard, target);
+                OnPropertyChanged(nameof(IsArchived));
+                OnPropertyChanged(nameof(ArchiveLabel));
+
+                if (target == _settings.ArchivedFolderId)
+                {
+                    _accessibilityService.Announce("Card archived");
+                    var snackbar = CommunityToolkit.Maui.Alerts.Snackbar.Make(
+                        "Card archived",
+                        async () => await _cardService.AssignBoxAsync(_prayerCard, priorBoxId),
+                        "Undo",
+                        TimeSpan.FromSeconds(4));
+                    snackbar.Show().SafeFireAndForget();
+                }
+                else
+                {
+                    _accessibilityService.Announce("Card unarchived");
+                }
+            }
+            finally
+            {
+                _isArchiveSaving = false;
             }
         }
 
