@@ -140,6 +140,50 @@ see **`references/screenshots.md`**. Two load-bearing rules there: **capture wit
 blows tool-result token limits) and **navigate with Appium** (`adb shell input
 tap` coordinates are unreliable).
 
+## Workflow D — post the proof to the PR (not the issue, not the code tree)
+
+Screenshots that prove a feature renders belong as a **comment on the PR** —
+that's where a reviewer sees them. Two hard rules learned the painful way:
+
+- **Do NOT commit screenshots into the code tree.** `/screenshots` is gitignored
+  for exactly this reason; committing them (even under `docs/`) pollutes
+  `dev`/`master` history with binaries. Don't fight the ignore.
+- **`gh` CLI cannot upload an image into a comment.** `gh pr comment` takes only
+  text (`--body`/`--body-file`); GitHub restricts image *upload* to the web
+  editor (drag-drop → `user-attachments`). So an agent can't drag-drop — it must
+  reference an image GitHub already hosts.
+
+The convention that satisfies all of that: host proof images on a dedicated,
+**never-merged `visual-review-assets` orphan branch**, and reference them from
+the PR comment by raw URL.
+
+```bash
+# 1. Capture via Workflow C -> you have local PNGs.
+# 2. Put them on the assets branch (orphan = images only, no code, never merged).
+#    If it already exists: git fetch && git switch visual-review-assets, then add + push.
+git switch --orphan visual-review-assets         # empty working tree (tracked files removed)
+cp /path/to/shots/*.png .                          # name them pr<PR#>-<issue#>-<desc>.png
+git add 'pr<PR#>-'*.png                             # add ONLY the PNGs, never `git add .`
+git commit -m "assets: <feature> visual-review screenshots (PR #<n>)"
+git push -u origin visual-review-assets
+git checkout -f <your-branch>                      # restore your real working tree
+
+# 3. Reference them in a PR comment by raw URL (renders inline on a public repo):
+gh pr comment <n> --body '![chip grid](https://github.com/<owner>/<repo>/raw/visual-review-assets/pr<n>-..-chip-grid.png)
+_[view](https://github.com/<owner>/<repo>/blob/visual-review-assets/pr<n>-..-chip-grid.png)_'
+```
+
+Notes:
+- The `…/raw/visual-review-assets/<file>` URL renders inline; include the
+  `…/blob/…` link as a fallback (inline render can be flaky on private repos).
+- **Never merge `visual-review-assets`** — it's a permanent image host kept out
+  of `dev`/`master` so the code history stays binary-free. Append new PRs' shots
+  to it over time.
+- Proof goes on the **PR**, not the issue — that's where review happens. (If you
+  posted to the issue, delete that comment.)
+- **Verify** each raw URL returns `200 image/png` (`curl -sLo /dev/null -w
+  '%{http_code} %{content_type}' <url>`) before trusting the comment renders.
+
 ## Field-proven gotchas (this is the part that saves the hour)
 
 These are failure modes that have actually bitten, with the fix. Read them
