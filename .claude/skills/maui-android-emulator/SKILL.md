@@ -112,23 +112,50 @@ For a **full** suite (often >5 min): don't run it inline and watch — hand the
 operator the one-liner and poll the result file, or run a tight `--filter`.
 Inline long runs flood the transcript and you can't react mid-run.
 
-## Workflow C — capture screenshots
+## Workflow C — capture screenshots (prove a feature renders)
 
-Capturing specific UI states + cropping for store/PR has its own moving parts
-(seed data, dark mode, device matrix, base64 token limits). See
-**`references/screenshots.md`** for the full runbook. The two load-bearing
-rules: **capture with `adb exec-out screencap -p > file.png`** (Appium's
-screenshot returns base64 that blows tool-result token limits) and **navigate
-with Appium** (`adb shell input tap` coordinates are unreliable).
+**Use the bundled script — do not hand-roll this.**
+`scripts/capture-android-screenshots.ps1` runs the whole pipeline in one
+command: heal adb *only if the device is offline* → reuse (or boot) the
+emulator + Appium → build & install Debug → run a named screenshot-capture
+test → collect the PNGs it produced into an output folder.
 
-If your project already has a capture *test* pattern (a `[Fact]` that drives to
-a state and calls a screenshot helper), prefer adding one there over ad-hoc
-driving — it's repeatable and lives with the suite.
+```powershell
+./.claude/skills/maui-android-emulator/scripts/capture-android-screenshots.ps1 `
+  -Filter "FullyQualifiedName~<YourCaptureTest>" `
+  -OutDir "screenshots/<feature>"
+```
+
+It expects a **capture test** in the suite: a `[Fact]` that resets UI state,
+navigates to each target screen with the project's UI-test helpers, and calls
+the project's screenshot helper (e.g. a `CaptureDiagnostics(reason)` that writes
+a PNG to a temp dir and returns the path). Mirror an existing one (look for a
+`*_Capture_Screenshots` test). A *warm* build+install is ~15–30s; the capture
+is one Appium session. This is the proven path — validated end-to-end (16s
+build, three states captured) after a full day of hand-rolling failed.
+
+For the store-screenshot matrix (seed data, dark mode, device sizes, cropping)
+see **`references/screenshots.md`**. Two load-bearing rules there: **capture with
+`adb exec-out screencap -p > file.png`** (Appium's screenshot returns base64 that
+blows tool-result token limits) and **navigate with Appium** (`adb shell input
+tap` coordinates are unreliable).
 
 ## Field-proven gotchas (this is the part that saves the hour)
 
 These are failure modes that have actually bitten, with the fix. Read them
 before improvising.
+
+> **The single biggest time-sink is interfering with a running build.** This
+> one cost a literal day. Killing a MAUI Android build mid-flight corrupts
+> `obj/`, so the *next* build hangs for minutes at `aapt2`. Running two builds
+> at once makes the device go `offline` at the install step (`XAFD7000`). Hard-
+> resetting a *healthy* adb knocks the emulator transport offline. **The
+> discipline:** start **one** build (use the bundled script), and **let it
+> finish** — runners auto-background build-length commands, so wait for the
+> completion signal; do **not** poll-then-kill. If a build looks stuck, check
+> CPU before killing: a real build burns CPU continuously; ~0.5 CPU-sec over
+> several minutes is genuinely hung (almost always corrupted `obj/` — clear it
+> and rebuild once), but a quiet stretch during packaging is normal.
 
 1. **Use PowerShell for `adb`, not Git Bash.** MSYS rewrites device-side POSIX
    paths — `adb push x /data/local/tmp/y` or `adb shell run-as <id> cp …
@@ -188,6 +215,36 @@ before improvising.
     the UiAutomator2 instrumentation; every remaining test fails with
     "instrumentation process is not running". Close Inspector before running.
 
+11. **Never kill a build mid-flight.** Killing `dotnet`/`MSBuild`/`aapt2` during
+    a build leaves `obj/` half-written; the *next* build then hangs at `aapt2`
+    (process alive, ~0 CPU) for minutes. If you must recover, clear
+    `obj/<Config>/<TFM>` + `bin/<Config>/<TFM>` and rebuild **once**, clean.
+
+12. **Never run two builds at once.** Concurrent MAUI Android builds fight over
+    adb and the device; the loser's install step fails with
+    `XAFD7000: Mono.AndroidTools.AdbException: device offline`. Make sure no
+    prior build is still running (it may have been auto-backgrounded) before
+    starting another. One build at a time.
+
+13. **`XAFD7000: device offline` at the install step.** The emulator's adb
+    transport degraded — usually from adb churn or a concurrent build, not a
+    dead emulator. Fix: `adb reconnect offline`, then re-check `adb devices`
+    shows `device` and `adb shell getprop sys.boot_completed` returns `1`. Do
+    **not** hard-reset a *healthy* adb to "fix" this — killing a working adb is
+    what causes the offline. The bundled script resets adb only when the device
+    is not already online.
+
+14. **Orphaned `adb.exe` clients wedge installs.** Each `adb` invocation spawns
+    a client that should exit immediately; path-mangled retries or killed ops
+    leave them hung, and they pile up (seen: 100+). A jammed daemon then hangs
+    every install/deploy. Healthy is ~1–2 `adb.exe`. Recover with
+    `Get-Process adb | Stop-Process -Force; adb start-server`.
+
+15. **Cold vs warm build time.** A build after clearing `obj/` is a *full*
+    rebuild — ~5–7 min for MAUI Android, and that's normal, not a hang. Once
+    `obj/` is warm, incremental build+install is ~15–30s. Don't mistake a
+    legitimate cold rebuild for a stall.
+
 ## Troubleshooting (fast lookup)
 
 | Symptom | Cause → Fix |
@@ -202,6 +259,10 @@ before improvising.
 | `Couldn't find app` (Appium) | app not installed → `dotnet build -t:Install` first |
 | Pushed seed/file but app can't read it | ownership flipped to root → `adb shell chown` to app UID:GID |
 | Whole deploy/seed "hangs" with no output | likely a background agent auto-denying a prompt → run interactively |
+| `XAFD7000 … device offline` at install | adb transport degraded (concurrent build / adb churn) → `adb reconnect offline`; verify `adb devices`=`device` + `getprop sys.boot_completed`=`1`; don't reset a healthy adb |
+| Build hangs at `aapt2` (alive, ~0 CPU) for minutes | corrupted `obj/` from a killed build → clear `obj/<Config>/<TFM>`+`bin/...` and rebuild once |
+| 100+ `adb.exe` processes; installs hang | orphaned hung adb clients → `Get-Process adb \| Stop-Process -Force; adb start-server` |
+| Build runs ~5–7 min | normal **cold** rebuild after clearing `obj/`; warm is ~15–30s — not a hang |
 
 ## This repo's concrete values
 
