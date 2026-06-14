@@ -194,6 +194,44 @@
                                    Dark={StaticResource TextPrimaryDark}}"
                                VerticalOptions="Center" />
                     </Border>
+
+                    <!-- Pray — launches a single-card Prayer Time session (issue #34).
+                         Disabled (dimmed + input-transparent) when the card has 0 active prayers,
+                         mirroring the Share chip's CanShare gating. -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Pray"
+                            Grid.Row="1" Grid.Column="2"
+                            HorizontalOptions="Fill"
+                            SemanticProperties.Description="Pray for this card">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding CanPray}"
+                                         Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                                <Setter Property="InputTransparent" Value="True" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding PrayCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="hands_praying_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="Pray" FontSize="{StaticResource FontCaption}"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
                 </Grid>
 
                 <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->

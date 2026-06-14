@@ -17,6 +17,7 @@ public class PrayerCardViewModelTests
     private readonly IBoxService _boxService = Substitute.For<IBoxService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
     private readonly IDBService _db = Substitute.For<IDBService>();
+    private readonly IPrayerSelectionService _selectionService = Substitute.For<IPrayerSelectionService>();
 
     private const int ArchivedBoxId = 99;
 
@@ -210,6 +211,85 @@ public class PrayerCardViewModelTests
         sut.ActivePrayerCount = 2;
 
         Assert.True(raised);
+    }
+
+    // ── CanPray ───────────────────────────────────────────────────────
+
+    [Fact]
+    public void CanPray_ZeroPrayers_False()
+    {
+        var sut = CreateSut();
+        Assert.False(sut.CanPray);
+    }
+
+    [Fact]
+    public void CanPray_HasActivePrayers_True()
+    {
+        var sut = CreateSut();
+        sut.ActivePrayerCount = 1;
+        Assert.True(sut.CanPray);
+    }
+
+    [Fact]
+    public void PrayCommand_CanExecute_TracksActivePrayerCount()
+    {
+        var sut = CreateSut();
+        Assert.False(((IAsyncRelayCommand)sut.PrayCommand).CanExecute(null));
+
+        sut.ActivePrayerCount = 2;
+
+        Assert.True(((IAsyncRelayCommand)sut.PrayCommand).CanExecute(null));
+    }
+
+    // ── PrayCommand ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task PrayCommand_ResolvesActiveIds_SetsSelection_NavigatesScopeSelection()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
+        {
+            SelectionServiceFactory = () => _selectionService
+        };
+
+        // GetAllActivePrayersAsync is the single source of truth for "active"
+        // (it already filters out IsAnswered), so the mock returns only active rows
+        // and PrayAsync narrows to this card by PrayerCardId. A prayer for another
+        // card (id 200) is included to prove the card-id filter.
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, PrayerCardId = 7 },
+            new() { Id = 102, PrayerCardId = 7 },
+            new() { Id = 200, PrayerCardId = 99 }  // other card — excluded
+        }.AsReadOnly());
+
+        await ((IAsyncRelayCommand)sut.PrayCommand).ExecuteAsync(null);
+
+        _selectionService.Received(1).Set(Arg.Is<IEnumerable<int>>(
+            ids => ids.OrderBy(x => x).SequenceEqual(new[] { 100, 102 })));
+        await _navigationService.Received(1).GoToAsync(
+            $"{Routes.PrayerTimePage}?scope={Routes.ScopeSelection}");
+    }
+
+    [Fact]
+    public async Task PrayCommand_NoActivePrayers_DoesNotSetOrNavigate()
+    {
+        var card = new PrayerCard { Id = 8, Title = "Empty" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
+        {
+            SelectionServiceFactory = () => _selectionService
+        };
+
+        // No active prayers for this card — GetAllActivePrayersAsync returns none
+        // matching PrayerCardId == 8, so PrayAsync short-circuits.
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+
+        await ((IAsyncRelayCommand)sut.PrayCommand).ExecuteAsync(null);
+
+        _selectionService.DidNotReceive().Set(Arg.Any<IEnumerable<int>>());
+        await _navigationService.DidNotReceive().GoToAsync(Arg.Any<string>());
     }
 
     // ── Box Picker (Collection assignment) ────────────────────────────

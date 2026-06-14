@@ -58,6 +58,17 @@ namespace PrayerApp.ViewModels
         public ICommand ToggleFavoriteCommand { get; }
         public ICommand AddPrayerCommand { get; }
         public ICommand ShareCommand { get; }
+        public ICommand PrayCommand { get; }
+
+        /// <summary>
+        /// Resolves the transient prayer-selection service. Defaults to the DI
+        /// container (same service-locator seam <see cref="ShareAsync"/> uses for
+        /// <see cref="IDeepLinkService"/>); unit tests override it with a stub.
+        /// Kept off the constructor so adding the per-card "Pray" chip doesn't
+        /// churn every <c>new PrayerCardViewModel(...)</c> call-site.
+        /// </summary>
+        public Func<IPrayerSelectionService> SelectionServiceFactory { get; set; }
+            = () => IPlatformApplication.Current!.Services.GetRequiredService<IPrayerSelectionService>();
 
         #region Properties
 
@@ -136,6 +147,8 @@ namespace PrayerApp.ViewModels
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
         public bool CanShare => !IsSystem && ActivePrayerCount > 0;
+        /// <summary>Gates the "Pray" action chip — only meaningful when the card has active prayers.</summary>
+        public bool CanPray => ActivePrayerCount > 0;
         public bool ShowActionChips => IsExpanded && !IsSystem;
         public string FavoriteLabel => IsFavorite ? "Favorited" : "Favorite";
         public bool IsArchived => _prayerCard.BoxId == _settings.ArchivedFolderId;
@@ -215,10 +228,12 @@ namespace PrayerApp.ViewModels
                 if (SetProperty(ref _activePrayerCount, value))
                 {
                     OnPropertyChanged(nameof(CanShare));
+                    OnPropertyChanged(nameof(CanPray));
                     OnPropertyChanged(nameof(HasAnyPrayer));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
                     OnPropertyChanged(nameof(PrayersHeader));
                     ((IRelayCommand)ShareCommand).NotifyCanExecuteChanged();
+                    ((IRelayCommand)PrayCommand).NotifyCanExecuteChanged();
                 }
             }
         }
@@ -305,6 +320,7 @@ namespace PrayerApp.ViewModels
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync, () => !IsSystem);
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
             ShareCommand = new AsyncRelayCommand(ShareAsync, () => CanShare);
+            PrayCommand = new AsyncRelayCommand(PrayAsync, () => CanPray);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
@@ -507,6 +523,25 @@ namespace PrayerApp.ViewModels
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
             await deepLinkService.ShareCardAsync(_prayerCard, activePrayers);
             _onboardingService.Advance();
+        }
+
+        private async Task PrayAsync()
+        {
+            // Resolve this card's active prayer IDs and hand them to the transient
+            // selection service, then launch Prayer Time in scope=selection. The ID
+            // set travels via the service (not the URL) to match the "Choose cards"
+            // modal path and keep the Shell nav URL small.
+            // Resolve via GetAllActivePrayersAsync so the "active" definition (!IsAnswered)
+            // lives in one place — the service — rather than being re-stated inline here.
+            var activeIds = (await _prayerService.GetAllActivePrayersAsync())
+                .Where(p => p.PrayerCardId == _prayerCard.Id)
+                .Select(p => p.Id)
+                .ToList();
+            if (activeIds.Count == 0) return;
+
+            SelectionServiceFactory().Set(activeIds);
+            await _navigationService.GoToAsync(
+                $"{Routes.PrayerTimePage}?scope={Routes.ScopeSelection}");
         }
 
         #endregion
