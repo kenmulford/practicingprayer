@@ -376,7 +376,7 @@ On iPad, the action sheet / popover animates in. Tapping before animation comple
 
 ### NEVER seed the DB with a Release build — `run-as` requires a debuggable APK
 
-The Android seed copies the prepared DB via `adb shell run-as <pkg> cp /data/local/tmp/…db files/…db`. `run-as` only works on a **debuggable** app, so a Release build fails this step with `run-as … cp … failed (exit 1)` before any test runs. `run-uitests.ps1` builds `-c Release` — a trap for the seed. Build/install `-c Debug` (standalone `adb install` of a Debug build may need `-p:EmbedAssembliesIntoApk=true`), then `dotnet test PrayerApp.UITests --filter "FullyQualifiedName~<TestClass>"`.
+The Android seed copies the prepared DB via `adb shell run-as <pkg> cp /data/local/tmp/…db files/…db`. `run-as` only works on a **debuggable** app, so a Release build fails this step with `run-as … cp … failed (exit 1)` before any test runs. **`run-uitests.ps1` now defaults to a Debug build** (PR #116 — it previously built `-c Release`, which broke the seed); it builds+installs via the MAUI `-t:Install` target and accepts `-Configuration Debug|Release`. Leave it on the default (Debug) for seeding to work. For a manual run, build/install `-c Debug` (standalone `adb install` of a Debug build may need `-p:EmbedAssembliesIntoApk=true`), then `dotnet test PrayerApp.UITests --filter "FullyQualifiedName~<TestClass>"`.
 
 ### Do NOT locate a bare `Label` by AutomationId — locate text by visible text
 
