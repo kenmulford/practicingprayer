@@ -62,14 +62,23 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Delete Button — Save is in the navbar, Share is on the expanded card view.
+                <!-- Delete + Archive — Save is in the navbar, Share is on the expanded card view.
                      Outside the section card (different state, not a row in the group). -->
-                <Button Text="Delete"
-                        AutomationId="Card_Btn_Delete"
-                        Style="{StaticResource DangerButton}"
-                        Command="{Binding DeleteCommand}"
-                        IsVisible="{Binding CanDelete}"
-                        HorizontalOptions="Fill" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Button Text="Delete"
+                            AutomationId="Card_Btn_Delete"
+                            Style="{StaticResource DangerButton}"
+                            Command="{Binding DeleteCommand}"
+                            IsVisible="{Binding CanDelete}"
+                            Grid.Column="0"
+                            HorizontalOptions="Fill" />
+                    <Button Text="{Binding ArchiveLabel}"
+                            AutomationId="Card_Btn_Archive"
+                            Command="{Binding ArchiveCommand}"
+                            IsVisible="{Binding CanDelete}"
+                            Grid.Column="1"
+                            HorizontalOptions="Fill" />
+                </Grid>
 
             </VerticalStackLayout>
         </ScrollView>

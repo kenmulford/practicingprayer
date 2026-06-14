@@ -396,7 +396,7 @@ public class PrayerCardsViewModelTests
         // Simulate SyncAsync's diff loop having added the new card
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
@@ -1298,7 +1298,7 @@ public class PrayerCardsViewModelTests
         // and ConsumePendingSavedAsync (the order Shell + OnAppearing produce).
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
@@ -1468,7 +1468,7 @@ public class PrayerCardsViewModelTests
         // and ConsumePendingSavedAsync (the new-via-sync branch).
         var newCard = new PrayerCard { Id = 42, Title = "Imported May 2", BoxId = 0, IsImported = true };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         {
             PrayerRowFactory = BuildStubPrayerRowVm,
             Parent = sut
@@ -1511,7 +1511,7 @@ public class PrayerCardsViewModelTests
         var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
             _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
             cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
-                _onboardingService, _navigationService, _accessibilityService, _boxService)
+                _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
             {
                 PrayerRowFactory = BuildStubPrayerRowVm
             });
@@ -1547,7 +1547,7 @@ public class PrayerCardsViewModelTests
         var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
             _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
             cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
-                _onboardingService, _navigationService, _accessibilityService, _boxService)
+                _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
             {
                 PrayerRowFactory = BuildStubPrayerRowVm
             });
@@ -1903,6 +1903,107 @@ public class PrayerCardsViewModelTests
         // BulkChangedMessage on this flag, the import-to-existing list would silently
         // stop refreshing — exactly the bug this regression net catches.
         await _cardService.Received().GetCardsAsync();
+    }
+
+    // ── MoveSelectedAsync — Archive option ────────────────────────────────
+
+    [Fact]
+    public async Task MoveSelectedCommand_Archive_AssignsArchivedFolderIdToNonSystemCards()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" },
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).AssignBoxAsync(Arg.Any<PrayerCard>(), 20);
+    }
+
+    [Fact]
+    public async Task MoveSelectedCommand_Archive_Cancelled_DoesNotAssignBox()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(false);   // user cancels the "Archive Cards?" dialog
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        await _cardService.DidNotReceive().AssignBoxAsync(Arg.Any<PrayerCard>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task MoveSelectedCommand_Archive_SkipsSystemCards()
+    {
+        SetupSystemBoxes();
+        var userCard = new PrayerCard { Id = 1, Title = "User", BoxId = 0 };
+        var systemCard = new PrayerCard { Id = 2, Title = "Quick Add", BoxId = 0, IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { userCard, systemCard }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        // Select both cards
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+        foreach (var c in sut.AllPrayerCards) c.IsMultiSelected = true;
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        // Only the non-system card should be assigned
+        await _cardService.Received(1).AssignBoxAsync(Arg.Is<PrayerCard>(c => !c.IsSystem), 20);
+        await _cardService.DidNotReceive().AssignBoxAsync(Arg.Is<PrayerCard>(c => c.IsSystem), Arg.Any<int>());
     }
 
     // ── Helper ──────────────────────────────────────────────────────────
