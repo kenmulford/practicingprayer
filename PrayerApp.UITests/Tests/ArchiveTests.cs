@@ -287,4 +287,86 @@ public class ArchiveTests
             TryDeleteCard(cardName);
         }
     }
+
+    /// <summary>
+    /// 9.3: Archive screenshot capture — walks the three archive surfaces and captures a
+    /// diagnostic screenshot of each, echoing the saved file path for orchestrator collection.
+    /// This is a capture test, not a behavioral assertion: it proves the UI renders the
+    /// archive affordances and records pixels for visual review, then leaves the suite at Home.
+    ///
+    /// Three states captured:
+    ///   1. Archive_01_chip_grid     — the 2×3 action-chip grid on an expanded card (Archive chip visible).
+    ///   2. Archive_02_confirm_dialog — the "Archive Card?" confirm dialog raised by the chip.
+    ///   3. Archive_03_editpage_buttons — the equal-width Delete/Archive button row on PrayerCardPage.
+    ///
+    /// Dark-mode in-session toggle is not supported by the Android test infrastructure
+    /// (requires adb + cold-launch — see DarkModeRenderingTests); this captures light only.
+    /// Card title is timestamped by CreateDisposableCard, so the test is idempotent across re-runs.
+    /// </summary>
+    [Fact]
+    public void Archive_Capture_Screenshots()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        var cardName = CreateDisposableCard();
+
+        try
+        {
+            // ── State 1: the 2×3 action-chip grid on the expanded card ──────────────
+            // EnsureCardExpanded waits internally for Cards_Btn_Archive to inflate.
+            EnsureCardExpanded(cardName);
+
+            var diag1 = driver.CaptureDiagnostics("Archive_01_chip_grid");
+            Assert.False(diag1.Contains("diagnostic capture failed"),
+                $"Screenshot capture failed: {diag1}");
+            Console.WriteLine($"[Archive_Capture_Screenshots] {diag1}");
+
+            // ── State 2: the "Archive Card?" confirm dialog ─────────────────────────
+            driver.Tap("Cards_Btn_Archive");
+            Assert.True(driver.IsAlertPresent(),
+                "Tapping the Archive chip should raise the 'Archive Card?' confirm dialog.");
+
+            var diag2 = driver.CaptureDiagnostics("Archive_02_confirm_dialog");
+            Assert.False(diag2.Contains("diagnostic capture failed"),
+                $"Screenshot capture failed: {diag2}");
+            Console.WriteLine($"[Archive_Capture_Screenshots] {diag2}");
+
+            // Dismiss with Cancel so the card is NOT archived — keeps it in Loose Cards
+            // for the edit-page leg below and prevents archived-state leaking to cleanup.
+            driver.TapAlertButton("Cancel");
+            Thread.Sleep(TestConfig.DelayAfterDismiss);
+
+            // ── State 3: the Delete/Archive button row on the card edit page ────────
+            // Open PrayerCardPage exactly the way PrayerCardTests.Cards_EditButton_
+            // NavigatesToEditPage does (PrayerCardTests.cs:459-482): expand the card,
+            // tap the Edit chip, land on Card_Entry_Title.
+            EnsureCardExpanded(cardName);
+            driver.WaitAndTap("Cards_Btn_Edit", timeoutSeconds: 10);
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
+
+            // Wait for a known element on PrayerCardPage before capturing.
+            driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
+            driver.WaitForElement("Card_Btn_Archive", timeoutSeconds: 10);
+            driver.DismissKeyboardIfPresent();
+            Thread.Sleep(TestConfig.DelayModalAnimation);
+
+            var diag3 = driver.CaptureDiagnostics("Archive_03_editpage_buttons");
+            Assert.False(diag3.Contains("diagnostic capture failed"),
+                $"Screenshot capture failed: {diag3}");
+            Console.WriteLine($"[Archive_Capture_Screenshots] {diag3}");
+
+            // Navigate back off the edit page cleanly (mirrors PrayerCardTests.cs:480-481).
+            driver.GoBack();
+            driver.DismissAlertIfPresent();
+            Thread.Sleep(TestConfig.DelayAfterDismiss);
+        }
+        finally
+        {
+            // Card was never archived (we cancelled the confirm), so it is in Loose Cards.
+            TryDeleteCard(cardName);
+        }
+    }
 }
