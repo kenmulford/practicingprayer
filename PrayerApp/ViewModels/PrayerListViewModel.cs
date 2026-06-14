@@ -24,6 +24,7 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly ISettings _settings;
+        private readonly IPrayerSelectionService _selectionService;
         private readonly IMessenger _messenger;
         private Dictionary<int, string> _cardTitleLookup = new();
         private CancellationTokenSource? _filterAnnounceCts;
@@ -69,6 +70,11 @@ namespace PrayerApp.ViewModels
             private set => SetProperty(ref _filteredPrayers, value);
         }
 
+        // True when the filtered view holds at least one active (unanswered) prayer —
+        // gates StartPrayerTimeCommand. Recomputed in ApplyFilter (the single place
+        // FilteredPrayers is rebuilt).
+        private bool HasActiveInView => FilteredPrayers.Any(p => !p.IsAnswered);
+
         // Tag chips
         public ObservableCollection<TagFilterChipViewModel> AvailableTags { get; } = new();
         public bool HasTags => AvailableTags.Count > 0;
@@ -105,10 +111,21 @@ namespace PrayerApp.ViewModels
 
         public ICommand NewCommand { get; }
         public ICommand SetStatusCommand { get; }
+        public ICommand StartPrayerTimeCommand { get; }
+
+        /// <summary>
+        /// Factory for the prayer-row view models built in <see cref="BuildViewModel"/>.
+        /// Default chains through <c>IPlatformApplication.Current.Services</c> (via the
+        /// <c>PrayerRequestDetailViewModel(Prayer)</c> ctor); unit tests override with a
+        /// stub-services factory so rows can be built without a live DI container.
+        /// Mirrors <c>PrayerCardViewModel.PrayerRowFactory</c>.
+        /// </summary>
+        public Func<Prayer, PrayerRequestDetailViewModel> PrayerRowFactory { get; set; }
+            = prayer => new PrayerRequestDetailViewModel(prayer);
 
         public PrayerListViewModel(IPrayerService prayerService, ICardService cardService, ITagService tagService,
             INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings,
-            IMessenger messenger)
+            IPrayerSelectionService selectionService, IMessenger messenger)
         {
             _prayerService = prayerService;
             _cardService   = cardService;
@@ -116,6 +133,7 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _settings = settings;
+            _selectionService = selectionService;
             _messenger = messenger;
 
             // Any change to the backing store re-runs the filter (suppressed during bulk loads)
@@ -123,6 +141,7 @@ namespace PrayerApp.ViewModels
 
             // Commands
             NewCommand = new AsyncRelayCommand(NewPrayerAsync);
+            StartPrayerTimeCommand = new AsyncRelayCommand(StartPrayerTimeAsync, () => HasActiveInView);
             SetStatusCommand = new RelayCommand<string>(s =>
             {
                 StatusFilter = s switch
@@ -149,6 +168,7 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<ISettings>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<IPrayerSelectionService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IMessenger>())
         { }
 
@@ -346,7 +366,7 @@ namespace PrayerApp.ViewModels
 
         private PrayerRequestDetailViewModel BuildViewModel(Prayer p)
         {
-            var vm = new PrayerRequestDetailViewModel(p);
+            var vm = PrayerRowFactory(p);
             vm.CardTitle = _cardTitleLookup.TryGetValue(p.PrayerCardId, out var t) ? t : string.Empty;
             SubscribeToPropertyChanges(vm);
             return vm;
@@ -408,6 +428,10 @@ namespace PrayerApp.ViewModels
 
             FilteredPrayers = new ObservableCollection<PrayerRequestDetailViewModel>(sorted);
 
+            // FilteredPrayers was just rebuilt — re-evaluate whether a Prayer Time
+            // session can launch (false when 0 active prayers are in view).
+            ((IRelayCommand)StartPrayerTimeCommand).NotifyCanExecuteChanged();
+
             if (!_suppressAnnounce)
             {
                 _accessibilityService.NotifyLayoutChanged();
@@ -446,6 +470,19 @@ namespace PrayerApp.ViewModels
         private async Task NewPrayerAsync()
         {
             await _navigationService.GoToAsync($"{Routes.PrayerDetailPage}?new=true");
+        }
+
+        private async Task StartPrayerTimeAsync()
+        {
+            // Snapshot the active subset of the current filtered view. Answered prayers
+            // can't be prayed through, so they're dropped even when visible (StatusFilter
+            // = Answered/All). The ID set travels via the selection service (not the URL)
+            // to mirror #34's "Choose cards" path and keep the Shell nav URL small.
+            var activeIds = FilteredPrayers.Where(p => !p.IsAnswered).Select(p => p.Id).ToList();
+            if (activeIds.Count == 0) return; // canExecute guards this, but stay defensive
+
+            _selectionService.Set(activeIds);
+            await _navigationService.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeSelection}");
         }
 
         private void SubscribeToPropertyChanges(PrayerRequestDetailViewModel prayer)
