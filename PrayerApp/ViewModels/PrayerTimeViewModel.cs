@@ -22,6 +22,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     private readonly IAccessibilityService _accessibilityService;
     private readonly INotificationService _notificationService;
     private readonly ISettings _settings;
+    private readonly IPrayerSelectionService _selectionService;
     private CancellationTokenSource _loadCts = new();
     private int? _recentlyNotifiedTagId;
 
@@ -193,7 +194,8 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
     public PrayerTimeViewModel(IPrayerService prayerService, ICardService cardService,
         ITagService tagService, IPrayerInteractionService interactionService,
         INavigationService navigationService, IAccessibilityService accessibilityService,
-        INotificationService notificationService, ISettings settings)
+        INotificationService notificationService, ISettings settings,
+        IPrayerSelectionService selectionService)
     {
         _prayerService = prayerService;
         _cardService = cardService;
@@ -203,6 +205,7 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         _accessibilityService = accessibilityService;
         _notificationService = notificationService;
         _settings = settings;
+        _selectionService = selectionService;
 
         _selectedIntervalSeconds = _settings.AutoModeIntervalSeconds;
 
@@ -223,12 +226,23 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
         IPlatformApplication.Current!.Services.GetRequiredService<INotificationService>(),
-        IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
+        IPlatformApplication.Current!.Services.GetRequiredService<ISettings>(),
+        IPlatformApplication.Current!.Services.GetRequiredService<IPrayerSelectionService>())
     { }
 
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         var scope = query.TryGetValue("scope", out var s) ? s?.ToString() : Routes.ScopeAll;
+
+        if (scope == Routes.ScopeSelection)
+        {
+            // The ID set travels via IPrayerSelectionService (not the URL) to avoid
+            // bloating the Shell nav URL for large selections. Consume() reads and
+            // clears so a stale set is never reused on a later navigation.
+            var selectionIds = _selectionService.Consume();
+            LoadEntriesAsync(tagIds: null, boxId: null, selectionIds: selectionIds).SafeFireAndForget();
+            return;
+        }
 
         if (scope == Routes.ScopeBox && query.TryGetValue("boxId", out var bObj)
             && bObj is string bStr && int.TryParse(bStr, out var boxId))
@@ -248,7 +262,8 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
         LoadEntriesAsync(scope == Routes.ScopeTags ? tagIds : null, boxId: null).SafeFireAndForget();
     }
 
-    private async Task LoadEntriesAsync(IEnumerable<int>? tagIds, int? boxId = null)
+    private async Task LoadEntriesAsync(IEnumerable<int>? tagIds, int? boxId = null,
+        IReadOnlyList<int>? selectionIds = null)
     {
         _loadCts.Cancel();
         _loadCts.Dispose();
@@ -270,7 +285,17 @@ public class PrayerTimeViewModel : ObservableObject, IQueryAttributable
             token.ThrowIfCancellationRequested();
 
             IEnumerable<Prayer> filtered;
-            if (tagIds is not null)
+            if (selectionIds is not null)
+            {
+                // scope=selection: intersect with the explicit ID set handed over by
+                // the "Choose cards" modal or the per-card "Pray" chip. Prayers
+                // answered mid-session naturally drop out (they leave allActive),
+                // matching the other scopes. Archived cards were already excluded at
+                // selection time, so no extra archived filter is needed here.
+                var idSet = selectionIds.ToHashSet();
+                filtered = allActive.Where(p => idSet.Contains(p.Id));
+            }
+            else if (tagIds is not null)
             {
                 var requestIdSet = (await _tagService.GetRequestIdsByTagIdsAsync(tagIds)).ToHashSet();
                 token.ThrowIfCancellationRequested();

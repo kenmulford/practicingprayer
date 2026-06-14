@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
+             xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
+             x:Class="PrayerApp.Views.PrayerTime.PrayerTimeCardSelectPage"
+             x:DataType="viewModels:PrayerTimeCardSelectViewModel"
+             Title="Choose Cards"
+             SafeAreaEdges="All">
+    <Grid RowDefinitions="Auto, *, Auto" Padding="24" RowSpacing="16">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="12">
+            <Label Text="Choose Cards"
+                   FontSize="{StaticResource FontHeading}"
+                   FontAttributes="Bold"
+                   SemanticProperties.HeadingLevel="Level1"
+                   TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+
+            <Label Text="Pick the cards to pray through this session."
+                   Style="{StaticResource MutedText}" />
+
+            <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                <Label Grid.Column="0"
+                       Text="Collection"
+                       Style="{StaticResource FormLabel}"
+                       VerticalOptions="Center" />
+                <shared:StyledPicker Grid.Column="1"
+                                     ItemsSource="{Binding AvailableBoxes}"
+                                     SelectedItem="{Binding SelectedBox}"
+                                     AutomationId="CardSelect_Picker_Box"
+                                     SemanticHint="Filter the card list by collection"
+                                     VerticalOptions="Center"
+                                     HorizontalOptions="Fill"
+                                     HorizontalTextAlignment="End" />
+            </Grid>
+        </VerticalStackLayout>
+
+        <!-- Card checkbox list -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="0">
+
+                <Border Style="{StaticResource PrayerCardBorder}"
+                        Padding="8"
+                        IsVisible="{Binding IsEmpty, Converter={StaticResource InverseBool}}">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Cards}" Spacing="0">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:SelectableCard">
+                                <Grid ColumnDefinitions="Auto, *"
+                                      Padding="8,10"
+                                      ColumnSpacing="12"
+                                      AutomationId="{Binding Card.Id, StringFormat='CardSelect_Item_{0}'}"
+                                      SemanticProperties.Description="{Binding Title}"
+                                      SemanticProperties.Hint="Double tap to select or deselect this card">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnCardRowTapped" />
+                                    </Grid.GestureRecognizers>
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding IsSelected}"
+                                              AutomationProperties.IsInAccessibleTree="False"
+                                              VerticalOptions="Center" />
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Title}"
+                                           AutomationProperties.IsInAccessibleTree="False"
+                                           VerticalOptions="Center"
+                                           TextColor="{AppThemeBinding Light={StaticResource Tertiary}, Dark={StaticResource TextPrimaryDark}}" />
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Empty state -->
+                <Label Text="No cards with active prayers in this collection."
+                       AutomationId="CardSelect_Lbl_Empty"
+                       Style="{StaticResource MutedText}"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,24,0,0"
+                       IsVisible="{Binding IsEmpty}" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="8">
+            <Button Grid.Column="0"
+                    Text="Cancel"
+                    AutomationId="CardSelect_Btn_Cancel"
+                    Command="{Binding CancelCommand}"
+                    SemanticProperties.Hint="Go back without starting"
+                    HorizontalOptions="Fill" />
+            <Button Grid.Column="1"
+                    Text="{Binding StartButtonText}"
+                    AutomationId="CardSelect_Btn_Start"
+                    Command="{Binding StartCommand}"
+                    SemanticProperties.Description="{Binding StartButtonDescription}"
+                    HorizontalOptions="Fill" />
+        </Grid>
+
+    </Grid>
+</ContentPage>

@@ -62,24 +62,26 @@ public partial class MainPage : ContentPage
             var hasTags = _homeViewModel.HasTags;
             var hasBoxes = _homeViewModel.HasUserBoxesWithCards;
 
-            if (!hasTags && !hasBoxes)
-            {
-                await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeAll}");
-                return;
-            }
-
-            // Build action sheet options dynamically
+            // Build action sheet options dynamically. "Choose cards…" is always
+            // available when there are active prayers (guarded above), so the
+            // action sheet is now shown even for a flat card list with no tags or
+            // boxes — otherwise the new multi-card path would be unreachable for
+            // those users. "By Tags"/"By Collection" still appear conditionally.
             const string optAll = "All Requests";
+            const string optChooseCards = "Choose cards…";
             const string optTags = "By Tags";
             const string optBox = "By Collection";
 
-            var options = new List<string> { optAll };
+            var options = new List<string> { optAll, optChooseCards };
             if (hasTags) options.Add(optTags);
             if (hasBoxes) options.Add(optBox);
 
             var action = await DisplayActionSheetAsync("Prayer Time", "Cancel", null, options.ToArray());
             if (action == optAll)
                 await Shell.Current.GoToAsync($"{Routes.PrayerTimePage}?scope={Routes.ScopeAll}");
+            else if (action == optChooseCards)
+                await Shell.Current.Navigation.PushModalAsync(
+                    _services.GetRequiredService<PrayerTime.PrayerTimeCardSelectPage>());
             else if (action == optTags)
                 await Shell.Current.Navigation.PushModalAsync(
                     _services.GetRequiredService<PrayerTime.PrayerTimeScopePage>());

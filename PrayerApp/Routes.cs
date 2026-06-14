@@ -36,6 +36,7 @@ public static class Routes
     public const string ScopeAll = "all";
     public const string ScopeTags = "tags";
     public const string ScopeBox = "box";
+    public const string ScopeSelection = "selection";
 
     /// <summary>
     /// Query-string keys used in Shell navigation URLs and read by ApplyQueryAttributes

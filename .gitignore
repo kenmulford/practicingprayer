@@ -395,3 +395,10 @@ window_dump.xml
 PrayerApp/iOS-signing.local.props
 /.superpowers
 /screenshots
+
+# milestone-driver per-clone scratch (gitignored, never commit)
+/.milestone-driver-preflight-notice
+/.milestone-driver-trello-notice
+/.milestone-driver-triage-cache.json
+/.milestone-driver-tests-stamp
+/.milestone-driver-worktrees/

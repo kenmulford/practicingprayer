@@ -16,6 +16,7 @@ public class PrayerTimeViewModelTests
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
+    private readonly IPrayerSelectionService _selectionService = Substitute.For<IPrayerSelectionService>();
 
     public PrayerTimeViewModelTests()
     {
@@ -26,7 +27,8 @@ public class PrayerTimeViewModelTests
 
     private PrayerTimeViewModel CreateSut() =>
         new(_prayerService, _cardService, _tagService, _interactionService,
-            _navigationService, _accessibilityService, _notificationService, _settings);
+            _navigationService, _accessibilityService, _notificationService, _settings,
+            _selectionService);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -124,6 +126,74 @@ public class PrayerTimeViewModelTests
         var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
         Assert.Equal(2, realEntries.Count);
         Assert.All(realEntries, e => Assert.Equal("Family", e.CardTitle));
+    }
+
+    // ── scope=selection filtering ─────────────────────────────────────
+
+    [Fact]
+    public async Task ApplyQueryAttributes_SelectionScope_FiltersToSelectedIds()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Family" },
+            new() { Id = 2, Title = "Work" }
+        }.AsReadOnly());
+
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "Prayer A", PrayerCardId = 1 },
+            new() { Id = 200, Title = "Prayer B", PrayerCardId = 2 },
+            new() { Id = 300, Title = "Prayer C", PrayerCardId = 1 }
+        }.AsReadOnly());
+
+        // Selection service hands over IDs 100 and 300; 200 and a stale 999 must be excluded.
+        _selectionService.Consume().Returns(new List<int> { 100, 300, 999 }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "selection" } });
+
+        await Task.Delay(200);
+
+        var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
+        Assert.Equal(2, realEntries.Count);
+        Assert.All(realEntries, e => Assert.Equal("Family", e.CardTitle));
+    }
+
+    [Fact]
+    public async Task ApplyQueryAttributes_SelectionScope_ConsumesSelectionServiceOnce()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { new() { Id = 1, Title = "A" } }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "P", PrayerCardId = 1 }
+        }.AsReadOnly());
+        _selectionService.Consume().Returns(new List<int> { 100 }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "selection" } });
+
+        await Task.Delay(200);
+
+        _selectionService.Received(1).Consume();
+    }
+
+    [Fact]
+    public async Task ApplyQueryAttributes_SelectionScope_EmptySelection_NoEntries()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { new() { Id = 1, Title = "A" } }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "P", PrayerCardId = 1 }
+        }.AsReadOnly());
+        _selectionService.Consume().Returns(new List<int>().AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "selection" } });
+
+        await Task.Delay(200);
+
+        Assert.DoesNotContain(sut.Entries, e => !e.IsSentinel);
+        Assert.True(sut.HasCompleted);
     }
 
     // ── Ordering (BUG-61) ────────────────────────────────────────────

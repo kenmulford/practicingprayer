@@ -205,6 +205,12 @@ namespace PrayerApp
             builder.Services.AddSingleton<IPrayerInteractionService, PrayerInteractionService>();
             // Register box service as singleton
             builder.Services.AddSingleton<IBoxService, BoxService>();
+            // Singleton prayer-selection hand-off. Must be a single shared instance:
+            // the producer (Set) and the consumer (Consume) run on opposite sides of a
+            // navigation hop, so one instance has to hold the set across that hop. A
+            // transient would hand each consumer a fresh, empty instance and Consume
+            // would always return nothing. The data inside is single-use (Consume clears).
+            builder.Services.AddSingleton<IPrayerSelectionService, PrayerSelectionService>();
             // Register local notification center wrapper (wraps Plugin.LocalNotification static)
             builder.Services.AddSingleton<ILocalNotificationCenter, LocalNotificationCenterWrapper>();
             // Register notification service — Settings.AllowNotifications supplied here so
@@ -268,6 +274,7 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerTimeViewModel>();
             builder.Services.AddTransient<PrayerTimeScopeViewModel>();
             builder.Services.AddTransient<PrayerTimeBoxScopeViewModel>();
+            builder.Services.AddTransient<PrayerTimeCardSelectViewModel>();
             builder.Services.AddTransient<TagsViewModel>();
             builder.Services.AddTransient<TagDetailViewModel>();
             builder.Services.AddTransient<BoxesViewModel>();
@@ -283,6 +290,7 @@ namespace PrayerApp
             builder.Services.AddTransient<PrayerTimePage>();
             builder.Services.AddTransient<PrayerTimeScopePage>();
             builder.Services.AddTransient<PrayerTimeBoxScopePage>();
+            builder.Services.AddTransient<PrayerTimeCardSelectPage>();
             builder.Services.AddTransient<TagsPage>();
             builder.Services.AddTransient<TagDetailPage>();
             builder.Services.AddTransient<Views.Boxes.BoxesPage>();
