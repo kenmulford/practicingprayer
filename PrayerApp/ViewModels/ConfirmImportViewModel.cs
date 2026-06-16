@@ -324,6 +324,25 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         if (current == _hasNoAvailableCardsCached) return;
         _hasNoAvailableCardsCached = current;
         OnPropertyChanged(nameof(HasNoAvailableCards));
+
+        // #119: In Quick Add (Manual), when the user picks a real collection
+        // that resolves to no existing cards, ExistingCard mode would dead-end
+        // Save (it requires SelectedCard, which is null with no cards). Fall to
+        // New-card semantics so the prayer saves into a freshly created card in
+        // that collection. Gated to Manual entry + a real (non-sentinel) box so
+        // the import-filter flow and the All-collections view are unaffected.
+        // Setting ImportMode re-enters this method via ApplyImportModeSideEffects.
+        // Re-entry terminates because flipping to NewCard makes HasNoAvailableCards
+        // evaluate false (it requires IsExistingCardMode), so `current` is false on
+        // re-entry and this flip predicate fails — no second flip. The
+        // IsExistingCardMode term in HasNoAvailableCards is therefore load-bearing
+        // for re-entry safety.
+        if (current
+            && EntryMode == EntryMode.Manual
+            && SelectedBox is RealBoxPickerItem)
+        {
+            ImportMode = ImportMode.NewCard;
+        }
     }
 
     public ConfirmImportViewModel() : this(
@@ -554,7 +573,11 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         => !IsBusy
            && Prayers.Any(p => !string.IsNullOrWhiteSpace(p.Title))
            && (ImportMode == ImportMode.NewCard
-                   ? !string.IsNullOrWhiteSpace(CardTitle)
+                   // #119: In Quick Add (Manual), a blank card title is allowed —
+                   // SaveAsync derives it from the first prayer's title, so the
+                   // user can save with only a prayer typed. The Import flow still
+                   // requires an explicit card title.
+                   ? EntryMode == EntryMode.Manual || !string.IsNullOrWhiteSpace(CardTitle)
                    : SelectedCard is not null);
 
     private async Task SaveAsync()
@@ -595,9 +618,16 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
                 return;
             }
 
+            // #119: In Quick Add the card title may be blank (the user typed
+            // only a prayer). Derive it from the first non-blank prayer title so
+            // the new card is never untitled. Import always has an explicit title.
+            var effectiveCardTitle = string.IsNullOrWhiteSpace(CardTitle)
+                ? Prayers.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Title))?.Title ?? string.Empty
+                : CardTitle;
+
             var card = new PrayerCard
             {
-                Title = NormalizeQuotes(CardTitle)?.Trim() ?? string.Empty,
+                Title = NormalizeQuotes(effectiveCardTitle)?.Trim() ?? string.Empty,
                 // Only RealBoxPickerItem carries a BoxId; null and the
                 // All-collections sentinel both fall through to BoxId 0
                 // (Loose Cards) — the safe NewCard default.
