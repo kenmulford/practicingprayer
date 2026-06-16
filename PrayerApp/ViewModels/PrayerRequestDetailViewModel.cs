@@ -382,7 +382,7 @@ namespace PrayerApp.ViewModels
 
         /// <summary>
         /// Shows how many times this prayer has been prayed and when it was created.
-        /// Always visible, including when count is zero.
+        /// Hidden when the count is zero (see <see cref="HasBeenPrayedFor"/>); visible at 1+.
         /// Backed by a field and set via SetProperty so compiled bindings always pick
         /// up the update regardless of which thread LoadPrayerAsync completes on.
         /// </summary>
@@ -392,8 +392,18 @@ namespace PrayerApp.ViewModels
             private set => SetProperty(ref _prayedSummary, value);
         }
 
-        private void RecomputePrayedSummary() =>
+        /// <summary>
+        /// Gates the <see cref="PrayedSummary"/> label's visibility: false at zero count
+        /// (hides the "Prayed for 0 times" line), true at 1+. Kept in sync with
+        /// <c>_prayedCount</c> via <see cref="RecomputePrayedSummary"/>.
+        /// </summary>
+        public bool HasBeenPrayedFor => _prayedCount > 0;
+
+        private void RecomputePrayedSummary()
+        {
             PrayedSummary = $"Prayed for {_prayedCount} {(_prayedCount == 1 ? "time" : "times")} since {CreatedAt:MMM d, yyyy}";
+            OnPropertyChanged(nameof(HasBeenPrayedFor));
+        }
 
         public PrayerRequestDetailViewModel(IPrayerService prayerService, ITagService tagService,
             ICardService cardService, IOnboardingService onboardingService, INotificationService notificationService,
@@ -825,6 +835,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(AnsweredAtDisplay));
             OnPropertyChanged(nameof(CreatedAt));
             OnPropertyChanged(nameof(PrayedSummary));
+            OnPropertyChanged(nameof(HasBeenPrayedFor));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
             OnPropertyChanged(nameof(PrayerFrequency));
