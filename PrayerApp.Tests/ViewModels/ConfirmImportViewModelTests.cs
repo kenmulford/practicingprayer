@@ -1599,4 +1599,143 @@ public class ConfirmImportViewModelTests
         // And CanSave must now evaluate to true (belt-and-suspenders).
         Assert.True(sut.SaveCommand.CanExecute(null));
     }
+
+    // ── Quick Add: empty collection falls back to New-card save (#119) ─────
+
+    [Fact]
+    public async Task Manual_SelectingEmptyCollection_FlipsToNewCardMode()
+    {
+        // #119: In Quick Add, selecting a collection that has no existing cards
+        // must not dead-end Save. The VM falls back to New-card mode so the
+        // prayer can save into a freshly created card in that collection.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        // Quick Add lives in Loose Cards (BoxId 0); the "Family" collection (7)
+        // has NO cards — selecting it resolves to an empty card list.
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        // Select the empty Family collection.
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        await Task.Delay(50); // let SafeFireAndForget LoadCardGroupsAsync complete
+
+        Assert.Equal(ImportMode.NewCard, sut.ImportMode);
+    }
+
+    [Fact]
+    public async Task Manual_EmptyCollection_WithPrayerTitle_CanSave()
+    {
+        // #119: a non-empty prayer title is sufficient to save into an empty
+        // collection — CardTitle is auto-derived, so Save is never blocked on
+        // a card name.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        await Task.Delay(50);
+
+        // User types only a prayer title (no card title).
+        sut.Prayers[0].Title = "Trust God";
+
+        Assert.True(sut.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Manual_EmptyCollection_Save_CreatesOneCardInCollectionWithDerivedTitle()
+    {
+        // #119: saving into an empty collection creates exactly ONE new card in
+        // that collection (BoxId = selected box) whose title is derived from the
+        // first prayer, and the prayer is attached to it.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        // Assign an Id to the freshly created card so the prayer can reference it.
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>())
+            .Returns(ci =>
+            {
+                ((PrayerCard)ci[0]).Id = 123;
+                return Task.FromResult((PrayerCard)ci[0]);
+            });
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        await Task.Delay(50);
+
+        sut.Prayers[0].Title = "Trust God";
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        // Exactly one new card, in the selected collection, titled from the prayer.
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 7 && c.Title == "Trust God" && c.IsImported == false),
+            false);
+        // The prayer is attached to that new card.
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Trust God" && p.PrayerCardId == 123 && p.IsImported == false),
+            false);
+    }
+
+    [Fact]
+    public async Task Import_EmptyCollection_DoesNotFlip_AndStillRequiresCardTitle()
+    {
+        // #119 negative guard: the empty-collection → New-card fallback is gated
+        // to Manual entry. In the default Import flow, selecting an empty real
+        // collection must NOT auto-flip to New-card — and New-card's CardTitle
+        // requirement must still hold (a prayer title alone is not enough, unlike
+        // Quick Add where CardTitle is auto-derived). This is the invariant the
+        // whole fix relies on but otherwise leaves untested.
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            Array.Empty<PrayerCard>()));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = SetupSutWithRows(("Trust God", null)); // EntryMode defaults to Import
+        await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        // Select the empty Family collection (no cards).
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        // The Manual-only fallback must not fire in the Import flow.
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+
+        // And New-card mode still requires a non-empty CardTitle — a prayer title
+        // alone (blank CardTitle) cannot save.
+        sut.SetNewCardModeCommand.Execute(null);
+        sut.CardTitle = "   ";
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
+    }
 }
