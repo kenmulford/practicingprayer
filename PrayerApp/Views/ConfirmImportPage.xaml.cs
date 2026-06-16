@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using PrayerApp.Helpers;
 using PrayerApp.ViewModels;
 
 namespace PrayerApp.Views;
@@ -7,10 +8,26 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
 {
     private bool _animating;
 
+    // #122: the prayer Title Entry lives inside a BindableLayout ItemTemplate, so
+    // it has no x:Name and code-behind has no compile-time handle. The first row's
+    // Entry captures itself here via its Loaded event so OnAppearing can focus it
+    // (Quick Add: keyboard up, ready to type). Cleared on disappear to avoid
+    // holding a stale recycled-Entry reference across page lifecycles.
+    private Entry? _firstPrayerTitleEntry;
+
     public ConfirmImportPage(ConfirmImportViewModel vm)
     {
         InitializeComponent();
         BindingContext = vm;
+    }
+
+    private void OnPrayerTitleEntryLoaded(object? sender, EventArgs e)
+    {
+        // Capture only the FIRST prayer row's Entry. Manual (Quick Add) seeds
+        // exactly one row, so the first Loaded Entry is the one to focus. Import
+        // mode can load many rows; we still only keep the first and never focus
+        // it (the focus call below is gated to Manual mode).
+        _firstPrayerTitleEntry ??= sender as Entry;
     }
 
     protected override async void OnAppearing()
@@ -29,6 +46,22 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
             // _consumed is already true from InitializeManualEntry — no-op.
             await vm.LoadBoxesAsync();
             await vm.LoadManualCardGroupsAsync();
+
+            // #122: focus the prayer Title field so the keyboard is up and the
+            // user can type immediately. Drain the modal-present layout pass
+            // first — a single dispatcher tick resolves before the platform Entry
+            // view is stable and Focus() silently no-ops mid-animation (BUG-70
+            // family; same pattern as PrayerCardPage / PrayerDetailPage). Guarded
+            // by try/catch because Focus() can throw if the handler isn't ready.
+            await Dispatcher.DrainLayoutPassAsync();
+            if (_firstPrayerTitleEntry is not null)
+            {
+                try { _firstPrayerTitleEntry.Focus(); }
+                catch (Exception ex)
+                {
+                    Diagnostics.ResolveLog()?.Log("ConfirmImportPage.OnAppearing focus", ex);
+                }
+            }
         }
         else
         {
@@ -62,6 +95,9 @@ public partial class ConfirmImportPage : ContentPage, IPageSheetModal
         base.OnDisappearing();
         // Swipe-dismiss on iOS PageSheet modals does not fire CancelCommand;
         // this is the only drain path for that case.
+        // #122: drop the captured first-row Entry so a recycled handle from a
+        // prior lifecycle isn't reused on the next appear.
+        _firstPrayerTitleEntry = null;
         if (BindingContext is ConfirmImportViewModel vm)
         {
             vm.PropertyChanged -= OnVmPropertyChanged;

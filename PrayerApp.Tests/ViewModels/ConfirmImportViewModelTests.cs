@@ -1354,11 +1354,13 @@ public class ConfirmImportViewModelTests
     }
 
     [Fact]
-    public async Task InitializeManualEntry_AfterLoadBoxesAndCards_PreselectsQuickAddCard()
+    public async Task Manual_LooseCardsHasQuickAddCard_PreselectsIt()
     {
-        // After InitializeManualEntry + LoadBoxesAsync + LoadManualCardGroupsAsync,
-        // SelectedCard is the Quick Add system card.
-        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add" };
+        // Edge case: if the Quick Add card itself lives in Loose Cards (BoxId 0)
+        // — e.g. a fresh DB where no System box exists yet, so GetOrCreateSystemCardAsync
+        // falls back to BoxId 0 — then with Loose Cards as the default selection it
+        // is the only card present and gets preselected (existing-card fast path).
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
         _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
         _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
             new[] { quickAddCard }));
@@ -1372,15 +1374,15 @@ public class ConfirmImportViewModelTests
 
         Assert.NotNull(sut.SelectedCard);
         Assert.Equal(99, sut.SelectedCard!.CardId);
-        Assert.Equal("Quick Add", sut.SelectedCard.Title);
     }
 
     [Fact]
     public async Task Manual_Save_WritesIsImportedFalse()
     {
         // Prayers added via Manual mode are NOT flagged as imported — they are
-        // user-authored, not ingested from an external source.
-        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add" };
+        // user-authored, not ingested from an external source. Quick Add card at
+        // BoxId 0 so it sits in the default Loose Cards view and is preselected.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
         _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
         _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
             new[] { quickAddCard }));
@@ -1465,15 +1467,16 @@ public class ConfirmImportViewModelTests
             false);
     }
 
-    // ── Manual mode — All-collections sentinel (Bug 1 regression) ────────
+    // ── Manual mode — Loose Cards default (#122) ─────────────────────────
 
     [Fact]
-    public async Task Manual_AfterLoadBoxesAndCards_SelectedBoxIsAllCollections()
+    public async Task Manual_AfterLoadBoxesAndCards_SelectedBoxIsLooseCards()
     {
-        // After InitializeManualEntry + LoadBoxesAsync + LoadManualCardGroupsAsync,
-        // SelectedBox must be AllCollectionsPickerItem.Instance — the Collection
-        // picker reads "All collections", not "Loose Cards".
-        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add" };
+        // #122: After InitializeManualEntry + LoadBoxesAsync + LoadManualCardGroupsAsync,
+        // SelectedBox must be the Loose Cards RealBoxPickerItem (BoxId 0), NOT the
+        // All-collections sentinel — Quick Add opens defaulted to Loose Cards so a
+        // new prayer lands there by default.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
         _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
         _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
             new[] { quickAddCard }));
@@ -1485,17 +1488,47 @@ public class ConfirmImportViewModelTests
         await sut.LoadBoxesAsync();
         await sut.LoadManualCardGroupsAsync();
 
-        Assert.IsType<AllCollectionsPickerItem>(sut.SelectedBox);
-        Assert.Same(AllCollectionsPickerItem.Instance, sut.SelectedBox);
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(0, selected.BoxId);
     }
 
     [Fact]
-    public async Task Manual_AfterLoadBoxesAndCards_CardGroupsIncludeQuickAddCard()
+    public async Task Manual_LooseCardsHasUserCards_StaysExistingCardMode_ShowingLooseCards()
     {
-        // After InitializeManualEntry + LoadBoxesAsync + LoadManualCardGroupsAsync,
-        // AvailableCardGroups must contain the Quick Add system card — the list
-        // should not be empty even though normal import excludes system cards.
-        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add" };
+        // #122 + #119: when Loose Cards (the default selection) already holds
+        // existing cards, the page stays in ExistingCard mode and shows them —
+        // no flip to NewCard. The Quick Add system card lives in the System box
+        // (BoxId != 0) on-device, so it is correctly filtered out of the Loose
+        // Cards view (modelled here with BoxId 5).
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 5 };
+        var looseCard = new PrayerCard { Id = 1, Title = "Stray", BoxId = 0, IsSystem = false };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard, looseCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+        var allCards = sut.AvailableCardGroups.SelectMany(g => g.Cards).ToList();
+        Assert.Contains(allCards, c => c.CardId == 1);   // loose card visible
+        Assert.DoesNotContain(allCards, c => c.CardId == 99); // Quick Add filtered out
+    }
+
+    [Fact]
+    public async Task Manual_LooseCardsEmpty_FlipsToNewCardMode_WithLooseCardsSelected()
+    {
+        // #122 + #119: a brand-new user with no loose cards opens Quick Add →
+        // Loose Cards is the default but resolves to an empty card list →
+        // #119's flip to NewCard fires so the Card Title field is shown and the
+        // user can type straight into a new card. SelectedBox stays Loose Cards
+        // (the new card lands in BoxId 0). The Quick Add card lives in the System
+        // box (BoxId 5), so it is filtered out of the empty Loose Cards view.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 5 };
         _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
         _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
             new[] { quickAddCard }));
@@ -1507,8 +1540,44 @@ public class ConfirmImportViewModelTests
         await sut.LoadBoxesAsync();
         await sut.LoadManualCardGroupsAsync();
 
-        var allCards = sut.AvailableCardGroups.SelectMany(g => g.Cards).ToList();
-        Assert.Contains(allCards, c => c.CardId == 99);
+        Assert.Equal(ImportMode.NewCard, sut.ImportMode);
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(0, selected.BoxId);
+    }
+
+    [Fact]
+    public async Task Manual_LooseCardsEmpty_Save_CreatesLooseCardWithDerivedTitle()
+    {
+        // #122 end-to-end: empty Loose Cards → flip to NewCard → user types only a
+        // prayer title → Save creates exactly one card in Loose Cards (BoxId 0)
+        // with the title derived from the prayer, IsImported = false.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 5 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>())
+            .Returns(ci =>
+            {
+                ((PrayerCard)ci[0]).Id = 123;
+                return Task.FromResult((PrayerCard)ci[0]);
+            });
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        sut.Prayers[0].Title = "Trust God";
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 0 && c.Title == "Trust God" && c.IsImported == false),
+            false);
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Trust God" && p.PrayerCardId == 123 && p.IsImported == false),
+            false);
     }
 
     [Fact]

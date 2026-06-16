@@ -269,8 +269,10 @@
                                 <Grid ColumnDefinitions="*, Auto" ColumnSpacing="4">
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
+                                           AutomationId="ConfirmImport_Entry_PrayerTitle"
                                            SemanticProperties.Description="Prayer title"
-                                           VerticalOptions="Center">
+                                           VerticalOptions="Center"
+                                           Loaded="OnPrayerTitleEntryLoaded">
                                         <Entry.Behaviors>
                                             <behaviors:SelectAllOnFocusBehavior />
                                             <behaviors:KeyboardAvoidanceBehavior />
