@@ -672,6 +672,121 @@ public class PrayerCardViewModelTests
     }
 
     [Fact]
+    public async Task ArchiveCommand_Archive_StashesPriorBoxIdIntoPreArchiveBoxId()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = 42 };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+
+        Assert.Equal(42, card.PreArchiveBoxId);
+        await _cardService.Received(1).AssignBoxAsync(card, ArchivedBoxId);
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_Unarchive_StashedBoxStillExists_RestoresAndClearsPreArchive()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = ArchivedBoxId, PreArchiveBoxId = 42 };
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 42, Name = "Family" }
+        }.AsReadOnly());
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).AssignBoxAsync(card, 42);
+        Assert.Null(card.PreArchiveBoxId);
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_Unarchive_StashedBoxDeleted_FallsBackToZero()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = ArchivedBoxId, PreArchiveBoxId = 42 };
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 7, Name = "Other" }
+        }.AsReadOnly());
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).AssignBoxAsync(card, 0);
+        Assert.Null(card.PreArchiveBoxId);
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_RoundTrip_ReArchiveReStashesRestoredBox()
+    {
+        // The real user scenario: archive → unarchive → re-archive. The re-archive
+        // must stash the RESTORED box (42), not a stale PreArchiveBoxId value.
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = 42 };
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 42, Name = "Family" }
+        }.AsReadOnly());
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        // 1. Archive: stash 42, move to archived folder.
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+        Assert.Equal(42, card.PreArchiveBoxId);
+        await _cardService.Received(1).AssignBoxAsync(card, ArchivedBoxId);
+        card.BoxId = ArchivedBoxId; // AssignBoxAsync is stubbed; reflect the move for IsArchived.
+
+        // 2. Unarchive: restore to 42, clear PreArchiveBoxId.
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+        await _cardService.Received(1).AssignBoxAsync(card, 42);
+        Assert.Null(card.PreArchiveBoxId);
+        card.BoxId = 42; // reflect the restore.
+
+        // 3. Re-archive: must re-stash the RESTORED box (42), not a stale value.
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+        Assert.Equal(42, card.PreArchiveBoxId);
+        await _cardService.Received(2).AssignBoxAsync(card, ArchivedBoxId);
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_Unarchive_StashedZero_FallsBackToZero_WithoutBoxLookup()
+    {
+        // Archiving from Loose Cards (BoxId = 0) stashes 0. Unarchive must return to 0
+        // via the boxId != 0 guard, WITHOUT consulting GetBoxesAsync.
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = 0 };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        // 1. Archive from Loose Cards: stash 0.
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+        Assert.Equal(0, card.PreArchiveBoxId);
+        await _cardService.Received(1).AssignBoxAsync(card, ArchivedBoxId);
+        card.BoxId = ArchivedBoxId; // reflect the move for IsArchived.
+
+        _boxService.ClearReceivedCalls();
+
+        // 2. Unarchive: guard short-circuits to 0 without a box lookup.
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+        await _cardService.Received(1).AssignBoxAsync(card, 0);
+        Assert.Null(card.PreArchiveBoxId);
+        await _boxService.DidNotReceive().GetBoxesAsync();
+    }
+
+    [Fact]
+    public async Task ArchiveCommand_Unarchive_NullPreArchiveBoxId_RestoresToZero()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Test", BoxId = ArchivedBoxId, PreArchiveBoxId = null };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.ArchiveCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).AssignBoxAsync(card, 0);
+        Assert.Null(card.PreArchiveBoxId);
+    }
+
+    [Fact]
     public void IsArchived_FalseWhenBoxIdIsZero()
     {
         var card = new PrayerCard { Id = 7, BoxId = 0 };

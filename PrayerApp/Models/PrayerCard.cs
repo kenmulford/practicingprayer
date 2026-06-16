@@ -45,6 +45,14 @@ namespace PrayerApp.Models
         [Column("BoxId")]
         public int BoxId { get; set; }
 
+        /// <summary>
+        /// The card's <see cref="BoxId"/> at the moment it was archived, so unarchiving can
+        /// restore it to its original collection. Null when not archived (or pre-migration),
+        /// in which case unarchive falls back to Loose Cards (0).
+        /// </summary>
+        [Column("PreArchiveBoxId")]
+        public int? PreArchiveBoxId { get; set; }
+
         // Well-known SystemKey values for system cards.
         public const string SystemKeyQuickAdd = "quick_add";
         public const string SystemKeySharedWithMe = "shared_with_me";

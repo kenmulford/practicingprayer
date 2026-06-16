@@ -490,7 +490,27 @@ namespace PrayerApp.ViewModels
             _isArchiveSaving = true;
             try
             {
-                var target = archiving ? _settings.ArchivedFolderId : 0;
+                int target;
+                if (archiving)
+                {
+                    // Stash the current collection so unarchive can restore it.
+                    _prayerCard.PreArchiveBoxId = _prayerCard.BoxId;
+                    target = _settings.ArchivedFolderId;
+                }
+                else
+                {
+                    // Restore to the original collection if it still exists; otherwise Loose Cards.
+                    target = 0;
+                    var stashed = _prayerCard.PreArchiveBoxId;
+                    if (stashed is int boxId && boxId != 0)
+                    {
+                        var boxes = await _boxService.GetBoxesAsync();
+                        if (boxes.Any(b => b.Id == boxId))
+                            target = boxId;
+                    }
+                    _prayerCard.PreArchiveBoxId = null;
+                }
+
                 await _cardService.AssignBoxAsync(_prayerCard, target);
                 OnPropertyChanged(nameof(IsArchived));
                 OnPropertyChanged(nameof(ArchiveLabel));

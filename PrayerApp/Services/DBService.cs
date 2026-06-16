@@ -622,6 +622,10 @@ namespace PrayerApp.Services
             try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN SystemKey TEXT"); }
             catch { System.Diagnostics.Debug.WriteLine("[F-24 Migration] SystemKey column already exists"); }
 
+            // BUG-121: remember a card's pre-archive collection so unarchiving can restore it.
+            try { await _db.ExecuteAsync("ALTER TABLE PrayerCard ADD COLUMN PreArchiveBoxId INTEGER"); }
+            catch { System.Diagnostics.Debug.WriteLine("[BUG-121 Migration] PreArchiveBoxId column already exists"); }
+
             // 5. Migrate system and imported cards into the System box
             // Only cards with BoxId=0 need migration — already-assigned cards are left alone.
             try
