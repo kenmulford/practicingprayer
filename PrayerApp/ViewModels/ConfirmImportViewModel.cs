@@ -13,6 +13,14 @@ namespace PrayerApp.ViewModels;
 
 public enum ImportMode { NewCard, ExistingCard }
 
+/// <summary>
+/// Controls whether the VM is operating as a standard import flow or as
+/// the Manual (Quick Add) entry point. Import is the default; Manual is
+/// set by the caller before the page appears via
+/// <see cref="ConfirmImportViewModel.InitializeManualEntry"/>.
+/// </summary>
+public enum EntryMode { Import, Manual }
+
 public class CardPickerItem : ObservableObject
 {
     public int CardId { get; init; }
@@ -59,6 +67,19 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
     private bool _boxesLoading;
     private bool _hasNoAvailableCardsCached;
     private CancellationTokenSource? _loadCardGroupsCts = new();
+
+    private EntryMode _entryMode;
+    /// <summary>
+    /// Import (default) preserves the existing import flow unchanged.
+    /// Manual activates the Quick Add path: no payload consumed, Quick Add
+    /// card preselected, prayers saved with <c>IsImported = false</c>.
+    /// Set this before <see cref="InitializeManualEntry"/> is called.
+    /// </summary>
+    public EntryMode EntryMode
+    {
+        get => _entryMode;
+        private set => SetProperty(ref _entryMode, value);
+    }
 
     public ObservableCollection<EditablePrayer> Prayers { get; } = new();
 
@@ -115,14 +136,23 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
     /// default — a NewCard save needs ONE BoxId, and Loose Cards mirrors the
     /// pre-mode-toggle baseline. Skips if LoadBoxesAsync hasn't run yet
     /// (constructor-time mode set in tests, e.g.).
+    /// In Manual mode the ImportMode is set to ExistingCard by
+    /// InitializeManualEntry before boxes are loaded; at that point the
+    /// sentinel cannot be inserted yet. LoadManualCardGroupsAsync (called from
+    /// OnAppearing after LoadBoxesAsync) inserts the sentinel and triggers the
+    /// card-group load. The early-return for Manual mode here prevents a
+    /// premature (pre-boxes) LoadCardGroupsAsync fire-and-forget that would
+    /// race against the authoritative load in LoadManualCardGroupsAsync.
     /// </summary>
     private void ApplyImportModeSideEffects()
     {
         if (!_boxesLoaded)
         {
-            // No picker contents to mutate yet; just clear/load card groups
-            // so the empty-state binding stays accurate for the new mode.
-            if (IsExistingCardMode)
+            // No picker contents to mutate yet. In Import mode, kick off an
+            // early card-group load so the empty-state binding is accurate.
+            // In Manual mode, suppress the early load — boxes aren't ready,
+            // and LoadManualCardGroupsAsync is the authoritative first loader.
+            if (IsExistingCardMode && EntryMode != EntryMode.Manual)
                 LoadCardGroupsAsync().SafeFireAndForget();
             else
                 AvailableCardGroups.Clear();
@@ -255,8 +285,19 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
             item.IsSelected = true;
         });
 
-        Prayers.CollectionChanged += (_, _) =>
+        Prayers.CollectionChanged += (_, e) =>
         {
+            // Subscribe to Title changes on rows entering the collection so
+            // CanSave is re-evaluated when the user types (not only on Add/Remove).
+            if (e.NewItems is not null)
+                foreach (EditablePrayer row in e.NewItems)
+                    row.PropertyChanged += OnPrayerPropertyChanged;
+
+            // Unsubscribe from rows leaving the collection to prevent leaks.
+            if (e.OldItems is not null)
+                foreach (EditablePrayer row in e.OldItems)
+                    row.PropertyChanged -= OnPrayerPropertyChanged;
+
             NotifySaveCanExecute();
             OnPropertyChanged(nameof(PrayersHeader));
         };
@@ -283,6 +324,37 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         if (current == _hasNoAvailableCardsCached) return;
         _hasNoAvailableCardsCached = current;
         OnPropertyChanged(nameof(HasNoAvailableCards));
+
+        // #119: In Quick Add (Manual), when the user picks a real collection
+        // that resolves to no existing cards, ExistingCard mode would dead-end
+        // Save (it requires SelectedCard, which is null with no cards). Fall to
+        // New-card semantics so the prayer saves into a freshly created card in
+        // that collection. Gated to Manual entry + a real (non-sentinel) box so
+        // the import-filter flow and the All-collections view are unaffected.
+        // Setting ImportMode re-enters this method via ApplyImportModeSideEffects.
+        // Re-entry terminates because flipping to NewCard makes HasNoAvailableCards
+        // evaluate false (it requires IsExistingCardMode), so `current` is false on
+        // re-entry and this flip predicate fails — no second flip. The
+        // IsExistingCardMode term in HasNoAvailableCards is therefore load-bearing
+        // for re-entry safety.
+        if (current)
+            FlipToNewCardIfEmptyManualRealBox();
+    }
+
+    /// <summary>
+    /// Flip Quick Add (Manual) to New-card mode when the selected real collection
+    /// has no existing cards, so the user can type straight into a new card
+    /// (avoids the #119 empty-collection Save dead-end).
+    /// Single source for the empty→NewCard flip, called from both the reactive
+    /// path (<see cref="RaiseHasNoAvailableCardsIfChanged"/>, after its
+    /// cache-equality early-return) and the explicit first-load path
+    /// (<see cref="LoadManualCardGroupsAsync"/>).
+    /// </summary>
+    private void FlipToNewCardIfEmptyManualRealBox()
+    {
+        if (EntryMode == EntryMode.Manual && IsExistingCardMode
+            && HasNoAvailableCards && SelectedBox is RealBoxPickerItem)
+            ImportMode = ImportMode.NewCard;
     }
 
     public ConfirmImportViewModel() : this(
@@ -317,6 +389,91 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Prepares the VM for Manual (Quick Add) entry mode. Call once before
+    /// the page appears; idempotent by design.
+    /// Sets <see cref="EntryMode"/> to <see cref="EntryMode.Manual"/>,
+    /// seeds ExistingCard as the provisional mode (the authoritative default is
+    /// applied later by <see cref="LoadManualCardGroupsAsync"/>, which defaults
+    /// the Collection picker to Loose Cards and flips an empty Loose Cards view
+    /// to NewCard — #122), and seeds exactly one empty prayer row. The Quick Add
+    /// card is no longer preselected and there is no auto-collapse on the default
+    /// path. Does NOT consume any staged import payload.
+    /// </summary>
+    public void InitializeManualEntry()
+    {
+        EntryMode = EntryMode.Manual;
+        // Mark both payload guards so ConsumePending() and DrainIfNotConsumed()
+        // are no-ops — there is no staged import payload in manual mode.
+        _consumed = true;
+        _payloadConsumed = true;
+        // Provisional ExistingCard mode; LoadManualCardGroupsAsync sets the
+        // authoritative #122 default (Loose Cards; empty → NewCard). This also
+        // primes _hasNoAvailableCardsCached = true (SelectedBox is still null
+        // here, so no flip fires yet — see LoadManualCardGroupsAsync).
+        ImportMode = ImportMode.ExistingCard;
+        // Seed exactly one empty row for the zero-tap fast path.
+        if (Prayers.Count == 0)
+            Prayers.Add(new EditablePrayer());
+    }
+
+    /// <summary>
+    /// For Manual mode: defaults the Collection picker to Loose Cards (BoxId 0)
+    /// and loads the card list for it (#122). The window to set this default was
+    /// missed during <see cref="InitializeManualEntry"/> because boxes weren't
+    /// loaded yet, so it is applied here after <see cref="LoadBoxesAsync"/>.
+    ///
+    /// Combined behavior with #119:
+    ///   • Loose Cards already holds cards → ExistingCard mode shows them.
+    ///   • Loose Cards is empty → <see cref="LoadCardGroupsAsync"/> clears
+    ///     AvailableCardGroups, <see cref="HasNoAvailableCards"/> goes true, and
+    ///     <see cref="RaiseHasNoAvailableCardsIfChanged"/> flips to NewCard mode
+    ///     (Card Title field shown, ready to type into a new Loose Cards card).
+    /// On-device the Quick Add system card lives in the System box (BoxId != 0),
+    /// so the BoxId-0 filter in LoadCardGroupsAsync excludes it from this view —
+    /// the default destination for a manual prayer is a (new or existing) Loose
+    /// Cards card, not the Quick Add card.
+    /// Call after <see cref="LoadBoxesAsync"/> so the box picker is ready.
+    /// No-op if <see cref="EntryMode"/> is not Manual.
+    /// </summary>
+    public async Task LoadManualCardGroupsAsync()
+    {
+        if (EntryMode != EntryMode.Manual) return;
+
+        // #122: default to Loose Cards (BoxId 0) rather than the All-collections
+        // sentinel. LoadBoxesAsync already added the Loose Cards RealBoxPickerItem
+        // at index 0; reuse that instance so picker identity matches. Set via the
+        // backing field directly so the setter's LoadCardGroupsAsync fire-and-forget
+        // doesn't race the explicit await below.
+        var looseCards = AvailableBoxes
+            .OfType<RealBoxPickerItem>()
+            .FirstOrDefault(b => b.BoxId == 0);
+        if (looseCards is not null)
+        {
+            _selectedBox = looseCards;
+            OnPropertyChanged(nameof(SelectedBox));
+        }
+
+        // LoadCardGroupsAsync handles Manual mode: filters to the selected box
+        // (Loose Cards), preselecting a card only when one is present.
+        await LoadCardGroupsAsync();
+
+        // #122 + #119: with the default now a real box (Loose Cards) rather than
+        // the All-collections sentinel, an empty Loose Cards view must flip to
+        // NewCard so the Card Title field is shown and the user can type straight
+        // into a new card (the empty-collection Save dead-end #119 prevents).
+        // The reactive RaiseHasNoAvailableCardsIfChanged path cannot be relied on
+        // for THIS first load: InitializeManualEntry already set ImportMode to
+        // ExistingCard, which ran RaiseHasNoAvailableCardsIfChanged and cached
+        // _hasNoAvailableCardsCached = true (SelectedBox was still null then, so
+        // no flip fired). On this authoritative load HasNoAvailableCards is still
+        // true, so the reactive handler early-returns at its cache-equality check
+        // (current == _hasNoAvailableCardsCached, both true) BEFORE reaching the
+        // flip. Decide it explicitly here. Later user-driven box changes (which
+        // toggle the cached value) still flip reactively.
+        FlipToNewCardIfEmptyManualRealBox();
+    }
+
+    /// <summary>
     /// Loads the Collection picker. "Loose Cards" (BoxId=0) is always first
     /// and is the default selection — matches the prior hardcoded behavior
     /// (a freshly imported card with no BoxId set lands in Loose Cards).
@@ -346,7 +503,24 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
             foreach (var box in boxes.Where(b => !b.IsSystem))
                 AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
 
-            SelectedBox = looseCards;
+            // In Manual mode the VM is already in ExistingCard mode (set by
+            // InitializeManualEntry), so the SelectedBox setter would fire a
+            // premature LoadCardGroupsAsync that races the authoritative load in
+            // LoadManualCardGroupsAsync — and that race can momentarily empty
+            // AvailableCardGroups and trip the #119 reactive flip on a collection
+            // that actually has cards. Set the backing field directly in Manual
+            // mode (LoadManualCardGroupsAsync runs the single authoritative load);
+            // keep the public setter for the Import path where it drives the
+            // empty-state binding's initial card load.
+            if (EntryMode == EntryMode.Manual)
+            {
+                _selectedBox = looseCards;
+                OnPropertyChanged(nameof(SelectedBox));
+            }
+            else
+            {
+                SelectedBox = looseCards;
+            }
             _boxesLoaded = true;
         }
         finally
@@ -359,13 +533,15 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
     /// Builds the grouped card list for Existing-Card mode. Two filter modes
     /// driven by SelectedBox:
     ///   • All-collections sentinel (default in ExistingCard mode): every
-    ///     non-system card, partitioned by collection — supports the small-
-    ///     library happy path where the user picks any card without first
-    ///     knowing its collection.
+    ///     non-system card (plus the Quick Add system card in Manual mode),
+    ///     partitioned by collection — supports the small-library happy path
+    ///     where the user picks any card without first knowing its collection.
     ///   • Specific BoxId: narrowed to that one collection — the 50+ card
     ///     filtered path, single group visible.
     /// Loose Cards (BoxId 0) gets a synthesized name so cards there don't
     /// fall through to "Unknown" when no CardBox row exists for it.
+    /// In Manual mode: the Quick Add system card is always included (it is
+    /// the default destination) and is preselected when SelectedCard is null.
     /// </summary>
     private async Task LoadCardGroupsAsync()
     {
@@ -373,6 +549,15 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         _loadCardGroupsCts?.Dispose();
         _loadCardGroupsCts = new CancellationTokenSource();
         var token = _loadCardGroupsCts.Token;
+
+        // Manual mode: fetch the Quick Add system card so it can be included
+        // in the card list and preselected as the default destination.
+        PrayerCard? quickAddCard = null;
+        if (EntryMode == EntryMode.Manual)
+        {
+            quickAddCard = await _cardService.GetOrCreateQuickAddCardAsync();
+            if (token.IsCancellationRequested) return;
+        }
 
         var allCards = await _cardService.GetCardsAsync();
         if (token.IsCancellationRequested) return;
@@ -387,7 +572,12 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         var boxNames = allBoxes.ToDictionary(b => b.Id, b => b.Name);
         boxNames[0] = BoxStrings.Unorganized;
 
-        IEnumerable<PrayerCard> filtered = allCards.Where(c => !c.IsSystem);
+        // Import mode: exclude system cards entirely.
+        // Manual mode: include the Quick Add system card alongside user cards.
+        IEnumerable<PrayerCard> filtered = EntryMode == EntryMode.Manual
+            ? allCards.Where(c => !c.IsSystem || c.Id == quickAddCard!.Id)
+            : allCards.Where(c => !c.IsSystem);
+
         if (SelectedBox is RealBoxPickerItem real)
             filtered = filtered.Where(c => c.BoxId == real.BoxId);
 
@@ -411,14 +601,45 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         AvailableCardGroups.Clear();
         foreach (var grp in groups)
             AvailableCardGroups.Add(grp);
-        SelectedCard = null;
+
+        // Manual mode: preselect the Quick Add card when no card is already
+        // selected (first load). Re-filter (box change) preserves the
+        // existing selection if Quick Add is still in the filtered set, or
+        // clears it if Quick Add was filtered out by a collection change.
+        if (EntryMode == EntryMode.Manual && quickAddCard is not null)
+        {
+            var qaItem = groups
+                .SelectMany(g => g.Cards)
+                .FirstOrDefault(c => c.CardId == quickAddCard.Id);
+
+            if (SelectedCard is null && qaItem is not null)
+            {
+                SelectedCard = qaItem;
+                qaItem.IsSelected = true;
+            }
+            else if (SelectedCard is not null && groups.SelectMany(g => g.Cards)
+                         .All(c => c.CardId != SelectedCard.CardId))
+            {
+                // Selected card no longer visible after filter change — clear.
+                if (SelectedCard is not null) SelectedCard.IsSelected = false;
+                SelectedCard = null;
+            }
+        }
+        else if (EntryMode != EntryMode.Manual)
+        {
+            SelectedCard = null;
+        }
     }
 
     private bool CanSave()
         => !IsBusy
            && Prayers.Any(p => !string.IsNullOrWhiteSpace(p.Title))
            && (ImportMode == ImportMode.NewCard
-                   ? !string.IsNullOrWhiteSpace(CardTitle)
+                   // #119: In Quick Add (Manual), a blank card title is allowed —
+                   // SaveAsync derives it from the first prayer's title, so the
+                   // user can save with only a prayer typed. The Import flow still
+                   // requires an explicit card title.
+                   ? EntryMode == EntryMode.Manual || !string.IsNullOrWhiteSpace(CardTitle)
                    : SelectedCard is not null);
 
     private async Task SaveAsync()
@@ -429,6 +650,11 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         _payloadConsumed = true;
         try
         {
+            // Manual mode: prayers are user-authored, not imported from an
+            // external source. IsImported = false preserves the prior QuickAdd
+            // save semantics. Import mode keeps IsImported = true.
+            var isImported = EntryMode != EntryMode.Manual;
+
             if (ImportMode == ImportMode.ExistingCard && SelectedCard is not null)
             {
                 var existingSavedCount = 0;
@@ -439,30 +665,38 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
                         PrayerCardId = SelectedCard.CardId,
                         Title = NormalizeQuotes(row.Title)?.Trim() ?? string.Empty,
                         Details = string.IsNullOrWhiteSpace(row.Details) ? null : NormalizeQuotes(row.Details)!.Trim(),
-                        IsImported = true,
+                        IsImported = isImported,
                         CanNotify = false
                     };
-                    await prayer.SaveAsync();
+                    await _prayerService.SavePrayerAsync(prayer, publishMessage: false);
                     existingSavedCount++;
                 }
-                _cardService.InvalidateCache();
-                _prayerService.InvalidateCache();
                 _messenger.Send(new BulkChangedMessage());
-                _accessibilityService.Announce($"Imported {existingSavedCount} prayers to {SelectedCard.Title}");
+                var existingAnnounce = isImported
+                    ? $"Imported {existingSavedCount} prayers to {SelectedCard.Title}"
+                    : $"Saved {existingSavedCount} {(existingSavedCount == 1 ? "prayer" : "prayers")} to {SelectedCard.Title}";
+                _accessibilityService.Announce(existingAnnounce);
                 await _navigationService.GoToAsync(Routes.PrayerCardsTabImportedToExisting(SelectedCard.CardId));
                 return;
             }
 
+            // #119: In Quick Add the card title may be blank (the user typed
+            // only a prayer). Derive it from the first non-blank prayer title so
+            // the new card is never untitled. Import always has an explicit title.
+            var effectiveCardTitle = string.IsNullOrWhiteSpace(CardTitle)
+                ? Prayers.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.Title))?.Title ?? string.Empty
+                : CardTitle;
+
             var card = new PrayerCard
             {
-                Title = NormalizeQuotes(CardTitle)?.Trim() ?? string.Empty,
+                Title = NormalizeQuotes(effectiveCardTitle)?.Trim() ?? string.Empty,
                 // Only RealBoxPickerItem carries a BoxId; null and the
                 // All-collections sentinel both fall through to BoxId 0
                 // (Loose Cards) — the safe NewCard default.
                 BoxId = SelectedBox is RealBoxPickerItem real ? real.BoxId : 0,
-                IsImported = true
+                IsImported = isImported
             };
-            await card.SaveAsync();
+            await _cardService.SaveCardAsync(card, publishMessage: false);
 
             var savedCount = 0;
             foreach (var row in Prayers.Where(r => !string.IsNullOrWhiteSpace(r.Title)))
@@ -472,17 +706,18 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
                     PrayerCardId = card.Id,
                     Title = NormalizeQuotes(row.Title)?.Trim() ?? string.Empty,
                     Details = string.IsNullOrWhiteSpace(row.Details) ? null : NormalizeQuotes(row.Details)!.Trim(),
-                    IsImported = true,
+                    IsImported = isImported,
                     CanNotify = false
                 };
-                await prayer.SaveAsync();
+                await _prayerService.SavePrayerAsync(prayer, publishMessage: false);
                 savedCount++;
             }
 
-            _cardService.InvalidateCache();
-            _prayerService.InvalidateCache();
             _messenger.Send(new BulkChangedMessage());
-            _accessibilityService.Announce($"Imported {savedCount} prayers to {card.Title}");
+            var announce = isImported
+                ? $"Imported {savedCount} prayers to {card.Title}"
+                : $"Saved {savedCount} {(savedCount == 1 ? "prayer" : "prayers")} to {card.Title}";
+            _accessibilityService.Announce(announce);
             await _navigationService.GoToAsync(Routes.PrayerCardsTabImported(card.Id));
         }
         finally
@@ -514,6 +749,12 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         _payloadConsumed = true;
         _payloadService.ConsumePayload();
         _payloadService.ConsumeStructured();
+    }
+
+    private void OnPrayerPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EditablePrayer.Title))
+            NotifySaveCanExecute();
     }
 
     private void NotifySaveCanExecute() => SaveCommand.NotifyCanExecuteChanged();

@@ -424,4 +424,115 @@ public class PrayerRequestDetailViewModelTests
         Assert.Contains(nameof(PrayerRequestDetailViewModel.IsReadOnly), raised);
         Assert.Contains(nameof(PrayerRequestDetailViewModel.IsEditable), raised);
     }
+
+    // ── PrayedSummary ─────────────────────────────────────────────────
+    // PrayedSummary is driven by LoadPrayerAsync (called via ApplyQueryAttributes "load").
+    // Each test drives the real load path so a regression in the wiring (e.g. removing
+    // the GetInteractionCountByPrayerAsync call) would turn these red.
+
+    [Fact]
+    public async Task PrayedSummary_TwelveTimes_FormatsCorrectly()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(5)
+            .Returns(Task.FromResult(new Prayer { Id = 5, Title = "Test", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(5).Returns(Task.FromResult(12));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(5).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "5", ["viewOnly"] = "true" });
+
+        // Drain the SafeFireAndForget chain (multiple nested awaits) with a bounded poll.
+        for (int i = 0; i < 20 && !sut.PrayedSummary.Contains("Mar 3, 2026"); i++)
+            await Task.Yield();
+
+        Assert.Equal("Prayed for 12 times since Mar 3, 2026", sut.PrayedSummary);
+    }
+
+    [Fact]
+    public async Task PrayedSummary_OneTime_UsesSingular()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(6)
+            .Returns(Task.FromResult(new Prayer { Id = 6, Title = "Test", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(6).Returns(Task.FromResult(1));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(6).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "6", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && !sut.PrayedSummary.Contains("Mar 3, 2026"); i++)
+            await Task.Yield();
+
+        Assert.Equal("Prayed for 1 time since Mar 3, 2026", sut.PrayedSummary);
+    }
+
+    [Fact]
+    public async Task PrayedSummary_ZeroTimes_ShowsZero()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(7)
+            .Returns(Task.FromResult(new Prayer { Id = 7, Title = "Test", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(7).Returns(Task.FromResult(0));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(7).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "7", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && !sut.PrayedSummary.Contains("Mar 3, 2026"); i++)
+            await Task.Yield();
+
+        Assert.Equal("Prayed for 0 times since Mar 3, 2026", sut.PrayedSummary);
+    }
+
+    // ── HasBeenPrayedFor (issue #123) ─────────────────────────────────
+    // Gates the PrayedSummary label's visibility: hidden at count 0, shown at 1+.
+    // Driven through the real load path so a regression in the recompute wiring
+    // (e.g. dropping the HasBeenPrayedFor notify) turns these red.
+
+    [Fact]
+    public async Task HasBeenPrayedFor_ZeroTimes_False()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(8)
+            .Returns(Task.FromResult(new Prayer { Id = 8, Title = "Test", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(8).Returns(Task.FromResult(0));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(8).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "8", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && !sut.PrayedSummary.Contains("Mar 3, 2026"); i++)
+            await Task.Yield();
+
+        Assert.False(sut.HasBeenPrayedFor);
+    }
+
+    [Fact]
+    public async Task HasBeenPrayedFor_OneTime_True()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(9)
+            .Returns(Task.FromResult(new Prayer { Id = 9, Title = "Test", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(9).Returns(Task.FromResult(1));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(9).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "9", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && !sut.PrayedSummary.Contains("Mar 3, 2026"); i++)
+            await Task.Yield();
+
+        Assert.True(sut.HasBeenPrayedFor);
+    }
 }

@@ -37,6 +37,7 @@ namespace PrayerApp.Services
         Task<List<LatestInteractionResult>> GetLatestInteractionByPrayerAsync();
         Task<DateTime?> GetMaxInteractionDateAsync();
         Task<int> DeleteInteractionsByPrayerIdAsync(int prayerId);
+        Task<int> CountInteractionsByPrayerIdAsync(int prayerId);
 
         // CardBox queries
         Task UnassignBoxFromCardsAsync(int boxId);

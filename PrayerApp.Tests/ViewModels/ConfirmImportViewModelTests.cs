@@ -10,7 +10,6 @@ namespace PrayerApp.Tests.ViewModels;
 
 public class ConfirmImportViewModelTests
 {
-    private readonly IDBService _db = Substitute.For<IDBService>();
     private readonly ICardService _cardService = Substitute.For<ICardService>();
     private readonly IPrayerService _prayerService = Substitute.For<IPrayerService>();
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
@@ -25,10 +24,14 @@ public class ConfirmImportViewModelTests
 
     public ConfirmImportViewModelTests()
     {
-        PrayerCard.SetDBService(_db);
-        Prayer.SetDBService(_db);
-        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(Task.FromResult(1));
-        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+        // Default service stubs — return the passed entity so the VM's local
+        // reference is unchanged (NSubstitute auto-stubs Task<T> to
+        // completed/null; explicit Returns ensures the VM gets the same
+        // instance back, which matters for Id reads after save).
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>())
+            .Returns(ci => Task.FromResult((PrayerCard)ci[0]));
+        _prayerService.SavePrayerAsync(Arg.Any<Prayer>(), Arg.Any<bool>())
+            .Returns(ci => Task.FromResult((Prayer)ci[0]));
         // Default to empty box list — picker tests override before calling
         // CreateSut. Default lives here (not in CreateSut) so per-test
         // .Returns() calls aren't clobbered when CreateSut runs.
@@ -184,8 +187,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c =>
-            c.Title == "Family" && c.IsImported == true));
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.Title == "Family" && c.IsImported == true),
+            false);
     }
 
     [Fact]
@@ -196,7 +200,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.Title == "Family"));
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.Title == "Family"),
+            false);
     }
 
     [Fact]
@@ -206,10 +212,12 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Mom" && p.Details == "Surgery" && p.IsImported == true && p.CanNotify == false));
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Dad" && p.Details == null));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Mom" && p.Details == "Surgery" && p.IsImported == true && p.CanNotify == false),
+            false);
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Dad" && p.Details == null),
+            false);
     }
 
     [Fact]
@@ -219,7 +227,7 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+        await _prayerService.Received(2).SavePrayerAsync(Arg.Any<Prayer>(), false);
     }
 
     [Fact]
@@ -229,8 +237,9 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "Mom" && p.Details == "Surgery"));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Mom" && p.Details == "Surgery"),
+            false);
     }
 
     [Fact]
@@ -240,18 +249,23 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.Details == null));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Details == null),
+            false);
     }
 
     [Fact]
-    public async Task Save_InvalidatesBothCaches()
+    public async Task Save_DelegatesPersistenceThroughServicesWithPublishMessageFalse()
     {
+        // The VM must route card + prayer persistence through the service layer
+        // with publishMessage:false, so the service handles InvalidateCache
+        // internally and the VM only fires a single BulkChangedMessage afterward.
         var sut = SetupSutWithRows(("Mom", null));
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        _cardService.Received(1).InvalidateCache();
-        _prayerService.Received(1).InvalidateCache();
+        await _cardService.Received(1).SaveCardAsync(Arg.Any<PrayerCard>(), false);
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>(), false);
     }
 
     [Fact]
@@ -282,11 +296,13 @@ public class ConfirmImportViewModelTests
         // Card id must flow through the route so PrayerCardsViewModel.ApplyQueryAttributes
         // stages PendingSavedIdentifier — without it the imported card and its containing
         // section never get auto-expanded and the user can't see the import landed.
-        _db.InsertAsync(Arg.Any<PrayerCard>()).Returns(callInfo =>
-        {
-            ((PrayerCard)callInfo[0]).Id = 42;
-            return Task.FromResult(1);
-        });
+        // The service sets the Id on the card instance (same object, mutated in place).
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>())
+            .Returns(ci =>
+            {
+                ((PrayerCard)ci[0]).Id = 42;
+                return Task.FromResult((PrayerCard)ci[0]);
+            });
         var sut = SetupSutWithRows(("Mom", null));
 
         await sut.SaveCommand.ExecuteAsync(null);
@@ -532,7 +548,7 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 7));
+        await _cardService.Received(1).SaveCardAsync(Arg.Is<PrayerCard>(c => c.BoxId == 7), false);
     }
 
     [Fact]
@@ -546,7 +562,7 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0));
+        await _cardService.Received(1).SaveCardAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0), false);
     }
 
     [Fact]
@@ -558,7 +574,7 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0));
+        await _cardService.Received(1).SaveCardAsync(Arg.Is<PrayerCard>(c => c.BoxId == 0), false);
     }
 
     // ── ImportMode switching ──────────────────────────────────────────────
@@ -1044,22 +1060,23 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p => p.PrayerCardId == 42));
-        await _db.DidNotReceive().InsertAsync(Arg.Any<PrayerCard>());
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Is<Prayer>(p => p.PrayerCardId == 42), false);
+        await _cardService.DidNotReceive().SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>());
     }
 
     [Fact]
     public async Task Save_ExistingCard_TrimsAndNormalizesQuotes()
     {
         // Use curly quotes to verify NormalizeQuotes runs, and leading/trailing spaces for Trim
-        var sut = SetupSutWithRows(("  “Mom”  ", "  heal’s concern  "));
+        var sut = SetupSutWithRows(("  “Mom”  ", "  heal's concern  "));
         sut.SetExistingCardModeCommand.Execute(null);
         sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(1).InsertAsync(Arg.Is<Prayer>(p =>
-            p.Title == "\"Mom\"" && p.Details == "heal's concern"));
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "\"Mom\"" && p.Details == "heal's concern"),
+            false);
     }
 
     [Fact]
@@ -1071,20 +1088,22 @@ public class ConfirmImportViewModelTests
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        await _db.Received(2).InsertAsync(Arg.Any<Prayer>());
+        await _prayerService.Received(2).SavePrayerAsync(Arg.Any<Prayer>(), false);
     }
 
     [Fact]
-    public async Task Save_ExistingCard_InvalidatesBothCaches()
+    public async Task Save_ExistingCard_DelegatesPersistenceThroughPrayerServiceWithPublishMessageFalse()
     {
+        // Replaces the old cache test: the VM now delegates to the service layer
+        // which handles InvalidateCache internally. Assert the correct delegation.
         var sut = SetupSutWithRows(("Mom", null));
         sut.SetExistingCardModeCommand.Execute(null);
         sut.SelectedCard = new CardPickerItem { CardId = 42, Title = "Family" };
 
         await sut.SaveCommand.ExecuteAsync(null);
 
-        _cardService.Received(1).InvalidateCache();
-        _prayerService.Received(1).InvalidateCache();
+        await _prayerService.Received(1).SavePrayerAsync(Arg.Any<Prayer>(), false);
+        await _cardService.DidNotReceive().SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>());
     }
 
     [Fact]
@@ -1253,5 +1272,539 @@ public class ConfirmImportViewModelTests
         var sut = CreateSut();
         sut.ConsumePending();
         return sut;
+    }
+
+    // ── EntryMode — defaults and Manual mode ─────────────────────────────
+
+    [Fact]
+    public void EntryMode_DefaultsToImport()
+    {
+        // EntryMode.Import is the default so the existing import flow is
+        // UNCHANGED when the VM is resolved for the import path.
+        var sut = CreateSut();
+
+        Assert.Equal(EntryMode.Import, sut.EntryMode);
+    }
+
+    [Fact]
+    public void InitializeManualEntry_SeedsExactlyOneEmptyRow()
+    {
+        // Manual mode requires exactly one empty row ready to type — the
+        // zero-tap fast path: open → type → Save → done.
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+
+        Assert.Single(sut.Prayers);
+        Assert.Equal(string.Empty, sut.Prayers[0].Title);
+    }
+
+    [Fact]
+    public void InitializeManualEntry_SetsExistingCardMode()
+    {
+        // Manual entry defaults to ExistingCard mode with the Quick Add card
+        // preselected — the user doesn't need to pick or name a card.
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+    }
+
+    [Fact]
+    public void InitializeManualEntry_SetsEntryModeToManual()
+    {
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+
+        Assert.Equal(EntryMode.Manual, sut.EntryMode);
+    }
+
+    [Fact]
+    public void InitializeManualEntry_DoesNotConsumePendingPayload()
+    {
+        // Manual entry must NOT touch the import payload channels — that would
+        // drain a legitimately staged import sitting in the queue.
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+
+        _payloadService.DidNotReceive().ConsumePayload();
+        _payloadService.DidNotReceive().ConsumeStructured();
+    }
+
+    [Fact]
+    public void InitializeManualEntry_DoesNotFireNormalLoadCardGroupsAsync()
+    {
+        // InitializeManualEntry sets ImportMode = ExistingCard, whose setter
+        // normally calls LoadCardGroupsAsync (which calls GetCardsAsync and
+        // excludes system cards — it would exclude the Quick Add card).
+        // In Manual mode that side-effect must be suppressed so
+        // LoadManualCardGroupsAsync remains the sole authoritative loader.
+        // Evidence: GetCardsAsync is NOT called during InitializeManualEntry
+        // (it is only called later, explicitly, from LoadManualCardGroupsAsync).
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+
+        // GetCardsAsync is the distinguishing call of LoadCardGroupsAsync;
+        // it must NOT be invoked during initialization.
+        _cardService.DidNotReceive().GetCardsAsync();
+    }
+
+    [Fact]
+    public async Task Manual_LooseCardsHasQuickAddCard_PreselectsIt()
+    {
+        // Edge case: if the Quick Add card itself lives in Loose Cards (BoxId 0)
+        // — e.g. a fresh DB where no System box exists yet, so GetOrCreateSystemCardAsync
+        // falls back to BoxId 0 — then with Loose Cards as the default selection it
+        // is the only card present and gets preselected (existing-card fast path).
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        Assert.NotNull(sut.SelectedCard);
+        Assert.Equal(99, sut.SelectedCard!.CardId);
+    }
+
+    [Fact]
+    public async Task Manual_Save_WritesIsImportedFalse()
+    {
+        // Prayers added via Manual mode are NOT flagged as imported — they are
+        // user-authored, not ingested from an external source. Quick Add card at
+        // BoxId 0 so it sits in the default Loose Cards view and is preselected.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+        sut.Prayers[0].Title = "Trust God";
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.IsImported == false && p.PrayerCardId == 99),
+            false);
+    }
+
+    [Fact]
+    public async Task Manual_Save_EmptyRow_DoesNotSave()
+    {
+        // Validation: an empty single row must block save — matches prior
+        // QuickAdd validation (empty title → no save).
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add" };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+        // Row is empty (default seeded by InitializeManualEntry)
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Manual_Save_NewCardMode_IsImportedFalse()
+    {
+        // When user switches to New Card in Manual mode, the created card AND
+        // its prayers must still have IsImported = false.
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            Array.Empty<PrayerCard>()));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+
+        // Switch to New Card mode and fill in the form
+        sut.SetNewCardModeCommand.Execute(null);
+        sut.CardTitle = "My New Card";
+        sut.Prayers.Add(new EditablePrayer { Title = "Healing" });
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.IsImported == false),
+            false);
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.IsImported == false),
+            false);
+    }
+
+    [Fact]
+    public async Task Import_Save_IsImportedTrue_RegressionTest()
+    {
+        // Import path regression: prayers saved via ConsumePending + Save must
+        // still carry IsImported = true. EntryMode.Import is the default.
+        var sut = SetupSutWithRows(("Mom", null));
+        // sut is in NewCard / Import mode with CardTitle "Imported May 1"
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.IsImported == true),
+            false);
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.IsImported == true),
+            false);
+    }
+
+    // ── Manual mode — Loose Cards default (#122) ─────────────────────────
+
+    [Fact]
+    public async Task Manual_AfterLoadBoxesAndCards_SelectedBoxIsLooseCards()
+    {
+        // #122: After InitializeManualEntry + LoadBoxesAsync + LoadManualCardGroupsAsync,
+        // SelectedBox must be the Loose Cards RealBoxPickerItem (BoxId 0), NOT the
+        // All-collections sentinel — Quick Add opens defaulted to Loose Cards so a
+        // new prayer lands there by default.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(0, selected.BoxId);
+    }
+
+    [Fact]
+    public async Task Manual_LooseCardsHasUserCards_StaysExistingCardMode_ShowingLooseCards()
+    {
+        // #122 + #119: when Loose Cards (the default selection) already holds
+        // existing cards, the page stays in ExistingCard mode and shows them —
+        // no flip to NewCard. The Quick Add system card lives in the System box
+        // (BoxId != 0) on-device, so it is correctly filtered out of the Loose
+        // Cards view (modelled here with BoxId 5).
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 5 };
+        var looseCard = new PrayerCard { Id = 1, Title = "Stray", BoxId = 0, IsSystem = false };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard, looseCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+        var allCards = sut.AvailableCardGroups.SelectMany(g => g.Cards).ToList();
+        Assert.Contains(allCards, c => c.CardId == 1);   // loose card visible
+        Assert.DoesNotContain(allCards, c => c.CardId == 99); // Quick Add filtered out
+    }
+
+    [Fact]
+    public async Task Manual_LooseCardsEmpty_FlipsToNewCardMode_WithLooseCardsSelected()
+    {
+        // #122 + #119: a brand-new user with no loose cards opens Quick Add →
+        // Loose Cards is the default but resolves to an empty card list →
+        // #119's flip to NewCard fires so the Card Title field is shown and the
+        // user can type straight into a new card. SelectedBox stays Loose Cards
+        // (the new card lands in BoxId 0). The Quick Add card lives in the System
+        // box (BoxId 5), so it is filtered out of the empty Loose Cards view.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 5 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        Assert.Equal(ImportMode.NewCard, sut.ImportMode);
+        var selected = Assert.IsType<RealBoxPickerItem>(sut.SelectedBox);
+        Assert.Equal(0, selected.BoxId);
+    }
+
+    [Fact]
+    public async Task Manual_LooseCardsEmpty_Save_CreatesLooseCardWithDerivedTitle()
+    {
+        // #122 end-to-end: empty Loose Cards → flip to NewCard → user types only a
+        // prayer title → Save creates exactly one card in Loose Cards (BoxId 0)
+        // with the title derived from the prayer, IsImported = false.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 5 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>())
+            .Returns(ci =>
+            {
+                ((PrayerCard)ci[0]).Id = 123;
+                return Task.FromResult((PrayerCard)ci[0]);
+            });
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        sut.Prayers[0].Title = "Trust God";
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 0 && c.Title == "Trust God" && c.IsImported == false),
+            false);
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Trust God" && p.PrayerCardId == 123 && p.IsImported == false),
+            false);
+    }
+
+    [Fact]
+    public async Task Manual_ChangingSelectedBox_RefiltersCardGroups()
+    {
+        // In Manual mode, changing SelectedBox to a specific collection re-filters
+        // the card list — same behavior as import Existing mode.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        var userCard = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard, userCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        // Switch to the Family collection — should show only Alpha, not Quick Add
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        await Task.Delay(50); // let SafeFireAndForget complete
+
+        var allCards = sut.AvailableCardGroups.SelectMany(g => g.Cards).ToList();
+        Assert.DoesNotContain(allCards, c => c.CardId == 99); // Quick Add excluded from Family filter
+        Assert.Contains(allCards, c => c.CardId == 1);        // Alpha present
+    }
+
+    [Fact]
+    public async Task Import_LoadCardGroups_ExcludesSystemCards_StillTrueAfterManualRefactor()
+    {
+        // Regression: the refactor that makes LoadCardGroupsAsync Manual-aware
+        // must not change import-mode behavior — system cards must still be excluded.
+        var user = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 7, IsSystem = false };
+        var system = new PrayerCard { Id = 2, Title = "QuickAdd", BoxId = 0, IsSystem = true };
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { user, system }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut(); // Import mode (default)
+        await sut.LoadBoxesAsync();
+
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        var allCards = sut.AvailableCardGroups.SelectMany(g => g.Cards).ToList();
+        Assert.DoesNotContain(allCards, c => c.CardId == 2); // System card excluded in import mode
+        Assert.Single(allCards);
+        Assert.Equal(1, allCards[0].CardId);
+    }
+
+    // ── CanSave re-evaluated on Title change (Manual mode bug fix) ────────
+
+    [Fact]
+    public void CanSave_Manual_TypingTitleIntoEmptyRow_FiresCanExecuteChanged()
+    {
+        // Regression: CanSave was only re-evaluated on Prayers.CollectionChanged
+        // (rows added/removed). In Manual mode the page starts with ONE empty row
+        // seeded by InitializeManualEntry. The user types a title — CollectionChanged
+        // never fires — so the XAML button stayed disabled because
+        // NotifyCanExecuteChanged was never called.
+        // This test proves the fix: mutating Title on an existing row triggers
+        // CanExecuteChanged WITHOUT any collection mutation (no Add, no Remove).
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        // Simulate the Quick Add card having been preselected (LoadManualCardGroupsAsync
+        // would do this on-device; set it directly so the test is synchronous).
+        sut.SelectedCard = new CardPickerItem { CardId = 99, Title = "Quick Add" };
+
+        // Arm the listener AFTER setup so we only count changes caused by typing.
+        var canExecuteChangedCount = 0;
+        sut.SaveCommand.CanExecuteChanged += (_, _) => canExecuteChangedCount++;
+
+        // Type a title directly into the existing row — NO Add/Remove.
+        sut.Prayers[0].Title = "x";
+
+        // NotifyCanExecuteChanged must have fired at least once (the UI button
+        // needs this signal to re-query CanExecute and flip to enabled).
+        Assert.True(canExecuteChangedCount > 0,
+            "CanExecuteChanged should fire when an existing row's Title changes");
+
+        // And CanSave must now evaluate to true (belt-and-suspenders).
+        Assert.True(sut.SaveCommand.CanExecute(null));
+    }
+
+    // ── Quick Add: empty collection falls back to New-card save (#119) ─────
+
+    [Fact]
+    public async Task Manual_SelectingEmptyCollection_FlipsToNewCardMode()
+    {
+        // #119: In Quick Add, selecting a collection that has no existing cards
+        // must not dead-end Save. The VM falls back to New-card mode so the
+        // prayer can save into a freshly created card in that collection.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        // Quick Add lives in Loose Cards (BoxId 0); the "Family" collection (7)
+        // has NO cards — selecting it resolves to an empty card list.
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        // Select the empty Family collection.
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        await Task.Delay(50); // let SafeFireAndForget LoadCardGroupsAsync complete
+
+        Assert.Equal(ImportMode.NewCard, sut.ImportMode);
+    }
+
+    [Fact]
+    public async Task Manual_EmptyCollection_WithPrayerTitle_CanSave()
+    {
+        // #119: a non-empty prayer title is sufficient to save into an empty
+        // collection — CardTitle is auto-derived, so Save is never blocked on
+        // a card name.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        await Task.Delay(50);
+
+        // User types only a prayer title (no card title).
+        sut.Prayers[0].Title = "Trust God";
+
+        Assert.True(sut.SaveCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Manual_EmptyCollection_Save_CreatesOneCardInCollectionWithDerivedTitle()
+    {
+        // #119: saving into an empty collection creates exactly ONE new card in
+        // that collection (BoxId = selected box) whose title is derived from the
+        // first prayer, and the prayer is attached to it.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        // Assign an Id to the freshly created card so the prayer can reference it.
+        _cardService.SaveCardAsync(Arg.Any<PrayerCard>(), Arg.Any<bool>())
+            .Returns(ci =>
+            {
+                ((PrayerCard)ci[0]).Id = 123;
+                return Task.FromResult((PrayerCard)ci[0]);
+            });
+        var sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        var familyBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        sut.SelectedBox = familyBox;
+        await Task.Delay(50);
+
+        sut.Prayers[0].Title = "Trust God";
+
+        await sut.SaveCommand.ExecuteAsync(null);
+
+        // Exactly one new card, in the selected collection, titled from the prayer.
+        await _cardService.Received(1).SaveCardAsync(
+            Arg.Is<PrayerCard>(c => c.BoxId == 7 && c.Title == "Trust God" && c.IsImported == false),
+            false);
+        // The prayer is attached to that new card.
+        await _prayerService.Received(1).SavePrayerAsync(
+            Arg.Is<Prayer>(p => p.Title == "Trust God" && p.PrayerCardId == 123 && p.IsImported == false),
+            false);
+    }
+
+    [Fact]
+    public async Task Import_EmptyCollection_DoesNotFlip_AndStillRequiresCardTitle()
+    {
+        // #119 negative guard: the empty-collection → New-card fallback is gated
+        // to Manual entry. In the default Import flow, selecting an empty real
+        // collection must NOT auto-flip to New-card — and New-card's CardTitle
+        // requirement must still hold (a prayer title alone is not enough, unlike
+        // Quick Add where CardTitle is auto-derived). This is the invariant the
+        // whole fix relies on but otherwise leaves untested.
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            Array.Empty<PrayerCard>()));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(new[]
+        {
+            new CardBox { Id = 7, Name = "Family", IsSystem = false },
+        }));
+        var sut = SetupSutWithRows(("Trust God", null)); // EntryMode defaults to Import
+        await sut.LoadBoxesAsync();
+        sut.SetExistingCardModeCommand.Execute(null);
+        await Task.Delay(50);
+
+        // Select the empty Family collection (no cards).
+        sut.SelectedBox = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 7);
+        await Task.Delay(50);
+
+        // The Manual-only fallback must not fire in the Import flow.
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+
+        // And New-card mode still requires a non-empty CardTitle — a prayer title
+        // alone (blank CardTitle) cannot save.
+        sut.SetNewCardModeCommand.Execute(null);
+        sut.CardTitle = "   ";
+
+        Assert.False(sut.SaveCommand.CanExecute(null));
     }
 }

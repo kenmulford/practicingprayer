@@ -1,0 +1,11 @@
+{
+  "integrationBranch": "dev",
+  "protectedBranch": "master",
+  "sourceGlobs": ["PrayerApp/**", "PrayerApp.Tests/**", "PrayerApp.UITests/**"],
+  "unitTestCmd": "dotnet test PrayerApp.Tests/PrayerApp.Tests.csproj",
+  "e2eTestCmd": "pwsh ./run-uitests.ps1",
+  "implementerAgent": "milestone-driver:implementer",
+  "domainSkills": ["maui-skills:*", "maui-current-apis", "prayer-app-skills:*"],
+  "nonNegotiables": ["MAUI .NET 10 + Community Toolkit"],
+  "e2eEnv": { "endpoint": "127.0.0.1:4723", "device": "Android emulator (AVD)" }
+}

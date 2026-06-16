@@ -23,6 +23,7 @@ namespace PrayerApp.ViewModels
         private readonly INavigationService _navigationService;
         private readonly IAccessibilityService _accessibilityService;
         private readonly IBoxService _boxService;
+        private readonly ISettings _settings;
 
         // Single-expand invariant lives on PrayerCardsViewModel.ExpandedCardId.
         // Per-card IsExpanded is a read-only projection over that — see the
@@ -51,11 +52,23 @@ namespace PrayerApp.ViewModels
 
         public ICommand SaveCommand { get; private set; }
         public ICommand DeleteCommand { get; private set; }
+        public ICommand ArchiveCommand { get; }
         public ICommand SelectCardCommand { get; }
         public ICommand ToggleExpandedCommand { get; }
         public ICommand ToggleFavoriteCommand { get; }
         public ICommand AddPrayerCommand { get; }
         public ICommand ShareCommand { get; }
+        public ICommand PrayCommand { get; }
+
+        /// <summary>
+        /// Resolves the transient prayer-selection service. Defaults to the DI
+        /// container (same service-locator seam <see cref="ShareAsync"/> uses for
+        /// <see cref="IDeepLinkService"/>); unit tests override it with a stub.
+        /// Kept off the constructor so adding the per-card "Pray" chip doesn't
+        /// churn every <c>new PrayerCardViewModel(...)</c> call-site.
+        /// </summary>
+        public Func<IPrayerSelectionService> SelectionServiceFactory { get; set; }
+            = () => IPlatformApplication.Current!.Services.GetRequiredService<IPrayerSelectionService>();
 
         #region Properties
 
@@ -134,8 +147,12 @@ namespace PrayerApp.ViewModels
         public bool IsNew => _prayerCard.Id == 0;
         public bool CanDelete => !IsSystem && !IsNew;
         public bool CanShare => !IsSystem && ActivePrayerCount > 0;
+        /// <summary>Gates the "Pray" action chip — only meaningful when the card has active prayers.</summary>
+        public bool CanPray => ActivePrayerCount > 0;
         public bool ShowActionChips => IsExpanded && !IsSystem;
         public string FavoriteLabel => IsFavorite ? "Favorited" : "Favorite";
+        public bool IsArchived => _prayerCard.BoxId == _settings.ArchivedFolderId;
+        public string ArchiveLabel => IsArchived ? "Unarchive" : "Archive";
 
         public bool IsDirty => Title != _originalTitle;
 
@@ -211,10 +228,12 @@ namespace PrayerApp.ViewModels
                 if (SetProperty(ref _activePrayerCount, value))
                 {
                     OnPropertyChanged(nameof(CanShare));
+                    OnPropertyChanged(nameof(CanPray));
                     OnPropertyChanged(nameof(HasAnyPrayer));
                     OnPropertyChanged(nameof(AccessibleCardHeader));
                     OnPropertyChanged(nameof(PrayersHeader));
                     ((IRelayCommand)ShareCommand).NotifyCanExecuteChanged();
+                    ((IRelayCommand)PrayCommand).NotifyCanExecuteChanged();
                 }
             }
         }
@@ -283,7 +302,7 @@ namespace PrayerApp.ViewModels
 
         public PrayerCardViewModel(ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, IBoxService boxService)
+            IAccessibilityService accessibilityService, IBoxService boxService, ISettings settings)
         {
             _prayerCard = new PrayerCard();
             _cardService = cardService;
@@ -292,13 +311,16 @@ namespace PrayerApp.ViewModels
             _navigationService = navigationService;
             _accessibilityService = accessibilityService;
             _boxService = boxService;
+            _settings = settings;
             SaveCommand = new AsyncRelayCommand(SaveAsync, () => !IsBusy);
             DeleteCommand = new AsyncRelayCommand(DeleteAsync, () => !IsSystem);
+            ArchiveCommand = new AsyncRelayCommand(ArchiveAsync, () => !IsSystem);
             SelectCardCommand = new AsyncRelayCommand(SelectPrayerCardAsync, () => !IsSystem);
             ToggleExpandedCommand = new AsyncRelayCommand(ToggleExpandedAsync);
             ToggleFavoriteCommand = new AsyncRelayCommand(ToggleFavoriteAsync, () => !IsSystem);
             AddPrayerCommand = new AsyncRelayCommand(AddPrayerAsync);
             ShareCommand = new AsyncRelayCommand(ShareAsync, () => CanShare);
+            PrayCommand = new AsyncRelayCommand(PrayAsync, () => CanPray);
             Prayers = new ObservableCollection<PrayerRequestDetailViewModel>();
             Prayers.CollectionChanged += (_, __) => OnPropertyChanged(nameof(HasPrayers));
         }
@@ -309,7 +331,8 @@ namespace PrayerApp.ViewModels
             IPlatformApplication.Current!.Services.GetRequiredService<IOnboardingService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<INavigationService>(),
             IPlatformApplication.Current!.Services.GetRequiredService<IAccessibilityService>(),
-            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>())
+            IPlatformApplication.Current!.Services.GetRequiredService<IBoxService>(),
+            IPlatformApplication.Current!.Services.GetRequiredService<ISettings>())
         { }
 
         public PrayerCardViewModel(PrayerCard pc) : this()
@@ -324,8 +347,8 @@ namespace PrayerApp.ViewModels
         /// </summary>
         public PrayerCardViewModel(PrayerCard pc, ICardService cardService, IPrayerService prayerService,
             IOnboardingService onboardingService, INavigationService navigationService,
-            IAccessibilityService accessibilityService, IBoxService boxService)
-            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService, boxService)
+            IAccessibilityService accessibilityService, IBoxService boxService, ISettings settings)
+            : this(cardService, prayerService, onboardingService, navigationService, accessibilityService, boxService, settings)
         {
             _prayerCard = pc;
             LoadActivePrayerCountAsync().SafeFireAndForget();
@@ -447,6 +470,63 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        private bool _isArchiveSaving;
+        private async Task ArchiveAsync()
+        {
+            if (_prayerCard.IsSystem) return;
+            if (_isArchiveSaving) return;
+
+            var archiving = !IsArchived;
+            if (archiving)
+            {
+                var confirmed = await _navigationService.DisplayConfirmAsync(
+                    "Archive Card?",
+                    "Are you sure you want to Archive this card? You can find it in your Archived Cards collection.",
+                    "Archive",
+                    "Cancel");
+                if (!confirmed) return;
+            }
+
+            _isArchiveSaving = true;
+            try
+            {
+                int target;
+                if (archiving)
+                {
+                    // Stash the current collection so unarchive can restore it.
+                    _prayerCard.PreArchiveBoxId = _prayerCard.BoxId;
+                    target = _settings.ArchivedFolderId;
+                }
+                else
+                {
+                    // Restore to the original collection if it still exists; otherwise Loose Cards.
+                    target = 0;
+                    var stashed = _prayerCard.PreArchiveBoxId;
+                    if (stashed is int boxId && boxId != 0)
+                    {
+                        var boxes = await _boxService.GetBoxesAsync();
+                        if (boxes.Any(b => b.Id == boxId))
+                            target = boxId;
+                    }
+                    _prayerCard.PreArchiveBoxId = null;
+                }
+
+                await _cardService.AssignBoxAsync(_prayerCard, target);
+                OnPropertyChanged(nameof(IsArchived));
+                OnPropertyChanged(nameof(ArchiveLabel));
+
+                _accessibilityService.Announce(archiving ? "Card archived" : "Card unarchived");
+
+                // Collapse the expanded card after archiving — it leaves this section.
+                if (archiving && Parent is not null)
+                    Parent.ExpandedCardId = null;
+            }
+            finally
+            {
+                _isArchiveSaving = false;
+            }
+        }
+
         private async Task AddPrayerAsync()
         {
             _onboardingService.Advance(); // AddRequest → NameRequest
@@ -463,6 +543,25 @@ namespace PrayerApp.ViewModels
             var deepLinkService = IPlatformApplication.Current!.Services.GetRequiredService<IDeepLinkService>();
             await deepLinkService.ShareCardAsync(_prayerCard, activePrayers);
             _onboardingService.Advance();
+        }
+
+        private async Task PrayAsync()
+        {
+            // Resolve this card's active prayer IDs and hand them to the transient
+            // selection service, then launch Prayer Time in scope=selection. The ID
+            // set travels via the service (not the URL) to match the "Choose cards"
+            // modal path and keep the Shell nav URL small.
+            // Resolve via GetAllActivePrayersAsync so the "active" definition (!IsAnswered)
+            // lives in one place — the service — rather than being re-stated inline here.
+            var activeIds = (await _prayerService.GetAllActivePrayersAsync())
+                .Where(p => p.PrayerCardId == _prayerCard.Id)
+                .Select(p => p.Id)
+                .ToList();
+            if (activeIds.Count == 0) return;
+
+            SelectionServiceFactory().Set(activeIds);
+            await _navigationService.GoToAsync(
+                $"{Routes.PrayerTimePage}?scope={Routes.ScopeSelection}");
         }
 
         #endregion
@@ -626,10 +725,11 @@ namespace PrayerApp.ViewModels
                     return;
                 }
 
-                var viewModel = new PrayerRequestDetailViewModel(prayer)
-                {
-                    ReturnToCards = true
-                };
+                // Route through PrayerRowFactory (same seam LoadPrayersAsync uses) so the
+                // in-place insert honors test-injected row VMs; the production default
+                // factory is `new PrayerRequestDetailViewModel(p) { ReturnToCards = true }`,
+                // so prod behavior is unchanged.
+                var viewModel = PrayerRowFactory(prayer);
                 var insertIndex = Prayers
                     .TakeWhile(p => string.Compare(p.Title, prayer.Title, StringComparison.OrdinalIgnoreCase) < 0)
                     .Count();

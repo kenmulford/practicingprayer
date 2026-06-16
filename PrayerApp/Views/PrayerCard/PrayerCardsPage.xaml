@@ -36,15 +36,20 @@
         <DataTemplate x:Key="CardExpandedSubtreeTemplate" x:DataType="viewModels:PrayerCardViewModel">
             <VerticalStackLayout Spacing="0">
 
-                <HorizontalStackLayout
+                <Grid
                     AutomationId="Cards_ActionChips"
                     IsVisible="{Binding ShowActionChips}"
-                    Spacing="8"
+                    ColumnDefinitions="*,*,*"
+                    RowDefinitions="Auto,Auto"
+                    ColumnSpacing="8"
+                    RowSpacing="8"
                     Padding="12,4,12,8">
 
                     <!-- ★ Favorite — gold background when active, default when not -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Favorite"
+                            Grid.Row="0" Grid.Column="0"
+                            HorizontalOptions="Fill"
                             SemanticProperties.Description="Toggle favorite">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
@@ -80,6 +85,8 @@
                     <!-- Share (disabled when card has 0 active prayers) -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Share"
+                            Grid.Row="0" Grid.Column="1"
+                            HorizontalOptions="Fill"
                             SemanticProperties.Description="Share card">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
@@ -114,6 +121,8 @@
                     <!-- Edit -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Edit"
+                            Grid.Row="0" Grid.Column="2"
+                            HorizontalOptions="Fill"
                             SemanticProperties.Description="Edit card">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding SelectCardCommand}" />
@@ -140,6 +149,8 @@
                     <!-- Delete (danger styling) -->
                     <Border Style="{StaticResource ActionChip}"
                             AutomationId="Cards_Btn_Delete"
+                            Grid.Row="1" Grid.Column="0"
+                            HorizontalOptions="Fill"
                             SemanticProperties.Description="Delete card"
                             BackgroundColor="{AppThemeBinding
                                 Light={StaticResource ChipDangerBgLight},
@@ -165,7 +176,74 @@
                                    VerticalOptions="Center" />
                         </HorizontalStackLayout>
                     </Border>
-                </HorizontalStackLayout>
+
+                    <!-- Archive / Unarchive — neutral styling, label toggles by box -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Archive"
+                            Grid.Row="1" Grid.Column="1"
+                            HorizontalOptions="Fill"
+                            SemanticProperties.Description="{Binding ArchiveLabel}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ArchiveCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="box_archive_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="{Binding ArchiveLabel}"
+                                   FontSize="{StaticResource FontCaption}"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <!-- Pray — launches a single-card Prayer Time session (issue #34).
+                         Disabled (dimmed + input-transparent) when the card has 0 active prayers,
+                         mirroring the Share chip's CanShare gating. -->
+                    <Border Style="{StaticResource ActionChip}"
+                            AutomationId="Cards_Btn_Pray"
+                            Grid.Row="1" Grid.Column="2"
+                            HorizontalOptions="Fill"
+                            SemanticProperties.Description="Pray for this card">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding CanPray}"
+                                         Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                                <Setter Property="InputTransparent" Value="True" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding PrayCommand}" />
+                        </Border.GestureRecognizers>
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="hands_praying_solid_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="Pray" FontSize="{StaticResource FontCaption}"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </Grid>
 
                 <!-- Prayer requests (BindableLayout — avoids nested CollectionView Android bug) -->
                 <Label
@@ -218,18 +296,12 @@
                 </VerticalStackLayout>
 
                 <Button
+                    Style="{StaticResource AddPrayerAffordanceButton}"
                     Text="+ Add prayer ›"
                     Command="{Binding AddPrayerCommand}"
                     IsVisible="{Binding IsExpanded}"
                     AutomationId="Cards_Btn_AddPrayer"
-                    SemanticProperties.Hint="Add a new prayer request to this card"
-                    FontSize="{StaticResource FontTitle}"
-                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                    BackgroundColor="Transparent"
-                    FontAttributes="Bold"
-                    Padding="16,8,12,10"
-                    BorderWidth="0"
-                    HorizontalOptions="Center" />
+                    SemanticProperties.Hint="Add a new prayer request to this card" />
 
             </VerticalStackLayout>
         </DataTemplate>

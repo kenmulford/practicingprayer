@@ -25,6 +25,8 @@ namespace PrayerApp.ViewModels
         private readonly IAccessibilityService _accessibilityService;
         private readonly ISettings _settings;
         private List<PrayerTag> _allTags = new();
+        private int _prayedCount;
+        private string _prayedSummary = string.Empty;
 
         /// <summary>
         /// True while SaveAsync or SaveAndNewAsync is in flight. Drives the page-level
@@ -378,6 +380,31 @@ namespace PrayerApp.ViewModels
         public DateTime CreatedAt => _prayer.CreatedAt;
         public DateTime UpdatedAt => _prayer.UpdatedAt;
 
+        /// <summary>
+        /// Shows how many times this prayer has been prayed and when it was created.
+        /// Hidden when the count is zero (see <see cref="HasBeenPrayedFor"/>); visible at 1+.
+        /// Backed by a field and set via SetProperty so compiled bindings always pick
+        /// up the update regardless of which thread LoadPrayerAsync completes on.
+        /// </summary>
+        public string PrayedSummary
+        {
+            get => _prayedSummary;
+            private set => SetProperty(ref _prayedSummary, value);
+        }
+
+        /// <summary>
+        /// Gates the <see cref="PrayedSummary"/> label's visibility: false at zero count
+        /// (hides the "Prayed for 0 times" line), true at 1+. Kept in sync with
+        /// <c>_prayedCount</c> via <see cref="RecomputePrayedSummary"/>.
+        /// </summary>
+        public bool HasBeenPrayedFor => _prayedCount > 0;
+
+        private void RecomputePrayedSummary()
+        {
+            PrayedSummary = $"Prayed for {_prayedCount} {(_prayedCount == 1 ? "time" : "times")} since {CreatedAt:MMM d, yyyy}";
+            OnPropertyChanged(nameof(HasBeenPrayedFor));
+        }
+
         public PrayerRequestDetailViewModel(IPrayerService prayerService, ITagService tagService,
             ICardService cardService, IOnboardingService onboardingService, INotificationService notificationService,
             INavigationService navigationService, IAccessibilityService accessibilityService, ISettings settings)
@@ -523,6 +550,8 @@ namespace PrayerApp.ViewModels
         private void ResetForNewPrayer(int cardId)
         {
             _prayer = CreateDefaultPrayer(cardId);
+            _prayedCount = 0;
+            RecomputePrayedSummary();
             SelectedTags.Clear();
             RefreshProperties();
             CaptureOriginals();
@@ -682,6 +711,8 @@ namespace PrayerApp.ViewModels
                 await _navigationService.DisplayAlertAsync("Error", $"Failed to load prayer: {e.Message}", "OK");
                 return;
             }
+            _prayedCount = await _prayerService.GetInteractionCountByPrayerAsync(_prayer.Id);
+            RecomputePrayedSummary();
             RefreshProperties();
             CaptureOriginals();
             await LoadCardsAsync();
@@ -803,6 +834,8 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(AnsweredAt));
             OnPropertyChanged(nameof(AnsweredAtDisplay));
             OnPropertyChanged(nameof(CreatedAt));
+            OnPropertyChanged(nameof(PrayedSummary));
+            OnPropertyChanged(nameof(HasBeenPrayedFor));
             OnPropertyChanged(nameof(UpdatedAt));
             OnPropertyChanged(nameof(Identifier));
             OnPropertyChanged(nameof(PrayerFrequency));

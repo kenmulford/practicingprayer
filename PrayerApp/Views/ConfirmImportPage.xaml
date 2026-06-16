@@ -269,8 +269,10 @@
                                 <Grid ColumnDefinitions="*, Auto" ColumnSpacing="4">
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
+                                           AutomationId="ConfirmImport_Entry_PrayerTitle"
                                            SemanticProperties.Description="Prayer title"
-                                           VerticalOptions="Center">
+                                           VerticalOptions="Center"
+                                           Loaded="OnPrayerTitleEntryLoaded">
                                         <Entry.Behaviors>
                                             <behaviors:SelectAllOnFocusBehavior />
                                             <behaviors:KeyboardAvoidanceBehavior />
@@ -301,16 +303,10 @@
                 </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
 
-            <Button Text="+ Add another prayer ›"
+            <Button Style="{StaticResource AddPrayerAffordanceButton}"
+                    Text="+ Add another prayer ›"
                     AutomationId="ConfirmImport_Btn_AddPrayer"
-                    Command="{Binding AddPrayerCommand}"
-                    FontSize="{StaticResource FontTitle}"
-                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                    BackgroundColor="Transparent"
-                    FontAttributes="Bold"
-                    Padding="16,8,12,10"
-                    BorderWidth="0"
-                    HorizontalOptions="Center" />
+                    Command="{Binding AddPrayerCommand}" />
 
         </VerticalStackLayout>
     </ScrollView>

@@ -307,7 +307,7 @@ namespace PrayerApp.ViewModels
             // BulkChangedMessage stays unguarded — backup restore / deep-link import is
             // a full data replacement that legitimately requires per-card reload.
             _messenger.Register<PrayerCardsViewModel, PrayerCardChangedMessage>(this, (vm, _) => vm.SyncAsync(null, skipExpandedPrayerReload: true).SafeFireAndForget());
-            _messenger.Register<PrayerCardsViewModel, PrayerChangedMessage>(this, (vm, msg) => vm.SyncAsync(msg.Kind).SafeFireAndForget());
+            _messenger.Register<PrayerCardsViewModel, PrayerChangedMessage>(this, (vm, msg) => vm.OnPrayerChangedAsync(msg).SafeFireAndForget());
             _messenger.Register<PrayerCardsViewModel, TagChangedMessage>(this, (vm, _) => vm.SyncAsync(null, skipExpandedPrayerReload: true).SafeFireAndForget());
             _messenger.Register<PrayerCardsViewModel, CardBoxChangedMessage>(this, (vm, _) => vm.SyncAsync(null, skipExpandedPrayerReload: true).SafeFireAndForget());
             _messenger.Register<PrayerCardsViewModel, BulkChangedMessage>(this, (vm, _) => vm.SyncAsync().SafeFireAndForget());
@@ -363,7 +363,7 @@ namespace PrayerApp.ViewModels
         {
             var vm = _cardVmFactory?.Invoke(pc)
                 ?? new PrayerCardViewModel(pc, _cardService, _prayerService, _onboardingService,
-                    _navigationService, _accessibilityService, _boxService);
+                    _navigationService, _accessibilityService, _boxService, _settings);
             // Wire the back-reference so per-card IsExpanded can project over
             // ExpandedCardId, and ToggleExpandedAsync can write back through.
             vm.Parent = this;
@@ -610,6 +610,43 @@ namespace PrayerApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Handles a single-prayer change broadcast. For a <see cref="ChangeKind.Created"/>
+        /// prayer whose owning card is currently expanded, patch the new row into that card
+        /// in place before reconciling the rest of the list.
+        /// #82: "Save &amp; Add Another" saves without navigating, so
+        /// <see cref="IQueryAttributable.ApplyQueryAttributes"/> never runs its
+        /// <see cref="PrayerCardViewModel.AddOrUpdatePrayerAsync"/>, and the final
+        /// navigating Save sets <see cref="SuppressNextOnAppearingSync"/> — so without this
+        /// the intermediate Save+ rows stay invisible until a later full sync. Mirroring the
+        /// in-place insert here keeps every Save+ row live. AddOrUpdatePrayerAsync is
+        /// idempotent (existing-id check + re-entrancy gate), so the regular navigating-save
+        /// path that also calls it still inserts exactly once. The BUG-79/80 skipReload guard
+        /// in <see cref="SyncCoreAsync"/> stays intact — this is the cheap single-row patch,
+        /// never a full ReloadPrayers().
+        /// </summary>
+        private async Task OnPrayerChangedAsync(PrayerChangedMessage msg)
+        {
+            if (msg.Kind == ChangeKind.Created)
+            {
+                var matched = AllPrayerCards.FirstOrDefault(c => c.Id == msg.CardId);
+                if (matched is { IsExpanded: true })
+                {
+                    // Guard the in-place patch so a single prayer-load failure can't
+                    // skip the reconciliation below — SyncAsync must always run (the
+                    // pre-#82 handler called it unconditionally). On failure the card
+                    // list still reconciles and the next OnAppearing full sync recovers
+                    // the missed row.
+                    try { await matched.AddOrUpdatePrayerAsync(msg.PrayerId); }
+                    catch (Exception ex)
+                    {
+                        Diagnostics.ResolveLog()?.Log("PrayerCardsViewModel.OnPrayerChangedAsync", ex);
+                    }
+                }
+            }
+            await SyncAsync(msg.Kind);
+        }
+
         private async Task SyncCoreAsync(ChangeKind? changeKind, bool skipExpandedPrayerReload)
         {
             // PerfLog.Log("SyncCoreAsync.entry");
@@ -654,10 +691,13 @@ namespace PrayerApp.ViewModels
             //
             // BUG-79: any single-row PrayerChangedMessage. ApplyQueryAttributes
             // (PrayerSaved → AddOrUpdatePrayerAsync; PrayerDeleted → RemovePrayer)
-            // has already patched the row in place. For Created broadcasts that
-            // originate outside the detail flow (QuickAdd writes to the system
-            // "Quick Add" card from the Home tab), CardsPage's next OnAppearing
-            // runs SyncAsync() with no skip and reconciles fresh.
+            // has already patched the row in place on navigating saves/deletes. On
+            // the non-navigating "Save & Add Another" path (#82) the patch is done by
+            // OnPrayerChangedAsync — the same in-place AddOrUpdatePrayerAsync for a
+            // Created prayer on the expanded card. For Created broadcasts to a
+            // non-expanded card (QuickAdd writes to the system "Quick Add" card from
+            // the Home tab), CardsPage's next OnAppearing runs SyncAsync() with no
+            // skip and reconciles fresh.
             //
             // BUG-80: sibling broadcasts that don't mutate any card's prayer set
             // (PrayerCardChangedMessage, TagChangedMessage, CardBoxChangedMessage)
@@ -1014,16 +1054,19 @@ namespace PrayerApp.ViewModels
             _accessibilityService.Announce("Selection cancelled");
         }
 
+        private const string _archiveOptionLabel = "Archive";
+
         private async Task MoveSelectedAsync()
         {
             var selected = AllPrayerCards.Where(c => c.IsMultiSelected).ToList();
             if (selected.Count == 0) return;
 
-            // Build picker options: user boxes + "Loose Cards"
+            // Build picker options: user boxes + "Loose Cards" + "Archive"
             var boxes = await _boxService.GetBoxesAsync();
             var options = new List<string> { BoxStrings.Unorganized };
             var userBoxes = boxes.Where(b => !b.IsSystem).OrderBy(b => b.Name).ToList();
             options.AddRange(userBoxes.Select(b => b.Name));
+            options.Add(_archiveOptionLabel);
 
             var result = await _navigationService.DisplayActionSheetAsync(
                 $"Move {selected.Count} card{(selected.Count == 1 ? "" : "s")} to…",
@@ -1037,6 +1080,20 @@ namespace PrayerApp.ViewModels
             {
                 targetBoxId = 0;
             }
+            else if (result == _archiveOptionLabel)
+            {
+                targetBoxId = _settings.ArchivedFolderId;
+                // System cards cannot be archived
+                selected = selected.Where(c => !c.IsSystem).ToList();
+                if (selected.Count == 0) return;
+
+                var confirmed = await _navigationService.DisplayConfirmAsync(
+                    "Archive Cards?",
+                    $"Archive {selected.Count} card{(selected.Count == 1 ? "" : "s")}? You can find them in your Archived Cards collection.",
+                    "Archive",
+                    "Cancel");
+                if (!confirmed) return;
+            }
             else
             {
                 var targetBox = userBoxes.FirstOrDefault(b => b.Name == result);
@@ -1048,8 +1105,12 @@ namespace PrayerApp.ViewModels
             foreach (var card in selected)
                 await _cardService.AssignBoxAsync(card.Card, targetBoxId);
 
-            _accessibilityService.Announce(
-                $"Moved {selected.Count} card{(selected.Count == 1 ? "" : "s")} to {result}");
+            if (result == _archiveOptionLabel)
+                _accessibilityService.Announce(
+                    $"Archived {selected.Count} card{(selected.Count == 1 ? "" : "s")}");
+            else
+                _accessibilityService.Announce(
+                    $"Moved {selected.Count} card{(selected.Count == 1 ? "" : "s")} to {result}");
 
             ExitMultiSelectMode();
             RebuildSections();

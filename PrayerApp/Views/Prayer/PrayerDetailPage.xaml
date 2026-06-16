@@ -70,6 +70,13 @@
                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
+                    <!-- Prayed count summary -->
+                    <Label Text="{Binding PrayedSummary}"
+                           AutomationId="PrayerPrayedSummaryLabel"
+                           FontSize="{StaticResource FontSmall}"
+                           IsVisible="{Binding HasBeenPrayedFor}"
+                           Style="{StaticResource MutedText}" />
+
                     <!-- Tags (view mode) -->
                     <FlexLayout BindableLayout.ItemsSource="{Binding SelectedTags}"
                                 Wrap="Wrap"

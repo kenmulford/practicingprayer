@@ -364,7 +364,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/.claude
+# Commit .claude/ (shared project config + domain skills); keep only machine-local bits out
+/.claude/settings.local.json
+/.claude/worktrees/
 *.keystore
 .DS_Store
 PrayerApp/Resources/AppIcon/app icon rvsd.pen
@@ -393,3 +395,11 @@ window_dump.xml
 PrayerApp/iOS-signing.local.props
 /.superpowers
 /screenshots
+
+# milestone-driver per-clone scratch (gitignored, never commit)
+/.milestone-driver-preflight-notice
+/.milestone-driver-trello-notice
+/.milestone-driver-triage-cache.json
+/.milestone-driver-tests-stamp
+/.milestone-driver-worktrees/
+/.review-5.diff

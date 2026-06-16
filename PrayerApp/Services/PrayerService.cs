@@ -68,12 +68,13 @@ public class PrayerService : IPrayerService
         return all.Where(p => !p.IsAnswered).ToList().AsReadOnly();
     }
 
-    public async Task<Prayer> SavePrayerAsync(Prayer prayer)
+    public async Task<Prayer> SavePrayerAsync(Prayer prayer, bool publishMessage = true)
     {
         var isNew = prayer.Id == 0;
         await prayer.SaveAsync();
         InvalidateCache();
-        _messenger.Send(new PrayerChangedMessage(prayer.Id, prayer.PrayerCardId, isNew ? ChangeKind.Created : ChangeKind.Updated));
+        if (publishMessage)
+            _messenger.Send(new PrayerChangedMessage(prayer.Id, prayer.PrayerCardId, isNew ? ChangeKind.Created : ChangeKind.Updated));
         return prayer;
     }
 
@@ -117,6 +118,11 @@ public class PrayerService : IPrayerService
     public async Task<DateTime?> GetLastInteractionDateAsync()
     {
         return await _dbService.GetMaxInteractionDateAsync();
+    }
+
+    public async Task<int> GetInteractionCountByPrayerAsync(int prayerId)
+    {
+        return await _dbService.CountInteractionsByPrayerIdAsync(prayerId);
     }
 
     public async Task<IReadOnlyList<Prayer>> GetAnsweredOnThisDateAsync()

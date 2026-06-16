@@ -16,10 +16,24 @@ public class PrayerListViewModelTests
     private readonly INavigationService _navigationService = Substitute.For<INavigationService>();
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
+    private readonly IPrayerSelectionService _selectionService = Substitute.For<IPrayerSelectionService>();
     private readonly IMessenger _messenger = new WeakReferenceMessenger();
 
+    // Extra mocks needed only to build stub prayer rows via the internal test-only
+    // PrayerRequestDetailViewModel ctor (the production (Prayer) ctor chains through
+    // IPlatformApplication.Current, which unit tests can't stub).
+    private readonly IOnboardingService _onboardingService = Substitute.For<IOnboardingService>();
+    private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
+
     private PrayerListViewModel CreateSut() =>
-        new(_prayerService, _cardService, _tagService, _navigationService, _accessibilityService, _settings, _messenger);
+        new(_prayerService, _cardService, _tagService, _navigationService, _accessibilityService, _settings, _selectionService, _messenger)
+        {
+            PrayerRowFactory = BuildStubPrayerRowVm
+        };
+
+    private PrayerRequestDetailViewModel BuildStubPrayerRowVm(Prayer p)
+        => new(p, _prayerService, _tagService, _cardService, _onboardingService,
+            _notificationService, _navigationService, _accessibilityService, _settings);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -207,5 +221,144 @@ public class PrayerListViewModelTests
         await Task.WhenAll(t1, t2, t3);
 
         await _cardService.Received(2).GetCardsAsync();
+    }
+
+    // ── #5 — StartPrayerTimeCommand (launch Prayer Time from filtered view) ──
+
+    // Helper: fully mock SyncAsync's dependencies for an arbitrary prayer set,
+    // wiring card titles so text/card search behaves realistically.
+    private void SetupSync(IEnumerable<Prayer> prayers, IEnumerable<PrayerCard>? cards = null,
+        IEnumerable<PrayerTag>? tags = null)
+    {
+        _prayerService.GetAllPrayersAsync().Returns(prayers.ToList().AsReadOnly());
+        _cardService.GetCardsAsync().Returns((cards ?? new List<PrayerCard>()).ToList().AsReadOnly());
+        _tagService.GetTagsAsync().Returns((tags ?? new List<PrayerTag>()).ToList().AsReadOnly());
+        _settings.OverdueDayThreshold.Returns(30);
+        _prayerService.GetOverduePrayersAsync(30).Returns(new List<Prayer>().AsReadOnly());
+        _db_Setup();
+    }
+
+    [Fact]
+    public async Task StartPrayerTimeCommand_SetsActiveIdsAndNavigatesToSelectionScope()
+    {
+        SetupSync(new[]
+        {
+            new Prayer { Id = 1, Title = "Aunt",   IsAnswered = false },
+            new Prayer { Id = 2, Title = "Friend", IsAnswered = false },
+            new Prayer { Id = 3, Title = "Done",   IsAnswered = true  }, // answered → excluded
+        });
+
+        var sut = CreateSut();
+        await sut.SyncAsync(); // default Active filter → 1 & 2 visible, 3 hidden
+
+        await ((IAsyncRelayCommand)sut.StartPrayerTimeCommand).ExecuteAsync(null);
+
+        _selectionService.Received(1).Set(Arg.Is<IEnumerable<int>>(ids =>
+            ids.OrderBy(x => x).SequenceEqual(new[] { 1, 2 })));
+        await _navigationService.Received(1).GoToAsync(
+            $"{Routes.PrayerTimePage}?scope={Routes.ScopeSelection}");
+    }
+
+    [Fact]
+    public async Task StartPrayerTimeCommand_ExcludesAnsweredEvenWhenVisible()
+    {
+        // StatusFilter=All shows answered rows, but they must NOT be prayed through.
+        SetupSync(new[]
+        {
+            new Prayer { Id = 10, Title = "Active", IsAnswered = false },
+            new Prayer { Id = 11, Title = "Answered", IsAnswered = true },
+        });
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.SetStatusCommand.Execute("All"); // both rows now visible
+
+        await ((IAsyncRelayCommand)sut.StartPrayerTimeCommand).ExecuteAsync(null);
+
+        _selectionService.Received(1).Set(Arg.Is<IEnumerable<int>>(ids =>
+            ids.SequenceEqual(new[] { 10 })));
+    }
+
+    [Fact]
+    public async Task StartPrayerTimeCommand_CanExecuteFalse_WhenNoActivePrayersInView()
+    {
+        // Answered filter over an answered-only set → 0 active in view.
+        SetupSync(new[]
+        {
+            new Prayer { Id = 20, Title = "Done1", IsAnswered = true },
+            new Prayer { Id = 21, Title = "Done2", IsAnswered = true },
+        });
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.SetStatusCommand.Execute("Answered"); // both answered rows visible, none active
+
+        Assert.False(((IRelayCommand)sut.StartPrayerTimeCommand).CanExecute(null));
+    }
+
+    [Fact]
+    public async Task StartPrayerTimeCommand_CanExecuteTrue_WhenAtLeastOneActiveInView()
+    {
+        SetupSync(new[] { new Prayer { Id = 30, Title = "Active", IsAnswered = false } });
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        Assert.True(((IRelayCommand)sut.StartPrayerTimeCommand).CanExecute(null));
+    }
+
+    [Fact]
+    public async Task StartPrayerTimeCommand_HonorsCombinedTextStatusTagFilter()
+    {
+        var family = new PrayerTag { Id = 100, Name = "Family" };
+        var card = new PrayerCard { Id = 7, Title = "People" };
+        SetupSync(
+            new[]
+            {
+                new Prayer { Id = 1, Title = "Mom visit",   IsAnswered = false, PrayerCardId = 7 },
+                new Prayer { Id = 2, Title = "Mom recovery", IsAnswered = false, PrayerCardId = 7 },
+                new Prayer { Id = 3, Title = "Dad",          IsAnswered = false, PrayerCardId = 7 },
+                new Prayer { Id = 4, Title = "Mom answered", IsAnswered = true,  PrayerCardId = 7 },
+            },
+            cards: new[] { card },
+            tags: new[] { family });
+
+        // Tag rows: prayers 1 and 4 carry the Family tag (3 does not).
+        var db = Substitute.For<IDBService>();
+        PrayerCardTag.SetDBService(db);
+        db.GetAllAsync<PrayerCardTag>().Returns(new List<PrayerCardTag>
+        {
+            new() { PrayerRequestId = 1, PrayerTagId = 100 },
+            new() { PrayerRequestId = 4, PrayerTagId = 100 },
+        });
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        sut.SearchText = "Mom"; // titles 1,2,4 match
+        sut.AvailableTags.Single(c => c.Tag.Id == 100).ToggleCommand.Execute(null); // narrow to 1,4 + re-filters
+        // status defaults Active → drops answered #4. Net active-in-view: {1}
+
+        await ((IAsyncRelayCommand)sut.StartPrayerTimeCommand).ExecuteAsync(null);
+
+        _selectionService.Received(1).Set(Arg.Is<IEnumerable<int>>(ids =>
+            ids.SequenceEqual(new[] { 1 })));
+    }
+
+    [Fact]
+    public async Task StartPrayerTimeCommand_DoesNotResetSearchOrFilterState()
+    {
+        SetupSync(new[] { new Prayer { Id = 1, Title = "Keep", IsAnswered = false } });
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.SetStatusCommand.Execute("All");
+        sut.SearchText = "Keep";
+
+        await ((IAsyncRelayCommand)sut.StartPrayerTimeCommand).ExecuteAsync(null);
+
+        // Navigating away preserves the underlying page's filter state.
+        Assert.Equal(FilterStatus.All, sut.StatusFilter);
+        Assert.Equal("Keep", sut.SearchText);
     }
 }

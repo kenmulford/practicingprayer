@@ -16,15 +16,19 @@ public class PrayerTimeViewModelTests
     private readonly IAccessibilityService _accessibilityService = Substitute.For<IAccessibilityService>();
     private readonly INotificationService _notificationService = Substitute.For<INotificationService>();
     private readonly ISettings _settings = Substitute.For<ISettings>();
+    private readonly IPrayerSelectionService _selectionService = Substitute.For<IPrayerSelectionService>();
 
     public PrayerTimeViewModelTests()
     {
         _settings.AutoModeIntervalSeconds.Returns(30);
+        // Use a non-zero ID so cards with BoxId=0 are not incorrectly treated as archived.
+        _settings.ArchivedFolderId.Returns(999);
     }
 
     private PrayerTimeViewModel CreateSut() =>
         new(_prayerService, _cardService, _tagService, _interactionService,
-            _navigationService, _accessibilityService, _notificationService, _settings);
+            _navigationService, _accessibilityService, _notificationService, _settings,
+            _selectionService);
 
     // ── Construction ──────────────────────────────────────────────────
 
@@ -124,6 +128,74 @@ public class PrayerTimeViewModelTests
         Assert.All(realEntries, e => Assert.Equal("Family", e.CardTitle));
     }
 
+    // ── scope=selection filtering ─────────────────────────────────────
+
+    [Fact]
+    public async Task ApplyQueryAttributes_SelectionScope_FiltersToSelectedIds()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Family" },
+            new() { Id = 2, Title = "Work" }
+        }.AsReadOnly());
+
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "Prayer A", PrayerCardId = 1 },
+            new() { Id = 200, Title = "Prayer B", PrayerCardId = 2 },
+            new() { Id = 300, Title = "Prayer C", PrayerCardId = 1 }
+        }.AsReadOnly());
+
+        // Selection service hands over IDs 100 and 300; 200 and a stale 999 must be excluded.
+        _selectionService.Consume().Returns(new List<int> { 100, 300, 999 }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "selection" } });
+
+        await Task.Delay(200);
+
+        var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
+        Assert.Equal(2, realEntries.Count);
+        Assert.All(realEntries, e => Assert.Equal("Family", e.CardTitle));
+    }
+
+    [Fact]
+    public async Task ApplyQueryAttributes_SelectionScope_ConsumesSelectionServiceOnce()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { new() { Id = 1, Title = "A" } }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "P", PrayerCardId = 1 }
+        }.AsReadOnly());
+        _selectionService.Consume().Returns(new List<int> { 100 }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "selection" } });
+
+        await Task.Delay(200);
+
+        _selectionService.Received(1).Consume();
+    }
+
+    [Fact]
+    public async Task ApplyQueryAttributes_SelectionScope_EmptySelection_NoEntries()
+    {
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { new() { Id = 1, Title = "A" } }.AsReadOnly());
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "P", PrayerCardId = 1 }
+        }.AsReadOnly());
+        _selectionService.Consume().Returns(new List<int>().AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "selection" } });
+
+        await Task.Delay(200);
+
+        Assert.DoesNotContain(sut.Entries, e => !e.IsSentinel);
+        Assert.True(sut.HasCompleted);
+    }
+
     // ── Ordering (BUG-61) ────────────────────────────────────────────
 
     [Fact]
@@ -160,5 +232,93 @@ public class PrayerTimeViewModelTests
         Assert.Equal("A Prayer", realEntries[2].PrayerTitle);
         Assert.Equal("Zebra", realEntries[3].CardTitle);
         Assert.Equal("C Prayer", realEntries[3].PrayerTitle);
+    }
+
+    // ── scope=all excludes archived cards ───────────────────────────────
+
+    [Fact]
+    public async Task ScopeAll_ExcludesPrayersFromArchivedCards()
+    {
+        const int archivedBoxId = 999; // matches fixture default
+
+        // Card 1 is normal, Card 2 is archived
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Active Card", BoxId = 0 },
+            new() { Id = 2, Title = "Archived Card", BoxId = archivedBoxId }
+        }.AsReadOnly());
+
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "Normal Prayer", PrayerCardId = 1 },
+            new() { Id = 200, Title = "Archived Prayer", PrayerCardId = 2 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "all" } });
+
+        await Task.Delay(200);
+
+        var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
+        Assert.Single(realEntries);
+        Assert.Equal(100, realEntries[0].PrayerId);
+        Assert.Equal("Normal Prayer", realEntries[0].PrayerTitle);
+    }
+
+    [Fact]
+    public async Task ScopeAll_PreservesOrphanPrayersWhoseCardIsMissing()
+    {
+        // scope=all uses denylist semantics: only prayers whose card is in the
+        // Archived box are excluded. A card-less/orphan active prayer (its card
+        // absent from GetCardsAsync) must still appear — the cardLookup "Unknown"
+        // fallback handles its missing title.
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Active Card", BoxId = 0 }
+        }.AsReadOnly());
+
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "Normal Prayer", PrayerCardId = 1 },
+            new() { Id = 300, Title = "Orphan Prayer", PrayerCardId = 42 } // card 42 not in GetCardsAsync
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object> { { "scope", "all" } });
+
+        await Task.Delay(200);
+
+        var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
+        Assert.Equal(2, realEntries.Count);
+        Assert.Contains(realEntries, e => e.PrayerId == 300 && e.CardTitle == "Unknown");
+    }
+
+    [Fact]
+    public async Task ScopeBox_DoesNotExcludeArchivedCardsByArchiveFilter()
+    {
+        // scope=box should remain unmodified — only scope=all gets the archive filter
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard>
+        {
+            new() { Id = 1, Title = "Card In Box 5", BoxId = 5 }
+        }.AsReadOnly());
+
+        _prayerService.GetAllActivePrayersAsync().Returns(new List<Prayer>
+        {
+            new() { Id = 100, Title = "Prayer", PrayerCardId = 1 }
+        }.AsReadOnly());
+
+        var sut = CreateSut();
+        sut.ApplyQueryAttributes(new Dictionary<string, object>
+        {
+            { "scope", "box" },
+            { "boxId", "5" }
+        });
+
+        await Task.Delay(200);
+
+        var realEntries = sut.Entries.Where(e => !e.IsSentinel).ToList();
+        // scope=box filter is unchanged — card in box 5 is included
+        Assert.Single(realEntries);
+        Assert.Equal(100, realEntries[0].PrayerId);
     }
 }

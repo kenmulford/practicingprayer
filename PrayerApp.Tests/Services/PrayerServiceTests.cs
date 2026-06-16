@@ -445,4 +445,73 @@ public class PrayerServiceTests
         Assert.Equal(3, _prayerMessages[0].CardId);
         Assert.Equal(ChangeKind.Deleted, _prayerMessages[0].Kind);
     }
+
+    // ── SavePrayerAsync publishMessage=false ─────────────────────────────────
+
+    [Fact]
+    public async Task SavePrayerAsync_PublishMessageFalse_DoesNotSendMessage()
+    {
+        // Bulk-import path: caller suppresses per-entity messages and sends
+        // a single BulkChangedMessage after all rows are persisted.
+        var prayer = new Prayer { PrayerCardId = 1, Title = "Aunt" };
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        await _service.SavePrayerAsync(prayer, publishMessage: false);
+
+        Assert.Empty(_prayerMessages);
+    }
+
+    [Fact]
+    public async Task SavePrayerAsync_PublishMessageFalse_StillInvalidatesCache()
+    {
+        // Cache must still be busted even when the message is suppressed —
+        // the import batch mutates the DB; the next GetAll*/GetByCard* must
+        // see fresh data.
+        _db.GetAllAsync<Prayer>().Returns(Task.FromResult(new List<Prayer>()));
+        await _service.GetAllPrayersAsync(); // populate cache
+
+        var prayer = new Prayer { PrayerCardId = 1, Title = "Aunt" };
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+        await _service.SavePrayerAsync(prayer, publishMessage: false);
+
+        // Next call must re-query, not return stale cache.
+        await _service.GetAllPrayersAsync();
+        await _db.Received(2).GetAllAsync<Prayer>();
+    }
+
+    [Fact]
+    public async Task SavePrayerAsync_DefaultPublishMessage_StillSendsMessage()
+    {
+        // Guard: adding the optional param must not silently break the default
+        // (publishMessage = true) path used by every other caller.
+        var prayer = new Prayer { PrayerCardId = 3, Title = "Aunt" };
+        _db.InsertAsync(Arg.Any<Prayer>()).Returns(Task.FromResult(1));
+
+        await _service.SavePrayerAsync(prayer);
+
+        Assert.Single(_prayerMessages);
+    }
+
+    // ── GetInteractionCountByPrayerAsync ─────────────────────────────────────
+
+    [Fact]
+    public async Task GetInteractionCountByPrayerAsync_DelegatesToDb()
+    {
+        _db.CountInteractionsByPrayerIdAsync(7).Returns(Task.FromResult(12));
+
+        var result = await _service.GetInteractionCountByPrayerAsync(7);
+
+        Assert.Equal(12, result);
+        await _db.Received(1).CountInteractionsByPrayerIdAsync(7);
+    }
+
+    [Fact]
+    public async Task GetInteractionCountByPrayerAsync_NoPrayers_ReturnsZero()
+    {
+        _db.CountInteractionsByPrayerIdAsync(99).Returns(Task.FromResult(0));
+
+        var result = await _service.GetInteractionCountByPrayerAsync(99);
+
+        Assert.Equal(0, result);
+    }
 }

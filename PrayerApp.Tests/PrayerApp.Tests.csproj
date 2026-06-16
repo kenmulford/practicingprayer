@@ -85,7 +85,6 @@
     <Compile Include="../PrayerApp/Routes.cs" />
 
     <!-- ViewModels -->
-    <Compile Include="../PrayerApp/ViewModels/QuickAddViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/FaqItemViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/HelpViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/HomeViewModel.cs" />
@@ -104,6 +103,7 @@
     <Compile Include="../PrayerApp/ViewModels/BoxesViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/BoxDetailViewModel.cs" />
     <Compile Include="../PrayerApp/ViewModels/PrayerTimeBoxScopeViewModel.cs" />
+    <Compile Include="../PrayerApp/ViewModels/PrayerTimeCardSelectViewModel.cs" />
 
     <!-- Service interfaces -->
     <Compile Include="../PrayerApp/Services/ISettings.cs" />
@@ -138,6 +138,8 @@
     <Compile Include="../PrayerApp/ViewModels/ConfirmImportViewModel.cs" />
     <Compile Include="../PrayerApp/Services/IBoxService.cs" />
     <Compile Include="../PrayerApp/Services/BoxService.cs" />
+    <Compile Include="../PrayerApp/Services/IPrayerSelectionService.cs" />
+    <Compile Include="../PrayerApp/Services/PrayerSelectionService.cs" />
 
     <!-- TestSeedFixtures: linked from PrayerApp.UITests so the consistency
          test in this project can reference the same canonical constants

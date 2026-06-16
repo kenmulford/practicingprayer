@@ -33,6 +33,11 @@ public class PrayerCardsViewModelTests
 
         // Default: no boxes (sections will be empty)
         _boxService.GetBoxesAsync().Returns(new List<CardBox>().AsReadOnly());
+
+        // Reset the Prayer Active-Record static per test so a stub set by one test
+        // (e.g. the #82 in-place-insert test) can't leak into the next. Matches the
+        // constructor-init pattern in PrayerCardViewModelTests / PrayerRequestDetailViewModelTests.
+        Prayer.SetDBService(Substitute.For<IDBService>());
     }
 
     private PrayerCardsViewModel CreateSut() =>
@@ -391,7 +396,7 @@ public class PrayerCardsViewModelTests
         // Simulate SyncAsync's diff loop having added the new card
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
@@ -1293,7 +1298,7 @@ public class PrayerCardsViewModelTests
         // and ConsumePendingSavedAsync (the order Shell + OnAppearing produce).
         var newCard = new PrayerCard { Id = 42, Title = "Just Created", BoxId = 0 };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         { Parent = sut };
         sut.AllPrayerCards.Add(newVm);
 
@@ -1463,7 +1468,7 @@ public class PrayerCardsViewModelTests
         // and ConsumePendingSavedAsync (the new-via-sync branch).
         var newCard = new PrayerCard { Id = 42, Title = "Imported May 2", BoxId = 0, IsImported = true };
         var newVm = new PrayerCardViewModel(newCard, _cardService, _prayerService,
-            _onboardingService, _navigationService, _accessibilityService, _boxService)
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
         {
             PrayerRowFactory = BuildStubPrayerRowVm,
             Parent = sut
@@ -1475,6 +1480,58 @@ public class PrayerCardsViewModelTests
         Assert.NotNull(result);
         Assert.True(result.IsExpanded);
         Assert.Equal(3, result.Prayers.Count);
+    }
+
+    // ── #82: "Save & Add Another" — Created broadcast patches the expanded card ──
+    // Repro: from an expanded card, Save & Add Another saves a prayer but does NOT
+    // navigate, so ApplyQueryAttributes never runs. The PrayerChangedMessage(Created)
+    // broadcast is the only signal the cards page gets — it must insert the new row
+    // in place. Before the fix the Created broadcast hit SyncCoreAsync's skipReload
+    // guard (changeKind != null) and the new prayer never entered the expanded card's
+    // Prayers collection until a later full sync (the second nav-away/back).
+    [Fact]
+    public async Task PrayerChangedMessage_Created_OnExpandedCard_InsertsPrayerInPlace()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        // Card 1 starts with one prayer; the just-created Save+ prayer (id 200) is not in it.
+        var existing = new Prayer { Id = 100, PrayerCardId = 1, Title = "Existing" };
+        _prayerService.GetPrayersByCardAsync(1).Returns(new List<Prayer> { existing }.AsReadOnly());
+        // Active-Record load for the newly-created prayer (AddOrUpdatePrayerAsync → Prayer.LoadAsync).
+        var created = new Prayer { Id = 200, PrayerCardId = 1, Title = "Brand New" };
+        var prayerDb = Substitute.For<IDBService>();
+        Prayer.SetDBService(prayerDb);
+        prayerDb.GetByIdAsync<Prayer>(200).Returns(created);
+
+        // Inject the stub row factory so the in-place insert avoids the DI-bound ctor.
+        var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
+            cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
+                _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
+            {
+                PrayerRowFactory = BuildStubPrayerRowVm
+            });
+        await sut.SyncAsync();
+        var cardVm = sut.AllPrayerCards.Single(c => c.Id == 1);
+        sut.ExpandedCardId = 1;            // user has the card expanded behind the detail page
+        await cardVm.LoadPrayersAsync();   // expanded card's rows are realized
+        Assert.Single(cardVm.Prayers);
+
+        // Act — Save & Add Another fires this without navigating.
+        _messenger.Send(new PrayerChangedMessage(200, 1, ChangeKind.Created));
+        // The handler is fire-and-forget with a deeper chain than the file's
+        // 2x-Task.Yield convention (AddOrUpdatePrayerAsync → Prayer.LoadAsync, then
+        // SyncAsync), so poll the observable condition with a bounded yield loop.
+        for (int i = 0; i < 100 && cardVm.Prayers.All(p => p.Id != 200); i++)
+            await Task.Yield();
+
+        // Assert — the new prayer is now live in the expanded card (was dropped before the fix).
+        Assert.Contains(cardVm.Prayers, p => p.Id == 200);
+        Assert.Equal(2, cardVm.Prayers.Count);
     }
 
     [Fact]
@@ -1490,7 +1547,7 @@ public class PrayerCardsViewModelTests
         var sut = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
             _navigationService, _accessibilityService, _tagService, _settings, _boxService, _messenger,
             cardVmFactory: pc => new PrayerCardViewModel(pc, _cardService, _prayerService,
-                _onboardingService, _navigationService, _accessibilityService, _boxService)
+                _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
             {
                 PrayerRowFactory = BuildStubPrayerRowVm
             });
@@ -1846,6 +1903,107 @@ public class PrayerCardsViewModelTests
         // BulkChangedMessage on this flag, the import-to-existing list would silently
         // stop refreshing — exactly the bug this regression net catches.
         await _cardService.Received().GetCardsAsync();
+    }
+
+    // ── MoveSelectedAsync — Archive option ────────────────────────────────
+
+    [Fact]
+    public async Task MoveSelectedCommand_Archive_AssignsArchivedFolderIdToNonSystemCards()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 5, Name = "Family" },
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        await _cardService.Received(1).AssignBoxAsync(Arg.Any<PrayerCard>(), 20);
+    }
+
+    [Fact]
+    public async Task MoveSelectedCommand_Archive_Cancelled_DoesNotAssignBox()
+    {
+        SetupSystemBoxes();
+        var card = new PrayerCard { Id = 1, Title = "Test", BoxId = 0 };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { card }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(false);   // user cancels the "Archive Cards?" dialog
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        await _cardService.DidNotReceive().AssignBoxAsync(Arg.Any<PrayerCard>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task MoveSelectedCommand_Archive_SkipsSystemCards()
+    {
+        SetupSystemBoxes();
+        var userCard = new PrayerCard { Id = 1, Title = "User", BoxId = 0 };
+        var systemCard = new PrayerCard { Id = 2, Title = "Quick Add", BoxId = 0, IsSystem = true };
+        _cardService.GetCardsAsync().Returns(new List<PrayerCard> { userCard, systemCard }.AsReadOnly());
+        _tagService.GetTagsAsync().Returns(new List<PrayerTag>().AsReadOnly());
+        _prayerService.GetAllPrayersAsync().Returns(new List<Prayer>().AsReadOnly());
+        SetupDbMocks(new List<PrayerCardTag>());
+        _boxService.GetBoxesAsync().Returns(new List<CardBox>
+        {
+            new() { Id = 10, Name = "System", IsSystem = true, SystemKey = CardBox.SystemKeySystem, SortOrder = 900 },
+            new() { Id = 20, Name = "Archived", IsSystem = true, SystemKey = CardBox.SystemKeyArchived, SortOrder = 999 }
+        }.AsReadOnly());
+        _settings.ArchivedFolderId.Returns(20);
+        _navigationService.DisplayActionSheetAsync(
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string[]>())
+            .Returns("Archive");
+        _navigationService
+            .DisplayConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(true);
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        // Select both cards
+        sut.EnterMultiSelectMode(sut.AllPrayerCards[0]);
+        foreach (var c in sut.AllPrayerCards) c.IsMultiSelected = true;
+
+        await ((IAsyncRelayCommand)sut.MoveSelectedCommand).ExecuteAsync(null);
+
+        // Only the non-system card should be assigned
+        await _cardService.Received(1).AssignBoxAsync(Arg.Is<PrayerCard>(c => !c.IsSystem), 20);
+        await _cardService.DidNotReceive().AssignBoxAsync(Arg.Is<PrayerCard>(c => c.IsSystem), Arg.Any<int>());
     }
 
     // ── Helper ──────────────────────────────────────────────────────────
