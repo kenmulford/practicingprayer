@@ -144,6 +144,9 @@
 		<MauiImage Include="Resources\Images\FontAwesomeIcons\trash_can_solid_full.svg">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</MauiImage>
+		<MauiImage Include="Resources\Images\FontAwesomeIcons\box_archive_full.svg">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</MauiImage>
 
 		<!-- Splash Screen -->
 		<!-- Color must be a literal hex — MSBuild item attributes don't resolve {StaticResource} XAML tokens.
@@ -176,6 +179,7 @@
 	  <None Remove="Resources\Images\FontAwesomeIcons\star_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\tag_solid_full.svg" />
 	  <None Remove="Resources\Images\FontAwesomeIcons\trash_can_solid_full.svg" />
+	  <None Remove="Resources\Images\FontAwesomeIcons\box_archive_full.svg" />
 	</ItemGroup>
 
 	<ItemGroup>

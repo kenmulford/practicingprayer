@@ -186,13 +186,24 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding ArchiveCommand}" />
                         </Border.GestureRecognizers>
-                        <Label Text="{Binding ArchiveLabel}"
-                               FontSize="{StaticResource FontCaption}"
-                               AutomationProperties.IsInAccessibleTree="False"
-                               TextColor="{AppThemeBinding
-                                   Light={StaticResource Tertiary},
-                                   Dark={StaticResource TextPrimaryDark}}"
-                               VerticalOptions="Center" />
+                        <HorizontalStackLayout Spacing="4">
+                            <Image Source="box_archive_full.png" HeightRequest="14" WidthRequest="14"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   VerticalOptions="Center">
+                                <Image.Behaviors>
+                                    <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding
+                                        Light={StaticResource Primary},
+                                        Dark={StaticResource PrimaryDark}}" />
+                                </Image.Behaviors>
+                            </Image>
+                            <Label Text="{Binding ArchiveLabel}"
+                                   FontSize="{StaticResource FontCaption}"
+                                   AutomationProperties.IsInAccessibleTree="False"
+                                   TextColor="{AppThemeBinding
+                                       Light={StaticResource Tertiary},
+                                       Dark={StaticResource TextPrimaryDark}}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
                     </Border>
 
                     <!-- Pray — launches a single-card Prayer Time session (issue #34).
