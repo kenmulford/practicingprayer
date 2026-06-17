@@ -1049,6 +1049,20 @@ public class ConfirmImportViewModelTests
         Assert.True(item.IsSelected);
     }
 
+    [Fact]
+    public void SelectCardCommand_AnnouncesSelectedCardTitle()
+    {
+        // The checkmark on the selected card appears via an IsSelected DataTrigger,
+        // which TalkBack does not announce (#30). Announce the selection so a
+        // screen-reader user gets feedback that their tap registered.
+        var sut = CreateSut();
+        var item = new CardPickerItem { CardId = 1, Title = "Family" };
+
+        sut.SelectCardCommand.Execute(item);
+
+        _accessibilityService.Received(1).Announce(Arg.Is<string>(s => s.Contains("Family")));
+    }
+
     // ── SaveAsync existing-card path ──────────────────────────────────────
 
     [Fact]
