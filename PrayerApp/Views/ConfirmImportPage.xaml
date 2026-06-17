@@ -270,7 +270,7 @@
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
                                            AutomationId="ConfirmImport_Entry_PrayerTitle"
-                                           SemanticProperties.Description="Prayer title"
+                                           SemanticProperties.Description="{Binding TitleAccessibleDescription}"
                                            VerticalOptions="Center"
                                            Loaded="OnPrayerTitleEntryLoaded">
                                         <Entry.Behaviors>
@@ -283,12 +283,12 @@
                                             Text="✕"
                                             AutomationId="ConfirmImport_Btn_RemovePrayer"
                                             Clicked="OnRemovePrayerClicked"
-                                            SemanticProperties.Description="Remove prayer" />
+                                            SemanticProperties.Description="{Binding RemoveAccessibleDescription}" />
                                 </Grid>
 
                                 <Editor Text="{Binding Details}"
                                         Placeholder="Add details..."
-                                        SemanticProperties.Description="Prayer details"
+                                        SemanticProperties.Description="{Binding DetailsAccessibleDescription}"
                                         AutoSize="TextChanges"
                                         MinimumHeightRequest="{StaticResource TouchTargetMaterial}"
                                         HorizontalOptions="Fill">

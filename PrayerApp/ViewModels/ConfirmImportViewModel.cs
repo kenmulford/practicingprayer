@@ -304,6 +304,13 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 
             NotifySaveCanExecute();
             OnPropertyChanged(nameof(PrayersHeader));
+
+            // #15: re-stamp each row's 1-based position and the new total so the
+            // accessible descriptions ("Prayer title, item 2 of 3") stay correct
+            // after any add/remove. Fires on every population path (ConsumePending,
+            // InitializeManualEntry, AddPrayerCommand, RemovePrayerCommand) since
+            // each Add/Remove raises CollectionChanged.
+            RestampPrayerPositions();
         };
 
         // HasNoAvailableCards drives the empty-state Label in the XAML; it
@@ -761,6 +768,22 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
     }
 
     private void NotifySaveCanExecute() => SaveCommand.NotifyCanExecuteChanged();
+
+    /// <summary>
+    /// Stamps each row's 1-based <see cref="EditablePrayer.Position"/> and the
+    /// current <see cref="EditablePrayer.Total"/> so the per-field accessible
+    /// descriptions carry a positional cue (#15). Called from the Prayers
+    /// CollectionChanged handler after any add/remove.
+    /// </summary>
+    private void RestampPrayerPositions()
+    {
+        var total = Prayers.Count;
+        for (var i = 0; i < total; i++)
+        {
+            Prayers[i].Position = i + 1;
+            Prayers[i].Total = total;
+        }
+    }
 
     /// <summary>
     /// Idempotent — disposes the in-flight CancellationTokenSource so the
