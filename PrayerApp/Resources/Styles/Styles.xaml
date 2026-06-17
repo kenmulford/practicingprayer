@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <?xaml-comp compile="true" ?>
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -10,6 +10,14 @@
          Centralizing as a named token makes the floor reviewable in one
          place; future interactive rows can reference the same key. -->
     <x:Double x:Key="TouchTargetMinimum">44</x:Double>
+
+    <!-- ── Material touch-target floor (PS-14, issue #53) ──────────────────
+         Material 3 floor = 48dp (vs the iOS HIG 44pt above). Apply
+         TouchTargetMaterial to rows/controls already authored at 48 so the
+         Android-native floor is reviewable in one place; apply
+         TouchTargetMinimum (44) where the iOS HIG floor is the binding
+         constraint. Value-preserving: replaces existing 48 literals only. -->
+    <x:Double x:Key="TouchTargetMaterial">48</x:Double>
 
     <!-- ── Typography font-size tokens (PS-05, issue #51) ────────────────────
          14-step ladder covering every FontSize literal used in PrayerApp

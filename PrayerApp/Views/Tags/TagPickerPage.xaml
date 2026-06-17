@@ -51,6 +51,11 @@
                                    TextColor="{StaticResource White}"
                                    FontSize="{StaticResource FontCaption}"
                                    VerticalOptions="Center" />
+                            <!-- Intentional sub-target: the 24x24 in-chip remove (×) glyph below is a
+                                 decorative affordance on an already-tappable chip row, not a primary
+                                 touch target, so its MinimumHeightRequest deliberately sits below the
+                                 TouchTargetMinimum/TouchTargetMaterial floor. Kept as a literal;
+                                 no SwatchRowHeight token (single use, no reuse warrants one). -->
                             <Button Text="&#x00D7;"
                                     SemanticProperties.Description="Remove tag"
                                     Command="{Binding RemoveCommand}"
