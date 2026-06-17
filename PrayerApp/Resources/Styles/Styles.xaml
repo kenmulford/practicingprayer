@@ -714,6 +714,18 @@
                 <RoundRectangle CornerRadius="10" />
             </Setter.Value>
         </Setter>
+        <!-- Issue #30: Android-only subtle elevation so the card reads as a Material 3
+             elevated surface. iOS keeps the native outlined inset-grouped look unchanged
+             (Default leaves Shadow unset / null) — zero iOS visual delta is required. -->
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="Shadow">
+                    <On Platform="Android">
+                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.18" />
+                    </On>
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- PickerSectionHeader: small gray label above each PickerGroupCard.

@@ -283,6 +283,10 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
             if (SelectedCard is not null) SelectedCard.IsSelected = false;
             SelectedCard = item;
             item.IsSelected = true;
+            // The checkmark appears via an IsSelected DataTrigger, which TalkBack
+            // does not announce (#30). Announce the selection so a screen-reader
+            // user gets feedback that their tap registered.
+            _accessibilityService.Announce($"Selected {item.Title}");
         });
 
         Prayers.CollectionChanged += (_, e) =>
