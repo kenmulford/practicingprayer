@@ -65,6 +65,72 @@ public class ConfirmImportViewModelTests
         Assert.Equal("Dad", sut.Prayers[1].Title);
     }
 
+    // ── IsDetailsExpanded default on parse (#17 / UX-38) ──────────────
+
+    [Fact]
+    public void ConsumePending_PrayerWithDetails_RowDetailsExpanded()
+    {
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported",
+            ("Sis", "graduating this weekend, please pray")));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.True(sut.Prayers[0].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ConsumePending_PrayerWithEmptyDetails_RowCollapsed()
+    {
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported", ("Mom", null)));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.False(sut.Prayers[0].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ConsumePending_PrayerWithWhitespaceDetails_RowCollapsed()
+    {
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported", ("Dad", "   ")));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.False(sut.Prayers[0].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ConsumePending_MixedList_ExpandsOnlyRowsWithDetails()
+    {
+        // Issue #17 repro: row 1 has prefilled details (parser found a body),
+        // row 2 does not → row 1 expanded, row 2 collapsed.
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported",
+            ("Sis is graduating from college this weekend, please pray", "please pray"),
+            ("Pray for Dad", null)));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.True(sut.Prayers[0].IsDetailsExpanded);
+        Assert.False(sut.Prayers[1].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void AddPrayerCommand_NewBlankRow_IsCollapsed()
+    {
+        var sut = CreateSut();
+
+        sut.AddPrayerCommand.Execute(null);
+
+        Assert.False(sut.Prayers[^1].IsDetailsExpanded);
+    }
+
     [Fact]
     public void ConsumePending_WithNoStagedPayload_LeavesDefaults()
     {
