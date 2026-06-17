@@ -126,7 +126,7 @@
                                          AutomationProperties.IsInAccessibleTree="false">
                                     <BoxView.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Color="Transparent" Offset="0.0" />
+                                            <GradientStop Color="{AppThemeBinding Light=#00FAF8F3, Dark=#000d0e0c}" Offset="0.0" />
                                             <GradientStop Color="{AppThemeBinding Light={StaticResource PageLight}, Dark={StaticResource PageDark}}" Offset="1.0" />
                                         </LinearGradientBrush>
                                     </BoxView.Background>

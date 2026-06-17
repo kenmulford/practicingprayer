@@ -55,7 +55,9 @@ public partial class PrayerDetailPage : ContentPage
             {
                 Text = chip.Name,
                 TextColor = chipTextColor,
-                FontSize = 12,
+                // Route through the FontCaption token so the literal here is a true
+                // fallback, not a load-bearing size. Keep in sync with Styles.xaml FontCaption.
+                FontSize = Application.Current?.Resources.TryGetValue("FontCaption", out var v) == true && v is double size ? size : 12.0,
                 VerticalOptions = LayoutOptions.Center
             };
             var removeBtn = new Button
@@ -64,7 +66,9 @@ public partial class PrayerDetailPage : ContentPage
                 Command = chip.RemoveCommand,
                 TextColor = chipTextColor,
                 BackgroundColor = Colors.Transparent,
-                FontSize = 14,
+                // Route through the FontBody token so the literal here is a true fallback.
+                // Keep in sync with Styles.xaml FontBody.
+                FontSize = Application.Current?.Resources.TryGetValue("FontBody", out var bodySize) == true && bodySize is double bodyFontSize ? bodyFontSize : 14.0,
                 Padding = new Thickness(2, 0),
                 BorderWidth = 0,
                 MinimumWidthRequest = 24,

@@ -366,6 +366,10 @@ MigrationBackup/
 FodyWeavers.xsd
 # Commit .claude/ (shared project config + domain skills); keep only machine-local bits out
 /.claude/settings.local.json
+/.claude/settings.local.json.pre-migration
+/.claude/launch.json
+/.claude/hooks/maui-skill-hint.py
+/.claude/skills/app-store-screenshots.md
 /.claude/worktrees/
 *.keystore
 .DS_Store

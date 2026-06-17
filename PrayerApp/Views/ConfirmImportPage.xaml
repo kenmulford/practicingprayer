@@ -75,7 +75,7 @@
                             <Border Grid.Column="0"
                                     AutomationId="ConfirmImport_Seg_NewCard"
                                     Padding="10,6"
-                                    MinimumHeightRequest="44"
+                                    MinimumHeightRequest="{StaticResource TouchTargetMinimum}"
                                     MinimumWidthRequest="108"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 5"
@@ -108,7 +108,7 @@
                             <Border Grid.Column="1"
                                     AutomationId="ConfirmImport_Seg_ExistingCard"
                                     Padding="10,6"
-                                    MinimumHeightRequest="44"
+                                    MinimumHeightRequest="{StaticResource TouchTargetMinimum}"
                                     MinimumWidthRequest="44"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 5"
@@ -270,7 +270,7 @@
                                     <Entry Text="{Binding Title}"
                                            Placeholder="Prayer title"
                                            AutomationId="ConfirmImport_Entry_PrayerTitle"
-                                           SemanticProperties.Description="Prayer title"
+                                           SemanticProperties.Description="{Binding TitleAccessibleDescription}"
                                            VerticalOptions="Center"
                                            Loaded="OnPrayerTitleEntryLoaded">
                                         <Entry.Behaviors>
@@ -283,14 +283,34 @@
                                             Text="✕"
                                             AutomationId="ConfirmImport_Btn_RemovePrayer"
                                             Clicked="OnRemovePrayerClicked"
-                                            SemanticProperties.Description="Remove prayer" />
+                                            SemanticProperties.Description="{Binding RemoveAccessibleDescription}" />
                                 </Grid>
+
+                                <!-- "+ details" affordance (#17 / UX-38): a subtle per-row
+                                     inline link shown ONLY when the row is collapsed (parser
+                                     found no details). Tapping reveals the Editor for this row.
+                                     Sibling of the Editor via the InverseBool of the same flag,
+                                     so exactly one of the two is visible. Styled in the spirit of
+                                     AddPrayerAffordanceButton (transparent bg, Primary text) but
+                                     start-aligned and body-sized — a per-row hint, not the
+                                     prominent centered "+ Add another prayer ›". -->
+                                <Button Text="+ details"
+                                        AutomationId="ConfirmImport_Btn_AddDetails"
+                                        IsVisible="{Binding IsDetailsExpanded, Converter={StaticResource InverseBool}}"
+                                        Command="{Binding ExpandDetailsCommand}"
+                                        BackgroundColor="Transparent"
+                                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
+                                        FontSize="{StaticResource FontSmall}"
+                                        Padding="0"
+                                        HorizontalOptions="Start"
+                                        SemanticProperties.Hint="Show the details field for this prayer" />
 
                                 <Editor Text="{Binding Details}"
                                         Placeholder="Add details..."
-                                        SemanticProperties.Description="Prayer details"
+                                        IsVisible="{Binding IsDetailsExpanded}"
+                                        SemanticProperties.Description="{Binding DetailsAccessibleDescription}"
                                         AutoSize="TextChanges"
-                                        MinimumHeightRequest="48"
+                                        MinimumHeightRequest="{StaticResource TouchTargetMaterial}"
                                         HorizontalOptions="Fill">
                                     <Editor.Behaviors>
                                         <behaviors:KeyboardAvoidanceBehavior />

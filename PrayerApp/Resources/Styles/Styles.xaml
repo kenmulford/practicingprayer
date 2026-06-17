@@ -1,8 +1,9 @@
-﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <?xaml-comp compile="true" ?>
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewModels="clr-namespace:PrayerApp.ViewModels">
 
     <!-- ── Accessibility tokens — touch-target floors (PS-06, issue #51) ────
          iOS HIG floor = 44pt; Material 3 floor = 48dp. 44 is the stricter
@@ -10,6 +11,14 @@
          Centralizing as a named token makes the floor reviewable in one
          place; future interactive rows can reference the same key. -->
     <x:Double x:Key="TouchTargetMinimum">44</x:Double>
+
+    <!-- ── Material touch-target floor (PS-14, issue #53) ──────────────────
+         Material 3 floor = 48dp (vs the iOS HIG 44pt above). Apply
+         TouchTargetMaterial to rows/controls already authored at 48 so the
+         Android-native floor is reviewable in one place; apply
+         TouchTargetMinimum (44) where the iOS HIG floor is the binding
+         constraint. Value-preserving: replaces existing 48 literals only. -->
+    <x:Double x:Key="TouchTargetMaterial">48</x:Double>
 
     <!-- ── Typography font-size tokens (PS-05, issue #51) ────────────────────
          14-step ladder covering every FontSize literal used in PrayerApp
@@ -705,6 +714,18 @@
                 <RoundRectangle CornerRadius="10" />
             </Setter.Value>
         </Setter>
+        <!-- Issue #30: Android-only subtle elevation so the card reads as a Material 3
+             elevated surface. iOS keeps the native outlined inset-grouped look unchanged
+             (Default leaves Shadow unset / null) — zero iOS visual delta is required. -->
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <OnPlatform x:TypeArguments="Shadow">
+                    <On Platform="Android">
+                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.18" />
+                    </On>
+                </OnPlatform>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- PickerSectionHeader: small gray label above each PickerGroupCard.
@@ -883,5 +904,49 @@
         <Setter Property="UnselectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource TabUnselectedDark}}" />
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource WarmGold}, Dark={StaticResource WarmGoldDark}}" />
     </Style>
+
+    <!-- ── Tag filter chip template (issue #29) ──────────────────────────────
+         Single shared DataTemplate for the tag-filter chip row, referenced by
+         both PrayerCardsPage and PrayerListPage via
+         BindableLayout.ItemTemplate="{StaticResource TagFilterChipTemplate}".
+         Extracted verbatim from the two byte-identical inline templates — pure
+         DRY refactor, render is pixel-identical. x:DataType is retained so
+         compiled bindings resolve against TagFilterChipViewModel unchanged. -->
+    <DataTemplate x:Key="TagFilterChipTemplate" x:DataType="viewModels:TagFilterChipViewModel">
+        <Border Padding="10,4"
+                StrokeThickness="1.5"
+                SemanticProperties.Description="{Binding AccessibleDescription}"
+                SemanticProperties.Hint="Double tap to toggle filter">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="12" />
+            </Border.StrokeShape>
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding ToggleCommand}" />
+            </Border.GestureRecognizers>
+            <Border.Triggers>
+                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                    <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                </DataTrigger>
+                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
+                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
+                    <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                </DataTrigger>
+            </Border.Triggers>
+            <Label Text="{Binding Tag.Name}"
+                   FontSize="{StaticResource FontCaption}"
+                   VerticalOptions="Center"
+                   AutomationProperties.IsInAccessibleTree="False">
+                <Label.Triggers>
+                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="False">
+                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
+                    </DataTrigger>
+                </Label.Triggers>
+            </Label>
+        </Border>
+    </DataTemplate>
 
 </ResourceDictionary>

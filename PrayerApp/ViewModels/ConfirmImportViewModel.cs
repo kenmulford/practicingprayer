@@ -283,6 +283,10 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
             if (SelectedCard is not null) SelectedCard.IsSelected = false;
             SelectedCard = item;
             item.IsSelected = true;
+            // The checkmark appears via an IsSelected DataTrigger, which TalkBack
+            // does not announce (#30). Announce the selection so a screen-reader
+            // user gets feedback that their tap registered.
+            _accessibilityService.Announce($"Selected {item.Title}");
         });
 
         Prayers.CollectionChanged += (_, e) =>
@@ -300,6 +304,13 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 
             NotifySaveCanExecute();
             OnPropertyChanged(nameof(PrayersHeader));
+
+            // #15: re-stamp each row's 1-based position and the new total so the
+            // accessible descriptions ("Prayer title, item 2 of 3") stay correct
+            // after any add/remove. Fires on every population path (ConsumePending,
+            // InitializeManualEntry, AddPrayerCommand, RemovePrayerCommand) since
+            // each Add/Remove raises CollectionChanged.
+            RestampPrayerPositions();
         };
 
         // HasNoAvailableCards drives the empty-state Label in the XAML; it
@@ -385,7 +396,15 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 
         CardTitle = result.SuggestedCardTitle;
         foreach (var p in result.Prayers)
-            Prayers.Add(new EditablePrayer { Title = p.Title, Details = p.Details });
+            Prayers.Add(new EditablePrayer
+            {
+                Title = p.Title,
+                Details = p.Details,
+                // #17 / UX-38: expand the Details Editor only when the parser
+                // prefilled a body; empty/whitespace rows render collapsed with
+                // a "+ details" affordance. Parser's choice wins on initial render.
+                IsDetailsExpanded = !string.IsNullOrWhiteSpace(p.Details),
+            });
     }
 
     /// <summary>
@@ -495,13 +514,12 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         _boxesLoading = true;
         try
         {
-            var boxes = await _boxService.GetBoxesAsync();
+            var items = await BoxPickerItems.GetBoxPickerItemsAsync(_boxService);
 
-            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
-            AvailableBoxes.Add(looseCards);
-
-            foreach (var box in boxes.Where(b => !b.IsSystem))
-                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
+            // "Loose Cards" (BoxId 0) is always the first helper item.
+            var looseCards = items[0];
+            foreach (var item in items)
+                AvailableBoxes.Add(item);
 
             // In Manual mode the VM is already in ExistingCard mode (set by
             // InitializeManualEntry), so the SelectedBox setter would fire a
@@ -758,6 +776,22 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
     }
 
     private void NotifySaveCanExecute() => SaveCommand.NotifyCanExecuteChanged();
+
+    /// <summary>
+    /// Stamps each row's 1-based <see cref="EditablePrayer.Position"/> and the
+    /// current <see cref="EditablePrayer.Total"/> so the per-field accessible
+    /// descriptions carry a positional cue (#15). Called from the Prayers
+    /// CollectionChanged handler after any add/remove.
+    /// </summary>
+    private void RestampPrayerPositions()
+    {
+        var total = Prayers.Count;
+        for (var i = 0; i < total; i++)
+        {
+            Prayers[i].Position = i + 1;
+            Prayers[i].Total = total;
+        }
+    }
 
     /// <summary>
     /// Idempotent — disposes the in-flight CancellationTokenSource so the

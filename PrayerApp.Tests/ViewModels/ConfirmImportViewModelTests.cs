@@ -65,6 +65,72 @@ public class ConfirmImportViewModelTests
         Assert.Equal("Dad", sut.Prayers[1].Title);
     }
 
+    // ── IsDetailsExpanded default on parse (#17 / UX-38) ──────────────
+
+    [Fact]
+    public void ConsumePending_PrayerWithDetails_RowDetailsExpanded()
+    {
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported",
+            ("Sis", "graduating this weekend, please pray")));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.True(sut.Prayers[0].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ConsumePending_PrayerWithEmptyDetails_RowCollapsed()
+    {
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported", ("Mom", null)));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.False(sut.Prayers[0].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ConsumePending_PrayerWithWhitespaceDetails_RowCollapsed()
+    {
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported", ("Dad", "   ")));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.False(sut.Prayers[0].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ConsumePending_MixedList_ExpandsOnlyRowsWithDetails()
+    {
+        // Issue #17 repro: row 1 has prefilled details (parser found a body),
+        // row 2 does not → row 1 expanded, row 2 collapsed.
+        _payloadService.ConsumePayload().Returns("payload");
+        _parser.Parse("payload").Returns(Result("Imported",
+            ("Sis is graduating from college this weekend, please pray", "please pray"),
+            ("Pray for Dad", null)));
+        var sut = CreateSut();
+
+        sut.ConsumePending();
+
+        Assert.True(sut.Prayers[0].IsDetailsExpanded);
+        Assert.False(sut.Prayers[1].IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void AddPrayerCommand_NewBlankRow_IsCollapsed()
+    {
+        var sut = CreateSut();
+
+        sut.AddPrayerCommand.Execute(null);
+
+        Assert.False(sut.Prayers[^1].IsDetailsExpanded);
+    }
+
     [Fact]
     public void ConsumePending_WithNoStagedPayload_LeavesDefaults()
     {
@@ -1049,6 +1115,20 @@ public class ConfirmImportViewModelTests
         Assert.True(item.IsSelected);
     }
 
+    [Fact]
+    public void SelectCardCommand_AnnouncesSelectedCardTitle()
+    {
+        // The checkmark on the selected card appears via an IsSelected DataTrigger,
+        // which TalkBack does not announce (#30). Announce the selection so a
+        // screen-reader user gets feedback that their tap registered.
+        var sut = CreateSut();
+        var item = new CardPickerItem { CardId = 1, Title = "Family" };
+
+        sut.SelectCardCommand.Execute(item);
+
+        _accessibilityService.Received(1).Announce(Arg.Is<string>(s => s.Contains("Family")));
+    }
+
     // ── SaveAsync existing-card path ──────────────────────────────────────
 
     [Fact]
@@ -1272,6 +1352,47 @@ public class ConfirmImportViewModelTests
         var sut = CreateSut();
         sut.ConsumePending();
         return sut;
+    }
+
+    // ── Accessible position re-stamp (#15) ───────────────────────────────
+
+    [Fact]
+    public void ConsumePending_StampsPositionAndTotalOnEveryRow()
+    {
+        var sut = SetupSutWithRows(("Mom", null), ("Dad", null), ("Sis", null));
+
+        Assert.Equal("Prayer title, item 1 of 3", sut.Prayers[0].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 2 of 3", sut.Prayers[1].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 3 of 3", sut.Prayers[2].TitleAccessibleDescription);
+    }
+
+    [Fact]
+    public void RemovePrayer_RestampsRemainingRows()
+    {
+        var sut = SetupSutWithRows(("Mom", null), ("Dad", null), ("Sis", null));
+
+        // Remove the middle row.
+        sut.RemovePrayerCommand.Execute(sut.Prayers[1]);
+
+        Assert.Equal(2, sut.Prayers.Count);
+        Assert.Equal("Prayer title, item 1 of 2", sut.Prayers[0].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 2 of 2", sut.Prayers[1].TitleAccessibleDescription);
+        // Details + Remove variants re-stamp on the same trigger.
+        Assert.Equal("Prayer details, item 2 of 2", sut.Prayers[1].DetailsAccessibleDescription);
+        Assert.Equal("Remove prayer, item 2 of 2", sut.Prayers[1].RemoveAccessibleDescription);
+    }
+
+    [Fact]
+    public void AddPrayer_RestampsAllRowsWithNewTotal()
+    {
+        var sut = SetupSutWithRows(("Mom", null), ("Dad", null));
+
+        sut.AddPrayerCommand.Execute(null);
+
+        Assert.Equal(3, sut.Prayers.Count);
+        Assert.Equal("Prayer title, item 1 of 3", sut.Prayers[0].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 2 of 3", sut.Prayers[1].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 3 of 3", sut.Prayers[2].TitleAccessibleDescription);
     }
 
     // ── EntryMode — defaults and Manual mode ─────────────────────────────
