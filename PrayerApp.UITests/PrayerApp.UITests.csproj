@@ -20,14 +20,6 @@
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.5.61" />
-    <!-- Cross-platform PNG decode for screenshot pixel-band assertions (Issue #54).
-         SkiaSharp replaces System.Drawing (GDI+, Windows-only) so the band test
-         can run on the Windows PC (Android target) AND compile/decode on this macOS
-         host. The base SkiaSharp package bundles Windows native assets for the PC
-         run; SkiaSharp.NativeAssets.macOS supplies the libSkiaSharp.dylib needed for
-         decode on macOS. MIT-licensed; pinned to the current stable 3.119.4. -->
-    <PackageReference Include="SkiaSharp" Version="3.119.4" />
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="3.119.4" />
   </ItemGroup>
 
   <!--
