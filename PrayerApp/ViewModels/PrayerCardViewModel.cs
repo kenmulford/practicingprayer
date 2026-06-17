@@ -608,16 +608,13 @@ namespace PrayerApp.ViewModels
 
         public async Task LoadBoxPickerAsync()
         {
-            var boxes = await _boxService.GetBoxesAsync();
+            var items = await BoxPickerItems.GetBoxPickerItemsAsync(_boxService);
             AvailableBoxes.Clear();
 
-            // "Loose Cards" (no collection) always first
-            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
-            AvailableBoxes.Add(looseCards);
-
-            // User-created boxes only (no System/Archived)
-            foreach (var box in boxes.Where(b => !b.IsSystem))
-                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
+            // "Loose Cards" (no collection) is always the first helper item.
+            var looseCards = items[0];
+            foreach (var item in items)
+                AvailableBoxes.Add(item);
 
             // Set selection to match current card's BoxId — the card-edit
             // picker only contains RealBoxPickerItem rows (no All-collections
@@ -757,6 +754,36 @@ namespace PrayerApp.ViewModels
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Shared loader for the Collection picker's box rows. Returns the same
+    /// list both <see cref="PrayerCardViewModel.LoadBoxPickerAsync"/> and
+    /// <see cref="ConfirmImportViewModel.LoadBoxesAsync"/> need:
+    /// "Loose Cards" (BoxId 0) first, then user-created boxes in
+    /// <see cref="IBoxService.GetBoxesAsync"/> order. System / archived boxes
+    /// are excluded. The <see cref="AllCollectionsPickerItem"/> sentinel is
+    /// NOT produced here — ConfirmImport inserts/removes it separately when
+    /// ImportMode flips. Both callers rely on element 0 being Loose Cards.
+    /// </summary>
+    public static class BoxPickerItems
+    {
+        public static async Task<List<RealBoxPickerItem>> GetBoxPickerItemsAsync(IBoxService boxService)
+        {
+            var boxes = await boxService.GetBoxesAsync();
+
+            // "Loose Cards" (no collection) always first
+            var items = new List<RealBoxPickerItem>
+            {
+                new(0, BoxStrings.Unorganized)
+            };
+
+            // User-created boxes only (no System/Archived)
+            foreach (var box in boxes.Where(b => !b.IsSystem))
+                items.Add(new RealBoxPickerItem(box.Id, box.Name));
+
+            return items;
+        }
     }
 
     /// <summary>

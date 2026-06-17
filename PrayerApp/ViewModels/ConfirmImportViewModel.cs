@@ -495,13 +495,12 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
         _boxesLoading = true;
         try
         {
-            var boxes = await _boxService.GetBoxesAsync();
+            var items = await BoxPickerItems.GetBoxPickerItemsAsync(_boxService);
 
-            var looseCards = new RealBoxPickerItem(0, BoxStrings.Unorganized);
-            AvailableBoxes.Add(looseCards);
-
-            foreach (var box in boxes.Where(b => !b.IsSystem))
-                AvailableBoxes.Add(new RealBoxPickerItem(box.Id, box.Name));
+            // "Loose Cards" (BoxId 0) is always the first helper item.
+            var looseCards = items[0];
+            foreach (var item in items)
+                AvailableBoxes.Add(item);
 
             // In Manual mode the VM is already in ExistingCard mode (set by
             // InitializeManualEntry), so the SelectedBox setter would fire a
