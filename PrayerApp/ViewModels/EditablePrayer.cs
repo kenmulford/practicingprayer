@@ -1,9 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace PrayerApp.ViewModels;
 
 public class EditablePrayer : ObservableObject
 {
+    public EditablePrayer()
+    {
+        ExpandDetailsCommand = new RelayCommand(() => IsDetailsExpanded = true);
+    }
+
     private string _title = string.Empty;
     public string Title
     {
@@ -17,6 +23,20 @@ public class EditablePrayer : ObservableObject
         get => _details;
         set => SetProperty(ref _details, value);
     }
+
+    // Per-row Details disclosure (#17 / UX-38). Default false (collapsed); the
+    // import construction site seeds it true when the parser prefilled Details.
+    // Deliberately a PLAIN settable bool — independent of the Details text — so
+    // editing Details never auto-collapses/expands the row mid-edit. The "+ details"
+    // affordance (collapsed) and the Details Editor (expanded) bind to this.
+    private bool _isDetailsExpanded;
+    public bool IsDetailsExpanded
+    {
+        get => _isDetailsExpanded;
+        set => SetProperty(ref _isDetailsExpanded, value);
+    }
+
+    public RelayCommand ExpandDetailsCommand { get; }
 
     // Position (1-based) of this row within the Prayers collection and the
     // current total row count, stamped by ConfirmImportViewModel whenever the

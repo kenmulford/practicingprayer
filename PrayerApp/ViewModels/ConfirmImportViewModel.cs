@@ -396,7 +396,15 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
 
         CardTitle = result.SuggestedCardTitle;
         foreach (var p in result.Prayers)
-            Prayers.Add(new EditablePrayer { Title = p.Title, Details = p.Details });
+            Prayers.Add(new EditablePrayer
+            {
+                Title = p.Title,
+                Details = p.Details,
+                // #17 / UX-38: expand the Details Editor only when the parser
+                // prefilled a body; empty/whitespace rows render collapsed with
+                // a "+ details" affordance. Parser's choice wins on initial render.
+                IsDetailsExpanded = !string.IsNullOrWhiteSpace(p.Details),
+            });
     }
 
     /// <summary>

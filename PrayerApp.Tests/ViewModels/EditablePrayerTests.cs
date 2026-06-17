@@ -58,4 +58,51 @@ public class EditablePrayerTests
         Assert.Contains(nameof(EditablePrayer.DetailsAccessibleDescription), raised);
         Assert.Contains(nameof(EditablePrayer.RemoveAccessibleDescription), raised);
     }
+
+    // ── IsDetailsExpanded / ExpandDetailsCommand (#17 / UX-38) ──────────────
+
+    [Fact]
+    public void IsDetailsExpanded_DefaultsToFalse()
+    {
+        var row = new EditablePrayer();
+
+        Assert.False(row.IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ExpandDetailsCommand_SetsIsDetailsExpandedTrue()
+    {
+        var row = new EditablePrayer();
+
+        row.ExpandDetailsCommand.Execute(null);
+
+        Assert.True(row.IsDetailsExpanded);
+    }
+
+    [Fact]
+    public void ExpandDetailsCommand_RaisesPropertyChangedForIsDetailsExpanded()
+    {
+        var row = new EditablePrayer();
+        var raised = new List<string?>();
+        row.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        row.ExpandDetailsCommand.Execute(null);
+
+        Assert.Contains(nameof(EditablePrayer.IsDetailsExpanded), raised);
+    }
+
+    [Fact]
+    public void IsDetailsExpanded_IsSettableAndStableAcrossDetailsEdits()
+    {
+        // Editing Details must NOT auto-collapse/expand the row — the flag is a
+        // plain settable bool, independent of the Details text (stability while
+        // the user types). Once expanded, typing leaves it expanded.
+        var row = new EditablePrayer { IsDetailsExpanded = true };
+
+        row.Details = "now has text";
+        Assert.True(row.IsDetailsExpanded);
+
+        row.Details = string.Empty;
+        Assert.True(row.IsDetailsExpanded);
+    }
 }
