@@ -330,47 +330,9 @@
                     Margin="12,8,12,0">
             <HorizontalStackLayout
                 BindableLayout.ItemsSource="{Binding AvailableTags}"
+                BindableLayout.ItemTemplate="{StaticResource TagFilterChipTemplate}"
                 Spacing="6"
-                Padding="0,2,0,6">
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate x:DataType="viewModels:TagFilterChipViewModel">
-                        <Border Padding="10,4"
-                                StrokeThickness="1.5"
-                                SemanticProperties.Description="{Binding AccessibleDescription}"
-                                SemanticProperties.Hint="Double tap to toggle filter">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="12" />
-                            </Border.StrokeShape>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding ToggleCommand}" />
-                            </Border.GestureRecognizers>
-                            <Border.Triggers>
-                                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
-                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
-                                    <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
-                                </DataTrigger>
-                                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="False">
-                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
-                                    <Setter Property="Stroke"          Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
-                                </DataTrigger>
-                            </Border.Triggers>
-                            <Label Text="{Binding Tag.Name}"
-                                   FontSize="{StaticResource FontCaption}"
-                                   VerticalOptions="Center"
-                                   AutomationProperties.IsInAccessibleTree="False">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource PrimaryDarkText}}" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="False">
-                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryBtnDark}}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                        </Border>
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
-            </HorizontalStackLayout>
+                Padding="0,2,0,6" />
         </ScrollView>
 
         <!-- Collections education banner — dismissed permanently via ✕ button -->
