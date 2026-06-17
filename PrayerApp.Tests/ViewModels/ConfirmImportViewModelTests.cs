@@ -1288,6 +1288,47 @@ public class ConfirmImportViewModelTests
         return sut;
     }
 
+    // ── Accessible position re-stamp (#15) ───────────────────────────────
+
+    [Fact]
+    public void ConsumePending_StampsPositionAndTotalOnEveryRow()
+    {
+        var sut = SetupSutWithRows(("Mom", null), ("Dad", null), ("Sis", null));
+
+        Assert.Equal("Prayer title, item 1 of 3", sut.Prayers[0].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 2 of 3", sut.Prayers[1].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 3 of 3", sut.Prayers[2].TitleAccessibleDescription);
+    }
+
+    [Fact]
+    public void RemovePrayer_RestampsRemainingRows()
+    {
+        var sut = SetupSutWithRows(("Mom", null), ("Dad", null), ("Sis", null));
+
+        // Remove the middle row.
+        sut.RemovePrayerCommand.Execute(sut.Prayers[1]);
+
+        Assert.Equal(2, sut.Prayers.Count);
+        Assert.Equal("Prayer title, item 1 of 2", sut.Prayers[0].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 2 of 2", sut.Prayers[1].TitleAccessibleDescription);
+        // Details + Remove variants re-stamp on the same trigger.
+        Assert.Equal("Prayer details, item 2 of 2", sut.Prayers[1].DetailsAccessibleDescription);
+        Assert.Equal("Remove prayer, item 2 of 2", sut.Prayers[1].RemoveAccessibleDescription);
+    }
+
+    [Fact]
+    public void AddPrayer_RestampsAllRowsWithNewTotal()
+    {
+        var sut = SetupSutWithRows(("Mom", null), ("Dad", null));
+
+        sut.AddPrayerCommand.Execute(null);
+
+        Assert.Equal(3, sut.Prayers.Count);
+        Assert.Equal("Prayer title, item 1 of 3", sut.Prayers[0].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 2 of 3", sut.Prayers[1].TitleAccessibleDescription);
+        Assert.Equal("Prayer title, item 3 of 3", sut.Prayers[2].TitleAccessibleDescription);
+    }
+
     // ── EntryMode — defaults and Manual mode ─────────────────────────────
 
     [Fact]
