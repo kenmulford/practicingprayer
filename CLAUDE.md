@@ -29,7 +29,7 @@ The full branch model and contribution process are in [CONTRIBUTING.md](CONTRIBU
 
 ## Solving a GitHub issue (milestone-driver)
 
-This repo is a [milestone-driver](https://github.com/kenmulford/milestone-driver) consumer; its profile is `milestone-driver.json` (repo root). Drive one issue with `/solve-issue <n>`, or a whole milestone in dependency order with `/solve-milestone <name>` (order comes from the milestone description's Wave list).
+This repo is a [milestone-driver](https://github.com/kenmulford/milestone-driver) consumer; its profile is `.milestone-config/driver.json` (with `.milestone-config/feeder.json` and the standing project docs under `.project/`, provisioned by milestone-bootstrapper). Drive one issue with `/solve-issue <n>`, or a whole milestone in dependency order with `/solve-milestone <name>` (order comes from the milestone description's Wave list).
 
 Per issue the orchestrator — never authoring code itself — reads the issue → finds the root cause or **STOPs and comments** → dispatches the `implementer` subagent (TDD red→green, least-code, citations posted on the issue) → runs `dotnet test PrayerApp.Tests/…` → runs the E2E gate (`run-uitests.ps1`) for UI-touching changes → `/code-review` → opens a PR `--base dev` → auto-merges on the `Unit Tests` check green → closes the issue. Architecture is locked at plan-approval time; one-way-door decisions STOP and ask rather than drift.
 

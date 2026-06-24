@@ -406,4 +406,7 @@ PrayerApp/iOS-signing.local.props
 /.milestone-driver-triage-cache.json
 /.milestone-driver-tests-stamp
 /.milestone-driver-worktrees/
+
+# milestone-bootstrapper per-clone scratch (plan files; gitignored, never commit)
+/.milestone-bootstrapper/
 /.review-5.diff
