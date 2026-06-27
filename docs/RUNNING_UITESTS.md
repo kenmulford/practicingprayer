@@ -1,6 +1,6 @@
 # Running the Appium UI Test Suite
 
-> 81 automated tests across 15 test files. Android tests run on **Windows (PC)**, iOS tests run on **macOS (Mac)**.
+> 81 automated tests across 15 test files. Each `dotnet test` run targets **one** platform. By default the host OS chooses it — **Windows runs Android, macOS runs iOS** — or set the `UITEST_PLATFORM` environment variable (`android` | `ios`) to choose explicitly, which lets **macOS run the Android suite** too. The driver is a single shared session, so run the two platforms as **separate, sequential** `dotnet test` runs — never both at once.
 
 ---
 
@@ -150,6 +150,16 @@ dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=Android
 dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=iOS"
 ```
 
+### Mac (Android — Terminal)
+
+The Mac can run the Android suite too. Set `UITEST_PLATFORM=android` so the harness builds an `AndroidDriver` against the local emulator instead of the iOS default. Boot the Android emulator and install the app first (see [Setup](#setup)), then:
+
+```bash
+UITEST_PLATFORM=android dotnet test PrayerApp.UITests/ --filter "Platform=CrossPlatform|Platform=Android"
+```
+
+Run only **one** platform per `dotnet test` invocation. To exercise both from the Mac, run the iOS command and the Android command **one after the other** — never in parallel. They share a single Appium driver session and would collide.
+
 ### Run a single test section
 
 Tests are organized by numbered sections:
@@ -224,6 +234,7 @@ All optional. Set before running `dotnet test`.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `UITEST_PLATFORM` | _(host OS default)_ | Force the target platform: `android` or `ios`. Unset → Windows runs Android, macOS runs iOS. Set `android` to run the Android suite from macOS. An unrecognized value runs nothing (the harness throws `PlatformNotSupportedException`). |
 | `APPIUM_SERVER_URL` | `http://127.0.0.1:4723` | Appium server endpoint |
 | `ANDROID_AVD` | `pixel_9_-_api_36_0` | Android emulator AVD name |
 | `PRAYER_APK_PATH` | _(pre-installed)_ | Path to APK; if set, Appium installs it |
