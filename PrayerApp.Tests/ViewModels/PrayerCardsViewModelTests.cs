@@ -784,10 +784,11 @@ public class PrayerCardsViewModelTests
     [Fact]
     public async Task ExpandedCardId_Set_RaisesIsExpandedPropertyChanged_OnPrevAndNextCards()
     {
-        // The View's RealizeExpandedSubtree closure subscribes to IsExpanded
-        // PropertyChanged on each card VM. If ExpandedCardId mutation stops
-        // raising IsExpanded-changed on the prev+next cards, tap-to-expand
-        // silently does nothing on device. (Regression caught in Commit 2 slim.)
+        // The View binds each cell's inlined expanded subtree to
+        // IsVisible="{Binding IsExpanded}" (issue #42 shape (i)). If ExpandedCardId
+        // mutation stops raising IsExpanded-changed on the prev+next cards,
+        // tap-to-expand silently does nothing on device. (Regression caught in
+        // Commit 2 slim.)
         SetupDefaultSyncMocks();
         var card1 = new PrayerCard { Id = 1, Title = "Alpha", BoxId = 0 };
         var card2 = new PrayerCard { Id = 2, Title = "Beta",  BoxId = 0 };
@@ -1792,6 +1793,95 @@ public class PrayerCardsViewModelTests
 
         var vmBeta = sut.AllPrayerCards.First(c => c.Id == 2);
         Assert.False(vmBeta.IsHighlighted);
+    }
+
+    // ── Move-prayer to a SYSTEM card target (issue #42) ───────────────────
+
+    [Fact]
+    public async Task MovePrayer_ToSystemCardTarget_SetsExpandedCardIdToTarget()
+    {
+        // #42: moving a prayer to a SYSTEM card target (e.g. "Shared with me",
+        // in the System box, sort ~900 / off-screen) must auto-expand that card
+        // exactly like a user-card target — the post-move auto-expand path is
+        // IsSystem-blind. The original #42 defect lived in the View's lazy
+        // ExpandedSubtreeHost realization (an off-screen system cell never
+        // realized, so its inlined prayer never showed); the VM has always set
+        // ExpandedCardId regardless of IsSystem. This test is the regression lock
+        // that the VM stays IsSystem-blind after the shape-(i) realization
+        // retirement — a future refactor must not re-introduce an IsSystem guard
+        // on the move target. Mirrors MovePrayer_AlwaysAutoExpandsTarget_
+        // CollapsesPriorExpandedCard, with the target in the System box.
+        SetupDefaultSyncMocks();
+        var source = new PrayerCard { Id = 1, Title = "Family", BoxId = 0 };
+        var systemTarget = new PrayerCard
+        {
+            Id = 2,
+            Title = PrayerCard.TitleSharedWithMe,
+            IsSystem = true,
+            BoxId = 10 // System box (see SetupSystemBoxes)
+        };
+        _cardService.GetCardsAsync().Returns(
+            new List<PrayerCard> { source, systemTarget }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+        var vmSource = sut.AllPrayerCards.First(c => c.Id == 1);
+        var vmSystem = sut.AllPrayerCards.First(c => c.Id == 2);
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object>
+            {
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" }, // the system card
+                { Routes.QueryKeys.OldCardId, "1" }     // moved out of the user card
+            });
+
+        Assert.Equal(2, sut.ExpandedCardId);   // system target auto-expanded
+        Assert.True(vmSystem.IsExpanded);      // its inlined subtree will be visible
+        Assert.False(vmSource.IsExpanded);     // source collapses (prayer left it)
+        Assert.True(sut.SuppressNextOnAppearingSync);
+        Assert.Equal("2", sut.PendingSavedIdentifier); // staged for scroll-to
+    }
+
+    [Fact]
+    public async Task ConsumePendingSavedAsync_MoveToSystemTarget_ExpandsSectionAndReturnsCard()
+    {
+        // #42 continuation: ConsumePendingSavedAsync must return the system target
+        // (so the View scrolls to it) AND expand its (collapsed-by-default) System
+        // section, so the moved prayer is revealed in context rather than hidden
+        // inside a collapsed group. EnsureSectionExpandedFor is also IsSystem-blind.
+        SetupDefaultSyncMocks();
+        var source = new PrayerCard { Id = 1, Title = "Family", BoxId = 0 };
+        var systemTarget = new PrayerCard
+        {
+            Id = 2,
+            Title = PrayerCard.TitleSharedWithMe,
+            IsSystem = true,
+            BoxId = 10 // System box
+        };
+        _cardService.GetCardsAsync().Returns(
+            new List<PrayerCard> { source, systemTarget }.AsReadOnly());
+
+        var sut = CreateSut();
+        await sut.SyncAsync();
+
+        // System section is collapsed by default (no persisted expanded ids).
+        var systemSection = sut.BoxSections.First(s => s.BoxId == 10);
+        Assert.False(systemSection.IsExpanded);
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object>
+            {
+                { Routes.QueryKeys.PrayerSaved, "10" },
+                { Routes.QueryKeys.ParentCardId, "2" },
+                { Routes.QueryKeys.OldCardId, "1" }
+            });
+
+        var result = await sut.ConsumePendingSavedAsync();
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Id);            // View scrolls to the system target
+        Assert.True(systemSection.IsExpanded); // group opened so the card is reachable
     }
 
     // ── ApplyQueryAttributes ImportedToExisting ───────────────────────────

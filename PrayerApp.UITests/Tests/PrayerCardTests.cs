@@ -341,8 +341,8 @@ public class PrayerCardTests
         var driver = _setup.Driver;
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // Expand Big Card so RealizeExpandedSubtree inflates the lazy
-        // expanded subtree with Big Card's BindingContext.
+        // Expand Big Card so its inline expanded subtree (shape (i): always
+        // inflated, gated by IsVisible) renders with Big Card's BindingContext.
         EnsureCardExpanded(driver, "Recycle Big Card");
 
         // Sanity: at least one Big Card prayer is rendered before delete.
@@ -536,7 +536,7 @@ public class PrayerCardTests
         Assert.True(driver.IsDisplayed("Cards_List_Cards"));
     }
 
-    // ── Slice 6c real + 6g — lazy realize + post-save overlay continuity ──
+    // ── Slice 6c real + 6g — expand realize + post-save overlay continuity ──
 
     /// <summary>
     /// Idempotently brings the named user card into the collapsed state. Uses
@@ -569,6 +569,111 @@ public class PrayerCardTests
             ? driver.IsTextContainsDisplayed(cardName + ", Expanded", timeoutSeconds: 1)
             : driver.IsTextDisplayed(cardName + ", Expanded", timeoutSeconds: 1);
 
+    /// <summary>
+    /// True if the named card's header is currently rendered in its expanded state,
+    /// tolerant of the ", System" infix that <c>AccessibleCardHeader</c> inserts for
+    /// system cards (PrayerCardViewModel.cs:267) — so "Quick Add, System, Expanded"
+    /// counts as expanded just like a user card's "Move Source Card, Expanded". The
+    /// shared <see cref="IsCardExpanded"/> uses an EXACT "{name}, Expanded" match, which
+    /// can never match a system card; this helper matches a SINGLE header element whose
+    /// content-desc/label contains BOTH the card name AND the ", Expanded" suffix, so it
+    /// never cross-matches a different card or a collapsed header. Non-throwing.
+    /// </summary>
+    private static bool IsCardHeaderExpanded(OpenQA.Selenium.Appium.AppiumDriver driver, string cardName)
+    {
+        var by = TestConfig.IsIOS
+            ? By.XPath($"//*[contains(@label,'{cardName}') and contains(@label,', Expanded')]")
+            : By.XPath($"//*[contains(@content-desc,'{cardName}') and contains(@content-desc,', Expanded')]");
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+            return driver.FindElement(by).Displayed;
+        }
+        catch (WebDriverException) { return false; }
+        finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+    }
+
+    /// <summary>
+    /// Polls <see cref="IsCardHeaderExpanded"/> until the named card has SETTLED into its
+    /// expanded state, up to <paramref name="timeoutSeconds"/>. Returns true once settled,
+    /// false on timeout.
+    /// <para>
+    /// Since issue #42 retired lazy realization the expanded subtree is EAGER, so the
+    /// chips/prayers exist the instant the card expands — but they read
+    /// <c>Displayed=false</c> while the expand animation is mid-flight. Probing chip
+    /// visibility immediately after a fixed 300 ms sleep lands inside that window and
+    /// flakes. Waiting for the header to settle first is step one; an expanded card low in
+    /// the list ALSO renders its contents below the fold (the CollectionView virtualizes
+    /// off-screen rows out of the a11y tree), so the call site then scrolls the target row
+    /// into view via <see cref="TryScrollTextIntoView"/> before asserting.
+    /// </para>
+    /// </summary>
+    private static bool WaitForCardExpanded(OpenQA.Selenium.Appium.AppiumDriver driver, string cardName,
+        int timeoutSeconds = 10)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (IsCardHeaderExpanded(driver, cardName)) return true;
+            Thread.Sleep(TestConfig.DelayAfterTap);
+        }
+        return IsCardHeaderExpanded(driver, cardName);
+    }
+
+    /// <summary>
+    /// Best-effort scroll of the Cards CollectionView until the element with the given
+    /// visible <paramref name="text"/> is on screen. Swallows failures so the caller's
+    /// assertion raises the canonical "not displayed" error instead of a masked scroll
+    /// error — mirrors <see cref="AppExtensions.EnsureCardVisible"/>. Needed because an
+    /// expanded card low in the list renders its contents (here, a moved prayer row)
+    /// below the fold, where the CollectionView virtualizes them out of the a11y tree
+    /// until scrolled into view (issue #42 eager subtree).
+    /// </summary>
+    private static void TryScrollTextIntoView(OpenQA.Selenium.Appium.AppiumDriver driver, string text)
+        => ScrollUntil(driver,
+            () => TestConfig.IsIOS ? driver.IsTextContainsDisplayed(text, timeoutSeconds: 1)
+                                   : driver.IsTextDisplayed(text, timeoutSeconds: 1),
+            () => driver.ScrollDownToText(text, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
+
+    /// <summary>
+    /// Scrolls the Cards list down until <paramref name="isVisible"/> is true (up to a
+    /// bounded number of steps). On Android each step is a CONTROLLED, fling-free
+    /// <c>mobile: scrollGesture</c> — the swipe-based <c>ScrollDownTo</c>/<c>swipeGesture</c>
+    /// path flings a low-sitting expanded card clean off the top of the viewport with
+    /// momentum without ever realizing its chips, so it can never settle on the target.
+    /// On iOS, falls back to <paramref name="iosScroll"/> (the existing element-targeted
+    /// <c>mobile: scroll</c> helpers, which don't fling). Best-effort: never throws.
+    /// </summary>
+    private static void ScrollUntil(OpenQA.Selenium.Appium.AppiumDriver driver,
+        Func<bool> isVisible, Action iosScroll)
+    {
+        if (TestConfig.IsIOS)
+        {
+            try { iosScroll(); } catch (WebDriverException) { /* assertion raises canonical error */ }
+            return;
+        }
+
+        var size = driver.Manage().Window.Size;
+        for (int i = 0; i < 5; i++)
+        {
+            if (isVisible()) return;
+            try
+            {
+                driver.ExecuteScript("mobile: scrollGesture", new Dictionary<string, object>
+                {
+                    ["left"] = size.Width / 4,
+                    ["top"] = size.Height / 4,
+                    ["width"] = size.Width / 2,
+                    ["height"] = size.Height / 2,
+                    ["direction"] = "down",
+                    ["percent"] = 0.5,
+                });
+            }
+            catch (WebDriverException) { /* assertion below raises the canonical error */ }
+            Thread.Sleep(TestConfig.DelayAfterTap);
+        }
+    }
+
     private static void TapCardHeader(OpenQA.Selenium.Appium.AppiumDriver driver, string cardName)
     {
         if (TestConfig.IsIOS) driver.TapByTextContains(cardName);
@@ -582,7 +687,7 @@ public class PrayerCardTests
     /// remains visible on the Cards page across the whole post-save window
     /// (PageSync → ConsumePendingSavedAsync → ScrollTo). Without 6g the overlay
     /// flickers off as soon as SyncAsync's finally fires (~5 ms after RebuildSections),
-    /// long before the lazy-realized expanded subtree of the new card has populated —
+    /// long before the new card's expanded subtree has populated —
     /// the user sees "no spinner, no card, then card pops in".
     /// </summary>
     [Fact]
@@ -660,11 +765,11 @@ public class PrayerCardTests
     }
 
     /// <summary>
-    /// 6c real toggle path: tapping a collapsed user card's header should expand
-    /// it AND lazy-realize the chips/list/button subtree (not just the expanded
-    /// margin). Validates the IsExpanded property-changed handler in
-    /// PrayerCardsPage.xaml.cs OnCardBorderLoaded that drives RealizeExpandedSubtree
-    /// outside the OnCardBorderLoaded.Rebind (fresh-cell) path.
+    /// 6c real toggle path: tapping a collapsed user card's header should expand it
+    /// and reveal its action chips. Under issue #42's shape (i) the expanded subtree
+    /// is inlined in the cell template and eagerly realized, gated by a single
+    /// IsVisible="{Binding IsExpanded}" wrapper, so toggling IsExpanded makes the
+    /// chips/list/buttons visible (no lazy realization step).
     /// </summary>
     [Fact]
     public void Cards_ExpandByTap_RealizesActionChips()
@@ -693,7 +798,7 @@ public class PrayerCardTests
     }
 
     /// <summary>
-    /// 6c real M1 risk: a recycled cell whose host already has the lazy subtree
+    /// 6c real M1 risk: a recycled cell whose host already has the expanded subtree
     /// inflated must re-bind its inner BindableLayout cleanly to the new card's
     /// Prayers when the BindingContext swaps (vs leaving the previous card's
     /// prayer rows visible). Symptom of failure would be the wrong card's prayer
@@ -889,7 +994,7 @@ public class PrayerCardTests
         driver.NavigateToTab("Prayer Cards");
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
-        // 6a. Source card should show 2 prayers (one moved out).
+        // 6a. Source card should show 3 prayers (one of its four seeded prayers moved out).
         driver.EnsureCardVisible("Move Source Card");
         Assert.True(
             TestConfig.IsIOS
@@ -1048,5 +1153,82 @@ public class PrayerCardTests
                 ? driver.IsTextContainsDisplayed("Prayer Three", timeoutSeconds: 10)
                 : driver.IsTextDisplayed("Prayer Three", timeoutSeconds: 10),
             "Prayer Three should be visible inside the expanded Move Target Card after the move");
+    }
+
+    /// <summary>
+    /// Issue #42: Moving a prayer to a SYSTEM card target (here "Quick Add", which
+    /// lives in the System box at sort ~900 and is therefore usually off-screen)
+    /// must auto-expand that card and reveal the moved prayer in context — exactly
+    /// like the user-target move above. This is the regression net for the
+    /// shape-(i) realization retirement: with the expanded subtree always inflated
+    /// (hidden via IsVisible when collapsed) there is no off-screen cell-realization
+    /// race, so setting ExpandedCardId on the system target reveals the prayer
+    /// regardless of where the cell sits in the list. Mirrors
+    /// Cards_MovePrayer_TargetCardExpandsAndShowsMovedPrayer with a system target.
+    /// "Quick Add" is used (not "Shared with me") because it is the system card the
+    /// app always seeds on startup, so it is reliably present in the move picker.
+    /// </summary>
+    [Fact]
+    public void Cards_MovePrayer_ToSystemCard_TargetExpandsAndShowsMovedPrayer()
+    {
+        _setup.Driver.ResetAppUIState(_setup);
+        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 1. Expand source card.
+        driver.EnsureCardVisible("Move Source Card");
+        EnsureCardExpanded(driver, "Move Source Card");
+
+        // 2. Open "Prayer Four" (dedicated fixture prayer for the system-target test).
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Prayer Four", timeoutSeconds: 10);
+        else
+            driver.TapByText("Prayer Four");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 3. Edit mode.
+        driver.TapToolbarItem("Edit");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
+            "Should be in edit mode");
+
+        // 4. Move to the "Quick Add" SYSTEM card via the card picker.
+        driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
+        Thread.Sleep(TestConfig.DelayAfterTap);
+        if (TestConfig.IsIOS)
+            driver.TapByTextContains("Quick Add", timeoutSeconds: 10);
+        else
+            driver.TapByText("Quick Add");
+        Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // 5. Save and return to the Cards tab.
+        driver.TapToolbarItem("Save");
+        Thread.Sleep(TestConfig.DelayAfterSave);
+        driver.NavigateToTab("Prayer Cards");
+        Thread.Sleep(TestConfig.DelayCollectionRender);
+
+        // 6. "Quick Add" (off-screen system card) should be auto-expanded.
+        // EnsureCardVisible only opens sections / scrolls — it does NOT tap-expand the
+        // card — so the expanded-header check genuinely reflects the post-save auto-expand.
+        // WaitForCardExpanded is system-card-aware: Quick Add's a11y header is
+        // "Quick Add, System, Expanded" (the ", System" infix), which the exact-match
+        // IsCardExpanded can never satisfy — IsCardHeaderExpanded matches it correctly.
+        driver.EnsureCardVisible("Quick Add");
+        bool quickAddExpanded = WaitForCardExpanded(driver, "Quick Add", timeoutSeconds: 10);
+        Assert.True(
+            quickAddExpanded,
+            "Quick Add (system card) should auto-expand after receiving the moved prayer. " +
+            "Post-save ExpandedCardId should expand the off-screen system target — issue #42.");
+
+        // 7. The moved prayer must be visible inside the expanded system card. Scroll it
+        // into view first — like the chips, the eager expanded subtree renders below the
+        // fold when Quick Add sits low in the System box (virtualized out until scrolled).
+        TryScrollTextIntoView(driver, "Prayer Four");
+        Assert.True(
+            TestConfig.IsIOS
+                ? driver.IsTextContainsDisplayed("Prayer Four", timeoutSeconds: 10)
+                : driver.IsTextDisplayed("Prayer Four", timeoutSeconds: 10),
+            "Prayer Four should be visible inside the expanded Quick Add system card after the move");
     }
 }

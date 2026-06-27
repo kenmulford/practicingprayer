@@ -253,15 +253,18 @@ internal static class TestDataSeed
         });
 
         // Move-prayer fixture (TD-20 / Commit 1 test prereqs).
-        // "Move Source Card" starts with 3 prayers; "Move Target Card" starts empty.
-        // Tests move "Prayer One" to the target and assert source shrinks to 2 and
-        // target grows to 1. Also used to verify no stuck Border.Margin on source
-        // after the move (regression for the declarative-margin fix in Commit 2).
+        // "Move Source Card" starts with 4 prayers; "Move Target Card" starts empty.
+        // Each move test consumes a distinct prayer so they stay order-independent:
+        // Prayer One/Two/Three feed the user-target move tests; Prayer Four feeds the
+        // issue #42 system-target move test (Cards_MovePrayer_ToSystemCard_...).
+        // Also used to verify no stuck Border.Margin on source after the move
+        // (regression for the declarative-margin fix in Commit 2).
         await SeedCardWithPrayersAsync(boxId: 0, "Move Source Card", new[]
         {
             ("Prayer One",   "First prayer in the move-prayer fixture.", false),
             ("Prayer Two",   "Second prayer in the move-prayer fixture.", false),
             ("Prayer Three", "Third prayer in the move-prayer fixture.", false),
+            ("Prayer Four",  "Fourth prayer — moved to a system card in issue #42 test.", false),
         });
 
         await SeedCardWithPrayersAsync(boxId: 0, "Move Target Card",

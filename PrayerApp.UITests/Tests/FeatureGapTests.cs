@@ -278,7 +278,7 @@ public class FeatureGapTests
     /// immediate <c>RebuildSections</c> (PrayerCardsViewModel.cs:256+603 via
     /// <c>PrayerCardChangedMessage</c>), which moves the card to the top of
     /// the Loose Cards section. RecyclerView's itemAnimator runs concurrently
-    /// with the lazy-realized expanded subtree's rebind, producing a
+    /// with the expanded card's re-render, producing a
     /// non-deterministic window where the action chip is alternately findable
     /// or not, and the card-header content-desc is alternately stable or
     /// mid-reflow. The flake pre-dates the build-95 fallout sprint. iOS
