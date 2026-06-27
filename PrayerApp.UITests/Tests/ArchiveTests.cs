@@ -47,7 +47,8 @@ public class ArchiveTests
     /// Expands the named card idempotently (matching the pattern in PrayerCardTests).
     /// Returns immediately when the card is already expanded.
     /// Uses WaitForElement to wait for the Archive chip after expanding, ensuring
-    /// the lazy expanded subtree has inflated before callers assert on chips.
+    /// the expanded subtree (shape (i): inlined in the cell template, gated by
+    /// IsVisible="{Binding IsExpanded}") is on screen before callers assert on chips.
     /// </summary>
     private void EnsureCardExpanded(string cardName)
     {
@@ -67,8 +68,9 @@ public class ArchiveTests
             Thread.Sleep(TestConfig.DelayAfterTap);
         }
 
-        // Wait for the Archive chip to appear — it is part of the lazy expanded subtree
-        // and may not be in the a11y tree immediately after the expand tap settles.
+        // Wait for the Archive chip to appear — it is part of the inline expanded
+        // subtree (shape (i): hidden via IsVisible when collapsed) and may not be in
+        // the a11y tree immediately after the expand tap settles.
         // This replaces the fragile IsDisplayed(timeoutSeconds:10) assertion at call sites.
         driver.WaitForElement("Cards_Btn_Archive", timeoutSeconds: 10);
     }

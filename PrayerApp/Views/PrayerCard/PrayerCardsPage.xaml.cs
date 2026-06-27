@@ -85,36 +85,27 @@ public partial class PrayerCardsPage : ContentPage
     }
 
     /// <summary>
-    /// Scroll to a freshly-saved card. Must yield two dispatcher ticks first so the
-    /// platform CollectionView adapter has committed the BoxSections rebuild —
-    /// calling ScrollTo while the adapter snapshot is stale throws
-    /// IllegalArgumentException "Invalid target position" on Android.
+    /// Scroll to a freshly-saved (or move-target) card. Must yield two dispatcher
+    /// ticks first so the platform CollectionView adapter has committed the
+    /// BoxSections rebuild — calling ScrollTo while the adapter snapshot is stale
+    /// throws IllegalArgumentException "Invalid target position" on Android.
     /// </summary>
     /// <remarks>
-    /// Slice 6g split: this method does the awaited part (layout drain + scroll +
-    /// announce) so OnAppearing can lower IsAwaitingSavedCard immediately after.
-    /// The 2.5 s highlight fade runs in the background via FadeHighlightAfterDelayAsync
-    /// and must NOT block the overlay-off transition.
+    /// Issue #42 (shape (i)): the cell's expanded subtree is now inlined in the
+    /// DataTemplate and always inflated (hidden via IsVisible when collapsed), so
+    /// there is no realization signal to await — once the adapter snapshot is
+    /// committed the target cell's content is already present, wherever it sits in
+    /// the list. This retired the prior _savedCardRealizedTcs wait + 2 s fallback
+    /// delay, which never fired for an off-screen system-card target (sort ~900)
+    /// and was the #42 root cause. Slice 6g split is preserved: this method does
+    /// the awaited part (layout drain + scroll + announce) so OnAppearing can lower
+    /// IsAwaitingSavedCard immediately after; the 2.5 s highlight fade runs in the
+    /// background via FadeHighlightAfterDelayAsync and must NOT block the
+    /// overlay-off transition.
     /// </remarks>
     private async Task ScrollToSavedCardAsync(PrayerCardsViewModel vm, PrayerCardViewModel card)
     {
-        // PerfLog.Log("ScrollToSavedCardAsync.entry");
-
-        // Slice 6g hardening (#2): set up the cell-realize waiter BEFORE the
-        // layout drain, so a fast cell-load path doesn't fire its signal before
-        // we're listening. Fallback timeout guards against the new card never
-        // getting realized (e.g. parent section was collapsed by the user).
-        _expectedSavedCardId = card.Id;
-        _savedCardRealizedTcs = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var realizeTask = _savedCardRealizedTcs.Task;
-
         await Dispatcher.DrainLayoutPassAsync();
-        // PerfLog.Log("ScrollToSavedCardAsync.after DrainLayoutPassAsync");
-
-        var winner = await Task.WhenAny(realizeTask, Task.Delay(2000));
-        // PerfLog.Log($"ScrollToSavedCardAsync.cell-realize winner={(winner == realizeTask ? "realized" : "timeout")}");
-        _expectedSavedCardId = -1;
-        _savedCardRealizedTcs = null;
 
         try
         {
@@ -123,7 +114,6 @@ public partial class PrayerCardsPage : ContentPage
                 cardCollection.ScrollTo(card, section, ScrollToPosition.Center, animate: true);
             else
                 cardCollection.ScrollTo(card, position: ScrollToPosition.Center, animate: true);
-            // PerfLog.Log("ScrollToSavedCardAsync.after ScrollTo");
 
             SemanticScreenReader.Announce($"New card: {card.Title}");
         }
@@ -160,54 +150,13 @@ public partial class PrayerCardsPage : ContentPage
     {
         if (sender is not Border border) return;
 
-        // Slice 6c real (PERF-10): The ExpandedSubtreeHost ContentView is realized
-        // on demand from the page-level CardExpandedSubtreeTemplate. Reference is
-        // captured once here — the same Border (and therefore the same host)
-        // persists across CollectionView cell recycling.
-        var expandedHost = border.FindByName<ContentView>("ExpandedSubtreeHost");
-
-        // Margin is declarative via the IsExpanded DataTrigger in XAML. But the
-        // inner prayer-list subtree is lazily realized by code-behind into
-        // ExpandedSubtreeHost — that needs an IsExpanded transition signal so
-        // first-time expand inflates the content (path (b) of RealizeExpandedSubtree).
-        // Rebind() also handles the build-95 cell-recycle path: when CollectionView
-        // swaps BindingContext, host.Content's first-realize BindingContext breaks
-        // inheritance and must be re-anchored to the new vm.
-        PrayerCardViewModel? subscribed = null;
-        // Read the firing vm via `sender` rather than the captured `subscribed` field.
-        // Under rapid cell recycle the field can be reassigned between event-fire and
-        // handler-dispatch — sender always points at the actual originator.
-        System.ComponentModel.PropertyChangedEventHandler handler = (sender, ev) =>
-        {
-            if (ev.PropertyName != nameof(PrayerCardViewModel.IsExpanded)) return;
-            if (sender is PrayerCardViewModel vm && vm.IsExpanded)
-                RealizeExpandedSubtree(expandedHost, vm);
-        };
-
-        void Rebind()
-        {
-            if (subscribed is not null) subscribed.PropertyChanged -= handler;
-            subscribed = border.BindingContext as PrayerCardViewModel;
-            if (subscribed is not null)
-            {
-                subscribed.PropertyChanged += handler;
-                RealizeExpandedSubtree(expandedHost, subscribed);
-            }
-        }
-
-        Rebind();
-        border.BindingContextChanged -= OnBindingContextChanged;
-        border.BindingContextChanged += OnBindingContextChanged;
-        void OnBindingContextChanged(object? _, EventArgs __) => Rebind();
-
-        void OnUnloaded(object? _, EventArgs __)
-        {
-            if (subscribed is not null) subscribed.PropertyChanged -= handler;
-            border.BindingContextChanged -= OnBindingContextChanged;
-            border.Unloaded -= OnUnloaded;
-        }
-        border.Unloaded -= OnUnloaded;
-        border.Unloaded += OnUnloaded;
+        // Issue #42 (shape (i)): the expanded subtree is inlined in the cell
+        // DataTemplate and eagerly realized (hidden via IsVisible="{Binding
+        // IsExpanded}" when collapsed), so the prior lazy realization machinery
+        // (Rebind / RealizeExpandedSubtree / ExpandedSubtreeHost) is gone — it was
+        // the recurring root of the off-screen-target stale-cell bug. The only
+        // responsibility left here is the iOS long-press TouchBehavior install
+        // (Android handles long-press natively via CardGestureListener).
 
 #if !ANDROID
         // iOS: TouchBehavior on the Border coexists with child tap gestures natively.
@@ -227,80 +176,6 @@ public partial class PrayerCardsPage : ContentPage
             new Binding("BindingContext", source: border));
 #endif
     }
-
-    // Const'd so a XAML rename surfaces at build-time instead of as a silent runtime no-op.
-    private const string ExpandedSubtreeTemplateKey = "CardExpandedSubtreeTemplate";
-    private DataTemplate? _expandedSubtreeTemplate;
-
-    /// <summary>
-    /// CONTRACT: this method is NOT a "realize once and skip" no-op. It must be
-    /// called on every <c>Rebind</c> so the inner content's BindingContext
-    /// re-anchors to the recycled cell's new vm. Two execution paths:
-    ///
-    ///   (a) host.Content already inflated → re-anchor only
-    ///       (build-95 fallout: explicit first-inflate BindingContext breaks
-    ///        inheritance from the recycled host; without the re-anchor a
-    ///        Card-A cell recycled to render Card B keeps Card A's prayer rows
-    ///        under B's header).
-    ///   (b) host.Content null AND vm.IsExpanded → lazy inflate
-    ///       (Slice 6c PERF-10 — defer chips/list until the cell first expands).
-    ///   (c) host.Content null AND vm collapsed → no-op
-    ///       (preserves Slice 6c's cold-load + tab-switch optimization).
-    ///
-    /// The explicit <c>content.BindingContext = vm</c> on first inflate defends
-    /// against propagation timing edge cases where the host's context might
-    /// lead the inheritance chain by a frame on first realization.
-    ///
-    /// Future maintainers: do NOT re-introduce an early-return on
-    /// <c>host.Content is not null</c>. The early-return is what shipped in
-    /// Slice 6c and was the root cause of the build-95 cell-recycling stale-
-    /// binding bug.
-    /// </summary>
-    /// <remarks>
-    /// <c>View</c> is fully qualified because the code-behind imports
-    /// <c>Android.Views</c> (for native gesture handling on Android), which
-    /// clashes on the bare name.
-    /// </remarks>
-    private void RealizeExpandedSubtree(ContentView? host, PrayerCardViewModel vm)
-    {
-        if (host is null) return;
-
-        if (host.Content is Microsoft.Maui.Controls.View existing)
-        {
-            // Path (a) — see CONTRACT.
-            if (!ReferenceEquals(existing.BindingContext, vm))
-                existing.BindingContext = vm;
-        }
-        else if (vm.IsExpanded)
-        {
-            // Path (b) — see CONTRACT.
-            _expandedSubtreeTemplate ??= Resources[ExpandedSubtreeTemplateKey] as DataTemplate;
-            if (_expandedSubtreeTemplate is null) return;
-            var content = (Microsoft.Maui.Controls.View)_expandedSubtreeTemplate.CreateContent();
-            content.BindingContext = vm;
-            host.Content = content;
-            // PerfLog.Log($"ExpandedSubtree.realized id={vm.Id} Prayers.Count={vm.Prayers.Count}");
-        }
-
-        // Slice 6g hardening (#2): signal the saved-card waiter ONLY when the
-        // cell is laid out for THIS vm (host.Content non-null AND vm expanded).
-        // Without the gate, path (a) would satisfy the waiter on a recycled
-        // cell whose new vm is still collapsed — ScrollTo would then fire
-        // against an estimated layout position, the exact race the TCS was
-        // added to close. (QA find on the build-95 cards-recycle fix.)
-        if (_expectedSavedCardId == vm.Id && vm.IsExpanded && host.Content is not null)
-            _savedCardRealizedTcs?.TrySetResult(vm.Id);
-    }
-
-    // Slice 6g hardening (#2) — cell-realization signal for the freshly-saved card.
-    // ScrollToSavedCardAsync sets _expectedSavedCardId + a TCS, awaits it (with
-    // a fallback timeout) so the scroll fires after the new card's chips/list
-    // are realized rather than against an estimated layout position. Replaces
-    // the implicit "DrainLayoutPassAsync is enough" assumption that proved
-    // false in the original PERF log (ScrollTo at t=26633, cell-realize at
-    // t=27257 — 624 ms gap).
-    private int _expectedSavedCardId = -1;
-    private TaskCompletionSource<int>? _savedCardRealizedTcs;
 
     // BUG-60: On Android, MAUI TapGestureRecognizer and native GestureDetector conflict.
     // Handle both tap and long-press natively via GestureDetector on the header Grid,
@@ -445,10 +320,9 @@ public partial class PrayerCardsPage : ContentPage
 
         // Slice 6g — assert the cross-page busy flag immediately so the overlay
         // is up the moment the Cards page becomes the foreground page, masking
-        // the SyncAsync→ScrollTo gap and the new-expanded-card lazy-realization
-        // pop-in. Cleared in finally after ScrollTo (or immediately if no save
-        // was pending). The 2.5s highlight fade runs in the background and does
-        // NOT block the overlay-off transition.
+        // the SyncAsync→ScrollTo gap. Cleared in finally after ScrollTo (or
+        // immediately if no save was pending). The 2.5s highlight fade runs in
+        // the background and does NOT block the overlay-off transition.
         var hadPendingSave = !string.IsNullOrEmpty(vm.PendingSavedIdentifier);
         var overlayShownAt = DateTime.UtcNow;
         if (hadPendingSave) vm.IsAwaitingSavedCard = true;

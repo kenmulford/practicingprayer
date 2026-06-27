@@ -3,7 +3,7 @@ name: prayer-app-views
 description: >
   Use when creating or modifying PrayerApp pages, XAML layouts, code-behind lifecycle, popups,
   modals, CollectionView patterns, dynamic toolbars, or form layouts. Covers PageSync OnAppearing
-  pattern, OnCardBorderLoaded Rebind cascade prevention, Android native gesture detector,
+  pattern, inline expanded-subtree IsVisible realization (shape (i)), Android native gesture detector,
   CardsOverflowPopup detached resource tree, SafeAreaEdges, compiled bindings, AppThemeBinding,
   BindableLayout, SwipeView (not used in TagsPage), CarouselView, and ScrollTo drain pattern.
 cso_keywords:
@@ -47,7 +47,7 @@ Invoke this skill before:
 
 | Page | Layout type | Key patterns |
 |------|-------------|--------------|
-| `PrayerCardsPage` | Grouped CollectionView | PageSync, OnCardBorderLoaded/Rebind, Android CardGestureListener, single overflow ToolbarItem, GroupFooterTemplate HeightRequest="0", SafeAreaEdges="Container" |
+| `PrayerCardsPage` | Grouped CollectionView | PageSync, inline expanded subtree (`IsVisible="{Binding IsExpanded}"`, shape (i) #42), Margin via `IsExpanded` DataTrigger, Android CardGestureListener, single overflow ToolbarItem, GroupFooterTemplate HeightRequest="0", SafeAreaEdges="Container" |
 | `TagsPage` | Flat CollectionView + inline action chips | PageSync, inline action Grid (no SwipeView), SafeAreaEdges="Container" |
 | `BoxesPage` | Flat CollectionView + inline action chips | PageSync, SafeAreaEdges="Container" |
 | `PrayerTimePage` | CarouselView | Two-way Position binding |
@@ -355,60 +355,39 @@ use the standard pattern in `PrayerCardPage` / `PrayerDetailPage`.
 
 ---
 
-## PERF-10: OnCardBorderLoaded / Rebind Cascade Prevention
+## Cards-page expanded subtree — inline IsVisible realization (shape (i), #42)
 
-CollectionView recycles `Border` cells by swapping `BindingContext` without firing
-`Loaded`/`Unloaded`. This means a card margin animation handler can stay subscribed
-to a previous card's `IsExpanded` after recycling (wrong card animates). The fix:
+**Updated 2026-06-27 (#42).** The cards page renders each card's expanded content
+(action chips + prayers + Add-prayer) by **inlining the expanded subtree directly
+in the cell `DataTemplate`**, gated by `IsVisible="{Binding IsExpanded}"` — eager
+realization, hidden (Android visibility GONE) when collapsed. There is **no lazy
+realization**: the prior `OnCardBorderLoaded` → `Rebind` → `RealizeExpandedSubtree`
+/ `ExpandedSubtreeHost` / `_savedCardRealizedTcs` machinery (and the earlier
+`AnimateCardMargin` Rebind cascade) is **retired**.
 
-1. Subscribe `BindingContextChanged` on the `Border` to call `Rebind()` whenever
-   recycling occurs.
-2. In `Rebind()`: unsubscribe from the previous VM, subscribe to the new one, snap
-   margin immediately.
-3. **Cascade prevention:** every `Margin` write invalidates parent layout on Android,
-   which schedules another measure pass, which loads the next cell, which calls
-   `Rebind()` again. Skip the assignment with an equality guard — if the margin
-   already matches the target, don't write it.
+**Why retired.** The lazy `ExpandedSubtreeHost` realization didn't reliably surface
+for off-screen cells — the root cause of the system-card auto-expand bug (#42) and
+the #117 chip-realization test failures. Inlining makes the subtree always present,
+so setting `ExpandedCardId` reveals the content regardless of cell position. The
+"eager realization scroll cliff" (the old PERF-10 concern) was **re-measured
+on-device** (Android emulator, 82-card stress, 2026-06-27): eager scroll is modestly
+heavier than lazy (~4%→6% janky frames; tail 99th 93→200ms) but acceptable for
+typical libraries, and cold-launch is unchanged.
 
-```csharp
-// PrayerCardsPage.xaml.cs — OnCardBorderLoaded (Loaded="OnCardBorderLoaded" in XAML)
-private void OnCardBorderLoaded(object? sender, EventArgs e)
-{
-    if (sender is not Border border) return;
+**Current cards-page realization pattern:**
+- The card `Margin` (collapsed vs expanded) is a **`DataTrigger` on `IsExpanded`** in
+  XAML — not a code-behind margin animation.
+- The expanded subtree is a `VerticalStackLayout IsVisible="{Binding IsExpanded}"`
+  inlined in the cell template; the action-chips `Grid` keeps its own
+  `IsVisible="{Binding ShowActionChips}"` (= `IsExpanded && !IsSystem`).
+- `OnCardBorderLoaded` survives **only** to install the iOS (`#if !ANDROID`)
+  long-press `TouchBehavior` — it no longer realizes a subtree or rebinds.
+- `ScrollToSavedCardAsync` scrolls immediately after `DrainLayoutPassAsync` (the
+  Android adapter-snapshot guard — still required); there is no realization signal
+  to await.
 
-    PrayerCardViewModel? subscribed = null;
-    System.ComponentModel.PropertyChangedEventHandler handler = (_, ev) =>
-    {
-        if (ev.PropertyName == nameof(PrayerCardViewModel.IsExpanded) && subscribed is not null)
-            AnimateCardMargin(border, CardMarginFor(subscribed.IsExpanded));
-    };
-
-    void Rebind()
-    {
-        if (subscribed is not null) subscribed.PropertyChanged -= handler;
-        subscribed = border.BindingContext as PrayerCardViewModel;
-        if (subscribed is not null)
-        {
-            subscribed.PropertyChanged += handler;
-            border.AbortAnimation("CardMarginTween");
-            var target = CardMarginFor(subscribed.IsExpanded);
-            // Equality guard: skip write if already correct — avoids cascade
-            if (border.Margin != target)
-                border.Margin = target;
-        }
-    }
-
-    Rebind();
-    border.BindingContextChanged += (_, __) => Rebind();
-    border.Unloaded += (_, __) =>
-    {
-        if (subscribed is not null) subscribed.PropertyChanged -= handler;
-    };
-}
-
-private static Thickness CardMarginFor(bool expanded)
-    => expanded ? new Thickness(0, 8) : new Thickness(14, 0, 0, 0);
-```
+> **Do not reintroduce** the lazy `ExpandedSubtreeHost` / `RealizeExpandedSubtree`
+> pattern — it caused #42/#117 and was deliberately retired with on-device data.
 
 ---
 
