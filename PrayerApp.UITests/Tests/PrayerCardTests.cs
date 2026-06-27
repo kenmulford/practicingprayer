@@ -414,14 +414,13 @@ public class PrayerCardTests
         var driver = _setup.Driver;
         driver.EnsureOnTab("Prayer Cards", _setup);
         Thread.Sleep(TestConfig.DelayCollectionRender);
-        driver.EnsureCardVisible("UITest Expanded Card");
 
-        // Expand the card by tapping it
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest Expanded Card");
-        else
-            driver.TapByText("UITest Expanded Card");
-        Thread.Sleep(TestConfig.DelayAfterTap);
+        // Expand the card, wait for the expand to SETTLE, and scroll the chip row into
+        // view (issue #117: the eager expanded subtree renders below the fold when the
+        // card sits low in the list, and probing during the non-idle expand animation
+        // reads a transient/blank tree). RevealCardChip mirrors the settled-then-scroll
+        // path the passing system-card move test uses.
+        RevealCardChip(driver, "UITest Expanded Card", "Cards_Btn_Favorite");
 
         Assert.True(driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 10),
             "Expanded user card should show Favorite button");
@@ -563,6 +562,39 @@ public class PrayerCardTests
         TapCardHeader(driver, cardName);
     }
 
+    /// <summary>
+    /// Collapse every card whose header is currently in the tree in its expanded state
+    /// (content-desc / label contains ", Expanded"). The shared Appium session preserves
+    /// expand state across tests and xUnit doesn't guarantee order, so a preceding test
+    /// can leave an UNRELATED card expanded — and its on-screen action chips
+    /// (Cards_Btn_Edit/Favorite/…) would satisfy an unscoped IsDisplayed probe, a
+    /// false-green hazard. Bounded fixed-point loop that re-finds the first expanded
+    /// header each iteration and taps it to collapse (re-find per iteration because each
+    /// collapse reflows the CollectionView and invalidates earlier element refs, mirroring
+    /// EnsureAllSectionsExpanded). Best-effort: never throws.
+    /// </summary>
+    private static void CollapseAnyExpandedCards(OpenQA.Selenium.Appium.AppiumDriver driver)
+    {
+        var by = TestConfig.IsIOS
+            ? By.XPath("//*[contains(@label,', Expanded')]")
+            : By.XPath("//*[contains(@content-desc,', Expanded')]");
+
+        const int MaxIterations = 10;
+        for (int i = 0; i < MaxIterations; i++)
+        {
+            try
+            {
+                driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(1);
+                var header = driver.FindElement(by);
+                header.Click();
+            }
+            catch (WebDriverException) { return; }   // none left, or it went stale → done
+            finally { driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout; }
+
+            Thread.Sleep(TestConfig.DelayAfterTap);
+        }
+    }
+
     /// <summary>True if the card is in expanded state, judged by its own ", Expanded" suffix.</summary>
     private static bool IsCardExpanded(OpenQA.Selenium.Appium.AppiumDriver driver, string cardName)
         => TestConfig.IsIOS
@@ -634,6 +666,77 @@ public class PrayerCardTests
             () => TestConfig.IsIOS ? driver.IsTextContainsDisplayed(text, timeoutSeconds: 1)
                                    : driver.IsTextDisplayed(text, timeoutSeconds: 1),
             () => driver.ScrollDownToText(text, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
+
+    /// <summary>
+    /// Issue #117: expand <paramref name="cardName"/> from a collapsed start and reliably
+    /// bring its inline action chips (Favorite/Share/Edit/Delete) into the viewport so they
+    /// enter the UiAutomator2 accessibility tree before the caller asserts on them.
+    /// <para>
+    /// The two card-chip tests previously tapped, slept a fixed 300 ms, then probed a
+    /// chip immediately — landing inside the non-idle expand-animation window where the
+    /// shared session reads a transient/blank tree, AND (when the card sits low in the
+    /// list) leaving the eager expanded subtree rendered below the fold where the
+    /// CollectionView virtualizes it out of the tree entirely.
+    /// </para>
+    /// <para>
+    /// Sequence: controlled (fling-free) scroll the header into view →
+    /// <see cref="EnsureCardCollapsed"/> + an explicit <see cref="TapCardHeader"/>
+    /// (NOT <see cref="EnsureCardExpanded"/> — see the step-2 comment for the
+    /// spurious-tap hazard it avoids) → the shared settle-then-reveal tail
+    /// <see cref="SettleAndRevealChip"/> (<see cref="WaitForCardExpanded"/> to poll the
+    /// header until the expand has SETTLED, then <see cref="ScrollUntil"/>'s fling-free
+    /// <c>mobile: scrollGesture</c> to reveal the chip). Best-effort scrolls: if the
+    /// header/chip is already on screen they no-op, and a genuinely-missing chip still
+    /// raises the caller's canonical assertion.
+    /// </para>
+    /// </summary>
+    private static void RevealCardChip(OpenQA.Selenium.Appium.AppiumDriver driver,
+        string cardName, string chipAutomationId)
+    {
+        // 1. Controlled (fling-free) scroll to bring the card's header into view. A card
+        //    near the bottom of the Loose Cards list (e.g. "UITest Expanded Card") starts
+        //    below the fold, virtualized out of the tree. EnsureCardVisible's swipe-based
+        //    scroll can under-reach and then fall through to its search-bar fallback,
+        //    which on this emulator corrupts the typed term with IME artifacts
+        //    ("…ty ty ty ty ty") — so use the same fling-free scrollGesture as the chip
+        //    reveal below instead. iOS card labels carry ", Expanded"/", System" suffixes,
+        //    so match by contains on iOS (suite convention; cf. EnsureCardVisible).
+        ScrollUntil(driver,
+            () => TestConfig.IsIOS ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 1)
+                                   : driver.IsTextDisplayed(cardName, timeoutSeconds: 1),
+            () => driver.ScrollDownToText(cardName, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
+
+        // 2. Start from a deterministic collapsed state, then tap to expand. This avoids
+        //    EnsureCardExpanded's spurious-tap hazard: if a blank/transient tree makes
+        //    IsCardExpanded mis-read an already-expanded card as collapsed, it would tap
+        //    the card CLOSED. Collapse + an explicit tap toggles deterministically open.
+        EnsureCardCollapsed(driver, cardName);
+        TapCardHeader(driver, cardName);
+
+        // 3. Wait for the expand to SETTLE, then scroll the chip row into the viewport.
+        SettleAndRevealChip(driver, cardName, chipAutomationId);
+    }
+
+    /// <summary>
+    /// Issue #117 shared tail: after a card has been tapped to expand, poll its header
+    /// until the expand has SETTLED (<see cref="WaitForCardExpanded"/>) and then
+    /// controlled-scroll <paramref name="chipAutomationId"/> into the viewport
+    /// (<see cref="ScrollUntil"/>'s fling-free <c>mobile: scrollGesture</c>). Probing a
+    /// chip during the non-idle expand animation reads a transient/blank tree, and a card
+    /// low in the list renders its chips below the fold (virtualized out of the tree) —
+    /// settle then reveal handles both. Shared by <see cref="RevealCardChip"/> and
+    /// <see cref="Cards_ExpandByTap_RealizesActionChips"/> (which keeps its own explicit
+    /// tap visible as its behavior-under-test and reuses only this tail). Best-effort
+    /// scroll: a genuinely-missing chip still raises the caller's canonical assertion.
+    /// </summary>
+    private static void SettleAndRevealChip(OpenQA.Selenium.Appium.AppiumDriver driver,
+        string cardName, string chipAutomationId)
+    {
+        WaitForCardExpanded(driver, cardName, timeoutSeconds: 10);
+        ScrollUntil(driver,
+            () => driver.IsDisplayed(chipAutomationId, timeoutSeconds: 1),
+            () => driver.ScrollDownTo(chipAutomationId, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
+    }
 
     /// <summary>
     /// Scrolls the Cards list down until <paramref name="isVisible"/> is true (up to a
@@ -779,14 +882,37 @@ public class PrayerCardTests
         var driver = _setup.Driver;
 
         const string cardName = "UITest EditButton Card";
+
+        // Clear cross-test contamination FIRST: xUnit doesn't guarantee order, and a
+        // preceding test (e.g. Cards_ExpandedCard_ShowsActionButtons) can leave a
+        // DIFFERENT card expanded with its Edit chip still on screen. Since the negative
+        // baseline below probes the unscoped Cards_Btn_Edit, that leftover chip would
+        // make the baseline fail (or, without the baseline, mask a no-op tap). Collapse
+        // any expanded card so the baseline reflects a genuinely collapsed list.
+        CollapseAnyExpandedCards(driver);
         EnsureCardCollapsed(driver, cardName);
 
-        // Tap to expand (precondition: card is collapsed).
+        // Negative baseline (false-green guard): with the card collapsed and no other
+        // card expanded, no Edit chip should be in the tree. IsDisplayed is unscoped, so
+        // a stale Edit chip from a DIFFERENT still-expanded card would otherwise satisfy
+        // the post-tap positive without proving THIS tap realized anything. Short timeout
+        // keeps the happy path fast.
+        Assert.False(driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 2),
+            "Pre-tap baseline: no Edit chip should be visible while the card is collapsed " +
+            "(a leftover chip from another expanded card would mask a no-op tap).");
+
+        // Tap to expand (precondition: card is collapsed) — this is the behavior under
+        // test (tap a collapsed card → its action chips become visible). Kept inline and
+        // explicit; only the settle+reveal tail is shared via SettleAndRevealChip.
         if (TestConfig.IsIOS)
             driver.TapByTextContains(cardName);
         else
             driver.TapByText(cardName);
         Thread.Sleep(TestConfig.DelayAfterTap);
+
+        // Issue #117 shared tail: settle the expand, then controlled-scroll the eager
+        // expanded subtree's chip row into the viewport before probing.
+        SettleAndRevealChip(driver, cardName, "Cards_Btn_Edit");
 
         bool chipsVisible = driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
 
@@ -794,7 +920,7 @@ public class PrayerCardTests
             : driver.DumpPageSource(nameof(Cards_ExpandByTap_RealizesActionChips));
 
         Assert.True(chipsVisible,
-            $"Tapping a collapsed user card should lazy-realize and show the action chips (Edit chip). Dump: {evidence}");
+            $"Tapping a collapsed user card should reveal the action chips (Edit chip). Dump: {evidence}");
     }
 
     /// <summary>
