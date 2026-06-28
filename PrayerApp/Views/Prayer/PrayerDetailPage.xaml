@@ -221,15 +221,32 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Answered Switch -->
-                    <HorizontalStackLayout Spacing="10">
-                        <Label Text="Answered"
-                               VerticalOptions="Center" />
-                        <Switch AutomationId="Detail_Switch_Answered"
-                                IsToggled="{Binding IsAnswered}"
-                                SemanticProperties.Hint="Mark this request as answered"
-                                VerticalOptions="Center" />
-                    </HorizontalStackLayout>
+                    <!-- Answered group -->
+                    <Border Style="{StaticResource PrayerCardBorder}" Padding="16" Margin="0,-4,0,0">
+                        <VerticalStackLayout Spacing="10">
+                            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                                <Label Text="Answered"
+                                       Style="{StaticResource FormSectionHeader}"
+                                       VerticalOptions="Center" />
+                                <Switch Grid.Column="1"
+                                        AutomationId="Detail_Switch_Answered"
+                                        IsToggled="{Binding IsAnswered}"
+                                        SemanticProperties.Hint="Mark this request as answered"
+                                        VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Answered On (visible only when answered) -->
+                            <VerticalStackLayout Spacing="4" IsVisible="{Binding IsAnswered}">
+                                <Label Text="Answered on" Style="{StaticResource FormLabel}" />
+                                <DatePicker AutomationId="Detail_Picker_AnsweredOn"
+                                            Date="{Binding AnsweredAt}"
+                                            MinimumDate="{Binding CreatedAtDate}"
+                                            MaximumDate="{Binding Today}"
+                                            SemanticProperties.Description="Answered on"
+                                            SemanticProperties.Hint="Select the date this request was answered" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
 
                     <!-- Tags (edit mode) — label, chips, and + button flow inline -->
                     <FlexLayout x:Name="editTagChips"

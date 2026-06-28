@@ -70,6 +70,7 @@ namespace PrayerApp.ViewModels
         private bool _originalCanNotify;
         private PrayerFrequency _originalFrequency;
         private bool _originalIsAnswered;
+        private DateTime? _originalAnsweredAt;
         private int _originalNotifyHour;
         private int _originalNotifyMinute;
         private int _originalDayOfWeek;
@@ -121,6 +122,7 @@ namespace PrayerApp.ViewModels
             CanNotify != _originalCanNotify ||
             PrayerFrequency != _originalFrequency ||
             IsAnswered != _originalIsAnswered ||
+            AnsweredAt != _originalAnsweredAt ||
             _prayer.NotifyHour != _originalNotifyHour ||
             _prayer.NotifyMinute != _originalNotifyMinute ||
             _prayer.NotifyDayOfWeek != _originalDayOfWeek ||
@@ -312,7 +314,12 @@ namespace PrayerApp.ViewModels
                 if (_prayer.IsAnswered != value)
                 {
                     _prayer.IsAnswered = value;
-                    _prayer.AnsweredAt = value ? DateTime.Now : null;
+                    // Date-only so the mark-answered default, the CaptureOriginals baseline,
+                    // and the DatePicker's date-only writeback all agree. A time-bearing
+                    // DateTime.Now default would spuriously dirty the form when the picker
+                    // round-trips it to midnight (issue #108 review). PrayerTimeViewModel keeps
+                    // its own DateTime.Now convention; normalize only at this editable surface.
+                    _prayer.AnsweredAt = value ? DateTime.Today : null;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(AnsweredAt));
                     OnPropertyChanged(nameof(AnsweredAtDisplay));
@@ -322,7 +329,37 @@ namespace PrayerApp.ViewModels
             }
         }
 
-        public DateTime? AnsweredAt => _prayer.AnsweredAt;
+        public DateTime? AnsweredAt
+        {
+            // Date-only at BOTH boundaries. The getter normalizes the read so the
+            // CaptureOriginals baseline can never carry a stray time, even when the stored
+            // value came from a time-bearing writer (PrayerTimeViewModel writes DateTime.Now,
+            // and legacy rows answered before this fix). The setter coerces the write so saves
+            // persist date-only too. Without the getter normalization, a Prayer-Time-answered
+            // row's 14:32 baseline != the picker's midnight writeback → spurious dirty (issue #108 review).
+            get => _prayer.AnsweredAt?.Date;
+            set
+            {
+                var normalized = value?.Date;
+                if (_prayer.AnsweredAt != normalized)
+                {
+                    _prayer.AnsweredAt = normalized;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(AnsweredAtDisplay));
+                    OnPropertyChanged(nameof(AccessibleSummary));
+                }
+            }
+        }
+
+        /// <summary>Today, exposed for the answered-date picker's <c>MaximumDate</c>
+        /// (a prayer cannot be marked answered in the future).</summary>
+        public DateTime Today => DateTime.Today;
+
+        /// <summary>Date-only projection of <see cref="CreatedAt"/> for the answered-date
+        /// picker's <c>MinimumDate</c>. <c>CreatedAt</c> carries a time component, so binding
+        /// the raw value would coerce a date-only "today" answer UP to the creation timestamp
+        /// on the creation day — re-injecting time-of-day (issue #108 review).</summary>
+        public DateTime CreatedAtDate => _prayer.CreatedAt.Date;
 
         public string AnsweredAtDisplay =>
             IsAnswered && AnsweredAt.HasValue
@@ -826,6 +863,7 @@ namespace PrayerApp.ViewModels
             _originalCanNotify = CanNotify;
             _originalFrequency = PrayerFrequency;
             _originalIsAnswered = IsAnswered;
+            _originalAnsweredAt = AnsweredAt;
             _originalNotifyHour = _prayer.NotifyHour;
             _originalNotifyMinute = _prayer.NotifyMinute;
             _originalDayOfWeek = _prayer.NotifyDayOfWeek;
