@@ -40,18 +40,24 @@
                    ios:SearchBar.SearchBarStyle="Minimal"
                    BackgroundColor="{OnPlatform Default=Transparent, Android={AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource ChipBgDark}}}" />
 
-        <!-- Tag filter chips -->
-        <ScrollView Grid.Row="1"
-                    Orientation="Horizontal"
-                    IsVisible="{Binding HasTags}"
-                    HorizontalScrollBarVisibility="Never"
-                    Margin="12,8,12,0">
-            <HorizontalStackLayout
-                BindableLayout.ItemsSource="{Binding AvailableTags}"
-                BindableLayout.ItemTemplate="{StaticResource TagFilterChipTemplate}"
-                Spacing="6"
-                Padding="0,2,0,6" />
-        </ScrollView>
+        <!-- Tag filter chips — horizontal CollectionView so the native control
+             virtualizes the row (BindableLayout does not).
+             Deliberately NO HeightRequest: the CollectionView content-sizes, so
+             the chip row grows with font scale; a fixed height re-clips at large
+             scale. Breathing room rides on this Margin rather than the template,
+             since TagFilterChipTemplate is shared by both the Cards and Prayers
+             chip strips. See issue #48 for the full rationale. -->
+        <CollectionView Grid.Row="1"
+                        ItemTemplate="{StaticResource TagFilterChipTemplate}"
+                        ItemsSource="{Binding AvailableTags}"
+                        SelectionMode="None"
+                        IsVisible="{Binding HasTags}"
+                        HorizontalScrollBarVisibility="Never"
+                        Margin="12,10,12,6">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="6" />
+            </CollectionView.ItemsLayout>
+        </CollectionView>
 
         <!-- Collections education banner — dismissed permanently via ✕ button -->
         <Border Grid.Row="2"
