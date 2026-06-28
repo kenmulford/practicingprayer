@@ -223,6 +223,17 @@
                                 VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
+                    <!-- Answered On (visible only when answered) -->
+                    <VerticalStackLayout Spacing="4" IsVisible="{Binding IsAnswered}">
+                        <Label Text="Answered on" Style="{StaticResource FormLabel}" />
+                        <DatePicker AutomationId="Detail_Picker_AnsweredOn"
+                                    Date="{Binding AnsweredAt}"
+                                    MinimumDate="{Binding CreatedAtDate}"
+                                    MaximumDate="{Binding Today}"
+                                    SemanticProperties.Description="Answered on"
+                                    SemanticProperties.Hint="Select the date this request was answered" />
+                    </VerticalStackLayout>
+
                     <!-- Tags (edit mode) — label, chips, and + button flow inline -->
                     <FlexLayout x:Name="editTagChips"
                                 Wrap="Wrap"
