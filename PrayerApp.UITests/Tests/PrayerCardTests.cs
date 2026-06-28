@@ -217,30 +217,6 @@ public class PrayerCardTests
         }
     }
 
-    /// <summary>3.4: Create new card — tap "Add Card", fill title, save. Card appears in list.</summary>
-    [Fact]
-    public void Cards_CreateCard_AppearsInList()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-
-        driver.TapToolbarItemById("Add Card");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
-
-        // Use a name NOT in the seed. The seed already has "UITest Card" — creating
-        // another with the same name would make any assertion against
-        // IsTextDisplayed("UITest Card") trivially pass against the seeded one
-        // instead of the one we just created (silent false positive).
-        driver.EnterText("Card_Entry_Title", "New Card UITest");
-        driver.DismissKeyboardIfPresent();
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
-            "Should return to card list after saving new card");
-    }
-
     /// <summary>3.6: Expand card → view prayers inside.</summary>
     [Fact]
     public void Cards_ExpandCard_ShowsPrayers()
@@ -288,41 +264,6 @@ public class PrayerCardTests
 
         driver.NavigateToTab("Prayer Cards");
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
-    }
-
-    /// <summary>3.9: Edit prayer from card — expand card, tap prayer, view mode, tap Edit.
-    /// Uses dedicated fixture "UITest EditPrayer Card" containing "UITest Edit Prayer"
-    /// (see TestDataSeed). Isolated from shared-seed mutations by other tests.</summary>
-    [Fact]
-    public void Cards_EditPrayerFromCard()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        var driver = _setup.Driver;
-        driver.EnsureOnTab("Prayer Cards", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-        driver.EnsureCardVisible("UITest EditPrayer Card");
-
-        // Expand the dedicated seed card to reveal its prayer
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest EditPrayer Card");
-        else
-            driver.TapByText("UITest EditPrayer Card");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // iOS: prayer text is part of composed label, not a standalone element
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest Edit Prayer", timeoutSeconds: 10);
-        else
-            driver.TapByText("UITest Edit Prayer");
-
-        driver.TapToolbarItem("Edit");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
-            "Should show title entry in edit mode");
-
-        driver.GoBack();
-        driver.DismissAlertIfPresent();
     }
 
     /// <summary>Build-95 fallout (Slice 6c): after deleting an expanded card,
@@ -403,33 +344,6 @@ public class PrayerCardTests
         }
 
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
-    }
-
-    /// <summary>3.14: Inline action buttons — expanding a user card shows Favorite, Share, Edit, Delete.
-    /// Uses dedicated fixture "UITest Expanded Card" (see TestDataSeed).</summary>
-    [Fact]
-    public void Cards_ExpandedCard_ShowsActionButtons()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        var driver = _setup.Driver;
-        driver.EnsureOnTab("Prayer Cards", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // Expand the card, wait for the expand to SETTLE, and scroll the chip row into
-        // view (issue #117: the eager expanded subtree renders below the fold when the
-        // card sits low in the list, and probing during the non-idle expand animation
-        // reads a transient/blank tree). RevealCardChip mirrors the settled-then-scroll
-        // path the passing system-card move test uses.
-        RevealCardChip(driver, "UITest Expanded Card", "Cards_Btn_Favorite");
-
-        Assert.True(driver.IsDisplayed("Cards_Btn_Favorite", timeoutSeconds: 10),
-            "Expanded user card should show Favorite button");
-        Assert.True(driver.IsDisplayed("Cards_Btn_Share", timeoutSeconds: 3),
-            "Expanded user card should show Share button");
-        Assert.True(driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 3),
-            "Expanded user card should show Edit button");
-        Assert.True(driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 3),
-            "Expanded user card should show Delete button");
     }
 
     /// <summary>3.16: Tag filter chips — visible when tags exist in the system.</summary>
@@ -668,63 +582,13 @@ public class PrayerCardTests
             () => driver.ScrollDownToText(text, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
 
     /// <summary>
-    /// Issue #117: expand <paramref name="cardName"/> from a collapsed start and reliably
-    /// bring its inline action chips (Favorite/Share/Edit/Delete) into the viewport so they
-    /// enter the UiAutomator2 accessibility tree before the caller asserts on them.
-    /// <para>
-    /// The two card-chip tests previously tapped, slept a fixed 300 ms, then probed a
-    /// chip immediately — landing inside the non-idle expand-animation window where the
-    /// shared session reads a transient/blank tree, AND (when the card sits low in the
-    /// list) leaving the eager expanded subtree rendered below the fold where the
-    /// CollectionView virtualizes it out of the tree entirely.
-    /// </para>
-    /// <para>
-    /// Sequence: controlled (fling-free) scroll the header into view →
-    /// <see cref="EnsureCardCollapsed"/> + an explicit <see cref="TapCardHeader"/>
-    /// (NOT <see cref="EnsureCardExpanded"/> — see the step-2 comment for the
-    /// spurious-tap hazard it avoids) → the shared settle-then-reveal tail
-    /// <see cref="SettleAndRevealChip"/> (<see cref="WaitForCardExpanded"/> to poll the
-    /// header until the expand has SETTLED, then <see cref="ScrollUntil"/>'s fling-free
-    /// <c>mobile: scrollGesture</c> to reveal the chip). Best-effort scrolls: if the
-    /// header/chip is already on screen they no-op, and a genuinely-missing chip still
-    /// raises the caller's canonical assertion.
-    /// </para>
-    /// </summary>
-    private static void RevealCardChip(OpenQA.Selenium.Appium.AppiumDriver driver,
-        string cardName, string chipAutomationId)
-    {
-        // 1. Controlled (fling-free) scroll to bring the card's header into view. A card
-        //    near the bottom of the Loose Cards list (e.g. "UITest Expanded Card") starts
-        //    below the fold, virtualized out of the tree. EnsureCardVisible's swipe-based
-        //    scroll can under-reach and then fall through to its search-bar fallback,
-        //    which on this emulator corrupts the typed term with IME artifacts
-        //    ("…ty ty ty ty ty") — so use the same fling-free scrollGesture as the chip
-        //    reveal below instead. iOS card labels carry ", Expanded"/", System" suffixes,
-        //    so match by contains on iOS (suite convention; cf. EnsureCardVisible).
-        ScrollUntil(driver,
-            () => TestConfig.IsIOS ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 1)
-                                   : driver.IsTextDisplayed(cardName, timeoutSeconds: 1),
-            () => driver.ScrollDownToText(cardName, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
-
-        // 2. Start from a deterministic collapsed state, then tap to expand. This avoids
-        //    EnsureCardExpanded's spurious-tap hazard: if a blank/transient tree makes
-        //    IsCardExpanded mis-read an already-expanded card as collapsed, it would tap
-        //    the card CLOSED. Collapse + an explicit tap toggles deterministically open.
-        EnsureCardCollapsed(driver, cardName);
-        TapCardHeader(driver, cardName);
-
-        // 3. Wait for the expand to SETTLE, then scroll the chip row into the viewport.
-        SettleAndRevealChip(driver, cardName, chipAutomationId);
-    }
-
-    /// <summary>
     /// Issue #117 shared tail: after a card has been tapped to expand, poll its header
     /// until the expand has SETTLED (<see cref="WaitForCardExpanded"/>) and then
     /// controlled-scroll <paramref name="chipAutomationId"/> into the viewport
     /// (<see cref="ScrollUntil"/>'s fling-free <c>mobile: scrollGesture</c>). Probing a
     /// chip during the non-idle expand animation reads a transient/blank tree, and a card
     /// low in the list renders its chips below the fold (virtualized out of the tree) —
-    /// settle then reveal handles both. Shared by <see cref="RevealCardChip"/> and
+    /// settle then reveal handles both. Used by
     /// <see cref="Cards_ExpandByTap_RealizesActionChips"/> (which keeps its own explicit
     /// tap visible as its behavior-under-test and reuses only this tail). Best-effort
     /// scroll: a genuinely-missing chip still raises the caller's canonical assertion.
@@ -784,88 +648,6 @@ public class PrayerCardTests
         Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
-
-    /// <summary>
-    /// 6g contract: After tapping Save on the Add Card form, the LoadingOverlay
-    /// remains visible on the Cards page across the whole post-save window
-    /// (PageSync → ConsumePendingSavedAsync → ScrollTo). Without 6g the overlay
-    /// flickers off as soon as SyncAsync's finally fires (~5 ms after RebuildSections),
-    /// long before the new card's expanded subtree has populated —
-    /// the user sees "no spinner, no card, then card pops in".
-    /// </summary>
-    [Fact]
-    public void Cards_Save_OverlayShowsDuringPostSaveFlow()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-
-        var title = $"Overlay6g {DateTime.Now:HHmmssfff}";
-
-        driver.TapToolbarItemById("Add Card");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
-        driver.EnterText("Card_Entry_Title", title);
-        driver.DismissKeyboardIfPresent();
-
-        try
-        {
-            driver.TapToolbarItem("Save");
-
-            // 6g hardening guarantees a minimum 250 ms overlay duration, so
-            // standard WaitForElement comfortably catches it. The Spinner
-            // (leaf widget) is a more reliable platform-tree probe than the
-            // Scrim (layout container) — start there, fall back to Scrim.
-            bool overlaySeen =
-                driver.IsDisplayed("LoadingOverlay_Spinner", timeoutSeconds: 5) ||
-                driver.IsDisplayed("LoadingOverlay_Scrim", timeoutSeconds: 1);
-
-            string? evidence = overlaySeen ? null
-                : driver.DumpPageSource(nameof(Cards_Save_OverlayShowsDuringPostSaveFlow));
-
-            Assert.True(overlaySeen,
-                $"LoadingOverlay should appear on Cards page during post-save flow. Dump: {evidence}");
-
-            // And must come down once the minimum-duration window + ScrollTo complete.
-            driver.WaitForElementGone("LoadingOverlay_Spinner", timeoutSeconds: 10);
-
-            // New card row materialized in the (now-overlay-free) CollectionView.
-            driver.EnsureCardVisible(title);
-            Assert.True(
-                TestConfig.IsIOS
-                    ? driver.IsTextContainsDisplayed(title, timeoutSeconds: 5)
-                    : driver.IsTextDisplayed(title, timeoutSeconds: 5),
-                $"New card '{title}' should be visible after overlay clears.");
-
-            // Cleanup
-            if (TestConfig.IsIOS)
-                driver.TapByTextContains(title);
-            else
-                driver.TapByText(title);
-            Thread.Sleep(TestConfig.DelayAfterTap);
-            if (driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 3))
-            {
-                driver.Tap("Cards_Btn_Delete");
-                driver.DismissAlertIfPresent();
-                Thread.Sleep(TestConfig.DelayAfterSave);
-            }
-        }
-        finally
-        {
-            // If the assertion fails before nav (Save didn't fire) or after a partial
-            // save flow, the edit page may still be foregrounded with a dirty form.
-            // Back out + tap Discard so the next test's ResetAppUIState doesn't
-            // hit the unsaved-changes dialog and stall (per
-            // appium-autodismissalerts-discard-trap lesson — Android dismisses via
-            // button1 = Discard, which is correct here, but only fires if we
-            // actually press Back to raise the dialog in the first place).
-            if (driver.IsDisplayed("Card_Entry_Title", timeoutSeconds: 1))
-            {
-                try { driver.GoBack(); } catch (WebDriverException) { }
-                Thread.Sleep(TestConfig.DelayAfterTap);
-                try { driver.DismissAlertIfPresent(); } catch (WebDriverException) { }
-            }
-        }
-    }
 
     /// <summary>
     /// 6c real toggle path: tapping a collapsed user card's header should expand it

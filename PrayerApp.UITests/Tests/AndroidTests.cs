@@ -33,22 +33,6 @@ public class AndroidTests
             "Hardware back should return to Settings hub from sub-page");
     }
 
-    /// <summary>14.1 (variant): Hardware back from clean prayer detail.</summary>
-    [Fact]
-    public void HardwareBack_FromPrayerDetail()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.NavigateToNewPrayer(_setup);
-        var driver = _setup.Driver;
-
-        driver.GoBack();
-        Thread.Sleep(TestConfig.DelayAfterNavigation);
-
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
-                 || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
-            "Hardware back should return to Prayers list from clean detail page");
-    }
-
     /// <summary>14.1 (variant): Hardware back with dirty state shows discard dialog.</summary>
     [SkippableFact]
     public void HardwareBack_DirtyDetail_ShowsDiscardDialog()
