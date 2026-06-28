@@ -535,4 +535,48 @@ public class PrayerRequestDetailViewModelTests
 
         Assert.True(sut.HasBeenPrayedFor);
     }
+
+    // ── CreatedAtDisplay (issue #107) ─────────────────────────────────
+    // Absolute "Started {date}" caption shown beneath each prayer-request title.
+    // Driven through the real load path so a regression in the wiring turns these red.
+
+    [Fact]
+    public async Task CreatedAtDisplay_FormatsStartedAbsoluteDate()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(10)
+            .Returns(Task.FromResult(new Prayer { Id = 10, Title = "Test", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(10).Returns(Task.FromResult(0));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(10).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "10", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && sut.CreatedAtDisplay != "Started Mar 3, 2026"; i++)
+            await Task.Yield();
+
+        Assert.Equal("Started Mar 3, 2026", sut.CreatedAtDisplay);
+    }
+
+    [Fact]
+    public async Task AccessibleSummary_IncludesStartedDate()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(11)
+            .Returns(Task.FromResult(new Prayer { Id = 11, Title = "Healing", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(11).Returns(Task.FromResult(0));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(11).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "11", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && !sut.AccessibleSummary.Contains("Started Mar 3, 2026"); i++)
+            await Task.Yield();
+
+        Assert.Contains("Started Mar 3, 2026", sut.AccessibleSummary);
+    }
 }

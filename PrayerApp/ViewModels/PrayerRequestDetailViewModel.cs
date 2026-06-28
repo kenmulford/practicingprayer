@@ -330,16 +330,25 @@ namespace PrayerApp.ViewModels
                 : string.Empty;
 
         /// <summary>
+        /// Absolute "started" caption shown beneath each prayer-request title (issue #107),
+        /// e.g. "Started Mar 3, 2026". Reuses the <c>MMM d, yyyy</c> format already used by
+        /// <see cref="PrayedSummary"/>. <see cref="CreatedAt"/> is a populated DateTime, so
+        /// this is always non-empty.
+        /// </summary>
+        public string CreatedAtDisplay => $"Started {CreatedAt:MMM d, yyyy}";
+
+        /// <summary>
         /// Composed accessible label for screen readers. VoiceOver reads this as a single
-        /// announcement for the prayer row: "Card Name, Prayer Title, Answered Mar 15".
+        /// announcement for the prayer row: "Card Name, Prayer Title, Started Mar 3 2026, Answered Mar 15".
         /// </summary>
         public string AccessibleSummary
         {
             get
             {
-                var parts = new List<string>(3);
+                var parts = new List<string>(4);
                 if (!string.IsNullOrEmpty(CardTitle)) parts.Add(CardTitle);
                 parts.Add(Title);
+                parts.Add(CreatedAtDisplay);
                 if (IsAnswered && !string.IsNullOrEmpty(AnsweredAtDisplay))
                     parts.Add(AnsweredAtDisplay);
                 return string.Join(", ", parts);
@@ -834,6 +843,7 @@ namespace PrayerApp.ViewModels
             OnPropertyChanged(nameof(AnsweredAt));
             OnPropertyChanged(nameof(AnsweredAtDisplay));
             OnPropertyChanged(nameof(CreatedAt));
+            OnPropertyChanged(nameof(CreatedAtDisplay));
             OnPropertyChanged(nameof(PrayedSummary));
             OnPropertyChanged(nameof(HasBeenPrayedFor));
             OnPropertyChanged(nameof(UpdatedAt));
