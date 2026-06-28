@@ -569,34 +569,24 @@
                                                 <Border.GestureRecognizers>
                                                     <TapGestureRecognizer Command="{Binding SelectPrayerCommand}" />
                                                 </Border.GestureRecognizers>
-                                                <VerticalStackLayout Spacing="0">
-                                                    <Grid ColumnDefinitions="*, Auto">
-                                                        <Label
-                                                            Grid.Column="0"
-                                                            Text="{Binding Title}"
-                                                            FontSize="{StaticResource FontHeadline}"
-                                                            AutomationProperties.IsInAccessibleTree="False"
-                                                            TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
-                                                            TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
-                                                            VerticalOptions="Center" />
-                                                        <Label
-                                                            Grid.Column="1"
-                                                            Text="{Binding AnsweredAtDisplay}"
-                                                            Style="{StaticResource SuccessBadge}"
-                                                            IsVisible="{Binding IsAnswered}"
-                                                            VerticalOptions="Start"
-                                                            Margin="6,0,0,0"
-                                                            AutomationProperties.IsInAccessibleTree="False" />
-                                                    </Grid>
-                                                    <!-- Issue #107: absolute "Started {date}" caption beneath the title.
-                                                         Muted, small; announced via AccessibleSummary, so hidden from the
-                                                         accessible tree to avoid a double read. -->
+                                                <Grid ColumnDefinitions="*, Auto">
                                                     <Label
-                                                        Text="{Binding CreatedAtDisplay}"
-                                                        Style="{StaticResource MutedText}"
-                                                        FontSize="{StaticResource FontSmall}"
+                                                        Grid.Column="0"
+                                                        Text="{Binding Title}"
+                                                        FontSize="{StaticResource FontHeadline}"
+                                                        AutomationProperties.IsInAccessibleTree="False"
+                                                        TextColor="{Binding IsAnswered, Converter={StaticResource BoolToMutedColor}}"
+                                                        TextDecorations="{Binding IsAnswered, Converter={StaticResource BoolToTextDecoration}}"
+                                                        VerticalOptions="Center" />
+                                                    <Label
+                                                        Grid.Column="1"
+                                                        Text="{Binding AnsweredAtDisplay}"
+                                                        Style="{StaticResource SuccessBadge}"
+                                                        IsVisible="{Binding IsAnswered}"
+                                                        VerticalOptions="Start"
+                                                        Margin="6,0,0,0"
                                                         AutomationProperties.IsInAccessibleTree="False" />
-                                                </VerticalStackLayout>
+                                                </Grid>
                                             </Border>
                                             <BoxView Style="{StaticResource PickerInsetSeparator}"
                                                      AutomationProperties.IsInAccessibleTree="False" />

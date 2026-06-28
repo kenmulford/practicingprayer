@@ -43,6 +43,14 @@
                             </Image.Behaviors>
                         </Image>
                     </HorizontalStackLayout>
+
+                    <!-- Started date (issue #107): absolute "Started {date}" caption beneath the
+                         title. Always populated; accent-styled to match the Frequency value. -->
+                    <Label Text="{Binding CreatedAtDisplay}"
+                           AutomationId="Detail_Label_StartedDate"
+                           FontSize="{StaticResource FontSmall}"
+                           TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+
                     <!-- Divider -->
                     <BoxView Style="{StaticResource DividerLine}" />
 
