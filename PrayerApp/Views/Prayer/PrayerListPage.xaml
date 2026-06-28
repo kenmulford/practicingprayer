@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:PrayerApp.ViewModels"
              xmlns:shared="clr-namespace:PrayerApp.Views.Shared"
+             xmlns:behaviors="clr-namespace:PrayerApp.Behaviors"
              xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="PrayerApp.Views.Prayer.PrayerListPage"
              x:DataType="viewModels:PrayerListViewModel"
@@ -96,17 +97,23 @@
 
             <!-- Tag chip row — only shown when tags exist. Horizontal CollectionView
                  so the native control virtualizes the row (BindableLayout does not).
-                 Deliberately NO HeightRequest: the CollectionView content-sizes, so
-                 the chip row grows with font scale; a fixed height re-clips at large
-                 scale. Breathing room rides on this Margin rather than the template,
-                 since TagFilterChipTemplate is shared by both the Cards and Prayers
-                 chip strips. See issue #48 for the full rationale. -->
+                 No Android HeightRequest: the CollectionView content-sizes, so the
+                 chip row grows with font scale; a fixed height re-clips at large
+                 scale (issue #48). On iOS a height-unconstrained horizontal
+                 CollectionView measures unbounded vertically (dotnet/maui#9135) and
+                 fills the page, hiding the list — so ChipStripHeightBehavior bounds
+                 it to a single Dynamic-Type-scaled chip row on iOS only (issue #154).
+                 Breathing room rides on this Margin rather than the template, since
+                 TagFilterChipTemplate is shared by both the Cards and Prayers strips. -->
             <CollectionView ItemTemplate="{StaticResource TagFilterChipTemplate}"
                             ItemsSource="{Binding AvailableTags}"
                             SelectionMode="None"
                             IsVisible="{Binding HasTags}"
                             HorizontalScrollBarVisibility="Never"
                             Margin="0,2,0,6">
+                <CollectionView.Behaviors>
+                    <behaviors:ChipStripHeightBehavior />
+                </CollectionView.Behaviors>
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Horizontal" ItemSpacing="6" />
                 </CollectionView.ItemsLayout>
