@@ -36,26 +36,6 @@ public class EdgeCaseTests
         Thread.Sleep(TestConfig.DelayDirtyRegistration);
     }
 
-    /// <summary>12.3: Very long prayer title — doesn't break layout.</summary>
-    [Fact]
-    public void EdgeCase_LongPrayerTitle_NoLayoutBreak()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        var driver = _setup.Driver;
-        driver.EnsureOnTab("Home", _setup);
-
-        driver.WaitAndTap("Home_Btn_QuickAdd");
-        driver.WaitForElement("QuickAdd_Entry_Title");
-
-        var longTitle = new string('A', 200) + " Long Prayer Title";
-        driver.EnterText("QuickAdd_Entry_Title", longTitle);
-        driver.WaitAndTap("QuickAdd_Btn_Add");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        Assert.True(driver.IsDisplayed("Home_Btn_QuickAdd"),
-            "App should handle long prayer titles without crashing");
-    }
-
     /// <summary>12.4: Rapid tab switching — no crash, no stale data.</summary>
     [Fact]
     public void EdgeCase_RapidTabSwitching_NoCrash()

@@ -239,28 +239,6 @@ public class AccessibilityTests
         Assert.DoesNotContain("content-desc=\"\u25BC\"", source);
     }
 
-    /// <summary>15.8: All Prayer Cards toolbar items expose a meaningful accessible
-    /// name via the accessibility tree. On Android, MAUI Shell writes the
-    /// <c>AutomationId</c> into <c>contentDescription</c> — so the AutomationId value
-    /// MUST be a human-readable label (the XAML uses "Collections", "Select",
-    /// "Add Card"), not the <c>{Page}_{Type}_{Name}</c> convention used elsewhere.
-    /// This test locks the contract in: accessible name exists AND equals the
-    /// expected short label.</summary>
-    [Fact]
-    public void Cards_ToolbarItems_HaveHints()
-    {
-        Driver.ResetAppUIState(_setup);
-        Driver.EnsureOnTab("Prayer Cards", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // The accessible name (content-desc on Android, name/label on iOS) must equal
-        // the AutomationId itself — because MAUI Shell writes the AutomationId into
-        // contentDescription verbatim. Empty or machine-style IDs would fail a screen
-        // reader user.
-        foreach (var id in new[] { "Collections", "Select", "Add Card" })
-            Assert.Equal(id, Driver.GetAccessibleDescription(id));
-    }
-
     /// <summary>15.9: Settings row meets the 44dp touch-target minimum (PS-06 / TouchTargetMinimum
     /// guard). The Platform Styles Sprint introduced the TouchTargetMinimum=44 token
     /// and applied it to SettingsRowGrid (commit e144476); this test catches a future

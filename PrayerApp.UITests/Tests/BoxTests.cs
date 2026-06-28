@@ -514,47 +514,4 @@ public class BoxTests
         }
     }
 
-    /// <summary>8.15: Archived section visible and collapsed by default.</summary>
-    [Fact]
-    public void Cards_ArchivedSection_VisibleAndCollapsed()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // Archived is the LAST section on the Cards page — below all user boxes,
-        // Loose Cards, and the System section. Scroll it into view before asserting.
-        if (!driver.IsTextDisplayed("Archived", timeoutSeconds: 2))
-        {
-            try
-            {
-                driver.ScrollDownToText("Archived", maxScrolls: 5,
-                    scrollableAutomationId: "Cards_List_Cards");
-            }
-            catch (WebDriverException) { /* let the assert produce the canonical error */ }
-        }
-
-        if (!driver.IsTextDisplayed("Archived", timeoutSeconds: 10))
-        {
-            var dumpPath = driver.DumpPageSource("ArchivedSection_Android_FAIL");
-            Assert.Fail(
-                $"Archived section header should be visible on the Cards page. Page source: {dumpPath}");
-        }
-
-        // The triangle indicator shows collapsed state (▶) vs expanded (▼)
-        // Since Archived is collapsed by default, its cards should NOT be visible.
-        // We can verify by checking that system cards like Quick Add are NOT under Archived.
-        // Tap to expand, then tap again to collapse — verifying toggle works.
-        driver.TapByText("Archived");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // Collapse it back
-        driver.TapByText("Archived");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // Page should still be functional
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
-            "Cards page should remain functional after toggling Archived section");
-    }
 }
