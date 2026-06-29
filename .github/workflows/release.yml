@@ -1,0 +1,134 @@
+# Builds and ships both platforms when you PUBLISH a GitHub Release.
+# Trigger is the release event itself — NOT a tag push, NOT a commit/PR merge.
+# Reuses the same fastlane lanes you run locally; CI only adds the runner-side
+# signing setup and the secrets.
+name: Release to stores
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: store-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Android → Play (production draft)
+    runs-on: ubuntu-latest
+    # 'store-release' is a GitHub Environment. Configure it in Settings → Environments
+    # and add yourself as a Required Reviewer to gate the deploy behind one-click
+    # approval. Until you add rules it runs ungated; delete this line to remove it.
+    environment: store-release
+    permissions:
+      contents: read
+      id-token: write          # required for GitHub OIDC → GCP Workload Identity Federation
+    steps:
+      - uses: actions/checkout@v7   # release event → defaults to the released tag's commit
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI Android workload
+        run: dotnet workload restore PrayerApp/PrayerApp.csproj
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version-file: .ruby-version
+          bundler-cache: true
+
+      # Keyless Play auth: GitHub OIDC → GCP Workload Identity Federation (no stored JSON key).
+      # supply >= 2.232.0 accepts the external_account credentials file this writes.
+      - id: gcp-auth
+        uses: google-github-actions/auth@v3
+        with:
+          # Repo VARIABLES (not secrets) — set in Settings → Secrets and variables → Actions → Variables:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}     # projects/<num>/locations/global/workloadIdentityPools/<pool>/providers/<provider>
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}            # practicing-prayer-automation@practicing-prayer.iam.gserviceaccount.com
+          create_credentials_file: true
+
+      - name: Restore upload keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+
+      - name: Build AAB + upload to Play (fastlane)
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/upload.keystore
+          ANDROID_SIGNING_STORE_PASS: ${{ secrets.ANDROID_SIGNING_STORE_PASS }}
+          ANDROID_SIGNING_KEY_PASS: ${{ secrets.ANDROID_SIGNING_KEY_PASS }}
+          # Point the lane's json_key at the WIF external_account file (keyless).
+          PLAY_JSON_KEY_PATH: ${{ steps.gcp-auth.outputs.credentials_file_path }}
+        run: bundle exec fastlane android release
+
+  ios:
+    name: iOS → TestFlight
+    runs-on: macos-26          # pinned: macos-latest is mid-migration to macos-26 through Jul 2026
+    environment: store-release
+    steps:
+      - uses: actions/checkout@v7   # release event → defaults to the released tag's commit
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.4'   # confirm/match your local Xcode; ValidateXcodeVersion=false in csproj is tolerant
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI iOS workload
+        run: dotnet workload restore PrayerApp/PrayerApp.csproj
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version-file: .ruby-version
+          bundler-cache: true
+
+      # Import the distribution cert into a throwaway keychain.
+      - uses: apple-actions/import-codesign-certs@v7
+        with:
+          p12-file-base64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+
+      # Download the App Store profiles for BOTH targets via the ASC API key.
+      - uses: apple-actions/download-provisioning-profiles@v6
+        with:
+          bundle-id: com.multithreadedllc.prayercards
+          profile-type: IOS_APP_STORE
+          issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          api-key-id: ${{ secrets.ASC_KEY_ID }}
+          api-private-key: ${{ secrets.ASC_API_KEY_P8 }}
+      - uses: apple-actions/download-provisioning-profiles@v6
+        with:
+          bundle-id: com.multithreadedllc.prayercards.actionextension
+          profile-type: IOS_APP_STORE
+          issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          api-key-id: ${{ secrets.ASC_KEY_ID }}
+          api-private-key: ${{ secrets.ASC_API_KEY_P8 }}
+
+      # iOS-signing.local.props is gitignored, so recreate the main app's signing on the runner.
+      # (The action extension self-signs from its own csproj; its profile was downloaded above.)
+      - name: Write main-app signing props
+        run: |
+          cat > PrayerApp/iOS-signing.local.props <<'EOF'
+          <Project>
+            <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-ios|AnyCPU'">
+              <CodesignKey>Apple Distribution: Kenneth Mulford (6GV6UL86RM)</CodesignKey>
+              <CodesignProvision>Practicing Prayer</CodesignProvision>
+            </PropertyGroup>
+          </Project>
+          EOF
+
+      # The fastlane lane reads ASC_KEY_P8_BASE64; derive it from the raw .p8 secret.
+      - name: Prepare ASC key for fastlane
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: echo "ASC_KEY_P8_BASE64=$(printf '%s' "$ASC_API_KEY_P8" | base64 | tr -d '\n')" >> "$GITHUB_ENV"
+
+      - name: Build IPA + upload to TestFlight (fastlane)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          # ASC_KEY_P8_BASE64 exported by the previous step
+        run: bundle exec fastlane ios release
