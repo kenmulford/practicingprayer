@@ -1,0 +1,3 @@
+• Each prayer request now shows the date you started praying for it.
+• You can now edit the date a prayer was answered.
+• Behind-the-scenes fixes and performance improvements.
