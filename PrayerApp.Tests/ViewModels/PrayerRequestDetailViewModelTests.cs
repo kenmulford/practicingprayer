@@ -679,6 +679,54 @@ public class PrayerRequestDetailViewModelTests
         Assert.Equal("Started Mar 3, 2026", sut.CreatedAtDisplay);
     }
 
+    // ── AccessibleSummary positive composition (issue #148 Phase 2, item 1b) ──
+    // Replaces the Cards_PrayerRow_HasAccessibleSummary E2E (AccessibilityTests.cs)
+    // with a deterministic unit assertion over the getter
+    // (PrayerRequestDetailViewModel.cs:382). The getter comma-joins up to three
+    // parts: CardTitle (when non-empty), Title (always), AnsweredAtDisplay (when
+    // answered). AnsweredAtDisplay is culture/date dependent ("✓ {MMM d}"), so the
+    // expected string is built from the VM's own AnsweredAtDisplay rather than a
+    // hardcoded date.
+
+    [Fact]
+    public void AccessibleSummary_AllThreeParts_JoinsCardTitleTitleAnsweredInOrder()
+    {
+        var sut = CreateSut();
+        sut.CardTitle = "Family";
+        sut.Title = "Healing";
+        sut.IsAnswered = true; // populates AnsweredAt = today ⇒ AnsweredAtDisplay non-empty
+
+        Assert.NotEmpty(sut.AnsweredAtDisplay);
+        Assert.Equal(
+            string.Join(", ", new[] { "Family", "Healing", sut.AnsweredAtDisplay }),
+            sut.AccessibleSummary);
+    }
+
+    [Fact]
+    public void AccessibleSummary_NoCardTitle_OmitsCardTitlePart()
+    {
+        var sut = CreateSut();
+        // CardTitle defaults to empty ⇒ excluded by the IsNullOrEmpty guard.
+        sut.Title = "Healing";
+        sut.IsAnswered = true;
+
+        Assert.Equal(
+            string.Join(", ", new[] { "Healing", sut.AnsweredAtDisplay }),
+            sut.AccessibleSummary);
+    }
+
+    [Fact]
+    public void AccessibleSummary_Unanswered_OmitsAnsweredPart()
+    {
+        var sut = CreateSut();
+        sut.CardTitle = "Family";
+        sut.Title = "Healing";
+        // IsAnswered defaults false ⇒ AnsweredAtDisplay empty ⇒ part excluded.
+
+        Assert.Empty(sut.AnsweredAtDisplay);
+        Assert.Equal("Family, Healing", sut.AccessibleSummary);
+    }
+
     [Fact]
     public async Task AccessibleSummary_ExcludesStartedDate()
     {

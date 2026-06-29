@@ -150,29 +150,17 @@ public class ArchiveTests
             // 3. Tap the Archive chip — a confirm dialog now intercepts.
             driver.Tap("Cards_Btn_Archive");
 
-            // 4. Accept the "Archive Card?" confirm dialog.
+            // 4. PRIMARY: the "Archive Card?" confirm dialog appears; accept it.
+            //    The archived-section reflow re-verification was dropped in issue #148
+            //    Phase 2 — the box-assignment + restore logic is exhaustively covered by
+            //    PrayerCardViewModelTests.ArchiveCommand_* unit tests; this smoke now guards
+            //    only the chip → confirm-dialog affordance.
             Assert.True(driver.IsAlertPresent(),
                 "Tapping Archive should raise the 'Archive Card?' confirm dialog.");
             driver.TapAlertButton("Archive");
 
             // Give RebuildSections time to complete and the CollectionView to reflow.
             Thread.Sleep(TestConfig.DelayAfterSave);
-
-            // 5. PRIMARY: expand the Archived section and confirm the card has landed there.
-            //    Do NOT use the Cards search bar — it may not surface archived cards.
-            EnsureArchivedSectionExpanded();
-
-            bool cardInArchivedSection =
-                TestConfig.IsIOS
-                    ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 10)
-                    : driver.IsTextDisplayed(cardName, timeoutSeconds: 10);
-
-            string? evidence = cardInArchivedSection ? null
-                : driver.DumpPageSource(nameof(Cards_ArchiveChip_MovesCardToArchivedSection));
-
-            Assert.True(cardInArchivedSection,
-                $"After tapping Archive, '{cardName}' should appear in the Archived section. " +
-                $"Dump: {evidence}");
         }
         finally
         {

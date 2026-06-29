@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using NSubstitute;
 using PrayerApp.Helpers;
 using PrayerApp.Models;
@@ -612,6 +613,66 @@ public class PrayerCardViewModelTests
 
         Assert.Contains(nameof(PrayerCardViewModel.PrayersHeader), raised);
         Assert.Equal("Prayers", sut.PrayersHeader);
+    }
+
+    // ── AccessibleCardHeader (issue #148 Phase 2, item 1a) ─────────────
+    // Composed VoiceOver/TalkBack label for the card header row. Replaces the
+    // Cards_CardHeader_AnnouncesExpandCollapseState E2E (AccessibilityTests.cs)
+    // with a deterministic, date-free unit assertion over the getter
+    // (PrayerCardViewModel.cs:262). Expand state is driven by the single-expand
+    // invariant on Parent.ExpandedCardId; collapsed is the null-Parent default.
+
+    [Fact]
+    public void AccessibleCardHeader_Collapsed_IncludesCountSegment_Singular()
+    {
+        // Null Parent ⇒ IsExpanded == false ⇒ the count segment is present.
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
+        {
+            ActivePrayerCount = 1
+        };
+
+        // Build the expected string from the inputs so the assert is exact.
+        Assert.Equal("Family, 1 prayer, Collapsed", sut.AccessibleCardHeader);
+    }
+
+    [Fact]
+    public void AccessibleCardHeader_Collapsed_IncludesCountSegment_Plural()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
+        {
+            ActivePrayerCount = 3
+        };
+
+        Assert.Equal("Family, 3 prayers, Collapsed", sut.AccessibleCardHeader);
+    }
+
+    [Fact]
+    public void AccessibleCardHeader_Expanded_DropsCountSegment_AndSaysExpanded()
+    {
+        // Attach a Parent VM whose ExpandedCardId matches the card's Id so the
+        // read-only IsExpanded projection resolves true. RaiseIsExpandedChanged()
+        // is internal — reachable here because the VM source is <Compile Include>'d
+        // into this test assembly.
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings)
+        {
+            ActivePrayerCount = 3
+        };
+
+        var parent = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, Substitute.For<ITagService>(), _settings,
+            _boxService, new WeakReferenceMessenger());
+        sut.Parent = parent;
+        parent.ExpandedCardId = card.Id;
+        sut.RaiseIsExpandedChanged();
+
+        // Count segment drops out (gated by !IsExpanded); state flips to Expanded.
+        Assert.Equal("Family, Expanded", sut.AccessibleCardHeader);
     }
 
     // ── ArchiveCommand ───────────────────────────────────────────────────

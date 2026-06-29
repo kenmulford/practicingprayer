@@ -27,18 +27,32 @@ public class ReminderTests
         Thread.Sleep(TestConfig.DelayDirtyRegistration);
     }
 
-    /// <summary>6.1: Enable reminders — toggle on shows frequency/time pickers.</summary>
+    /// <summary>6.1 + 6.6: Reminders toggle round-trip — toggling on reveals the
+    /// frequency/time pickers, toggling off hides them again. Merged from the former
+    /// Reminders_ToggleOn_ShowsPickers and Reminders_ToggleOff_HidesPickers in issue
+    /// #148 Phase 2 — both shared the NavigateToNewPrayerWithReminders prologue, so one
+    /// test exercises both edges with a single navigation.</summary>
     [Fact]
-    public void Reminders_ToggleOn_ShowsPickers()
+    public void Reminders_Toggle_ShowsThenHidesPickers()
     {
         _setup.Driver.ResetAppUIState(_setup);
         NavigateToNewPrayerWithReminders("Reminder Test Prayer");
         var driver = _setup.Driver;
 
+        // Toggle ON (done by the prologue) — pickers appear.
         Assert.True(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 10),
             "Frequency picker should appear when reminders are enabled");
         Assert.True(driver.IsDisplayed("Detail_Picker_ReminderTime", timeoutSeconds: 3),
             "Reminder time picker should appear when reminders are enabled");
+
+        // Toggle OFF — pickers hide.
+        driver.Tap("Detail_Switch_Reminders");
+        Thread.Sleep(TestConfig.DelayDirtyRegistration);
+
+        Assert.False(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 2),
+            "Frequency picker should be hidden when reminders are disabled");
+        Assert.False(driver.IsDisplayed("Detail_Picker_ReminderTime", timeoutSeconds: 2),
+            "Reminder time picker should be hidden when reminders are disabled");
 
         driver.GoBack();
         driver.DismissAlertIfPresent();
@@ -87,27 +101,6 @@ public class ReminderTests
                     "Frequency picker should show options like Daily, Weekly");
             }
         }
-
-        driver.GoBack();
-        driver.DismissAlertIfPresent();
-    }
-
-    /// <summary>6.6: Disable reminders — toggle off hides pickers.</summary>
-    [Fact]
-    public void Reminders_ToggleOff_HidesPickers()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        NavigateToNewPrayerWithReminders("Toggle Off Test");
-        var driver = _setup.Driver;
-
-        Assert.True(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 3));
-
-        // Toggle OFF
-        driver.Tap("Detail_Switch_Reminders");
-        Thread.Sleep(TestConfig.DelayDirtyRegistration);
-
-        Assert.False(driver.IsDisplayed("Detail_Picker_Frequency", timeoutSeconds: 2),
-            "Frequency picker should be hidden when reminders are disabled");
 
         driver.GoBack();
         driver.DismissAlertIfPresent();
