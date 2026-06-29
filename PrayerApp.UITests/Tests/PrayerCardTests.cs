@@ -229,9 +229,11 @@ public class PrayerCardTests
             "Expanded card should show '+ Add prayer' button");
     }
 
-    /// <summary>3.7: Add prayer to card — expand card, tap "Add prayer", fill, save.
-    /// Uses the dedicated disposable fixture "UITest AddPrayer Card" (see TestDataSeed)
-    /// so this test is independent of what other tests do to the shared seed.</summary>
+    /// <summary>3.7: Add-prayer navigation smoke — expand the card, tap "+ Add prayer",
+    /// and confirm the detail page opens. The enter-title / Save / navigate-back tail was
+    /// dropped in issue #148 Phase 2 (prayer save + return is covered by other smokes);
+    /// this test now guards only the card → detail nav edge. Uses the dedicated disposable
+    /// fixture "UITest AddPrayer Card" (see TestDataSeed) so it is independent of the shared seed.</summary>
     [Fact]
     public void Cards_AddPrayerToCard()
     {
@@ -256,14 +258,7 @@ public class PrayerCardTests
         Thread.Sleep(TestConfig.DelayAfterNavigation);
 
         Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
-            "Should navigate to prayer detail page");
-
-        driver.EnterText("Detail_Entry_Title", "Card Prayer UITest");
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        driver.NavigateToTab("Prayer Cards");
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
+            "Tapping '+ Add prayer' should navigate to the prayer detail page");
     }
 
     /// <summary>Build-95 fallout (Slice 6c): after deleting an expanded card,

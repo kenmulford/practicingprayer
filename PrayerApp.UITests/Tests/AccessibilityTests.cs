@@ -69,98 +69,13 @@ public class AccessibilityTests
         Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
-    /// <summary>15.3: Card header announces expand/collapse state in composed description.</summary>
-    [Fact]
-    public void Cards_CardHeader_AnnouncesExpandCollapseState()
-    {
-        Driver.ResetAppUIState(_setup);
-        Driver.EnsureOnTab("Prayer Cards", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // Use a card that's visible on screen — Quick Add may be off-screen.
-        // From the page source, the first user card in Loose Cards is always visible.
-        // Pick any card with a composed content-desc containing "Collapsed".
-        bool found = Driver.HasAccessibleElement("Collapsed", timeoutSeconds: 10);
-        if (!found)
-        {
-            // Try scrolling to find a collapsed card
-            Driver.ScrollDownToText("Collapsed", maxScrolls: 2,
-                scrollableAutomationId: "Cards_List_Cards");
-            found = Driver.HasAccessibleElement("Collapsed", timeoutSeconds: 3);
-        }
-        Assert.True(found, "At least one card should have 'Collapsed' in its accessible description");
-
-        // Find a specific card to tap — use the first non-system card visible
-        // (existing test data includes "UITest Card", "Test Card", etc.)
-        string? cardName = null;
-        foreach (var name in new[] { "UITest Card", "Test Card", TestSeedFixtures.DeleteCard })
-        {
-            if (Driver.HasAccessibleElement(name, timeoutSeconds: 2))
-            {
-                cardName = name;
-                break;
-            }
-        }
-        Assert.NotNull(cardName);
-
-        // Tap to expand — the card header description changes to include "Expanded"
-        Driver.TapByTextContains(cardName!);
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        Assert.True(Driver.HasAccessibleElement("Expanded", timeoutSeconds: 10),
-            "Expanded card header should contain 'Expanded' in its accessible description");
-
-        // Tap to collapse — should now contain card name + "Collapsed"
-        Driver.TapByTextContains(cardName!);
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        Assert.True(Driver.HasAccessibleElement(cardName + ", Collapsed", timeoutSeconds: 3)
-            || Driver.HasAccessibleElement("Collapsed", timeoutSeconds: 3),
-            "Collapsed card header should contain 'Collapsed' in its accessible description");
-    }
-
-    /// <summary>15.4: Prayer row inside expanded card has accessible summary.</summary>
-    [SkippableFact]
-    public void Cards_PrayerRow_HasAccessibleSummary()
-    {
-        Driver.ResetAppUIState(_setup);
-        // Ensure a prayer exists in the Quick Add card
-        Driver.EnsureOnPrayersTab(_setup);
-        Driver.EnsureOnTab("Prayer Cards", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // Expand a card that has prayers — "UITest Card" comes from the seed DB (TestDataSeed).
-        // It may have content-desc like "UITest Card, 1 prayer, Collapsed".
-        // Need to find it first — may require scrolling.
-        bool cardFound = Driver.HasAccessibleElement("UITest Card", timeoutSeconds: 3);
-        if (!cardFound)
-        {
-            Driver.ScrollDownToText("UITest Card", maxScrolls: 3,
-                scrollableAutomationId: "Cards_List_Cards");
-            cardFound = Driver.HasAccessibleElement("UITest Card", timeoutSeconds: 3);
-        }
-
-        if (!cardFound)
-            throw new SkipException("UITest Card not found on Prayer Cards page");
-
-        // Tap to expand — look for "Expanded" in the composed description
-        if (!Driver.HasAccessibleElement("UITest Card, Expanded", timeoutSeconds: 2))
-        {
-            Driver.TapByTextContains("UITest Card");
-            Thread.Sleep(TestConfig.DelayCollectionRender);
-        }
-
-        // The prayer row Grid has SemanticProperties.Description="{Binding AccessibleSummary}"
-        // which includes the prayer title. Look for "UI Test Prayer" in the tree.
-        Assert.True(
-            Driver.HasAccessibleElement("UI Test Prayer", timeoutSeconds: 10)
-            || Driver.IsTextContainsDisplayed("UI Test Prayer", timeoutSeconds: 3),
-            "Prayer row should have accessible description containing the prayer title");
-
-        // Collapse the card to leave clean state
-        Driver.TapByTextContains("UITest Card");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-    }
+    // 15.3 (Cards_CardHeader_AnnouncesExpandCollapseState) and
+    // 15.4 (Cards_PrayerRow_HasAccessibleSummary) were converted to deterministic
+    // unit tests in issue #148 Phase 2. The composed-label contracts they exercised
+    // now live in PrayerApp.Tests:
+    //   - PrayerCardViewModelTests.AccessibleCardHeader_* (over PrayerCardViewModel.AccessibleCardHeader)
+    //   - PrayerRequestDetailViewModelTests.AccessibleSummary_* (over PrayerRequestDetailViewModel.AccessibleSummary)
+    // The on-device E2Es added no coverage beyond the getters and were removed.
 
     /// <summary>15.5: "Select" toolbar button exists for multi-select entry.</summary>
     [Fact]
