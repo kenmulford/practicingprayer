@@ -417,3 +417,5 @@ fastlane/report.xml
 fastlane/README.md
 *.keystore
 *.p8
+*.mobileprovision
+*.provisionprofile
