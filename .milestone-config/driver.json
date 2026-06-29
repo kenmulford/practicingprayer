@@ -2,6 +2,7 @@
   "integrationBranch": "dev",
   "protectedBranch": "master",
   "sourceGlobs": ["PrayerApp/**", "PrayerApp.Tests/**", "PrayerApp.UITests/**"],
+  "uiSurfaceGlobs": ["PrayerApp/**/*.xaml"],
   "unitTestCmd": "dotnet test PrayerApp.Tests/PrayerApp.Tests.csproj",
   "e2eTestCmd": "pwsh ./run-uitests.ps1",
   "implementerAgent": "milestone-driver:implementer",

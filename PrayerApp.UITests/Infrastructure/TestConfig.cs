@@ -11,8 +11,43 @@ namespace PrayerApp.UITests.Infrastructure;
 /// </summary>
 public static class TestConfig
 {
-    public static readonly bool IsAndroid = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-    public static readonly bool IsIOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+    // Optional explicit target-platform override. Lets one host run UITests for a
+    // platform other than its OS default — e.g. drive the Android suite from macOS.
+    // Declared BEFORE the IsAndroid/IsIOS flags because static readonly fields
+    // initialise top-to-bottom, and those flags read this. When UITEST_PLATFORM is
+    // unset this stays null and the flags fall back to the host OS, byte-for-byte
+    // unchanged from before the override existed.
+    private static readonly string? PlatformOverride =
+        Environment.GetEnvironmentVariable("UITEST_PLATFORM");
+
+    private static readonly (bool isAndroid, bool isIOS) Platform = ResolvePlatform(
+        PlatformOverride,
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
+        RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+
+    public static readonly bool IsAndroid = Platform.isAndroid;
+    public static readonly bool IsIOS = Platform.isIOS;
+
+    /// <summary>
+    /// Pure platform-resolution decision, extracted so it is unit-testable without the
+    /// process-once <c>static readonly</c> init. An explicit <paramref name="overrideValue"/>
+    /// (<c>UITEST_PLATFORM</c> = "android" | "ios", case/whitespace-insensitive) forces the
+    /// target platform; when null or blank (empty/whitespace-only) it falls back to the host
+    /// OS (Windows → Android, macOS → iOS), preserving the original behaviour exactly. An unrecognised override
+    /// with no host match returns <c>(false, false)</c> so <see cref="GetOptions"/> throws
+    /// <see cref="PlatformNotSupportedException"/> (fail-loud) rather than guessing.
+    /// </summary>
+    internal static (bool isAndroid, bool isIOS) ResolvePlatform(
+        string? overrideValue, bool hostIsWindows, bool hostIsOSX)
+    {
+        // Coalesce blank (unset, empty, or whitespace-only) to null so a declared-but-empty
+        // UITEST_PLATFORM (`UITEST_PLATFORM=` or a blank CI variable) takes the same host-OS
+        // fallback as a genuinely-unset var — not the (false,false) fail-loud path.
+        var normalized = string.IsNullOrWhiteSpace(overrideValue) ? null : overrideValue.Trim().ToLowerInvariant();
+        bool isAndroid = normalized is "android" || (normalized is null && hostIsWindows);
+        bool isIOS = normalized is "ios" || (normalized is null && hostIsOSX);
+        return (isAndroid, isIOS);
+    }
 
     public static readonly Uri AppiumServerUri = new(
         Environment.GetEnvironmentVariable("APPIUM_SERVER_URL") ?? "http://127.0.0.1:4723");
@@ -76,7 +111,10 @@ public static class TestConfig
         if (IsIOS)
             return GetIOSOptions();
 
-        throw new PlatformNotSupportedException("UITests must run on Windows (Android) or macOS (iOS).");
+        throw new PlatformNotSupportedException(
+            "UITests need a target platform: run on Windows (→ Android) or macOS (→ iOS), " +
+            "or set UITEST_PLATFORM to 'android' or 'ios' to override the host default. " +
+            $"UITEST_PLATFORM was '{PlatformOverride}'.");
     }
 
     private static AppiumOptions GetAndroidOptions()

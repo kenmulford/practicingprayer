@@ -87,6 +87,125 @@ public class PrayerRequestDetailViewModelTests
         Assert.True(sut.IsDirty);
     }
 
+    // ── IsDirty — editable answered date (issue #108) ────────────────
+
+    [Fact]
+    public async Task IsDirty_AnsweredAtChange()
+    {
+        // Establish an ANSWERED baseline first: mark answered + save so CaptureOriginals
+        // runs and the answered state (including its date) becomes the captured baseline.
+        // Then change ONLY the date — so the new AnsweredAt != _originalAnsweredAt clause
+        // is the SOLE thing that can flip IsDirty (IsAnswered is unchanged from baseline).
+        var sut = CreateSut();
+        sut.Title = "Answered prayer";
+        sut.IsAnswered = true;
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        Assert.False(sut.IsDirty); // clean baseline, answered captured
+
+        sut.AnsweredAt = DateTime.Today.AddDays(-3);
+
+        Assert.True(sut.IsDirty);
+    }
+
+    [Fact]
+    public void AnsweredAt_Set_DoesNotChangeIsAnswered()
+    {
+        var sut = CreateSut();
+        sut.IsAnswered = true;
+        sut.AnsweredAt = DateTime.Today.AddDays(-5);
+        Assert.True(sut.IsAnswered); // editing the date must not flip status
+    }
+
+    [Fact]
+    public void Unanswering_ClearsAnsweredAtToNull()
+    {
+        var sut = CreateSut();
+        sut.IsAnswered = true;
+        sut.AnsweredAt = DateTime.Today.AddDays(-5);
+
+        sut.IsAnswered = false;
+
+        Assert.Null(sut.AnsweredAt);
+    }
+
+    [Fact]
+    public async Task AnsweredAt_Edit_PersistsThroughSave()
+    {
+        var edited = DateTime.Today.AddDays(-7);
+        Prayer? saved = null;
+        _prayerService.SavePrayerAsync(Arg.Do<Prayer>(p => saved = p))
+            .Returns(call => Task.FromResult((Prayer)call[0]));
+
+        var sut = CreateSut();
+        sut.Title = "Answered prayer";
+        sut.IsAnswered = true;
+        sut.AnsweredAt = edited;
+
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+
+        Assert.NotNull(saved);
+        Assert.Equal(edited, saved!.AnsweredAt);
+        // Originals are recaptured after save, so the edited value is now the baseline.
+        Assert.False(sut.IsDirty);
+    }
+
+    [Fact]
+    public async Task AnsweredAt_DatePickerRoundTrip_NotSpuriouslyDirty()
+    {
+        // Models the production risk the review caught: mark-answered writes a date-only
+        // default, save captures it as the baseline, then the DatePicker round-trips the
+        // value back as a date-only (midnight) DateTime — exactly what the picker emits.
+        // The form must NOT report dirty, and the date must survive intact. Pre-fix this
+        // failed because mark-answered wrote DateTime.Now (time included) while the picker
+        // wrote midnight, so the baseline and the writeback never compared equal.
+        var sut = CreateSut();
+        sut.Title = "Answered prayer";
+        sut.IsAnswered = true; // default answered-on value
+        await ((IAsyncRelayCommand)sut.SaveCommand).ExecuteAsync(null);
+        Assert.False(sut.IsDirty);
+
+        var roundTripped = sut.AnsweredAt;          // what the picker reads
+        sut.AnsweredAt = roundTripped!.Value.Date;  // what the picker writes back (midnight)
+
+        Assert.False(sut.IsDirty);                  // no spurious dirty
+        Assert.Equal(DateTime.Today, sut.AnsweredAt); // date preserved, no drift
+    }
+
+    [Fact]
+    public async Task AnsweredAt_TimeBearingStoredValue_LoadThenRoundTrip_NotSpuriouslyDirty()
+    {
+        // Cross-flow regression: a prayer answered during Prayer Time (PrayerTimeViewModel
+        // writes DateTime.Now, time included) or a legacy row answered before this fix is
+        // stored with a time component and round-trips that time intact on reload. When the
+        // detail page loads it, CaptureOriginals captures the baseline via the VM getter; the
+        // getter MUST normalize to date-only or the time-bearing baseline (14:00) won't equal
+        // the picker's midnight writeback → spurious dirty + silent time loss.
+        // This FAILS with a raw getter (get => _prayer.AnsweredAt) and PASSES with ?.Date.
+        var stored = DateTime.Today.AddHours(14); // simulates a Prayer-Time / legacy value
+        _db.GetByIdAsync<Prayer>(42).Returns(Task.FromResult(
+            new Prayer { Id = 42, Title = "Answered in Prayer Time", IsAnswered = true, AnsweredAt = stored }));
+        _prayerService.GetInteractionCountByPrayerAsync(42).Returns(Task.FromResult(0));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(42).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        var sut = CreateSut();
+        // Drive the real load → CaptureOriginals path (edit mode so the picker is live).
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "42", ["edit"] = "true" });
+
+        // Drain the SafeFireAndForget load chain.
+        for (int i = 0; i < 20 && sut.AnsweredAt is null; i++)
+            await Task.Yield();
+        Assert.False(sut.IsDirty); // clean baseline straight off the time-bearing load
+
+        var roundTripped = sut.AnsweredAt;          // what the picker reads (already date-only)
+        sut.AnsweredAt = roundTripped!.Value.Date;  // what the picker writes back (midnight)
+
+        Assert.False(sut.IsDirty);                  // no spurious dirty from the stored time
+        Assert.Equal(DateTime.Today, sut.AnsweredAt); // time dropped, date preserved
+    }
+
     // ── CanLeaveAsync ─────────────────────────────────────────────────
 
     [Fact]
@@ -534,5 +653,52 @@ public class PrayerRequestDetailViewModelTests
             await Task.Yield();
 
         Assert.True(sut.HasBeenPrayedFor);
+    }
+
+    // ── CreatedAtDisplay (issue #107) ─────────────────────────────────
+    // Absolute "Started {date}" caption shown beneath the title on the detail view.
+    // Driven through the real load path so a regression in the wiring turns this red.
+
+    [Fact]
+    public async Task CreatedAtDisplay_FormatsStartedAbsoluteDate()
+    {
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(10)
+            .Returns(Task.FromResult(new Prayer { Id = 10, Title = "Test", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(10).Returns(Task.FromResult(0));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(10).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "10", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && sut.CreatedAtDisplay != "Started Mar 3, 2026"; i++)
+            await Task.Yield();
+
+        Assert.Equal("Started Mar 3, 2026", sut.CreatedAtDisplay);
+    }
+
+    [Fact]
+    public async Task AccessibleSummary_ExcludesStartedDate()
+    {
+        // The detail view shows the start date in its own Label (Detail_Label_StartedDate),
+        // which screen readers announce verbatim. Folding it into AccessibleSummary too would
+        // double-read it, so the composite row summary must NOT contain the started caption.
+        var sut = CreateSut();
+        _db.GetByIdAsync<Prayer>(12)
+            .Returns(Task.FromResult(new Prayer { Id = 12, Title = "Healing", CreatedAt = new DateTime(2026, 3, 3) }));
+        _prayerService.GetInteractionCountByPrayerAsync(12).Returns(Task.FromResult(0));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(new List<PrayerCard>()));
+        _tagService.GetTagsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+        _tagService.GetTagsByRequestIdAsync(12).Returns(Task.FromResult<IReadOnlyList<PrayerTag>>(new List<PrayerTag>()));
+
+        ((IQueryAttributable)sut).ApplyQueryAttributes(
+            new Dictionary<string, object> { ["load"] = "12", ["viewOnly"] = "true" });
+
+        for (int i = 0; i < 20 && sut.Title != "Healing"; i++)
+            await Task.Yield();
+
+        Assert.DoesNotContain("Started", sut.AccessibleSummary);
     }
 }

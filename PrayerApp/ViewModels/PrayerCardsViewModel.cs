@@ -29,9 +29,9 @@ namespace PrayerApp.ViewModels
 
         private ObservableCollection<TagFilterChipViewModel> _availableTags = new();
         /// <summary>
-        /// Chip-strip filter tags bound to the cards-page header BindableLayout.
+        /// Chip-strip filter tags bound to the cards-page header CollectionView.
         /// Replaced (not mutated) on each rebuild to avoid an Add-storm of
-        /// CollectionChanged events into the HorizontalStackLayout each forcing
+        /// CollectionChanged events into the CollectionView each forcing
         /// per-chip measure/arrange + XAML inflation. Mirrors the BoxSections
         /// replace-vs-mutate pattern; reference-equality short-circuit in
         /// <see cref="SyncCoreAsync"/> keeps messenger-driven syncs O(0) when
@@ -732,8 +732,8 @@ namespace PrayerApp.ViewModels
             //
             // Without this short-circuit, a single ObservableCollection assignment
             // on every messenger-driven sync regresses Mark-Answered (#10) from its
-            // 63ms baseline: BindableLayout re-realizes every chip Border + nested
-            // template tree on the HorizontalStackLayout each cycle.
+            // 63ms baseline: the CollectionView re-realizes every chip Border +
+            // nested template tree each cycle.
             var existingChipsByTagId = AvailableTags.ToDictionary(c => c.Tag.Id);
             var proposedChips = new List<TagFilterChipViewModel>(tags.Count);
             var addedCount = 0;

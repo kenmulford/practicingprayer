@@ -907,8 +907,8 @@
 
     <!-- ── Tag filter chip template (issue #29) ──────────────────────────────
          Single shared DataTemplate for the tag-filter chip row, referenced by
-         both PrayerCardsPage and PrayerListPage via
-         BindableLayout.ItemTemplate="{StaticResource TagFilterChipTemplate}".
+         both PrayerCardsPage and PrayerListPage via the CollectionView
+         ItemTemplate="{StaticResource TagFilterChipTemplate}".
          Extracted verbatim from the two byte-identical inline templates — pure
          DRY refactor, render is pixel-identical. x:DataType is retained so
          compiled bindings resolve against TagFilterChipViewModel unchanged. -->

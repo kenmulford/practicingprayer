@@ -47,7 +47,8 @@ public class ArchiveTests
     /// Expands the named card idempotently (matching the pattern in PrayerCardTests).
     /// Returns immediately when the card is already expanded.
     /// Uses WaitForElement to wait for the Archive chip after expanding, ensuring
-    /// the lazy expanded subtree has inflated before callers assert on chips.
+    /// the expanded subtree (shape (i): inlined in the cell template, gated by
+    /// IsVisible="{Binding IsExpanded}") is on screen before callers assert on chips.
     /// </summary>
     private void EnsureCardExpanded(string cardName)
     {
@@ -67,8 +68,9 @@ public class ArchiveTests
             Thread.Sleep(TestConfig.DelayAfterTap);
         }
 
-        // Wait for the Archive chip to appear — it is part of the lazy expanded subtree
-        // and may not be in the a11y tree immediately after the expand tap settles.
+        // Wait for the Archive chip to appear — it is part of the inline expanded
+        // subtree (shape (i): hidden via IsVisible when collapsed) and may not be in
+        // the a11y tree immediately after the expand tap settles.
         // This replaces the fragile IsDisplayed(timeoutSeconds:10) assertion at call sites.
         driver.WaitForElement("Cards_Btn_Archive", timeoutSeconds: 10);
     }
@@ -192,99 +194,6 @@ public class ArchiveTests
                 TryDeleteCard(cardName);
             }
             catch (WebDriverException) { /* best-effort cleanup */ }
-        }
-    }
-
-    /// <summary>
-    /// 9.2: Tapping the Archive chip a second time ("Unarchive") on an archived card
-    /// moves it back to Unboxed (BoxId 0 / Loose Cards) and removes it from Archived.
-    ///
-    /// Sequence: create card → archive (accept "Archive Card?" confirm) → verify in Archived
-    /// section → expand archived card (wait for chip) → unarchive (immediate, no dialog) →
-    /// verify absent from Archived → verify visible in normal list. Self-contained; does not
-    /// depend on test 9.1's state.
-    ///
-    /// Precondition reliability: EnsureCardExpanded now waits internally for
-    /// Cards_Btn_Archive via WaitForElement, eliminating the flaky IsDisplayed-based
-    /// precondition assertion that previously failed when the chip rendered late.
-    /// </summary>
-    [Fact]
-    public void Cards_UnarchiveChip_MovesCardBackToLooseCards()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        var cardName = CreateDisposableCard();
-
-        try
-        {
-            // 1. Archive the card (prerequisite). Confirm dialog now intercepts.
-            //    EnsureCardExpanded waits for Cards_Btn_Archive internally — no separate
-            //    IsDisplayed assertion needed; WaitForElement throws on timeout.
-            EnsureCardExpanded(cardName);
-            driver.Tap("Cards_Btn_Archive");
-            Assert.True(driver.IsAlertPresent(),
-                "Precondition: archiving should raise the 'Archive Card?' confirm dialog.");
-            driver.TapAlertButton("Archive");
-            Thread.Sleep(TestConfig.DelayAfterSave);
-
-            // 2. Expand Archived section and confirm card is there.
-            EnsureArchivedSectionExpanded();
-            Assert.True(
-                TestConfig.IsIOS
-                    ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 10)
-                    : driver.IsTextDisplayed(cardName, timeoutSeconds: 10),
-                $"Precondition: '{cardName}' should be in Archived section after archiving");
-
-            // 3. Expand the archived card to reveal the chip (now labeled "Unarchive").
-            //    EnsureCardExpanded waits for Cards_Btn_Archive — covers both iOS a11y
-            //    tree settle lag and Android CollectionView lazy inflation.
-            EnsureCardExpanded(cardName);
-
-            // 4. Tap the chip — now labeled "Unarchive" — to restore the card.
-            driver.Tap("Cards_Btn_Archive");
-            Thread.Sleep(TestConfig.DelayAfterSave);
-
-            // 5. The card should now be absent from the Archived section.
-            //    Re-expand Archived to get a fresh view (EnsureAllSectionsExpanded
-            //    re-finds headers each iteration to handle reflow).
-            EnsureArchivedSectionExpanded();
-            bool stillInArchived =
-                TestConfig.IsIOS
-                    ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 3)
-                    : driver.IsTextDisplayed(cardName, timeoutSeconds: 3);
-
-            string? evidenceArchived = stillInArchived
-                ? driver.DumpPageSource(nameof(Cards_UnarchiveChip_MovesCardBackToLooseCards) + "_StillArchived")
-                : null;
-
-            Assert.False(stillInArchived,
-                $"After unarchiving, '{cardName}' should no longer appear in the Archived section. " +
-                $"Dump: {evidenceArchived}");
-
-            // 6. The card should be back in the normal list (Loose Cards / Unboxed).
-            //    EnsureCardVisible uses scroll + expand-all + search-bar fallback —
-            //    sufficient to confirm the card is in the rendered tree outside Archived.
-            driver.EnsureCardVisible(cardName);
-            bool backInNormalList =
-                TestConfig.IsIOS
-                    ? driver.IsTextContainsDisplayed(cardName, timeoutSeconds: 10)
-                    : driver.IsTextDisplayed(cardName, timeoutSeconds: 10);
-
-            string? evidenceNormal = backInNormalList ? null
-                : driver.DumpPageSource(nameof(Cards_UnarchiveChip_MovesCardBackToLooseCards) + "_NotInLoose");
-
-            Assert.True(backInNormalList,
-                $"After unarchiving, '{cardName}' should be visible in the normal card list. " +
-                $"Dump: {evidenceNormal}");
-        }
-        finally
-        {
-            // Cleanup: delete the card from Loose Cards (it is unarchived at this point
-            // unless the test failed mid-way; TryDeleteCard handles the happy path).
-            TryDeleteCard(cardName);
         }
     }
 

@@ -1,0 +1,3 @@
+app_identifier("com.multithreadedllc.prayercards")
+# iOS Apple-account auth comes from the App Store Connect API key in the Fastfile — no apple_id needed.
+# Android package_name defaults from app_identifier above.

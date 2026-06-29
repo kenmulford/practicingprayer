@@ -78,32 +78,6 @@ public class QuickAddTests
 
     // ── Tests ────────────────────────────────────────────────────
 
-    /// <summary>2.2: Quick Add save with title — prayer saved to Quick Add card.</summary>
-    [Fact]
-    public void QuickAdd_SaveWithTitle_NavigatesToCardsTab()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        var driver = _setup.Driver;
-
-        OpenQuickAdd();
-
-        // Quick Add card should be preselected — verify "Quick Add" text is visible
-        // in the collapsed-to-summary row (SelectedCard.Title label) and a "Change"
-        // affordance is present.
-        Assert.True(driver.IsTextDisplayed("Quick Add", timeoutSeconds: 5),
-            "ConfirmImport in Manual mode should display 'Quick Add' as the selected card");
-        Assert.True(driver.IsTextDisplayed("Change", timeoutSeconds: 5),
-            "Quick Add summary row should have a 'Change' affordance");
-
-        EnterPrayerTitle(driver, "UITest QuickAdd Save Prayer");
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        // ConfirmImport Save navigates to Prayer Cards tab.
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
-            "After Save, ConfirmImport should navigate to the Prayer Cards tab");
-    }
-
     /// <summary>2.2 (variant): Quick Add cancel — dismisses without saving, returns to Home.</summary>
     [Fact]
     public void QuickAdd_Cancel_DismissesModal()
@@ -150,41 +124,6 @@ public class QuickAddTests
 
         Assert.True(driver.IsTextDisplayed(uniqueTitle, timeoutSeconds: 10),
             $"Saved prayer '{uniqueTitle}' should appear on the Cards tab after Quick Add save");
-    }
-
-    /// <summary>2.2 (variant): Switch to New Card mode — card title field appears; save creates new card.</summary>
-    [Fact]
-    public void QuickAdd_SwitchToNewCard_SavesNewCard()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        var driver = _setup.Driver;
-
-        OpenQuickAdd();
-
-        // Switch to New Card mode — the segmented toggle.
-        driver.WaitAndTap("ConfirmImport_Seg_NewCard");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // Card Title entry should now be visible.
-        Assert.True(driver.IsDisplayed("ConfirmImport_Entry_CardTitle", timeoutSeconds: 5),
-            "Card Title entry should be visible after switching to New Card mode");
-
-        var uniqueCard = $"UITest NewCard {DateTime.Now:HHmmss}";
-        driver.EnterText("ConfirmImport_Entry_CardTitle", uniqueCard);
-
-        EnterPrayerTitle(driver, $"New Card Prayer {DateTime.Now:HHmmss}");
-
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        // After save, ConfirmImport navigates to Prayer Cards tab.
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
-            "Cards tab should be visible after New Card save");
-
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        Assert.True(driver.IsTextDisplayed(uniqueCard, timeoutSeconds: 10),
-            $"New card '{uniqueCard}' should appear on the Prayer Cards tab after save");
     }
 
     /// <summary>

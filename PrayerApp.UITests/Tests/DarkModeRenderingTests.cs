@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using PrayerApp.UITests.Helpers;
@@ -31,6 +32,11 @@ namespace PrayerApp.UITests.Tests;
 /// </summary>
 [Collection("Appium")]
 [Trait("Platform", "Android")]
+// Host=Windows is a filter label, NOT a host gate. The adb work (dark-mode + cold
+// launch) is cross-platform, so the Android driver can attach from macOS too
+// (UITEST_PLATFORM=android). The genuine Windows requirement is the GDI+ pixel
+// sampling (AverageColorAt / System.Drawing) — off Windows the test SkipExceptions
+// rather than failing. Use this label to include/exclude the test when filtering runs.
 [Trait("Host", "Windows")]
 [Trait("Section", "9-Settings")]
 public class DarkModeRenderingTests
@@ -46,9 +52,15 @@ public class DarkModeRenderingTests
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public void AppSettings_NotificationSwitchThumb_RendersThemeColor_OnColdLaunchDarkMode()
     {
-        if (TestConfig.IsIOS)
+        // Windows-host gate, fired BEFORE any device-state mutation. The genuine
+        // requirement is the GDI+ pixel sampling (System.Drawing), which is Windows-only;
+        // off Windows the test can do nothing useful, so skip before the dark-mode + adb +
+        // cold-launch choreography runs. Checking the host directly (not TestConfig.IsIOS)
+        // matters now that UITEST_PLATFORM=android makes the Android target run on macOS,
+        // where IsIOS is false but GDI+ is still unavailable.
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new SkipException(
-                "Android-only: requires adb (cmd uimode + force-stop) and System.Drawing (Windows-only) for pixel sampling");
+                "Windows-only: requires adb (cmd uimode + force-stop) and System.Drawing (GDI+, Windows-only) for pixel sampling");
 
         // Confirm adb is reachable from the test process before any state mutation.
         // If not, skip — the test cannot drive the dark-mode + cold-launch setup.
@@ -212,8 +224,9 @@ public class DarkModeRenderingTests
 
     /// <summary>
     /// Average RGB of a square patch centered at (x,y) in the screenshot bytes.
-    /// Uses GDI+ via <see cref="Bitmap"/>; Windows-only by design (the test is Android-only
-    /// and Android tests run on Windows — see TestConfig.IsAndroid).
+    /// Uses GDI+ via <see cref="Bitmap"/>; Windows-only by design — the GDI+ pixel
+    /// sampling is unavailable off Windows, so the test SkipExceptions there (see the
+    /// Host=Windows trait). The Android driver itself can attach from macOS too.
     /// </summary>
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static Color AverageColorAt(byte[] pngBytes, int x, int y, int patchSize)

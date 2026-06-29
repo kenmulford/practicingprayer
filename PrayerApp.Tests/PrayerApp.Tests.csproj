@@ -50,6 +50,7 @@
   <ItemGroup>
     <!-- Behaviors -->
     <Compile Include="../PrayerApp/Behaviors/KeyboardAvoidanceBehavior.cs" />
+    <Compile Include="../PrayerApp/Behaviors/ChipStripHeightBehavior.cs" />
 
     <!-- Converters -->
     <Compile Include="../PrayerApp/Converters/BoolToMutedColorConverter.cs" />
