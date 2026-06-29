@@ -416,6 +416,8 @@ fastlane/.env
 fastlane/report.xml
 fastlane/README.md
 *.keystore
+*.jks
 *.p8
+*.p12
 *.mobileprovision
 *.provisionprofile
