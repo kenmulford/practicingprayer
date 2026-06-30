@@ -17,15 +17,19 @@ public class PrayerTimeTests
     private readonly AppiumSetup _setup;
     public PrayerTimeTests(AppiumSetup setup) => _setup = setup;
 
-    /// <summary>Start a prayer time session (no-tags path: direct navigation).</summary>
+    /// <summary>Start a full ("All Requests") prayer time session.</summary>
     /// <remarks>
-    /// Commit 84d4b11 added smart guards to Prayer Time:
-    /// - No prayers → "No Prayer Requests" alert (blocked at Home)
-    /// - Prayers exist, no tags → skips action sheet, goes directly to Prayer Time
-    /// - Prayers + tags → shows action sheet
+    /// With active prayers, tapping Prayer Time always shows an action sheet —
+    /// "All Requests" and "Choose cards…" are always offered (MainPage.xaml.cs:70-79),
+    /// plus "By Tags"/"By Collection" when those exist. So the harness must tap
+    /// "All Requests" to begin; there is no longer a direct-navigation path. No
+    /// prayers → "No Prayer Requests" alert blocks at Home, which is why we seed a
+    /// prayer first.
     ///
-    /// In the test environment we create one prayer but no tags, so Prayer Time
-    /// launches directly — no action sheet, no autoDismissAlerts race.
+    /// The action-sheet option is located differently per platform: iOS exposes the
+    /// button by accessibility id, but Android renders DisplayActionSheet as a native
+    /// dialog whose options carry @text and NO content-desc — so AccessibilityId
+    /// never matches there and the option must be tapped by its visible text (#195).
     /// </remarks>
     private bool TryStartPrayerTime()
     {
@@ -43,29 +47,38 @@ public class PrayerTimeTests
 
             driver.WaitAndTap("Home_Btn_PrayerTime");
 
-            // Two paths after tapping Prayer Time:
-            // 1. No tags → navigates directly to Prayer Time (no action sheet)
-            // 2. Tags exist → shows action sheet with "All Requests" / "By Tags"
-            // Diagnostic data shows action sheet stays open (autoDismissAlerts
-            // does NOT auto-tap it), so we must explicitly tap "All Requests".
-
-            // Try to tap "All Requests" on the action sheet. Use AccessibilityId
-            // + Click() instead of mobile: tap — iPad popover coordinates can drift.
-            // If no tags, there's no action sheet and this fails fast.
+            // Tapping Prayer Time always shows an action sheet now: with active
+            // prayers, "All Requests" and "Choose cards…" are always offered
+            // (MainPage.xaml.cs:70-79). Tap "All Requests" to start a full session.
+            // The locator differs by platform — iOS exposes the button by
+            // accessibility id, but Android renders the action sheet as a native
+            // dialog whose options carry @text and NO content-desc, so
+            // AccessibilityId never matches there; tap by visible text instead (#195).
             try
             {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
-                var allReqBtn = driver.FindElement(MobileBy.AccessibilityId("All Requests"));
-                allReqBtn.Click();
+                if (TestConfig.IsAndroid)
+                {
+                    driver.TapByText("All Requests", timeoutSeconds: 5);
+                }
+                else
+                {
+                    // iOS: AccessibilityId + Click() rather than a coordinate tap —
+                    // iPad popover coordinates can drift mid-animation.
+                    driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
+                    try
+                    {
+                        driver.FindElement(MobileBy.AccessibilityId("All Requests")).Click();
+                    }
+                    finally
+                    {
+                        driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
+                    }
+                }
             }
             catch (WebDriverException)
             {
-                // No action sheet — either direct navigation (no tags) or alert appeared
+                // No action sheet found — a stray alert may be up instead; clear it.
                 driver.DismissAlertIfPresent();
-            }
-            finally
-            {
-                driver.Manage().Timeouts().ImplicitWait = TestConfig.DefaultTimeout;
             }
             Thread.Sleep(TestConfig.DelayModalAnimation);
 
