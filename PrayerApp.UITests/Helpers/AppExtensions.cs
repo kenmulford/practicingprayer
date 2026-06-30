@@ -810,12 +810,42 @@ public static class AppExtensions
         catch { /* not on Prayer Cards or search bar not rendered */ }
 
         // Back out to a tab root, dismissing any alert each Back may raise (e.g.
-        // "Discard changes?"). Bounded so tab-bar-hidden states (Prayer Time) don't stall.
-        for (int i = 0; i < 5; i++)
+        // "Discard changes?"). Bounded so a stuck page can't loop forever.
+        void BackOutToHome()
         {
-            try { driver.DismissAlertIfPresent(); } catch { /* best effort */ }
+            for (int i = 0; i < 5; i++)
+            {
+                try { driver.DismissAlertIfPresent(); } catch { /* best effort */ }
+                if (driver.IsDisplayed("Home", timeoutSeconds: 0)) break;
+                try { driver.Navigate().Back(); Thread.Sleep(TestConfig.DelayShortSettle); } catch (WebDriverException) { break; }
+            }
+        }
+
+        BackOutToHome();
+
+        // The Prayer Time session page hides the tab bar and swallows Back, so the
+        // back-out above can't reach Home from there. A prior test left on Prayer
+        // Time would otherwise break the next test's tab/toolbar lookups (#180, #181;
+        // isolation Principle 2 — every test starts on Home). Escape it with the same
+        // exit-button helper NavigateToTab Stage 3 uses — but ONLY when actually on
+        // Prayer Time, confirmed by the PrayerTime_Btn_Done/_Finish AutomationId other
+        // Prayer Time tests already probe (reliable on both platforms). TryEscapePrayerTime
+        // has a broad last-resort "done" substring tap that would mis-fire on any
+        // unrelated stuck page whose text/content-desc merely contains "done", so it
+        // must never run unguarded from this every-test reset path (#205, finding #1).
+        // "Done"/"Finish" pops only one level via GoToAsync(".."), which may land on a
+        // nested Prayer Time launched from a scope/card page rather than Home; loop
+        // (bounded, so a persistent stuck state can't spin forever) — re-confirm Prayer
+        // Time, escape, back out — until Home is reached or no Prayer Time level remains
+        // (#180, #181, finding #2).
+        for (int i = 0; i < 3; i++)
+        {
             if (driver.IsDisplayed("Home", timeoutSeconds: 0)) break;
-            try { driver.Navigate().Back(); Thread.Sleep(TestConfig.DelayShortSettle); } catch (WebDriverException) { break; }
+            if (!driver.IsDisplayed("PrayerTime_Btn_Done", timeoutSeconds: 0) &&
+                !driver.IsDisplayed("PrayerTime_Btn_Finish", timeoutSeconds: 0)) break;
+            if (!TryEscapePrayerTime(driver)) break;
+            Thread.Sleep(TestConfig.DelayAfterNavigation);
+            BackOutToHome();
         }
     }
 
