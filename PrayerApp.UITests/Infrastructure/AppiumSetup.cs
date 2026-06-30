@@ -18,6 +18,42 @@ public class AppiumSetup : IAsyncLifetime
     /// <summary>Whether onboarding has been handled (dismissed or verified) this session.</summary>
     public bool OnboardingHandled { get; set; }
 
+    // ── Per-test session-isolation strategy (issue #164) ─────────────────────────
+    //
+    // PROBLEM: every test shares ONE Appium driver session for the whole run (see
+    // AppiumCollection — "one app launch for the entire test run"). On a long run the
+    // single UiAutomator2 / XCUITest session accumulates driver/state drift, and late
+    // tests start hitting timeouts that trace to the aged session, not the app.
+    //
+    // STRATEGY: a bounded session-recreate CADENCE rather than a per-test relaunch.
+    // RecycleSessionIfDue() is called once at each test's start (from ResetAppUIState),
+    // and every SessionRecreateCadence tests it tears the session down and brings up a
+    // fresh one via the existing RecreateDriver path. That caps how much drift any one
+    // session can carry to <= SessionRecreateCadence tests, so drift never compounds to
+    // the end of the run.
+    //
+    // WHY NOT a fresh session per test: a Debug MAUI cold start is ~17-23s on the Android
+    // emulator (TestConfig.GetAndroidOptions remarks). Recreating per test would add that
+    // cost to all ~87 tests (~35 min of pure relaunch). A cadence of 10 recreates only
+    // ~8 times across the suite (~3-4 min added) while still bounding drift — the
+    // least-cost option that satisfies the isolation requirement.
+    //
+    // SEED IS NOT RE-RUN: TestDataSeed.SeedAsync runs ONCE in InitializeAsync. Both the
+    // Android and iOS options set noReset=true (TestConfig), so a recreated session
+    // re-attaches to the same app data — the once-seeded DB survives. Recreation must
+    // therefore NEVER re-seed.
+    //
+    // TUNING: raise SessionRecreateCadence to trade isolation for speed, lower it to
+    // trade speed for isolation. This single constant is the only knob.
+
+    /// <summary>Recreate the driver session after this many test entry-points, to bound
+    /// the drift a single long-lived Appium session accumulates over a run (#164).</summary>
+    public const int SessionRecreateCadence = 10;
+
+    /// <summary>Tests served by the current driver session. Reset to 0 whenever a fresh
+    /// session is created (see <see cref="RecreateDriver"/>).</summary>
+    private int _testsOnCurrentSession;
+
     public async Task InitializeAsync()
     {
         // Register the SQLitePCL provider before the first in-process SQLite use
@@ -44,6 +80,22 @@ public class AppiumSetup : IAsyncLifetime
         // the TestConfig.Delay* per-test sweep (#11). Tuning this number is a
         // session-level concern, not a per-action concern.
         await Task.Delay(3000);
+    }
+
+    /// <summary>
+    /// Per-test session-isolation hook (#164). Called once at each test's START — from
+    /// <c>ResetAppUIState</c>, before the test navigates or touches any UI — so a recreate
+    /// here can never discard in-progress test state. Every <see cref="SessionRecreateCadence"/>
+    /// tests it proactively recreates the driver session via the existing
+    /// <see cref="RecreateDriver"/> path, bounding the driver/state drift a single long-lived
+    /// session accumulates over a long run. <c>noReset=true</c> (see TestConfig) means the
+    /// recreated session re-attaches to the once-seeded app data — the seed is NOT re-run.
+    /// </summary>
+    public void RecycleSessionIfDue()
+    {
+        if (_testsOnCurrentSession >= SessionRecreateCadence)
+            RecreateDriver(); // resets _testsOnCurrentSession to 0
+        _testsOnCurrentSession++;
     }
 
     /// <summary>
@@ -76,6 +128,12 @@ public class AppiumSetup : IAsyncLifetime
     /// <summary>Tear down the current driver and create a fresh session with retry.</summary>
     private void RecreateDriver()
     {
+        // A fresh session carries no accumulated drift — restart the cadence counter so
+        // the next recreate is SessionRecreateCadence tests away, whether this recreate
+        // was the proactive cadence (RecycleSessionIfDue) or dead-session recovery
+        // (EnsureSessionAlive).
+        _testsOnCurrentSession = 0;
+
         try { Driver.Quit(); } catch { }
         try { Driver.Dispose(); } catch { }
 

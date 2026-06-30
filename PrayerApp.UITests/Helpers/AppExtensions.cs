@@ -677,6 +677,15 @@ public static class AppExtensions
     /// </summary>
     public static void ResetAppUIState(this AppiumDriver driver, AppiumSetup setup)
     {
+        // Per-test session isolation (#164). This runs at the very TOP of the per-test
+        // reset — before any navigation or UI inspection — so when the cadence fires and
+        // the driver is recreated, no in-progress test state is lost. On a recreate the
+        // app relaunches to its landing page (Home); the reset steps below are then no-ops
+        // (ResetCardsListScroll gates off the Cards page, the Home fast-path returns), and
+        // the caller's following EnsureOnTab navigates to the wanted tab. noReset=true
+        // preserves the once-seeded DB, so NO re-seed happens. See AppiumSetup #164 block.
+        setup.RecycleSessionIfDue();
+
         // Cards list scroll position is preserved across tab navigation. A
         // prior test (e.g. Slice 6g auto-reveal-after-save in
         // EmptyCardExpand) can leave the list mid-scrolled, putting the next
