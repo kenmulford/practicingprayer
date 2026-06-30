@@ -1219,6 +1219,63 @@ public static class AppExtensions
         Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
+    /// <summary>
+    /// iOS-only: select <paramref name="value"/> in a MAUI <c>Picker</c> that is already open.
+    /// Call AFTER tapping the Picker open. No-op on Android (whose Picker opens a dialog of
+    /// tappable rows, so the Android call sites keep using <see cref="TapByText"/>).
+    /// </summary>
+    /// <remarks>
+    /// On iOS a MAUI Picker presents a native <c>UIPickerView</c> spinning wheel — Microsoft's
+    /// Picker docs describe it as "a picker interface instead of a keyboard". A picker wheel's
+    /// options are NOT individual accessibility elements — only the single
+    /// <c>XCUIElementTypePickerWheel</c> exposes a settable value — so the Android pattern of
+    /// tapping the option by its text (<see cref="TapByText"/> / <see cref="TapByTextContains"/>)
+    /// can never match on iOS and dies with a NoSuchElement timeout. Instead set the wheel's value
+    /// (Appium's picker-wheel pattern, which maps to XCUITest <c>adjustToPickerWheelValue:</c>) and
+    /// return — there is no "Done" affordance to tap (page-source dump of the open picker on this
+    /// MAUI 10 / iOS 26.4 build shows the inline wheel and a page toolbar, but no Done button) and
+    /// none is needed: the iOS Picker's default <c>UpdateMode</c> is <c>Immediately</c> (Microsoft
+    /// docs: "item selection occurs as the user browses items … the default behavior in .NET MAUI";
+    /// <c>Detail_Picker_Card</c> sets no override), so settling the wheel fires the handler's
+    /// <c>didSelectRow</c> and writes <c>SelectedItem</c> back live. The caller's own
+    /// <c>TapToolbarItem("Save")</c> then persists the committed selection.
+    /// </remarks>
+    /// <param name="value">Exact option text to select — for the card picker this is the card Title.</param>
+    public static void SelectIOSPickerValue(this AppiumDriver driver, string value, int maxAttempts = 6)
+    {
+        if (!TestConfig.IsIOS) return;
+
+        // The open picker exposes exactly one spinning wheel (the card picker is single-column).
+        // Locate it by XPath element type, not By.ClassName — in this Selenium version
+        // By.ClassName emits a CSS selector ('.XCUIElementTypePickerWheel'), which Appium's
+        // iOS driver rejects (InvalidSelectorException). XPath is the iOS-native strategy used
+        // elsewhere in this file (e.g. IOSButtonByNameOrLabel).
+        var wheelBy = By.XPath("//XCUIElementTypePickerWheel");
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+        wait.Until(d => d.FindElement(wheelBy));
+
+        // RE-FIND the wheel every pass — never cache it across a SendKeys. SendKeys maps to
+        // XCUITest adjustToPickerWheelValue:, which re-renders the wheel and invalidates the
+        // prior element's fb_uid, so a cached reference throws StaleElementReferenceException on
+        // the next read. This mirrors the codebase's re-find-per-iteration idiom (ScrollDownUntil /
+        // EnsureAllSectionsExpanded). adjustToPickerWheelValue rotates toward the value; some
+        // XCUITest builds advance only one row per call, so retry (bounded) until the wheel's
+        // reported value reaches the target rather than assuming a single hop suffices. Each settle
+        // fires didSelectRow, committing SelectedItem live (Immediately mode) — no Done tap needed.
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                var wheel = (AppiumElement)driver.FindElement(wheelBy);
+                if ((wheel.Text ?? string.Empty).Contains(value, StringComparison.Ordinal))
+                    break;
+                wheel.SendKeys(value);
+            }
+            catch (StaleElementReferenceException) { /* wheel re-rendered mid-pass; re-find next loop */ }
+            Thread.Sleep(TestConfig.DelayAfterTap);
+        }
+    }
+
     /// <summary>Check if an element with the given text is displayed.</summary>
     public static bool IsTextDisplayed(this AppiumDriver driver, string text, int timeoutSeconds = 3)
     {
