@@ -18,36 +18,42 @@ public class PrayerCardTests
     private readonly AppiumSetup _setup;
     public PrayerCardTests(AppiumSetup setup) => _setup = setup;
 
-    /// <summary>Expand the Quick Add system card if visible and not already expanded.</summary>
+    /// <summary>
+    /// Idempotently expand the "Quick Add" system card and confirm it settled into its
+    /// expanded state. Cross-platform and order-independent.
+    /// <para>
+    /// Quick Add is a SYSTEM card seeded into the System box, whose <c>SortOrder = 900</c>
+    /// (DBService.cs:593) sorts it BELOW every user box — so on a freshly-reset page it
+    /// renders below the fold and the CollectionView virtualizes it out of the a11y tree.
+    /// The pre-#194 implementation tapped only if a bare <c>IsTextDisplayed("Quick Add")</c>
+    /// probe already saw it, so solo it missed the off-screen row and silently no-op'd; it
+    /// passed only inside the full suite, where an earlier test (e.g.
+    /// <see cref="Cards_MovePrayer_ToSystemCard_TargetExpandsAndShowsMovedPrayer"/>) had
+    /// already scrolled Quick Add into view and left it expanded in the shared session.
+    /// </para>
+    /// <para>
+    /// Mirrors that test's proven path: <c>EnsureCardVisible</c> brings the off-screen
+    /// system card on screen (scroll → expand-section → search fallback), then the
+    /// system-card-aware <see cref="IsCardHeaderExpanded"/> / <see cref="WaitForCardExpanded"/>
+    /// (which tolerate the ", System" infix <c>AccessibleCardHeader</c> inserts —
+    /// PrayerCardViewModel.cs:267) drive and confirm the expand toggle.
+    /// </para>
+    /// </summary>
     private void ExpandQuickAddCard()
     {
         var driver = _setup.Driver;
+        const string QuickAdd = "Quick Add";
 
-        if (TestConfig.IsIOS)
-        {
-            // iOS: CollectionView flattens cells — AutomationIds inside cells are invisible.
-            // Check expansion via composed label containing "Expanded".
-            if (driver.IsTextContainsDisplayed("Quick Add, Expanded", timeoutSeconds: 2))
-                return;
+        // Bring the off-screen system card into the rendered tree (no-op if visible).
+        driver.EnsureCardVisible(QuickAdd);
 
-            if (driver.IsTextContainsDisplayed("Quick Add", timeoutSeconds: 3))
-            {
-                driver.TapByTextContains("Quick Add", timeoutSeconds: 10);
-                Thread.Sleep(TestConfig.DelayAfterNavigation);
-            }
-        }
-        else
-        {
-            // Android: AutomationIds work inside CollectionView cells
-            if (driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 2))
-                return;
+        // Already expanded (e.g. left so by a prior test in the shared session)? Done.
+        if (IsCardHeaderExpanded(driver, QuickAdd)) return;
 
-            if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 3))
-            {
-                driver.TapByText("Quick Add");
-                Thread.Sleep(TestConfig.DelayAfterNavigation);
-            }
-        }
+        // Tap the header (platform-aware) and wait for the composed header to settle
+        // into its expanded state before the caller asserts on the realized subtree.
+        TapCardHeader(driver, QuickAdd);
+        WaitForCardExpanded(driver, QuickAdd, timeoutSeconds: 10);
     }
 
     /// <summary>3.1: Cards list loads — card collection is visible.</summary>
@@ -165,9 +171,20 @@ public class PrayerCardTests
     {
         _setup.Driver.ResetAppUIState(_setup);
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
+        var driver = _setup.Driver;
+
         ExpandQuickAddCard();
 
-        Assert.True(_setup.Driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 10),
+        // Quick Add sits low in the System box (SortOrder 900), so its expanded
+        // "+ Add prayer ›" affordance can render below the fold (virtualized out).
+        // Scroll it into view fling-free before the presence assert — the same
+        // controlled-scroll the system-target move test uses for the moved prayer.
+        ScrollUntil(driver,
+            () => driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 1),
+            () => driver.ScrollDownTo("Cards_Btn_AddPrayer", maxScrolls: 4,
+                                      scrollableAutomationId: "Cards_List_Cards"));
+
+        Assert.True(driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 10),
             "Expanded card should show '+ Add prayer' button");
     }
 
@@ -279,19 +296,12 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        // Expand the Quick Add system card
-        try
-        {
-            if (TestConfig.IsIOS)
-                driver.TapByTextContains("Quick Add");
-            else
-                driver.TapByText("Quick Add");
-            Thread.Sleep(TestConfig.DelayAfterTap);
-        }
-        catch (WebDriverException)
-        {
-            throw new SkipException("Precondition: 'Quick Add' system card not found");
-        }
+        // Expand the off-screen Quick Add system card via the shared, order-independent
+        // helper (#194). Skip only if expansion genuinely can't be confirmed — the
+        // negative asserts below would otherwise false-pass against an unexpanded card.
+        ExpandQuickAddCard();
+        if (!IsCardHeaderExpanded(driver, "Quick Add"))
+            throw new SkipException("Precondition: 'Quick Add' system card could not be expanded");
 
         // System cards should not show action buttons
         Assert.False(driver.IsDisplayed("Cards_Btn_Share", timeoutSeconds: 2),
@@ -306,19 +316,12 @@ public class PrayerCardTests
         _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
         var driver = _setup.Driver;
 
-        // Expand the Quick Add system card
-        try
-        {
-            if (TestConfig.IsIOS)
-                driver.TapByTextContains("Quick Add");
-            else
-                driver.TapByText("Quick Add");
-            Thread.Sleep(TestConfig.DelayAfterTap);
-        }
-        catch (WebDriverException)
-        {
-            throw new SkipException("Precondition: 'Quick Add' system card not found");
-        }
+        // Expand the off-screen Quick Add system card via the shared, order-independent
+        // helper (#194). Skip only if expansion genuinely can't be confirmed — the
+        // negative assert below would otherwise false-pass against an unexpanded card.
+        ExpandQuickAddCard();
+        if (!IsCardHeaderExpanded(driver, "Quick Add"))
+            throw new SkipException("Precondition: 'Quick Add' system card could not be expanded");
 
         // System cards should not show action buttons
         Assert.False(driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 2),
