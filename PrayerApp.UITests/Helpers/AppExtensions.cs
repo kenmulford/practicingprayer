@@ -297,6 +297,18 @@ public static class AppExtensions
         }
         var size = TestConfig.IsAndroid ? driver.Manage().Window.Size : default;
 
+        // No-progress guard (#196): mobile: scroll / swipe / swipeGesture expose no scroll
+        // offset, so the cheapest cross-platform "did the view actually move" signal is the
+        // page source. When a scroll leaves it byte-for-byte unchanged the list is pinned at
+        // an edge — already at the bottom, or too short to scroll at all — and every remaining
+        // iteration is a wasted no-op sitting behind a ShortTimeout find-miss (a scan that
+        // begins at the top of a short list otherwise burns the whole maxScrolls budget). Reuse
+        // the post-scroll source as the next pre-scroll baseline so each iteration costs at most
+        // one extra PageSource read, and only on iterations that miss (the already-visible case
+        // returns before any read). Bailing is safe: the per-iteration find runs BEFORE the
+        // scroll, so a genuinely-present element is still realized; we only stop scrolling once
+        // the view can no longer change.
+        string? sourceBeforeScroll = null;
         try
         {
             driver.Manage().Timeouts().ImplicitWait = TestConfig.ShortTimeout;
@@ -310,7 +322,12 @@ public static class AppExtensions
                 }
                 catch (NoSuchElementException) { }
 
+                sourceBeforeScroll ??= driver.PageSource;
                 ScrollDown(driver, size, containerId);
+                var sourceAfterScroll = driver.PageSource;
+                if (sourceAfterScroll == sourceBeforeScroll)
+                    break; // scroll moved nothing — list is at an edge, stop burning the budget
+                sourceBeforeScroll = sourceAfterScroll;
             }
         }
         finally
