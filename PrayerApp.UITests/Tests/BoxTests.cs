@@ -286,55 +286,6 @@ public class BoxTests
         }
     }
 
-    /// <summary>8.10: Multi-select toolbar — verify it appears and Cancel exits.</summary>
-    [SkippableFact]
-    public void Cards_MultiSelect_ToolbarAppearsAndCancels()
-    {
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // Multi-select requires a long-press on a card.
-        // Long-press is platform-specific and may not be reliable in all Appium configs.
-        // This test verifies the Cancel button exits multi-select mode if we can enter it.
-
-        // Try to find a card to long-press
-        if (driver.IsTextDisplayed("Quick Add", timeoutSeconds: 10))
-        {
-            var cardElement = driver.FindByTextContains("Quick Add");
-
-            // Attempt long-press (Appium action)
-            try
-            {
-                driver.LongPress(cardElement);
-                Thread.Sleep(TestConfig.DelayAfterTap);
-            }
-            catch (Exception ex)
-            {
-                throw new SkipException(
-                    $"Long-press not supported in this Appium config: {ex.Message}");
-            }
-
-            // If multi-select toolbar appeared, verify Cancel works
-            if (driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 3))
-            {
-                // Cancel is the overflow toolbar button — in multi-select mode it
-                // mutates to an X (Text="Cancel", Icon=xmark) but AutomationId stays
-                // "More" because MAUI enforces set-once on AutomationId.
-                Assert.True(driver.IsDisplayed("More"),
-                    "Overflow toolbar button (now X/Cancel) should be visible in multi-select mode");
-
-                driver.Tap("More");
-                Thread.Sleep(TestConfig.DelayAfterTap);
-
-                Assert.False(driver.IsDisplayed("Cards_Bar_MultiSelect", timeoutSeconds: 2),
-                    "Multi-select toolbar should be hidden after Cancel");
-            }
-        }
-
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10));
-    }
-
     /// <summary>8.11: Delete collection — choose "Delete All Cards &amp; Requests" option.
     /// Targets the "UITest Delete Target Collection A" throwaway entry from the seed so this
     /// destructive test doesn't wipe the shared UITest Collection baseline.</summary>

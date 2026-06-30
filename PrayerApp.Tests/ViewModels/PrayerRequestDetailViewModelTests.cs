@@ -749,4 +749,97 @@ public class PrayerRequestDetailViewModelTests
 
         Assert.DoesNotContain("Started", sut.AccessibleSummary);
     }
+
+    // ── FrequencyOptions (issue #169 convert) ─────────────────────────
+    // Replaces the Reminders_FrequencyPicker_HasOptions E2E (ReminderTests.cs)
+    // with a deterministic unit assertion over the picker's item source
+    // (PrayerRequestDetailViewModel.cs:395): the list is non-empty and exposes
+    // the headline Daily/Weekly cadences the E2E probed for on Android.
+
+    [Fact]
+    public void FrequencyOptions_IsNonEmpty_AndContainsDailyAndWeekly()
+    {
+        var sut = CreateSut();
+
+        Assert.NotEmpty(sut.FrequencyOptions);
+        Assert.Contains(PrayerFrequency.Daily, sut.FrequencyOptions);
+        Assert.Contains(PrayerFrequency.Weekly, sut.FrequencyOptions);
+    }
+
+    // ── Reminder picker visibility (issue #169 convert) ───────────────
+    // Replaces the Reminders_Toggle_ShowsThenHidesPickers E2E (ReminderTests.cs)
+    // with deterministic unit assertions over the derived visibility gates and
+    // their PropertyChanged edges: ShowNotifyTime == CanNotify;
+    // ShowDayOfWeek == CanNotify && Weekly; ShowDayOfMonth == CanNotify && Monthly
+    // (PrayerRequestDetailViewModel.cs:270-272). The CanNotify setter re-raises all
+    // three (:202-204) and the PrayerFrequency setter re-raises the two day pickers
+    // (:223-224), which is what drives the toggle show/hide on the form.
+
+    [Fact]
+    public void ReminderPickers_AllHidden_WhenCanNotifyFalse()
+    {
+        var sut = CreateSut();
+        // CanNotify defaults false.
+        Assert.False(sut.ShowNotifyTime);
+        Assert.False(sut.ShowDayOfWeek);
+        Assert.False(sut.ShowDayOfMonth);
+    }
+
+    [Fact]
+    public void ShowNotifyTime_FollowsCanNotify_AndRaisesPickerPropertyChanged()
+    {
+        var sut = CreateSut();
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.CanNotify = true;
+
+        Assert.True(sut.ShowNotifyTime);
+        Assert.Contains(nameof(PrayerRequestDetailViewModel.ShowNotifyTime), raised);
+        Assert.Contains(nameof(PrayerRequestDetailViewModel.ShowDayOfWeek), raised);
+        Assert.Contains(nameof(PrayerRequestDetailViewModel.ShowDayOfMonth), raised);
+    }
+
+    [Fact]
+    public void ShowDayOfWeek_VisibleOnly_WhenCanNotifyAndWeekly()
+    {
+        var sut = CreateSut();
+        sut.CanNotify = true;
+
+        sut.PrayerFrequency = PrayerFrequency.Weekly;
+        Assert.True(sut.ShowDayOfWeek);
+        Assert.False(sut.ShowDayOfMonth);
+
+        sut.PrayerFrequency = PrayerFrequency.Daily;
+        Assert.False(sut.ShowDayOfWeek);
+    }
+
+    [Fact]
+    public void ShowDayOfMonth_VisibleOnly_WhenCanNotifyAndMonthly()
+    {
+        var sut = CreateSut();
+        sut.CanNotify = true;
+
+        sut.PrayerFrequency = PrayerFrequency.Monthly;
+        Assert.True(sut.ShowDayOfMonth);
+        Assert.False(sut.ShowDayOfWeek);
+    }
+
+    [Fact]
+    public void PrayerFrequencyChange_RaisesDayPickerPropertyChanged()
+    {
+        var sut = CreateSut();
+        sut.CanNotify = true;
+        // A new Prayer defaults to Weekly (Prayer.cs:39); establish a different
+        // known baseline BEFORE subscribing so the Daily→Weekly transition below
+        // genuinely changes the value and fires the setter's notify chain.
+        sut.PrayerFrequency = PrayerFrequency.Daily;
+        var raised = new List<string?>();
+        sut.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        sut.PrayerFrequency = PrayerFrequency.Weekly;
+
+        Assert.Contains(nameof(PrayerRequestDetailViewModel.ShowDayOfWeek), raised);
+        Assert.Contains(nameof(PrayerRequestDetailViewModel.ShowDayOfMonth), raised);
+    }
 }

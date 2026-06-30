@@ -924,4 +924,116 @@ public class PrayerCardViewModelTests
         Assert.Contains(nameof(PrayerCardViewModel.IsArchived), raised);
         Assert.Contains(nameof(PrayerCardViewModel.ArchiveLabel), raised);
     }
+
+    // ── AddPrayerCommand (issue #169 convert) ──────────────────────────
+    // Replaces the Cards_AddPrayerToCard E2E (PrayerCardTests.cs) with a
+    // deterministic unit assertion over the card → detail nav edge: tapping
+    // "+ Add prayer" advances onboarding and navigates to PrayerDetailPage with
+    // newForCard set to this card's Id (PrayerCardViewModel.cs:530-534).
+
+    [Fact]
+    public async Task AddPrayerCommand_NavigatesToDetailForCard_AndAdvancesOnboarding()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.AddPrayerCommand).ExecuteAsync(null);
+
+        _onboardingService.Received(1).Advance();
+        await _navigationService.Received(1).GoToAsync($"{Routes.PrayerDetailPage}?newForCard=7");
+    }
+
+    // ── SelectCardCommand (issue #169 convert) ─────────────────────────
+    // Replaces the Cards_EditButton_NavigatesToEditPage E2E (PrayerCardTests.cs)
+    // with a deterministic unit assertion: tapping Edit on a user card navigates
+    // to PrayerCardPage with load set to its Id, while a system card is a no-op
+    // (guarded both by the !IsSystem canExecute and the in-method early return —
+    // PrayerCardViewModel.cs:318, :435-439).
+
+    [Fact]
+    public async Task SelectCardCommand_NonSystem_NavigatesToCardEditPage()
+    {
+        var card = new PrayerCard { Id = 12, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        await ((IAsyncRelayCommand)sut.SelectCardCommand).ExecuteAsync(null);
+
+        await _navigationService.Received(1).GoToAsync($"{Routes.PrayerCardPage}?load=12");
+    }
+
+    [Fact]
+    public async Task SelectCardCommand_SystemCard_NoOp_AndCannotExecute()
+    {
+        var card = new PrayerCard { Id = 13, Title = "Quick Add", IsSystem = true };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        Assert.False(sut.SelectCardCommand.CanExecute(null));
+
+        // Even if forced (ExecuteAsync bypasses canExecute), the in-method
+        // IsSystem guard returns before any navigation.
+        await ((IAsyncRelayCommand)sut.SelectCardCommand).ExecuteAsync(null);
+
+        await _navigationService.DidNotReceive().GoToAsync(Arg.Any<string>());
+    }
+
+    // ── ShowActionChips (issue #169 convert) ───────────────────────────
+    // Replaces the Cards_ExpandByTap_RealizesActionChips E2E (PrayerCardTests.cs)
+    // with a deterministic unit assertion over the chip-visibility gate
+    // (PrayerCardViewModel.cs:152): ShowActionChips == IsExpanded && !IsSystem.
+    // IsExpanded is the read-only projection over Parent.ExpandedCardId; the
+    // expand/collapse state machine itself is covered at
+    // PrayerCardsViewModelTests (ExpandedCardId_Set_RaisesIsExpandedPropertyChanged_…).
+
+    [Fact]
+    public void ShowActionChips_Collapsed_False()
+    {
+        // Null Parent ⇒ IsExpanded false ⇒ chips hidden.
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        Assert.False(sut.IsExpanded);
+        Assert.False(sut.ShowActionChips);
+    }
+
+    [Fact]
+    public void ShowActionChips_ExpandedNonSystem_True()
+    {
+        var card = new PrayerCard { Id = 7, Title = "Family" };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        var parent = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, Substitute.For<ITagService>(), _settings,
+            _boxService, new WeakReferenceMessenger());
+        sut.Parent = parent;
+        parent.ExpandedCardId = card.Id;
+        sut.RaiseIsExpandedChanged();
+
+        Assert.True(sut.IsExpanded);
+        Assert.True(sut.ShowActionChips);
+    }
+
+    [Fact]
+    public void ShowActionChips_ExpandedSystemCard_False()
+    {
+        // System card: chips stay hidden even when expanded (system cards have no
+        // Edit/Favorite/Delete affordances — matches Cards_SystemCard_* E2E intent).
+        var card = new PrayerCard { Id = 7, Title = "Quick Add", IsSystem = true };
+        var sut = new PrayerCardViewModel(card, _cardService, _prayerService,
+            _onboardingService, _navigationService, _accessibilityService, _boxService, _settings);
+
+        var parent = new PrayerCardsViewModel(_cardService, _prayerService, _onboardingService,
+            _navigationService, _accessibilityService, Substitute.For<ITagService>(), _settings,
+            _boxService, new WeakReferenceMessenger());
+        sut.Parent = parent;
+        parent.ExpandedCardId = card.Id;
+        sut.RaiseIsExpandedChanged();
+
+        Assert.True(sut.IsExpanded);
+        Assert.False(sut.ShowActionChips);
+    }
 }

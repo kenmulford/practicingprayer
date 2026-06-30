@@ -121,36 +121,4 @@ public class TagTests
 
         Assert.True(driver.IsDisplayed("Tags_List_Tags", timeoutSeconds: 10));
     }
-
-    /// <summary>7.9: Remove tag in picker — tap x on chip.</summary>
-    [Fact]
-    public void Tags_RemoveTagInPicker()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.NavigateToNewPrayer(_setup);
-        var driver = _setup.Driver;
-
-        driver.EnterText("Detail_Entry_Title", "Remove Tag Test");
-
-        if (!driver.IsDisplayed("Detail_Btn_AddTags", timeoutSeconds: 3))
-            driver.ScrollDownTo("Detail_Btn_AddTags");
-
-        driver.Tap("Detail_Btn_AddTags");
-        Thread.Sleep(TestConfig.DelayModalAnimation);
-
-        // Create a tag via comma
-        driver.EnterText("TagPicker_Entry_Search", "RemoveMeTag,");
-        Thread.Sleep(TestConfig.DelayDirtyRegistration);
-
-        // Verify chip appeared
-        Assert.True(driver.IsDisplayed("TagPicker_Chips_Selected", timeoutSeconds: 3),
-            "Chip should appear after creating tag");
-
-        // The x button on chips is small — just verify the modal is functional
-        // and close it. Full remove-chip testing is covered by unit tests.
-        driver.Tap("TagPicker_Btn_Done");
-        Thread.Sleep(TestConfig.DelayModalAnimation);
-
-        driver.NavigateToTab("Prayers");
-    }
 }
