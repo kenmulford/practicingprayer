@@ -1731,6 +1731,89 @@ public class ConfirmImportViewModelTests
         Assert.Contains(allCards, c => c.CardId == 1);        // Alpha present
     }
 
+    // ── Manual mode — SelectedBox preselection race (#171) ───────────────
+
+    [Fact]
+    public async Task Manual_LooseCardsHasCards_PreselectsCard_StaysExistingCardMode()
+    {
+        // #171 (designed-preselection invariant): when the default real box
+        // (Loose Cards, BoxId 0) holds a card the loader can preselect (the
+        // Quick Add card, modelled here in BoxId 0), the authoritative Manual
+        // load preselects it, stays in ExistingCard mode, and the grouped list
+        // is non-empty — no spurious flip to NewCard on a populated collection.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        var looseCard = new PrayerCard { Id = 1, Title = "Stray", BoxId = 0, IsSystem = false };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _cardService.GetCardsAsync().Returns(Task.FromResult<IReadOnlyList<PrayerCard>>(
+            new[] { quickAddCard, looseCard }));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+        var sut = CreateSut();
+
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        Assert.NotNull(sut.SelectedCard);                       // a card IS preselected
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);  // no spurious flip
+        Assert.NotEmpty(sut.AvailableCardGroups.SelectMany(g => g.Cards));
+    }
+
+    [Fact]
+    public async Task Manual_SelectedBoxPushedDuringAuthoritativeLoad_SuppressesRacingReload()
+    {
+        // #171 (root-cause repro, red→green): on-device the Picker's two-way
+        // binding can push SelectedBox WHILE LoadManualCardGroupsAsync is mid
+        // flight. Before the fix, the setter's un-awaited LoadCardGroupsAsync
+        // interleaves with the authoritative load: a transient Clear() empties
+        // AvailableCardGroups and trips FlipToNewCardIfEmptyManualRealBox on a
+        // collection that actually has cards — flipping to NewCard. The fix
+        // gates the setter while the authoritative loader owns the population,
+        // so preselection survives and no racing reload fires.
+        //
+        // Determinism: the mocked services complete synchronously, so the
+        // "race" is forced by firing the setter from inside the awaited
+        // GetCardsAsync of the authoritative load (one-shot), mimicking the
+        // Picker pushing null then restoring Loose Cards.
+        var quickAddCard = new PrayerCard { Id = 99, Title = "Quick Add", IsSystem = true, SystemKey = "quick_add", BoxId = 0 };
+        var looseCard = new PrayerCard { Id = 1, Title = "Stray", BoxId = 0, IsSystem = false };
+        _cardService.GetOrCreateQuickAddCardAsync().Returns(Task.FromResult(quickAddCard));
+        _boxService.GetBoxesAsync().Returns(Task.FromResult<IReadOnlyList<CardBox>>(
+            Array.Empty<CardBox>()));
+
+        ConfirmImportViewModel sut = null!;
+        var injected = false;
+        _cardService.GetCardsAsync().Returns(_ =>
+        {
+            // Fire the Picker-style SelectedBox push exactly once, during the
+            // authoritative load. null differs from Loose Cards (Equals is by
+            // BoxId) so the setter's SetProperty returns true and — pre-fix —
+            // issues a racing reload; restoring Loose Cards mirrors the binding
+            // settling back to the authoritative selection.
+            if (!injected && sut is not null)
+            {
+                injected = true;
+                var loose = sut.AvailableBoxes.OfType<RealBoxPickerItem>().First(b => b.BoxId == 0);
+                sut.SelectedBox = null;
+                sut.SelectedBox = loose;
+            }
+            return Task.FromResult<IReadOnlyList<PrayerCard>>(new[] { quickAddCard, looseCard });
+        });
+
+        sut = CreateSut();
+        sut.InitializeManualEntry();
+        await sut.LoadBoxesAsync();
+        await sut.LoadManualCardGroupsAsync();
+
+        // The authoritative loader is the SINGLE card-group load; the setter's
+        // racing reload was suppressed (each LoadCardGroupsAsync fetches once).
+        await _cardService.Received(1).GetCardsAsync();
+        // Preselection survived and no spurious flip occurred.
+        Assert.Equal(ImportMode.ExistingCard, sut.ImportMode);
+        Assert.NotNull(sut.SelectedCard);
+        Assert.NotEmpty(sut.AvailableCardGroups.SelectMany(g => g.Cards));
+    }
+
     [Fact]
     public async Task Import_LoadCardGroups_ExcludesSystemCards_StillTrueAfterManualRefactor()
     {
