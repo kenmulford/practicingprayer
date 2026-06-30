@@ -56,8 +56,32 @@ public class _ImportFlowDiagnostic
 
         // 5. Tap the new card to expand. PerfLog will capture
         // ToggleExpanded.entry, LoadPrayers.entry/.exit, ExpandedSubtree.realized.
-        driver.ScrollDownToText(importedTitle, maxScrolls: 4);
-        driver.TapByText(importedTitle);
+        //
+        // The new card takes its ALPHABETICAL slot in the Loose Cards section
+        // (PrayerCardsViewModel.SortCards: OrderByDescending(IsFavorite).ThenBy(Title)) — it
+        // is NOT pinned to the top — and the ?saved= import route auto-expands it and
+        // ScrollToSavedCardAsync auto-scrolls to it (Routes.cs:27-31), so the row is already
+        // on screen. The iOS failure (#189) is a locator-strategy mismatch, not a scroll one:
+        // the iOS card cell exposes a COMPOSED accessibility label — for the imported,
+        // auto-expanded card that is "Imported {date}, Imported, Expanded"
+        // (PrayerCardViewModel.AccessibleCardHeader, PrayerCardViewModel.cs:262-274) — so the
+        // exact-text locator //*[@name='Imported {date}'] never matches and ScrollDownToText
+        // throws "not found after 4 scrolls". Android exposes the raw title as its own text
+        // node, so its exact match passes — leave the Android path byte-for-byte unchanged.
+        // On iOS use the established card idiom: contains-match (EnsureCardVisible's iOS
+        // visibility check is IsTextContainsDisplayed; TapByTextContains), which matches the
+        // composed label. EnsureCardVisible short-circuits on the already-revealed row, so it
+        // never scrolls — the #196 no-progress guard in ScrollDownUntil is never reached.
+        if (TestConfig.IsIOS)
+        {
+            driver.EnsureCardVisible(importedTitle);
+            driver.TapByTextContains(importedTitle);
+        }
+        else
+        {
+            driver.ScrollDownToText(importedTitle, maxScrolls: 4);
+            driver.TapByText(importedTitle);
+        }
         Thread.Sleep(TestConfig.DelayCollectionRender);
 
         // 6. Probe whether prayer rows rendered (best-effort observation —
