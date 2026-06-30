@@ -20,6 +20,13 @@ public class AppiumSetup : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        // Register the SQLitePCL provider before the first in-process SQLite use
+        // below (TestDataSeed.SeedAsync builds the seed DB on the test host).
+        // #158 swapped sqlite-net-pcl -> sqlite-net-base, which no longer
+        // implicitly registers a provider; the app does this at MauiProgram.cs
+        // (Batteries_V2.Init), but the UITest host has no MAUI startup to do it.
+        SQLitePCL.Batteries_V2.Init();
+
         // Seed deterministic baseline data BEFORE Appium launches the app.
         // Terminates the app, pushes a pre-built SQLite file into the app's
         // data dir, so every suite starts with known Collections/Cards/Prayers.
