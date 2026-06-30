@@ -44,6 +44,45 @@ internal static class TestDataSeed
             $"spawn booted defaults write {TestConfig.IOSBundleId} OnboardingComplete -bool YES");
     }
 
+    /// <summary>
+    /// Android-only: uninstall the UiAutomator2 instrumentation server packages so the
+    /// NEXT Appium session redeploys them clean (issue #191, which also closes #192). On a
+    /// long Android run the shared UiAutomator2 instrumentation accumulates state and
+    /// eventually wedges ("instrumentation process is not running"), crashing the in-flight
+    /// test (#191 ArchiveTests.Archive_Capture_Screenshots) and the test that inherits the
+    /// wedged session right after it (#192 Cards_ArchiveChip_MovesCardToArchivedSection).
+    /// Folded into the existing session-recreate cadence (AppiumSetup.RecreateDriver) so it
+    /// bounds instrumentation drift the same way #164 bounds session drift — riding the one
+    /// SessionRecreateCadence counter, no second cadence. Uninstalling makes the fresh
+    /// CreateDriver reinstall a clean server.
+    /// <para>
+    /// These are Appium's OWN helper packages (io.appium.uiautomator2.server[.test]), NOT
+    /// the app under test, so this is distinct from the "never adb-uninstall the MAUI Debug
+    /// APK" rule — that would wipe the FastDev override assemblies; this only makes Appium
+    /// reinstall its instrumentation server on the next connect.
+    /// </para>
+    /// <para>
+    /// Best-effort (mirrors AppiumSetup.ApplyAndroidTreeReadSettings): a not-installed
+    /// server exits non-zero (allowFailure) and a missing adb throws — both are swallowed so
+    /// recovery NEVER aborts session creation; the session just keeps the wedged
+    /// instrumentation. No-op off Android.
+    /// </para>
+    /// </summary>
+    public static async Task RecoverAndroidInstrumentationAsync()
+    {
+        if (!TestConfig.IsAndroid) return;
+
+        try
+        {
+            await RunAdbAsync($"uninstall {TestConfig.UiAutomator2ServerPackage}", allowFailure: true);
+            await RunAdbAsync($"uninstall {TestConfig.UiAutomator2ServerTestPackage}", allowFailure: true);
+        }
+        catch
+        {
+            // adb missing/unreachable shouldn't abort the recreate — see summary.
+        }
+    }
+
     public static async Task SeedAndroidAsync()
     {
         if (!TestConfig.IsAndroid) return;

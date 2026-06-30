@@ -137,6 +137,19 @@ public class AppiumSetup : IAsyncLifetime
         try { Driver.Quit(); } catch { }
         try { Driver.Dispose(); } catch { }
 
+        // Android-only instrumentation recovery (#191/#192). On a long run the shared
+        // UiAutomator2 instrumentation accumulates state and eventually wedges
+        // ("instrumentation process is not running"), crashing the in-flight test and the
+        // one after it. Uninstalling Appium's server packages now — after the old session is
+        // torn down, before the fresh CreateDriver below — makes that CreateDriver redeploy
+        // clean instrumentation. This rides the existing #164 recreate cadence (it only ever
+        // runs on the RecreateDriver path, NEVER on the first InitializeAsync CreateDriver,
+        // so it adds no cost to a normal session start) and reuses no second counter.
+        // Best-effort and no-op off Android — RecoverAndroidInstrumentationAsync self-guards
+        // on TestConfig.IsAndroid and swallows its own failures, so it can never abort the
+        // recreate. Blocking is consistent with this method's synchronous lifecycle.
+        TestDataSeed.RecoverAndroidInstrumentationAsync().GetAwaiter().GetResult();
+
         for (int attempt = 1; attempt <= 3; attempt++)
         {
             CreateDriver();
