@@ -694,7 +694,7 @@ public class PrayerCardTests
         driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("Move Target Card", timeoutSeconds: 10);
+            driver.SelectIOSPickerValue("Move Target Card");
         else
             driver.TapByText("Move Target Card");
         Thread.Sleep(TestConfig.DelayAfterTap);
@@ -768,7 +768,7 @@ public class PrayerCardTests
         driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("Move Target Card", timeoutSeconds: 10);
+            driver.SelectIOSPickerValue("Move Target Card");
         else
             driver.TapByText("Move Target Card");
         Thread.Sleep(TestConfig.DelayAfterTap);
@@ -793,11 +793,16 @@ public class PrayerCardTests
             "If stuck expanded, the Border.Margin is not driven by the declarative DataTrigger.");
 
         // On iOS also verify via composed label that the platform sees it as Collapsed.
+        // The composed card label carries a prayer-count infix — "Move Source Card, 3 prayers,
+        // Collapsed" — so a contiguous "Move Source Card, Collapsed" substring never matches.
+        // Assert count-agnostically (mirrors IsCardHeaderExpanded's AND-XPath) that one element's
+        // label contains BOTH the card name AND the ", Collapsed" suffix; never hard-code the count.
         if (TestConfig.IsIOS)
             Assert.True(
-                driver.IsTextContainsDisplayed("Move Source Card, Collapsed", timeoutSeconds: 5),
-                "iOS a11y label should report 'Move Source Card, Collapsed' — " +
-                "stale expanded margin would suggest the DataTrigger hasn't fired.");
+                driver.FindElements(By.XPath(
+                    "//*[contains(@label,'Move Source Card') and contains(@label,', Collapsed')]")).Count > 0,
+                "iOS a11y label should report the Move Source Card as Collapsed (no stale expanded " +
+                "margin); the composed label is '{Title}, {N prayers}, Collapsed'.");
     }
 
     /// <summary>
@@ -842,7 +847,7 @@ public class PrayerCardTests
         driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
         Thread.Sleep(TestConfig.DelayAfterTap);
         if (TestConfig.IsIOS)
-            driver.TapByTextContains("Quick Add", timeoutSeconds: 10);
+            driver.SelectIOSPickerValue("Quick Add");
         else
             driver.TapByText("Quick Add");
         Thread.Sleep(TestConfig.DelayAfterTap);
