@@ -26,31 +26,11 @@ public class OnboardingTests
     private readonly AppiumSetup _setup;
     public OnboardingTests(AppiumSetup setup) => _setup = setup;
 
-    /// <summary>1.1 + 1.2: Fresh install — welcome popup appears with expected buttons.</summary>
-    [SkippableFact]
-    public void Onboarding_WelcomePopup_ShowsOnFirstLaunch()
-    {
-        if (TestConfig.IsIOS) ForceOnboardingPopup(_setup);
-        try
-        {
-            var driver = _setup.Driver;
-            if (!TestConfig.IsIOS && _setup.OnboardingHandled)
-                throw new SkipException(
-                    "Android: onboarding already handled by a prior test in this collection. " +
-                    "There is no Android equivalent of `ForceOnboardingPopup` yet (would require " +
-                    "`adb shell pm clear` + relaunch). Run this test in isolation to exercise the assertion.");
-
-            var hasGetStarted = driver.IsDisplayed("Welcome_Btn_GetStarted", timeoutSeconds: 10);
-            var hasSkip = driver.IsDisplayed("Welcome_Btn_Skip", timeoutSeconds: 2);
-
-            Assert.True(hasGetStarted || hasSkip,
-                "Expected welcome popup with 'Get Started' or 'Skip tour' buttons on first launch");
-        }
-        finally
-        {
-            if (TestConfig.IsIOS) RestoreOnboardingComplete(_setup);
-        }
-    }
+    // 1.1 + 1.2 (welcome popup on first launch) is covered by the deterministic unit test
+    // PrayerApp.Tests/Services/OnboardingServiceTests.cs (issue #190). The former E2E here forced
+    // "first launch" via `defaults write/delete`, but the iOS simulator's cfprefsd caches the app's
+    // prefs across relaunches, so the writes never reached the app — only a full uninstall/reinstall
+    // reproduced the popup. The welcome gate is deterministic decision logic, so it is unit-tested.
 
     /// <summary>1.7: Skip onboarding — tapping Skip dismisses the entire flow.</summary>
     [SkippableFact]
