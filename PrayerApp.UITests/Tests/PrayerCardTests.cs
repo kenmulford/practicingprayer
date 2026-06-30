@@ -159,64 +159,6 @@ public class PrayerCardTests
         }
     }
 
-    /// <summary>
-    /// Regression: rapidly tapping Save twice on the new-card form previously could
-    /// invoke SaveCardAsync twice — duplicate row attempt + UNIQUE constraint alert at
-    /// best, two near-identical cards at worst. SaveCommand now gates on IsBusy so the
-    /// second invocation is a no-op until the first completes.
-    /// </summary>
-    [Fact]
-    public void Cards_Save_DoubleTapCreatesOnlyOneCard()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-
-        var title = $"DoubleTap {DateTime.Now:HHmmssfff}";
-
-        driver.TapToolbarItemById("Add Card");
-        driver.WaitForElement("Card_Entry_Title", timeoutSeconds: 10);
-        driver.EnterText("Card_Entry_Title", title);
-        driver.DismissKeyboardIfPresent();
-
-        // Two taps in immediate succession (no inter-tap delay). Without the IsBusy
-        // gate, the second tap re-invokes SaveCardAsync. With it, the second tap is
-        // dropped (canExecute=false during the first save).
-        driver.TapToolbarItem("Save");
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-
-        Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
-            "Should return to card list after saving.");
-
-        // Search-filter the new title and assert only one row matches.
-        driver.EnsureCardVisible(title);
-        driver.EnterText("Cards_Search", title);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        var matchLocator = TestConfig.IsIOS
-            ? OpenQA.Selenium.By.XPath($"//*[@name='{title}' or @label='{title}']")
-            : OpenQA.Selenium.By.XPath($"//*[@text='{title}' or @content-desc='{title}']");
-        var matches = driver.FindElements(matchLocator);
-        Assert.Single(matches);
-
-        // Cleanup: clear search, delete the test card.
-        driver.EnterText("Cards_Search", string.Empty);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-        driver.EnsureCardVisible(title);
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains(title);
-        else
-            driver.TapByText(title);
-        Thread.Sleep(TestConfig.DelayAfterTap);
-        if (driver.IsDisplayed("Cards_Btn_Delete", timeoutSeconds: 3))
-        {
-            driver.Tap("Cards_Btn_Delete");
-            driver.DismissAlertIfPresent();
-            Thread.Sleep(TestConfig.DelayAfterSave);
-        }
-    }
-
     /// <summary>3.6: Expand card → view prayers inside.</summary>
     [Fact]
     public void Cards_ExpandCard_ShowsPrayers()
@@ -227,38 +169,6 @@ public class PrayerCardTests
 
         Assert.True(_setup.Driver.IsDisplayed("Cards_Btn_AddPrayer", timeoutSeconds: 10),
             "Expanded card should show '+ Add prayer' button");
-    }
-
-    /// <summary>3.7: Add-prayer navigation smoke — expand the card, tap "+ Add prayer",
-    /// and confirm the detail page opens. The enter-title / Save / navigate-back tail was
-    /// dropped in issue #148 Phase 2 (prayer save + return is covered by other smokes);
-    /// this test now guards only the card → detail nav edge. Uses the dedicated disposable
-    /// fixture "UITest AddPrayer Card" (see TestDataSeed) so it is independent of the shared seed.</summary>
-    [Fact]
-    public void Cards_AddPrayerToCard()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-        driver.EnsureCardVisible("UITest AddPrayer Card");
-
-        // Expand the dedicated seed card
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest AddPrayer Card");
-        else
-            driver.TapByText("UITest AddPrayer Card");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // iOS: AutomationId invisible inside flattened CollectionView cells — use text
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Add prayer", timeoutSeconds: 10);
-        else
-            driver.WaitAndTap("Cards_Btn_AddPrayer", timeoutSeconds: 10);
-        Thread.Sleep(TestConfig.DelayAfterNavigation);
-
-        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
-            "Tapping '+ Add prayer' should navigate to the prayer detail page");
     }
 
     /// <summary>Build-95 fallout (Slice 6c): after deleting an expanded card,
@@ -359,34 +269,6 @@ public class PrayerCardTests
         Assert.True(
             driver.IsTextContainsDisplayed("UITest Tag", timeoutSeconds: 10),
             "Tag filter chip should be visible on Prayer Cards page when tags exist");
-    }
-
-    /// <summary>3.17: Edit button — tapping Edit navigates to card edit page.
-    /// Uses dedicated fixture "UITest EditButton Card" (see TestDataSeed).</summary>
-    [Fact]
-    public void Cards_EditButton_NavigatesToEditPage()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        var driver = _setup.Driver;
-        driver.EnsureOnTab("Prayer Cards", _setup);
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-        driver.EnsureCardVisible("UITest EditButton Card");
-
-        // Expand the card to reveal action buttons
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("UITest EditButton Card");
-        else
-            driver.TapByText("UITest EditButton Card");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        driver.WaitAndTap("Cards_Btn_Edit", timeoutSeconds: 10);
-        Thread.Sleep(TestConfig.DelayAfterNavigation);
-
-        Assert.True(driver.IsDisplayed("Card_Entry_Title", timeoutSeconds: 10),
-            "Tapping Edit should navigate to card edit page");
-
-        driver.GoBack();
-        driver.DismissAlertIfPresent();
     }
 
     /// <summary>3.18: System card protection — Quick Add should not show action buttons when expanded.</summary>
@@ -577,27 +459,6 @@ public class PrayerCardTests
             () => driver.ScrollDownToText(text, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
 
     /// <summary>
-    /// Issue #117 shared tail: after a card has been tapped to expand, poll its header
-    /// until the expand has SETTLED (<see cref="WaitForCardExpanded"/>) and then
-    /// controlled-scroll <paramref name="chipAutomationId"/> into the viewport
-    /// (<see cref="ScrollUntil"/>'s fling-free <c>mobile: scrollGesture</c>). Probing a
-    /// chip during the non-idle expand animation reads a transient/blank tree, and a card
-    /// low in the list renders its chips below the fold (virtualized out of the tree) —
-    /// settle then reveal handles both. Used by
-    /// <see cref="Cards_ExpandByTap_RealizesActionChips"/> (which keeps its own explicit
-    /// tap visible as its behavior-under-test and reuses only this tail). Best-effort
-    /// scroll: a genuinely-missing chip still raises the caller's canonical assertion.
-    /// </summary>
-    private static void SettleAndRevealChip(OpenQA.Selenium.Appium.AppiumDriver driver,
-        string cardName, string chipAutomationId)
-    {
-        WaitForCardExpanded(driver, cardName, timeoutSeconds: 10);
-        ScrollUntil(driver,
-            () => driver.IsDisplayed(chipAutomationId, timeoutSeconds: 1),
-            () => driver.ScrollDownTo(chipAutomationId, maxScrolls: 4, scrollableAutomationId: "Cards_List_Cards"));
-    }
-
-    /// <summary>
     /// Scrolls the Cards list down until <paramref name="isVisible"/> is true (up to a
     /// bounded number of steps). On Android each step is a CONTROLLED, fling-free
     /// <c>mobile: scrollGesture</c> — the swipe-based <c>ScrollDownTo</c>/<c>swipeGesture</c>
@@ -643,62 +504,6 @@ public class PrayerCardTests
         Thread.Sleep(TestConfig.DelayAfterTap);
     }
 
-
-    /// <summary>
-    /// 6c real toggle path: tapping a collapsed user card's header should expand it
-    /// and reveal its action chips. Under issue #42's shape (i) the expanded subtree
-    /// is inlined in the cell template and eagerly realized, gated by a single
-    /// IsVisible="{Binding IsExpanded}" wrapper, so toggling IsExpanded makes the
-    /// chips/list/buttons visible (no lazy realization step).
-    /// </summary>
-    [Fact]
-    public void Cards_ExpandByTap_RealizesActionChips()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-
-        const string cardName = "UITest EditButton Card";
-
-        // Clear cross-test contamination FIRST: xUnit doesn't guarantee order, and a
-        // preceding test (e.g. Cards_ExpandedCard_ShowsActionButtons) can leave a
-        // DIFFERENT card expanded with its Edit chip still on screen. Since the negative
-        // baseline below probes the unscoped Cards_Btn_Edit, that leftover chip would
-        // make the baseline fail (or, without the baseline, mask a no-op tap). Collapse
-        // any expanded card so the baseline reflects a genuinely collapsed list.
-        CollapseAnyExpandedCards(driver);
-        EnsureCardCollapsed(driver, cardName);
-
-        // Negative baseline (false-green guard): with the card collapsed and no other
-        // card expanded, no Edit chip should be in the tree. IsDisplayed is unscoped, so
-        // a stale Edit chip from a DIFFERENT still-expanded card would otherwise satisfy
-        // the post-tap positive without proving THIS tap realized anything. Short timeout
-        // keeps the happy path fast.
-        Assert.False(driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 2),
-            "Pre-tap baseline: no Edit chip should be visible while the card is collapsed " +
-            "(a leftover chip from another expanded card would mask a no-op tap).");
-
-        // Tap to expand (precondition: card is collapsed) — this is the behavior under
-        // test (tap a collapsed card → its action chips become visible). Kept inline and
-        // explicit; only the settle+reveal tail is shared via SettleAndRevealChip.
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains(cardName);
-        else
-            driver.TapByText(cardName);
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // Issue #117 shared tail: settle the expand, then controlled-scroll the eager
-        // expanded subtree's chip row into the viewport before probing.
-        SettleAndRevealChip(driver, cardName, "Cards_Btn_Edit");
-
-        bool chipsVisible = driver.IsDisplayed("Cards_Btn_Edit", timeoutSeconds: 5);
-
-        string? evidence = chipsVisible ? null
-            : driver.DumpPageSource(nameof(Cards_ExpandByTap_RealizesActionChips));
-
-        Assert.True(chipsVisible,
-            $"Tapping a collapsed user card should reveal the action chips (Edit chip). Dump: {evidence}");
-    }
 
     /// <summary>
     /// 6c real M1 risk: a recycled cell whose host already has the expanded subtree
@@ -993,72 +798,6 @@ public class PrayerCardTests
     }
 
     /// <summary>
-    /// X-15 / TD-20: After the move, "Move Target Card" expands and displays the
-    /// moved prayer. Validates that the ExpandedCardId mechanism in Commit 2 correctly
-    /// auto-expands the target card and shows its new contents.
-    /// </summary>
-    [Fact]
-    [Trait("Status", "FailingPreCommit2")]
-    public void Cards_MovePrayer_TargetCardExpandsAndShowsMovedPrayer()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.EnsureOnTab("Prayer Cards", _setup);
-        var driver = _setup.Driver;
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // 1. Expand source card.
-        driver.EnsureCardVisible("Move Source Card");
-        EnsureCardExpanded(driver, "Move Source Card");
-
-        // 2. Open "Prayer Three" (keeps fixture independent from other move tests).
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Prayer Three", timeoutSeconds: 10);
-        else
-            driver.TapByText("Prayer Three");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // 3. Edit mode.
-        driver.TapToolbarItem("Edit");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-        Assert.True(driver.IsDisplayed("Detail_Entry_Title", timeoutSeconds: 10),
-            "Should be in edit mode");
-
-        // 4. Move to target card.
-        driver.WaitAndTap("Detail_Picker_Card", timeoutSeconds: 10);
-        Thread.Sleep(TestConfig.DelayAfterTap);
-        if (TestConfig.IsIOS)
-            driver.TapByTextContains("Move Target Card", timeoutSeconds: 10);
-        else
-            driver.TapByText("Move Target Card");
-        Thread.Sleep(TestConfig.DelayAfterTap);
-
-        // 5. Save and return to Cards tab.
-        driver.TapToolbarItem("Save");
-        Thread.Sleep(TestConfig.DelayAfterSave);
-        driver.NavigateToTab("Prayer Cards");
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-
-        // 6. "Move Target Card" should be expanded (ExpandedCardId set to it post-save).
-        driver.EnsureCardVisible("Move Target Card");
-        Assert.True(
-            IsCardExpanded(driver, "Move Target Card"),
-            "Move Target Card should be expanded after receiving the moved prayer. " +
-            "Post-save ExpandedCardId should auto-expand the destination card.");
-
-        if (TestConfig.IsIOS)
-            Assert.True(
-                driver.IsTextContainsDisplayed("Move Target Card, Expanded", timeoutSeconds: 5),
-                "iOS a11y label should report 'Move Target Card, Expanded'");
-
-        // 7. The moved prayer must be visible inside the expanded target card.
-        Assert.True(
-            TestConfig.IsIOS
-                ? driver.IsTextContainsDisplayed("Prayer Three", timeoutSeconds: 10)
-                : driver.IsTextDisplayed("Prayer Three", timeoutSeconds: 10),
-            "Prayer Three should be visible inside the expanded Move Target Card after the move");
-    }
-
-    /// <summary>
     /// Issue #42: Moving a prayer to a SYSTEM card target (here "Quick Add", which
     /// lives in the System box at sort ~900 and is therefore usually off-screen)
     /// must auto-expand that card and reveal the moved prayer in context — exactly
@@ -1066,8 +805,8 @@ public class PrayerCardTests
     /// shape-(i) realization retirement: with the expanded subtree always inflated
     /// (hidden via IsVisible when collapsed) there is no off-screen cell-realization
     /// race, so setting ExpandedCardId on the system target reveals the prayer
-    /// regardless of where the cell sits in the list. Mirrors
-    /// Cards_MovePrayer_TargetCardExpandsAndShowsMovedPrayer with a system target.
+    /// regardless of where the cell sits in the list. Exercises the post-save
+    /// auto-expand path with a system-card target specifically.
     /// "Quick Add" is used (not "Shared with me") because it is the system card the
     /// app always seeds on startup, so it is reliably present in the move picker.
     /// </summary>

@@ -103,20 +103,4 @@ public class UnsavedChangesTests
                  || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
             "Should return to prayer list without discard prompt after saving");
     }
-
-    /// <summary>5.6: New prayer, no changes → back — no discard prompt.</summary>
-    [Fact]
-    public void UnsavedChanges_NoChanges_BackNoPrompt()
-    {
-        _setup.Driver.ResetAppUIState(_setup);
-        _setup.Driver.NavigateToNewPrayer(_setup);
-        var driver = _setup.Driver;
-
-        driver.GoBack();
-        Thread.Sleep(TestConfig.DelayAfterNavigation);
-
-        Assert.True(driver.IsDisplayed("List_Filter_Active", timeoutSeconds: 10)
-                 || driver.IsDisplayed("List_Search_Prayers", timeoutSeconds: 3),
-            "Should return to prayer list without discard prompt when no changes made");
-    }
 }

@@ -96,7 +96,11 @@ public class QuickAddTests
             "Should return to Home after Quick Add cancel");
     }
 
-    /// <summary>2.3: Quick Add → Cards tab — prayer appears on Quick Add card.</summary>
+    /// <summary>2.3: Quick Add → Cards tab cross-tab nav — saving from the Quick Add
+    /// flow lands on the Prayer Cards tab. The deeper "the saved prayer row materializes
+    /// in the virtualized list" assertion was dropped in issue #169 (ConfirmImport save +
+    /// the resulting row rendering are covered by unit tests); this test now guards only
+    /// the post-save cross-tab navigation edge.</summary>
     [Fact]
     public void QuickAdd_PrayerAppearsOnCardsTab()
     {
@@ -111,19 +115,9 @@ public class QuickAddTests
         driver.TapToolbarItem("Save");
         Thread.Sleep(TestConfig.DelayAfterSave);
 
-        // After save, ConfirmImport navigates to Prayer Cards tab.
+        // After save, ConfirmImport navigates to the Prayer Cards tab.
         Assert.True(driver.IsDisplayed("Cards_List_Cards", timeoutSeconds: 10),
             "Cards tab should be visible after Quick Add save");
-
-        // Use EnsureCardVisible to materialize the prayer row: scrolls the list,
-        // expands all collapsed sections, and falls back to Cards_Search if the row
-        // is still not visible under virtualization. This is the established robust
-        // pattern for finding rows on the Cards tab (AppExtensions.cs:244-283).
-        Thread.Sleep(TestConfig.DelayCollectionRender);
-        driver.EnsureCardVisible(uniqueTitle);
-
-        Assert.True(driver.IsTextDisplayed(uniqueTitle, timeoutSeconds: 10),
-            $"Saved prayer '{uniqueTitle}' should appear on the Cards tab after Quick Add save");
     }
 
     /// <summary>
