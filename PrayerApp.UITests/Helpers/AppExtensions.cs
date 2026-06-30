@@ -567,6 +567,10 @@ public static class AppExtensions
     public static void EnsureOnTab(this AppiumDriver driver, string tabTitle, AppiumSetup setup)
     {
         setup.EnsureSessionAlive();
+        // EnsureSessionAlive recreates the session (new setup.Driver) when it finds a dead
+        // one, so re-fetch before using `driver` — same recreate-then-stale-param hazard as
+        // ResetAppUIState/RecycleSessionIfDue (#164).
+        driver = setup.Driver;
         // iOS: the software keyboard persists across navigations and can cover the
         // tab bar / toolbar items. Dismiss before attempting tab navigation.
         // See Lessons/maui-ios-appium-locators.md. No-op on Android.
@@ -685,6 +689,10 @@ public static class AppExtensions
         // the caller's following EnsureOnTab navigates to the wanted tab. noReset=true
         // preserves the once-seeded DB, so NO re-seed happens. See AppiumSetup #164 block.
         setup.RecycleSessionIfDue();
+        // RecycleSessionIfDue may have torn down the session and assigned a NEW driver to
+        // setup.Driver (Quit + new AndroidDriver/IOSDriver). Re-fetch so the reset steps
+        // below run against the live session, not the just-quit `driver` param (#164).
+        driver = setup.Driver;
 
         // Cards list scroll position is preserved across tab navigation. A
         // prior test (e.g. Slice 6g auto-reveal-after-save in
