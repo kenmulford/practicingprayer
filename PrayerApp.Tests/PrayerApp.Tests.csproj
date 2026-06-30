@@ -157,7 +157,9 @@
     <Compile Include="../PrayerApp/Services/PrayerInteractionService.cs" />
     <Compile Include="../PrayerApp/Services/NotificationService.cs" />
     <Compile Include="../PrayerApp/Services/UserColorService.cs" />
-    <!-- OnboardingService.cs excluded: uses MAUI Preferences (same reason as Settings.cs) -->
+    <!-- OnboardingService.cs: persistence now goes through the injected ISettings
+         abstraction (no direct MAUI Preferences), so it links into the test project. -->
+    <Compile Include="../PrayerApp/Services/OnboardingService.cs" />
     <!-- LocalNotificationCenterWrapper.cs excluded: depends on Plugin.LocalNotification (MAUI) -->
     <!-- Settings.cs excluded: uses MAUI Preferences -->
   </ItemGroup>
