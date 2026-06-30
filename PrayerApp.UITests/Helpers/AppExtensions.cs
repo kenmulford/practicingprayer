@@ -207,8 +207,31 @@ public static class AppExtensions
     {
         bool scrolledOnIOS = false;
         if (TestConfig.IsIOS)
+        {
+            // A freshly-created prayer is card-less (PrayerCardId 0 → CardTitle "") and the
+            // list sorts by CardTitle then Title (PrayerListViewModel.cs:425-426), so an empty
+            // CardTitle sorts it to the TOP. Every scroll path below moves DOWN only — and the
+            // iOS predicate-scroll moves further down — so a top-anchored row can never be
+            // realized from a list a prior navigation left mid-scrolled; the down-scroll just
+            // moves away from it (#183/#184 fail; the #183 dump caught the list at 67% with the
+            // target above the realized window). Reset to the top first so the target is at or
+            // below the current position: a top row is then on screen (tapped directly below),
+            // and a below-fold seeded row (e.g. "UI Test Prayer" under "UITest Card", #182) is
+            // still reachable by the down-scroll that follows.
+            ResetIOSListScrollToTop(driver, scrollableAutomationId);
+
+            // Top-anchored target is now on screen — tap it directly, before the down-only
+            // predicate scroll can move the list past it. Returns before ScrollDownUntil, so
+            // the #196 no-progress guard is never involved for this case.
+            if (driver.IsTextContainsDisplayed(text, timeoutSeconds: 2))
+            {
+                driver.TapByTextContains(text, timeoutSeconds: 10);
+                return;
+            }
+
             scrolledOnIOS = driver.IOSScrollToPredicateInContainer(
                 scrollableAutomationId, $"label CONTAINS '{text}'");
+        }
 
         try
         {
@@ -432,6 +455,41 @@ public static class AppExtensions
                 { "percent", 0.5 }
             });
         }
+    }
+
+    /// <summary>
+    /// iOS-only: scroll a CollectionView container back to its top via repeated
+    /// <c>mobile: scroll direction=up</c> (the inverse of <see cref="ScrollDown"/>).
+    /// Mirrors the iOS branch of <see cref="ResetCardsListScroll"/>, parameterised for any
+    /// container so <see cref="ScrollToPrayerAndTap"/> can land on a known top position before
+    /// its down-only search. Best-effort: silently no-ops if the container isn't on screen.
+    /// Iterating from an already-top list is a harmless no-op (a list can't scroll past its top).
+    /// </summary>
+    private static void ResetIOSListScrollToTop(AppiumDriver driver, string containerAutomationId)
+    {
+        const int MaxIterations = 8;
+
+        string listId;
+        try { listId = driver.FindElement(MobileBy.AccessibilityId(containerAutomationId)).Id; }
+        catch (WebDriverException) { return; }
+
+        // Save/restore the implicit wait so this pre-scroll reset doesn't clobber the
+        // caller's wait window; 0s keeps each no-op scroll cheap.
+        var priorWait = driver.Manage().Timeouts().ImplicitWait;
+        try
+        {
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(0);
+            for (int i = 0; i < MaxIterations; i++)
+            {
+                driver.ExecuteScript("mobile: scroll", new Dictionary<string, object>
+                {
+                    { "elementId", listId },
+                    { "direction", "up" }
+                });
+            }
+        }
+        catch (WebDriverException) { /* container went off-page mid-loop */ }
+        finally { driver.Manage().Timeouts().ImplicitWait = priorWait; }
     }
 
     // ── Navigation ───────────────────────────────────────────────
