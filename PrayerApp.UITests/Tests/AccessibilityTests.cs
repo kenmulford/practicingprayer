@@ -166,6 +166,12 @@ public class AccessibilityTests
     public void Settings_AppSettingsRow_MeetsTouchTargetMinimum()
     {
         Driver.ResetAppUIState(_setup);
+        // #170: density math below uses UiAutomator2's Android-only `mobile: deviceInfo`
+        // displayDensity; the class-level CrossPlatform trait otherwise pulls this Android
+        // touch-target guard into the iOS run scope, where that query throws. Guard iOS out
+        // (mirrors the sibling at line 136) — the 44pt regression guard stays intact on Android.
+        if (TestConfig.IsIOS)
+            return;
         Driver.EnsureOnTab("Settings", _setup);
         Driver.WaitForElement("Settings_Row_AppSettings", timeoutSeconds: 10);
 
