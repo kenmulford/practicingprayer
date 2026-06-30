@@ -658,7 +658,14 @@ public sealed class ConfirmImportViewModel : ObservableObject, IDisposable
                    // user can save with only a prayer typed. The Import flow still
                    // requires an explicit card title.
                    ? EntryMode == EntryMode.Manual || !string.IsNullOrWhiteSpace(CardTitle)
-                   : SelectedCard is not null);
+                   // #168: In Quick Add (Manual), ExistingCard mode with no card
+                   // selected must not dead-end Save — if the preselection race
+                   // leaves SelectedCard null while real cards exist (so #119 does
+                   // not flip to NewCard), SaveAsync falls through to create a new
+                   // card in the selected box. Gated to Manual the same way as the
+                   // #119/#122 empty→NewCard flip (FlipToNewCardIfEmptyManualRealBox),
+                   // so the Import flow still requires an explicitly chosen card.
+                   : EntryMode == EntryMode.Manual || SelectedCard is not null);
 
     private async Task SaveAsync()
     {
